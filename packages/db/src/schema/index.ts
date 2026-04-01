@@ -56,3 +56,7 @@ export { pluginEntities } from "./plugin_entities.js";
 export { pluginJobs, pluginJobRuns } from "./plugin_jobs.js";
 export { pluginWebhookDeliveries } from "./plugin_webhooks.js";
 export { pluginLogs } from "./plugin_logs.js";
+export { dispatchIntents } from "./dispatch_intents.js";
+export { executionLeases } from "./execution_leases.js";
+export { executionEnvelopes } from "./execution_envelopes.js";
+export { controlPlaneEvents } from "./control_plane_events.js";
