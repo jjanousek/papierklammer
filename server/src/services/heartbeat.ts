@@ -33,6 +33,7 @@ import { tickTimers as tickTimersViaIntents } from "./timer-intent-bridge.js";
 import { intentQueueService } from "./intent-queue.js";
 import { dispatcherService } from "./dispatcher.js";
 import { eventLogService } from "./event-log.js";
+import { terminalStatePolicyService } from "./terminal-state-policy.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
@@ -3065,6 +3066,28 @@ export function heartbeatService(db: Db) {
             errorCode: finalizedRun.errorCode,
           },
         }).catch((err) => logger.warn({ err, runId: finalizedRun.id }, "failed to emit run event"));
+
+        // Terminal-state policy enforcement: if the run succeeded and had a
+        // checked-out issue, verify the agent performed a terminal action
+        // (status change, comment, or keepalive). If not, mark it failed.
+        if (outcome === "succeeded") {
+          try {
+            const terminalPolicy = terminalStatePolicyService(db);
+            const policyResult = await terminalPolicy.enforceOnRunCompletion({
+              runId: finalizedRun.id,
+              companyId: finalizedRun.companyId,
+              agentId: finalizedRun.agentId,
+              issueId: readNonEmptyString(parseObject(finalizedRun.contextSnapshot).issueId),
+              runStartedAt: finalizedRun.startedAt ? new Date(finalizedRun.startedAt) : null,
+              runFinishedAt: finalizedRun.finishedAt ? new Date(finalizedRun.finishedAt) : new Date(),
+            });
+            if (policyResult.violated) {
+              outcome = "failed";
+            }
+          } catch (err) {
+            logger.warn({ err, runId: finalizedRun.id }, "failed to enforce terminal-state policy");
+          }
+        }
       }
 
       if (finalizedRun) {
