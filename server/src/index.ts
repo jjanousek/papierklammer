@@ -28,7 +28,7 @@ import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
-import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup, routineService } from "./services/index.js";
+import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup, reconcilerService, routineService } from "./services/index.js";
 import { createStorageServiceFromConfig } from "./storage/index.js";
 import { printStartupBanner } from "./startup-banner.js";
 import { getBoardClaimWarningUrl, initializeBoardClaimChallenge } from "./board-claim.js";
@@ -613,6 +613,36 @@ export async function startServer(): Promise<StartedServer> {
           logger.error({ err }, "periodic stale lease reaper failed");
         });
     }, config.heartbeatSchedulerIntervalMs);
+
+    // Reconciler: run every 5 minutes to fix drift between run/lease/intent
+    // state and issue projections.
+    const RECONCILER_INTERVAL_MS = 5 * 60 * 1000;
+    const reconciler = reconcilerService(db as any);
+    setInterval(() => {
+      void (async () => {
+        try {
+          const activeCompanies = await (db as any)
+            .select({ id: companies.id })
+            .from(companies);
+
+          for (const company of activeCompanies) {
+            const result = await reconciler.reconcile(company.id);
+            const total =
+              result.orphanedRunsClosed +
+              result.staleIntentsRejected +
+              result.ghostProjectionsCorrected;
+            if (total > 0) {
+              logger.info(
+                { companyId: company.id, ...result },
+                "reconciler corrected drift",
+              );
+            }
+          }
+        } catch (err) {
+          logger.error({ err }, "periodic reconciler failed");
+        }
+      })();
+    }, RECONCILER_INTERVAL_MS);
   }
   
   if (config.databaseBackupEnabled) {

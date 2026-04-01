@@ -31,4 +31,5 @@ export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
 export { reconcilePersistedRuntimeServicesOnStartup, restartDesiredRuntimeServicesOnStartup } from "./workspace-runtime.js";
 export { eventLogService } from "./event-log.js";
 export { projectionService, type IssueProjection } from "./projections.js";
+export { reconcilerService, type ReconcileResult } from "./reconciler.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";
