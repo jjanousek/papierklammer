@@ -118,9 +118,9 @@ Open: `http://localhost:3131` (default smoke host port)
 Useful overrides:
 
 ```sh
-HOST_PORT=3200 PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
+HOST_PORT=3200 PAPIERKLAMMER_VERSION=latest ./scripts/docker-onboard-smoke.sh
 PAPIERKLAMMER_DEPLOYMENT_MODE=authenticated PAPIERKLAMMER_DEPLOYMENT_EXPOSURE=private ./scripts/docker-onboard-smoke.sh
-SMOKE_DETACH=true SMOKE_METADATA_FILE=/tmp/paperclip-smoke.env PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
+SMOKE_DETACH=true SMOKE_METADATA_FILE=/tmp/paperclip-smoke.env PAPIERKLAMMER_VERSION=latest ./scripts/docker-onboard-smoke.sh
 ```
 
 Notes:

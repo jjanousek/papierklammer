@@ -37,4 +37,4 @@ WORKDIR /home/paperclip/workspace
 EXPOSE 3100
 USER paperclip
 
-CMD ["bash", "-lc", "set -euo pipefail; mkdir -p \"$PAPIERKLAMMER_HOME\"; npx --yes \"paperclipai@${PAPIERKLAMMER_VERSION}\" onboard --yes --data-dir \"$PAPIERKLAMMER_HOME\""]
+CMD ["bash", "-lc", "set -euo pipefail; mkdir -p \"$PAPIERKLAMMER_HOME\"; npx --yes \"papierklammer@${PAPIERKLAMMER_VERSION}\" onboard --yes --data-dir \"$PAPIERKLAMMER_HOME\""]

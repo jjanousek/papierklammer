@@ -5,8 +5,8 @@
 Today release smoke testing for published Paperclip packages is manual and shell-driven:
 
 ```sh
-HOST_PORT=3232 DATA_DIR=./data/release-smoke-canary PAPERCLIPAI_VERSION=canary ./scripts/docker-onboard-smoke.sh
-HOST_PORT=3233 DATA_DIR=./data/release-smoke-stable PAPERCLIPAI_VERSION=latest ./scripts/docker-onboard-smoke.sh
+HOST_PORT=3232 DATA_DIR=./data/release-smoke-canary PAPIERKLAMMER_VERSION=canary ./scripts/docker-onboard-smoke.sh
+HOST_PORT=3233 DATA_DIR=./data/release-smoke-stable PAPIERKLAMMER_VERSION=latest ./scripts/docker-onboard-smoke.sh
 ```
 
 That is useful because it exercises the same public install surface users hit:
@@ -65,7 +65,7 @@ That is a good base, but it does not validate the public npm package, Docker pat
 `scripts/docker-onboard-smoke.sh` already does useful setup work:
 
 - builds `Dockerfile.onboard-smoke`
-- runs `paperclipai@${PAPERCLIPAI_VERSION}` inside Docker
+- runs `paperclipai@${PAPIERKLAMMER_VERSION}` inside Docker
 - waits for health
 - signs up or signs in a smoke admin user
 - generates and accepts the bootstrap CEO invite in authenticated mode
@@ -328,8 +328,8 @@ Tasks:
 Acceptance:
 
 - the suite passes locally against both:
-  - `PAPERCLIPAI_VERSION=canary`
-  - `PAPERCLIPAI_VERSION=latest`
+  - `PAPIERKLAMMER_VERSION=canary`
+  - `PAPIERKLAMMER_VERSION=latest`
 
 ## Phase 3: GitHub Actions workflow
 
