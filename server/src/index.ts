@@ -605,6 +605,13 @@ export async function startServer(): Promise<StartedServer> {
         .catch((err) => {
           logger.error({ err }, "periodic heartbeat recovery failed");
         });
+
+      // Reap runs whose execution leases have expired.
+      void heartbeat
+        .reapStaleLeaseRuns()
+        .catch((err) => {
+          logger.error({ err }, "periodic stale lease reaper failed");
+        });
     }, config.heartbeatSchedulerIntervalMs);
   }
   

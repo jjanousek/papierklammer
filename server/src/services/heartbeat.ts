@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import type { BillingType, ExecutionWorkspace, ExecutionWorkspaceConfig } from "@papierklammer/shared";
 import {
@@ -10,6 +10,8 @@ import {
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
+  controlPlaneEvents,
+  executionLeases,
   heartbeatRunEvents,
   heartbeatRuns,
   issues,
@@ -1942,6 +1944,185 @@ export function heartbeatService(db: Db) {
     if (reaped.length > 0) {
       logger.warn({ reapedCount: reaped.length, runIds: reaped }, "reaped orphaned heartbeat runs");
     }
+    return { reaped: reaped.length, runIds: reaped };
+  }
+
+  /**
+   * Reap runs whose associated execution lease has expired.
+   *
+   * This extends the orphaned-run reaper with lease-based reaping:
+   * 1. Finds runs linked to execution_leases that are either already expired
+   *    (state='expired') or past expiresAt with state still 'granted'/'renewed'.
+   * 2. Cancels those runs (status=failed).
+   * 3. Releases the issue execution lock (executionRunId=null).
+   * 4. Emits run_cancelled and lease_expired events to control_plane_events.
+   * 5. Increments pickupFailCount on the issue if the run never checked out
+   *    (no checkoutRunId set).
+   */
+  async function reapStaleLeaseRuns() {
+    const now = new Date();
+    const reaped: string[] = [];
+
+    // First, expire any leases that are past expiresAt but still active
+    const expiredLeaseIds = await db
+      .update(executionLeases)
+      .set({
+        state: "expired",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          sql`${executionLeases.state} IN ('granted', 'renewed')`,
+          lte(executionLeases.expiresAt, now),
+        ),
+      )
+      .returning({ id: executionLeases.id, runId: executionLeases.runId });
+
+    // Now find all runs linked to expired leases (including previously expired ones)
+    // that are still in running or queued status
+    const staleRuns = await db
+      .select({
+        run: heartbeatRuns,
+        lease: executionLeases,
+      })
+      .from(heartbeatRuns)
+      .innerJoin(executionLeases, eq(executionLeases.runId, heartbeatRuns.id))
+      .where(
+        and(
+          eq(executionLeases.state, "expired"),
+          sql`${heartbeatRuns.status} IN ('running', 'queued')`,
+        ),
+      );
+
+    for (const { run, lease } of staleRuns) {
+      // Determine if this run never checked out the issue
+      // A run that checked out has an issue with checkoutRunId = run.id
+      const issueRow = await db
+        .select({
+          id: issues.id,
+          checkoutRunId: issues.checkoutRunId,
+          pickupFailCount: issues.pickupFailCount,
+        })
+        .from(issues)
+        .where(
+          and(
+            eq(issues.companyId, run.companyId),
+            eq(issues.executionRunId, run.id),
+          ),
+        )
+        .then((rows) => rows[0] ?? null);
+
+      // Also look for issues linked to the lease directly
+      const leaseIssueRow = !issueRow && lease.issueId
+        ? await db
+            .select({
+              id: issues.id,
+              checkoutRunId: issues.checkoutRunId,
+              pickupFailCount: issues.pickupFailCount,
+              executionRunId: issues.executionRunId,
+            })
+            .from(issues)
+            .where(eq(issues.id, lease.issueId))
+            .then((rows) => rows[0] ?? null)
+        : null;
+
+      const relevantIssue = issueRow ?? leaseIssueRow;
+      const neverCheckedOut = relevantIssue
+        ? relevantIssue.checkoutRunId !== run.id
+        : true;
+
+      // Cancel the run
+      const cancelled = await setRunStatus(run.id, "failed", {
+        finishedAt: now,
+        error: "Cancelled by stale lease reaper — execution lease expired",
+        errorCode: "lease_expired",
+      });
+
+      await setWakeupStatus(run.wakeupRequestId, "failed", {
+        finishedAt: now,
+        error: "Cancelled by stale lease reaper — execution lease expired",
+      });
+
+      if (cancelled) {
+        await appendRunEvent(cancelled, await nextRunEventSeq(cancelled.id), {
+          eventType: "lifecycle",
+          stream: "system",
+          level: "warn",
+          message: "Run cancelled by stale lease reaper — execution lease expired",
+          payload: {
+            leaseId: lease.id,
+            neverCheckedOut,
+          },
+        });
+      }
+
+      // Release the issue execution lock
+      if (issueRow) {
+        await db
+          .update(issues)
+          .set({
+            executionRunId: null,
+            executionAgentNameKey: null,
+            executionLockedAt: null,
+            updatedAt: now,
+          })
+          .where(eq(issues.id, issueRow.id));
+      }
+
+      // Increment pickupFailCount if the run never checked out
+      if (neverCheckedOut && relevantIssue) {
+        await db
+          .update(issues)
+          .set({
+            pickupFailCount: sql`${issues.pickupFailCount} + 1`,
+            lastPickupFailureAt: now,
+            updatedAt: now,
+          })
+          .where(eq(issues.id, relevantIssue.id));
+      }
+
+      // Emit run_cancelled event
+      await db.insert(controlPlaneEvents).values({
+        companyId: run.companyId,
+        entityType: "run",
+        entityId: run.id,
+        eventType: "run_cancelled",
+        payload: {
+          runId: run.id,
+          agentId: run.agentId,
+          leaseId: lease.id,
+          reason: "lease_expired",
+          neverCheckedOut,
+        },
+      });
+
+      // Emit lease_expired event
+      await db.insert(controlPlaneEvents).values({
+        companyId: run.companyId,
+        entityType: "lease",
+        entityId: lease.id,
+        eventType: "lease_expired",
+        payload: {
+          leaseId: lease.id,
+          runId: run.id,
+          agentId: run.agentId,
+          issueId: lease.issueId,
+        },
+      });
+
+      await finalizeAgentStatus(run.agentId, "failed");
+      await startNextQueuedRunForAgent(run.agentId);
+      runningProcesses.delete(run.id);
+      reaped.push(run.id);
+    }
+
+    if (reaped.length > 0) {
+      logger.warn(
+        { reapedCount: reaped.length, runIds: reaped },
+        "reaped stale lease runs",
+      );
+    }
+
     return { reaped: reaped.length, runIds: reaped };
   }
 
@@ -3956,6 +4137,8 @@ export function heartbeatService(db: Db) {
     reportRunActivity: clearDetachedRunWarning,
 
     reapOrphanedRuns,
+
+    reapStaleLeaseRuns,
 
     resumeQueuedRuns,
 
