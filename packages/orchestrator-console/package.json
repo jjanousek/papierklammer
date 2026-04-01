@@ -1,0 +1,38 @@
+{
+  "name": "@papierklammer/orchestrator-console",
+  "version": "0.1.0",
+  "description": "Orchestrator console CLI for Papierklammer",
+  "type": "module",
+  "bin": {
+    "papierklammer-orch": "dist/index.js"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/papierklammer/papierklammer",
+    "directory": "packages/orchestrator-console"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
