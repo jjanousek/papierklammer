@@ -30,6 +30,7 @@ import { budgetService, type BudgetEnforcementScope } from "./budgets.js";
 import { secretService } from "./secrets.js";
 import { tickTimers as tickTimersViaIntents } from "./timer-intent-bridge.js";
 import { intentQueueService } from "./intent-queue.js";
+import { dispatcherService } from "./dispatcher.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
@@ -2656,6 +2657,17 @@ export function heartbeatService(db: Db) {
           "local agent jwt secret missing or invalid; running without injected PAPIERKLAMMER_API_KEY",
         );
       }
+      // Inject envelope context when the run was dispatched through the
+      // intent→scheduler→dispatcher pipeline. The envelope captures immutable
+      // execution context at dispatch time and provides it to the adapter.
+      if (run.envelopeId) {
+        const dispatcherSvc = dispatcherService(db);
+        const envelopeContext = await dispatcherSvc.buildEnvelopeContext(run.envelopeId);
+        if (envelopeContext) {
+          context.envelope = envelopeContext;
+        }
+      }
+
       const adapterResult = await adapter.execute({
         runId: run.id,
         agent,
