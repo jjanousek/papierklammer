@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { agentRoutes } from "../routes/agents.js";
-import { errorHandler } from "../middleware/index.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -54,7 +52,7 @@ vi.mock("../adapters/index.js", () => ({
   listAdapterModels: vi.fn(),
 }));
 
-function createApp() {
+async function createApp() {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -67,6 +65,10 @@ function createApp() {
     };
     next();
   });
+  const [{ agentRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/agents.js"),
+    import("../middleware/index.js"),
+  ]);
   app.use("/api", agentRoutes({} as any));
   app.use(errorHandler);
   return app;
@@ -155,7 +157,7 @@ describe("agent instructions bundle routes", () => {
   });
 
   it("returns bundle metadata", async () => {
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .get("/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle?companyId=company-1");
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -169,7 +171,7 @@ describe("agent instructions bundle routes", () => {
   });
 
   it("writes a bundle file and persists compatibility config", async () => {
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .put("/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle/file?companyId=company-1")
       .send({
         path: "AGENTS.md",
@@ -211,7 +213,7 @@ describe("agent instructions bundle routes", () => {
       },
     });
 
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .patch("/api/agents/11111111-1111-4111-8111-111111111111?companyId=company-1")
       .send({
         adapterType: "claude_local",
@@ -250,7 +252,7 @@ describe("agent instructions bundle routes", () => {
       },
     });
 
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .patch("/api/agents/11111111-1111-4111-8111-111111111111?companyId=company-1")
       .send({
         adapterConfig: {
@@ -288,7 +290,7 @@ describe("agent instructions bundle routes", () => {
       },
     });
 
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .patch("/api/agents/11111111-1111-4111-8111-111111111111?companyId=company-1")
       .send({
         replaceAdapterConfig: true,

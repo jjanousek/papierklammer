@@ -1,0 +1,104 @@
+{
+  "milestone": "truthful-projections",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run --max-workers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 0,
+    "failed": 3,
+    "failedFeatures": [
+      "event-log-service",
+      "projection-service",
+      "reconciliation-service"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "event-log-service",
+      "severity": "blocking",
+      "description": "`run_started` is emitted in scheduler while run status is still queued, not when heartbeat transitions the run to running."
+    },
+    {
+      "featureId": "event-log-service",
+      "severity": "blocking",
+      "description": "Issue reopen path updates status to todo but does not emit `issue_status_changed`, leaving status-change event coverage incomplete."
+    },
+    {
+      "featureId": "projection-service",
+      "severity": "blocking",
+      "description": "Issue list API contract mismatch: response keeps raw `status` and exposes projection in `projectedStatus`, while contract expects returned `status` to be projection-derived."
+    },
+    {
+      "featureId": "reconciliation-service",
+      "severity": "blocking",
+      "description": "Reconciler marks queued runs as orphan candidates; contract and heartbeat behavior indicate orphan closure should target running orphaned runs."
+    },
+    {
+      "featureId": "reconciliation-service",
+      "severity": "blocking",
+      "description": "Ghost projection correction hard-sets issue status to `todo` instead of restoring raw status."
+    },
+    {
+      "featureId": "reconciliation-service",
+      "severity": "blocking",
+      "description": "Run-vs-issue mismatch reconciliation step described in feature requirements is missing from `reconcile()`."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Added `.factory/library/testing.md` note documenting cleanup ordering for `control_plane_events` before `companies` in embedded-Postgres tests to avoid FK cleanup failures.",
+      "sourceFeature": "event-log-service"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "skill:backend-worker",
+      "suggestion": "When a feature fulfills API assertions (e.g., `/api/issues` status semantics), require at least one route-level test per affected endpoint in addition to service-level tests.",
+      "evidence": "projection-service passed service tests while violating VAL-PROJ-030 list response contract.",
+      "isSystemic": true
+    },
+    {
+      "target": "skill:backend-worker",
+      "suggestion": "Require explicit red→green evidence for new tests in worker verification notes (first failing run and subsequent passing run).",
+      "evidence": "event-log-service transcript did not show explicit red-run evidence despite skill procedure requiring test-first verification.",
+      "isSystemic": false
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Clarify projection-status contract explicitly: whether projected status must overwrite `status` in API payloads or be exposed as a separate field, and align validation contract + tests accordingly.",
+      "evidence": "projection-service and reconciliation-service reviews both identified raw-vs-projected status ambiguity (`status` vs `projectedStatus`, and ghost reset to todo vs raw status).",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Strengthen review guidance that secondary lookups in services must also be company-scoped (not only primary entry queries).",
+      "evidence": "reconciliation-service review found unscoped secondary lookups despite company-scoping being a core mission invariant.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Separate suggestion to update conventions for projected status naming in routes.",
+      "reason": "duplicate"
+    }
+  ],
+  "previousRound": null
+}

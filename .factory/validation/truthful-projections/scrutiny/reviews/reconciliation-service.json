@@ -1,0 +1,51 @@
+{
+  "featureId": "reconciliation-service",
+  "reviewedAt": "2026-04-01T11:29:34Z",
+  "commitId": "0fe9de3e4998bc3f3fe6f3b82f1fde741ea669f5",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Core reconciler plumbing and periodic integration landed, but there are blocking contract/correctness gaps: queued runs are treated as orphaned, ghost correction hard-resets status to todo instead of raw status, and the described run-vs-issue mismatch reconciliation step is not implemented.",
+    "issues": [
+      {
+        "file": "server/src/services/reconciler.ts",
+        "line": 14,
+        "severity": "blocking",
+        "description": "The reconciler treats both \"queued\" and \"running\" runs as orphan-candidates (`ACTIVE_RUN_STATUSES = [\"queued\", \"running\"]`). This can fail legitimate queued runs, while the feature contract specifies orphan closure for running runs (`features.json:1020`) and existing heartbeat behavior explicitly treats queued runs as legitimately waiting (`heartbeat.ts:1855-1863`)."
+      },
+      {
+        "file": "server/src/services/reconciler.ts",
+        "line": 361,
+        "severity": "blocking",
+        "description": "Ghost projection correction unconditionally sets `issues.status` to \"todo\". The validation contract requires correction to the issue's raw status (`validation-contract.md:334`), so this can overwrite valid non-todo states and diverges from contract intent."
+      },
+      {
+        "file": "server/src/services/reconciler.ts",
+        "line": 436,
+        "severity": "blocking",
+        "description": "The feature description requires reconcile() to also compare run state vs issue state mismatches (`features.json:1020`, item d), but reconcile() only executes orphaned-run closure, stale-intent invalidation, and ghost-projection clearing (lines 436-442). The mismatch check path is missing."
+      },
+      {
+        "file": "server/src/services/reconciler.ts",
+        "line": 206,
+        "severity": "non_blocking",
+        "description": "Several secondary lookups are not explicitly company-scoped (e.g., issue fetch for stale intents at line 206, run/lease lookups at lines 326-340). This weakens the mission convention that all service queries include companyId (`mission AGENTS.md:29`)."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Company-scoping is documented, but reconciler secondary lookups were still written without explicit company filters, suggesting guidance/tests do not strongly enforce this pattern in reviewable service code.",
+      "evidence": "Mission AGENTS.md:29 says all queries must include companyId; reconciler.ts uses unscoped lookups at lines 206, 326-340."
+    },
+    {
+      "area": "knowledge",
+      "observation": "There is contract ambiguity/drift around \"ghost projection corrected to raw status\" vs implementation/tests asserting reset to todo.",
+      "evidence": "validation-contract.md:334 says corrected to raw status; reconciler.ts:361 sets status to \"todo\"; reconciler.test.ts:367-411 codifies todo expectation."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed commit 0fe9de3e for reconciliation-service and found blocking contract-alignment issues: queued runs are incorrectly eligible for orphan closure, ghost correction overwrites status to todo instead of raw status, and the documented run/issue mismatch reconciliation step is missing. Report marked fail."
+}

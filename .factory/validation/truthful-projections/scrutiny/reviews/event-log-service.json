@@ -1,0 +1,51 @@
+{
+  "featureId": "event-log-service",
+  "reviewedAt": "2026-04-01T11:30:28Z",
+  "commitId": "30cca2e493030bf1e931e0acbb25da042616d5f0",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The event-log service is implemented and broadly integrated, but there are correctness gaps in lifecycle alignment and emission coverage versus the feature contract.",
+    "issues": [
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 400,
+        "severity": "blocking",
+        "description": "`run_started` is emitted when the scheduler creates a run still in `queued` state (line 320), not when the run actually transitions to `running`. The real transition happens in heartbeat (`server/src/services/heartbeat.ts:1776`) and no `run_started` event is emitted there, so lifecycle timing is incorrect."
+      },
+      {
+        "file": "server/src/routes/issues.ts",
+        "line": 1558,
+        "severity": "blocking",
+        "description": "The reopen flow updates issue status to `todo` via `svc.update(id, { status: \"todo\" })` but does not emit `issue_status_changed`. Emission exists only in the PATCH update path (`line 1133`), so status-change events are incomplete."
+      },
+      {
+        "file": "server/src/services/lease-manager.ts",
+        "line": 77,
+        "severity": "non_blocking",
+        "description": "The lease manager emits `lease_renewed`/`lease_expired` events but not `lease_allocated` from `grantLease`. `lease_allocated` is emitted in scheduler (`server/src/services/scheduler.ts:302`) instead, which leaves lease-manager-based allocation paths uncovered."
+      },
+      {
+        "file": "server/src/services/event-log.ts",
+        "line": 40,
+        "severity": "non_blocking",
+        "description": "`auto_escalation_created` is declared as a supported event type, but there is no runtime emission site in server services in this feature diff (only declaration + test constant coverage). This is a contract-alignment gap for full event coverage."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill prescribes test-first/red workflow, but the transcript shows implementation beginning with service creation before test creation and no explicit red run for the new tests.",
+      "evidence": "Skill: `.factory/skills/backend-worker/SKILL.md:32-41` says \"Write tests first\" and \"new tests should FAIL\". Transcript skeleton for session `2db3743d-0df9-4904-8597-2a9c49b488d4` shows `server/src/services/event-log.ts` creation preceding `server/src/__tests__/event-log.test.ts` creation."
+    },
+    {
+      "area": "knowledge",
+      "observation": "There is no shared-state guidance documenting cleanup order impact from `control_plane_events` FK dependencies in embedded-Postgres tests.",
+      "evidence": "This feature had to patch cleanup in 4 tests to delete `controlPlaneEvents` before deleting `companies` (`server/src/__tests__/intent-queue.test.ts:43`, `intent-timer-integration.test.ts:43`, `routines-service.test.ts:43`, `routines-e2e.test.ts:51`), but mission AGENTS/testing guidance and `.factory/library` do not record this constraint."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed handoff, commit diff, and transcript skeleton for `event-log-service`. The feature is close, but blocking lifecycle mismatches remain (`run_started` timing and missing `issue_status_changed` on reopen), so this review is marked fail."
+}

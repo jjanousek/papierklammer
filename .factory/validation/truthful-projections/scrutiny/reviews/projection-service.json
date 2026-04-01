@@ -1,0 +1,45 @@
+{
+  "featureId": "projection-service",
+  "reviewedAt": "2026-04-01T11:30:17Z",
+  "commitId": "7993d72b",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Projection service implementation and route integration are mostly present, but the board-state list contract is not met: the API still exposes raw `status` instead of projected status.",
+    "issues": [
+      {
+        "file": "server/src/routes/issues.ts",
+        "line": 326,
+        "severity": "blocking",
+        "description": "VAL-PROJ-030 requires the issue list API status to be projection-derived, but this route returns rows where projection is surfaced as `projectedStatus` while `status` remains the raw DB value."
+      },
+      {
+        "file": "server/src/services/projections.ts",
+        "line": 291,
+        "severity": "blocking",
+        "description": "`projectIssuesList()` returns `{ ...issue, ...proj }`, but `IssueProjection` has no `status` field, so `status` is never overwritten by projected state (e.g., active run+checkout can still return `status: \"todo\"`)."
+      },
+      {
+        "file": "server/src/__tests__/projections.test.ts",
+        "line": 1,
+        "severity": "non_blocking",
+        "description": "New tests are service-level only; there is no route-level assertion for VAL-PROJ-030/031 response semantics, which allowed this contract mismatch to slip through."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill guidance does not explicitly require HTTP route contract tests when API response semantics change, so feature work can pass with only service-level coverage.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md (testing procedure) vs server/src/__tests__/projections.test.ts (service-only tests) and validation-contract.md:350-358 (API-level assertions)."
+    },
+    {
+      "area": "conventions",
+      "observation": "Shared mission artifacts do not clearly disambiguate whether projections should replace `status` or be emitted as a separate field, which can lead to implementation drift.",
+      "evidence": "validation-contract.md:350-353 expects returned `status` to reflect projection, while server/src/routes/issues.ts:324-326 returns raw `status` plus `projectedStatus`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed feature projection-service (commit 7993d72b) using handoff, transcript skeleton, and diff. The feature adds projection service logic and wiring, but fails VAL-PROJ-030 contract alignment because list responses keep raw `status` instead of projected status."
+}
