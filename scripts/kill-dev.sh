@@ -89,16 +89,16 @@ done < <(ps aux | grep -E '/paperclip(-[^/]+)?/' | grep node | grep -v grep || t
 
 candidate_pidfiles=()
 candidate_pidfiles+=(
-  "$HOME"/.paperclip/instances/*/db/postmaster.pid
-  "$REPO_ROOT"/.paperclip/instances/*/db/postmaster.pid
-  "$REPO_ROOT"/.paperclip/runtime-services/instances/*/db/postmaster.pid
+  "$HOME"/.papierklammer/instances/*/db/postmaster.pid
+  "$REPO_ROOT"/.papierklammer/instances/*/db/postmaster.pid
+  "$REPO_ROOT"/.papierklammer/runtime-services/instances/*/db/postmaster.pid
 )
 
 for sibling_root in "$REPO_PARENT"/paperclip*; do
   [[ -d "$sibling_root" ]] || continue
   candidate_pidfiles+=(
-    "$sibling_root"/.paperclip/instances/*/db/postmaster.pid
-    "$sibling_root"/.paperclip/runtime-services/instances/*/db/postmaster.pid
+    "$sibling_root"/.papierklammer/instances/*/db/postmaster.pid
+    "$sibling_root"/.papierklammer/runtime-services/instances/*/db/postmaster.pid
   )
 done
 

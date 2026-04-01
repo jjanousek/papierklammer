@@ -31,7 +31,7 @@ export function resolveManagedCodexHomeDir(
   env: NodeJS.ProcessEnv,
   companyId?: string,
 ): string {
-  const paperclipHome = nonEmpty(env.PAPIERKLAMMER_HOME) ?? path.resolve(os.homedir(), ".paperclip");
+  const paperclipHome = nonEmpty(env.PAPIERKLAMMER_HOME) ?? path.resolve(os.homedir(), ".papierklammer");
   const instanceId = nonEmpty(env.PAPIERKLAMMER_INSTANCE_ID) ?? DEFAULT_PAPIERKLAMMER_INSTANCE_ID;
   return companyId
     ? path.resolve(paperclipHome, "instances", instanceId, "companies", companyId, "codex-home")

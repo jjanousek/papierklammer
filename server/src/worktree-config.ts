@@ -124,7 +124,7 @@ function resolveWorktreeRuntimeContext(
   const homeDir = resolveHomeAwarePath(
     nonEmpty(env.PAPIERKLAMMER_HOME) ??
       nonEmpty(env.PAPIERKLAMMER_WORKTREES_DIR) ??
-      "~/.paperclip-worktrees",
+      "~/.papierklammer-worktrees",
   );
   const instanceRoot = path.resolve(homeDir, "instances", instanceId);
 
@@ -151,11 +151,11 @@ function writeConfigFile(configPath: string, config: PaperclipConfig): void {
 
 function resolveRepoManagedWorktreesRoot(worktreeRoot: string): string | null {
   const normalized = path.resolve(worktreeRoot);
-  const marker = `${path.sep}.paperclip${path.sep}worktrees${path.sep}`;
+  const marker = `${path.sep}.papierklammer${path.sep}worktrees${path.sep}`;
   const index = normalized.indexOf(marker);
   if (index === -1) return null;
   const repoRoot = normalized.slice(0, index);
-  return path.resolve(repoRoot, ".paperclip", "worktrees");
+  return path.resolve(repoRoot, ".papierklammer", "worktrees");
 }
 
 function collectSiblingWorktreePorts(context: WorktreeRuntimeContext): {
@@ -182,7 +182,7 @@ function collectSiblingWorktreePorts(context: WorktreeRuntimeContext): {
     for (const entry of fs.readdirSync(repoManagedWorktreesRoot, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
 
-      const siblingConfigPath = path.resolve(repoManagedWorktreesRoot, entry.name, ".paperclip", "config.json");
+      const siblingConfigPath = path.resolve(repoManagedWorktreesRoot, entry.name, ".papierklammer", "config.json");
       if (path.resolve(siblingConfigPath) === path.resolve(context.configPath)) continue;
       if (fs.existsSync(siblingConfigPath)) {
         siblingConfigPaths.add(siblingConfigPath);

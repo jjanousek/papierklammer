@@ -15,7 +15,7 @@ function expandHomePrefix(value: string): string {
 export function resolvePaperclipHomeDir(): string {
   const envHome = process.env.PAPIERKLAMMER_HOME?.trim();
   if (envHome) return path.resolve(expandHomePrefix(envHome));
-  return path.resolve(os.homedir(), ".paperclip");
+  return path.resolve(os.homedir(), ".papierklammer");
 }
 
 export function resolvePaperclipInstanceId(): string {

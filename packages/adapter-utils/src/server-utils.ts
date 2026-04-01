@@ -406,7 +406,7 @@ export async function listPaperclipSkillEntries(
     return entries
       .filter((entry) => entry.isDirectory())
       .map((entry) => ({
-        key: `paperclipai/paperclip/${entry.name}`,
+        key: `papierklammer/paperclip/${entry.name}`,
         runtimeName: entry.name,
         source: path.join(root, entry.name),
         required: true,

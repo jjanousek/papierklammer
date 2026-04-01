@@ -62,9 +62,9 @@ export function applyMentionChipDecoration(element: HTMLElement, mention: Parsed
   clearMentionChipDecoration(element);
   element.dataset.mentionKind = mention.kind;
   element.setAttribute("contenteditable", "false");
-  element.classList.add("paperclip-mention-chip", `paperclip-mention-chip--${mention.kind}`);
+  element.classList.add("papierklammer-mention-chip", `papierklammer-mention-chip--${mention.kind}`);
   if (mention.kind === "project") {
-    element.classList.add("paperclip-project-mention-chip");
+    element.classList.add("papierklammer-project-mention-chip");
   }
 
   const style = mentionChipInlineStyle(mention);
@@ -83,10 +83,10 @@ export function applyMentionChipDecoration(element: HTMLElement, mention: Parsed
 export function clearMentionChipDecoration(element: HTMLElement) {
   delete element.dataset.mentionKind;
   element.classList.remove(
-    "paperclip-mention-chip",
-    "paperclip-mention-chip--agent",
-    "paperclip-mention-chip--project",
-    "paperclip-project-mention-chip",
+    "papierklammer-mention-chip",
+    "papierklammer-mention-chip--agent",
+    "papierklammer-mention-chip--project",
+    "papierklammer-project-mention-chip",
   );
   element.removeAttribute("contenteditable");
   element.style.removeProperty("border-color");

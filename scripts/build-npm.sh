@@ -23,7 +23,7 @@ for arg in "$@"; do
   esac
 done
 
-echo "==> Building paperclipai for npm"
+echo "==> Building papierklammer for npm"
 
 # ── Step 1: Forbidden token check ──────────────────────────────────────────────
 if [ "$skip_checks" = false ]; then

@@ -3,9 +3,9 @@ set -euo pipefail
 
 base_cwd="${PAPIERKLAMMER_WORKSPACE_BASE_CWD:?PAPIERKLAMMER_WORKSPACE_BASE_CWD is required}"
 worktree_cwd="${PAPIERKLAMMER_WORKSPACE_CWD:?PAPIERKLAMMER_WORKSPACE_CWD is required}"
-paperclip_home="${PAPIERKLAMMER_HOME:-$HOME/.paperclip}"
+paperclip_home="${PAPIERKLAMMER_HOME:-$HOME/.papierklammer}"
 paperclip_instance_id="${PAPIERKLAMMER_INSTANCE_ID:-default}"
-paperclip_dir="$worktree_cwd/.paperclip"
+paperclip_dir="$worktree_cwd/.papierklammer"
 worktree_config_path="$paperclip_dir/config.json"
 worktree_env_path="$paperclip_dir/.env"
 worktree_name="${PAPIERKLAMMER_WORKSPACE_BRANCH:-$(basename "$worktree_cwd")}"
@@ -21,8 +21,8 @@ if [[ ! -d "$worktree_cwd" ]]; then
 fi
 
 source_config_path="${PAPIERKLAMMER_CONFIG:-}"
-if [[ -z "$source_config_path" && ( -e "$base_cwd/.paperclip/config.json" || -L "$base_cwd/.paperclip/config.json" ) ]]; then
-  source_config_path="$base_cwd/.paperclip/config.json"
+if [[ -z "$source_config_path" && ( -e "$base_cwd/.papierklammer/config.json" || -L "$base_cwd/.papierklammer/config.json" ) ]]; then
+  source_config_path="$base_cwd/.papierklammer/config.json"
 fi
 if [[ -z "$source_config_path" ]]; then
   source_config_path="$paperclip_home/instances/$paperclip_instance_id/config.json"
@@ -32,13 +32,13 @@ source_env_path="$(dirname "$source_config_path")/.env"
 mkdir -p "$paperclip_dir"
 
 run_isolated_worktree_init() {
-  if command -v pnpm >/dev/null 2>&1 && pnpm paperclipai --help >/dev/null 2>&1; then
-    pnpm paperclipai worktree init --force --seed-mode minimal --name "$worktree_name" --from-config "$source_config_path"
+  if command -v pnpm >/dev/null 2>&1 && pnpm papierklammer --help >/dev/null 2>&1; then
+    pnpm papierklammer worktree init --force --seed-mode minimal --name "$worktree_name" --from-config "$source_config_path"
     return 0
   fi
 
-  if command -v paperclipai >/dev/null 2>&1; then
-    paperclipai worktree init --force --seed-mode minimal --name "$worktree_name" --from-config "$source_config_path"
+  if command -v papierklammer >/dev/null 2>&1; then
+    papierklammer worktree init --force --seed-mode minimal --name "$worktree_name" --from-config "$source_config_path"
     return 0
   fi
 
@@ -165,7 +165,7 @@ async function main() {
   const paperclipDir = process.env.PAPIERKLAMMER_DIR;
   const sourceConfigPath = process.env.SOURCE_CONFIG_PATH;
   const sourceEnvPath = process.env.SOURCE_ENV_PATH;
-  const worktreeHome = path.resolve(expandHomePrefix(nonEmpty(process.env.PAPIERKLAMMER_WORKTREES_DIR) ?? "~/.paperclip-worktrees"));
+  const worktreeHome = path.resolve(expandHomePrefix(nonEmpty(process.env.PAPIERKLAMMER_WORKTREES_DIR) ?? "~/.papierklammer-worktrees"));
   const instanceId = sanitizeInstanceId(worktreeName);
   const instanceRoot = path.resolve(worktreeHome, "instances", instanceId);
   const configPath = path.resolve(paperclipDir, "config.json");
@@ -318,6 +318,6 @@ done < <(
       -type d \
       -name node_modules \
       ! -path './.git/*' \
-      ! -path './.paperclip/*' \
+      ! -path './.papierklammer/*' \
       | sed 's#^\./##'
 )

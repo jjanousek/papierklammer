@@ -19,7 +19,7 @@ const scanIntervalMs = 1500;
 const autoRestartPollIntervalMs = 2500;
 const gracefulShutdownTimeoutMs = 10_000;
 const changedPathSampleLimit = 5;
-const devServerStatusFilePath = path.join(repoRoot, ".paperclip", "dev-server-status.json");
+const devServerStatusFilePath = path.join(repoRoot, ".papierklammer", "dev-server-status.json");
 
 const watchedDirectories = [
   "cli",
@@ -52,7 +52,7 @@ const ignoredDirectoryNames = new Set([
 ]);
 
 const ignoredRelativePaths = new Set([
-  ".paperclip/dev-server-status.json",
+  ".papierklammer/dev-server-status.json",
 ]);
 
 const tailscaleAuthFlagNames = new Set([

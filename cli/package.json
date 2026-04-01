@@ -1,13 +1,13 @@
 {
-  "name": "paperclipai",
+  "name": "papierklammer",
   "version": "0.3.1",
-  "description": "Paperclip CLI — orchestrate AI agent teams to run a business",
+  "description": "Papierklammer CLI — orchestrate AI agent teams to run a business",
   "type": "module",
   "bin": {
-    "paperclipai": "./dist/index.js"
+    "papierklammer": "./dist/index.js"
   },
   "keywords": [
-    "paperclip",
+    "papierklammer",
     "ai",
     "agents",
     "orchestration",

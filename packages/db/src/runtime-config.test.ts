@@ -41,17 +41,17 @@ describe("resolveDatabaseTarget", () => {
     });
   });
 
-  it("uses DATABASE_URL from repo-local .paperclip/.env", () => {
+  it("uses DATABASE_URL from repo-local .papierklammer/.env", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-db-runtime-"));
     const projectDir = path.join(tempDir, "repo");
     fs.mkdirSync(projectDir, { recursive: true });
     process.chdir(projectDir);
     delete process.env.PAPIERKLAMMER_CONFIG;
-    writeJson(path.join(projectDir, ".paperclip", "config.json"), {
+    writeJson(path.join(projectDir, ".papierklammer", "config.json"), {
       database: { mode: "embedded-postgres", embeddedPostgresPort: 54329 },
     });
     writeText(
-      path.join(projectDir, ".paperclip", ".env"),
+      path.join(projectDir, ".papierklammer", ".env"),
       'DATABASE_URL="postgres://file-user:file-pass@db.example.com:6543/paperclip"\n',
     );
 

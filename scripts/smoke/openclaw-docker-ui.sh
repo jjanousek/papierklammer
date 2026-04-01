@@ -189,7 +189,7 @@ OPENCLAW_IMAGE=$OPENCLAW_IMAGE
 OPENAI_API_KEY=$OPENAI_API_KEY
 EOF
 
-COMPOSE_OVERRIDE="${OPENCLAW_DOCKER_DIR}/.paperclip-openclaw.override.yml"
+COMPOSE_OVERRIDE="${OPENCLAW_DOCKER_DIR}/.papierklammer-openclaw.override.yml"
 cat > "$COMPOSE_OVERRIDE" <<EOF
 services:
   openclaw-gateway:
@@ -278,7 +278,7 @@ EOF
   Auto-detect failed. Try: http://host.docker.internal:${PAPIERKLAMMER_HOST_PORT}
   (Do not use http://127.0.0.1:${PAPIERKLAMMER_HOST_PORT} inside the container.)
   If Paperclip rejects the host, run on host machine:
-    pnpm paperclipai allowed-hostname host.docker.internal
+    pnpm papierklammer allowed-hostname host.docker.internal
   Then restart Paperclip and re-run this script.
 EOF
   fi
@@ -311,7 +311,7 @@ EOF
   Auto-detect failed. Try: http://host.docker.internal:${PAPIERKLAMMER_HOST_PORT}
   (Do not use http://127.0.0.1:${PAPIERKLAMMER_HOST_PORT} inside the container.)
   If Paperclip rejects the host, run on host machine:
-    pnpm paperclipai allowed-hostname host.docker.internal
+    pnpm papierklammer allowed-hostname host.docker.internal
   Then restart Paperclip and re-run this script.
 EOF
   fi

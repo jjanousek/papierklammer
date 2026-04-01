@@ -10,7 +10,7 @@ const ORIGINAL_ENV = { ...process.env };
 function createExistingConfigFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-onboard-"));
   const runtimeRoot = path.join(root, "runtime");
-  const configPath = path.join(root, ".paperclip", "config.json");
+  const configPath = path.join(root, ".papierklammer", "config.json");
   const config: PaperclipConfig = {
     $meta: {
       version: 1,

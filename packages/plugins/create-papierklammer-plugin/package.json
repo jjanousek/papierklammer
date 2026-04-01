@@ -1,5 +1,5 @@
 {
-  "name": "@papierklammer/create-paperclip-plugin",
+  "name": "@papierklammer/create-papierklammer-plugin",
   "version": "0.1.0",
   "license": "MIT",
   "homepage": "https://github.com/papierklammer/papierklammer",
@@ -9,11 +9,11 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/papierklammer/papierklammer",
-    "directory": "packages/plugins/create-paperclip-plugin"
+    "directory": "packages/plugins/create-papierklammer-plugin"
   },
   "type": "module",
   "bin": {
-    "create-paperclip-plugin": "./dist/index.js"
+    "create-papierklammer-plugin": "./dist/index.js"
   },
   "exports": {
     ".": "./src/index.ts"
@@ -21,7 +21,7 @@
   "publishConfig": {
     "access": "public",
     "bin": {
-      "create-paperclip-plugin": "./dist/index.js"
+      "create-papierklammer-plugin": "./dist/index.js"
     },
     "exports": {
       ".": {

@@ -83,4 +83,4 @@ env \
   HOST="$PAPIERKLAMMER_HOST" \
   PORT="$PAPIERKLAMMER_PORT" \
   PAPIERKLAMMER_OPEN_ON_LISTEN="$PAPIERKLAMMER_OPEN_ON_LISTEN" \
-  pnpm paperclipai onboard --yes --data-dir "$PC_DATA"
+  pnpm papierklammer onboard --yes --data-dir "$PC_DATA"

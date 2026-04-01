@@ -1,5 +1,5 @@
 {
-  "name": "paperclip",
+  "name": "papierklammer",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,7 +18,7 @@
     "db:migrate": "pnpm --filter @papierklammer/db migrate",
     "secrets:migrate-inline-env": "tsx scripts/migrate-inline-env-secrets.ts",
     "db:backup": "./scripts/backup-db.sh",
-    "paperclipai": "node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts",
+    "papierklammer": "node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts",
     "build:npm": "./scripts/build-npm.sh",
     "release": "./scripts/release.sh",
     "release:canary": "./scripts/release.sh canary",
@@ -35,7 +35,7 @@
     "evals:smoke": "cd evals/promptfoo && npx promptfoo@0.103.3 eval",
     "test:release-smoke": "npx playwright test --config tests/release-smoke/playwright.config.ts",
     "test:release-smoke:headed": "npx playwright test --config tests/release-smoke/playwright.config.ts --headed",
-    "metrics:paperclip-commits": "tsx scripts/paperclip-commit-metrics.ts"
+    "metrics:papierklammer-commits": "tsx scripts/paperclip-commit-metrics.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
