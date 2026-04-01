@@ -1,0 +1,39 @@
+{
+  "featureId": "tui-package-setup-layout",
+  "reviewedAt": "2026-04-01T23:49:38Z",
+  "commitId": "2fe58fef8ef5a92a97139883408e8b80f3c28932",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The package/layout implementation is largely aligned with the feature scope, but VAL-TUI-003 and VAL-TUI-004 are not adequately validated by the added tests, leaving required behavior unproven and regression-prone.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/cli.test.ts",
+        "line": 8,
+        "severity": "blocking",
+        "description": "VAL-TUI-003 requires asserting `papierklammer-tui --help` usage content (including `--url` and `--api-key`), but this test file only checks package.json metadata and never exercises/help-verifies the CLI output."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/exit.test.tsx",
+        "line": 14,
+        "severity": "blocking",
+        "description": "VAL-TUI-004 requires proving Ctrl+C triggers graceful exit/terminal restoration, but this test does not assert exit behavior (it manually unmounts after writing Ctrl+C). It can pass even if Ctrl+C handling regresses."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Mission AGENTS scope is stricter than practical implementation needs for new workspace packages.",
+      "evidence": "Mission AGENTS.md line 14 restricts changes to `packages/orchestrator-tui/` and `.factory/`, but this feature necessarily changed root `vitest.config.ts` (project registration) and `pnpm-lock.yaml` (dependency resolution)."
+    },
+    {
+      "area": "skills",
+      "observation": "Skill procedure compliance reporting appears inconsistent with transcript order.",
+      "evidence": "tui-worker SKILL.md line 31 says 'Write tests first', while transcript skeleton shows implementation files were created before tests; handoff still reports `skillFeedback.followedProcedure: true`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail: implementation is close to scope, but two blocking validation gaps remain—CLI help behavior and Ctrl+C graceful-exit behavior are not asserted in tests per VAL-TUI-003/004."
+}
