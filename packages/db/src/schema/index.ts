@@ -60,3 +60,4 @@ export { dispatchIntents } from "./dispatch_intents.js";
 export { executionLeases } from "./execution_leases.js";
 export { executionEnvelopes } from "./execution_envelopes.js";
 export { controlPlaneEvents } from "./control_plane_events.js";
+export { issueDependencies } from "./issue_dependencies.js";

@@ -5,6 +5,9 @@ import {
   executionLeases,
   executionEnvelopes,
   controlPlaneEvents,
+  heartbeatRuns,
+  issues,
+  issueDependencies,
 } from "./schema/index.js";
 
 describe("dispatch_intents schema", () => {
@@ -224,5 +227,96 @@ describe("control_plane_events schema", () => {
     const columns = getTableColumns(controlPlaneEvents);
     // bigserial columns in mode: "number" report columnType as "PgBigSerial53"
     expect(columns.id.columnType).toContain("BigSerial");
+  });
+});
+
+describe("heartbeat_runs new columns", () => {
+  it("has intentId column (nullable uuid)", () => {
+    const columns = getTableColumns(heartbeatRuns);
+    expect(Object.keys(columns)).toContain("intentId");
+    expect(columns.intentId.notNull).toBe(false);
+    expect(columns.intentId.columnType).toContain("PgUUID");
+  });
+
+  it("has envelopeId column (nullable uuid)", () => {
+    const columns = getTableColumns(heartbeatRuns);
+    expect(Object.keys(columns)).toContain("envelopeId");
+    expect(columns.envelopeId.notNull).toBe(false);
+    expect(columns.envelopeId.columnType).toContain("PgUUID");
+  });
+});
+
+describe("issues new columns", () => {
+  it("has executionLeaseId column (nullable uuid)", () => {
+    const columns = getTableColumns(issues);
+    expect(Object.keys(columns)).toContain("executionLeaseId");
+    expect(columns.executionLeaseId.notNull).toBe(false);
+    expect(columns.executionLeaseId.columnType).toContain("PgUUID");
+  });
+
+  it("has pickupFailCount column (integer, not null, default 0)", () => {
+    const columns = getTableColumns(issues);
+    expect(Object.keys(columns)).toContain("pickupFailCount");
+    expect(columns.pickupFailCount.notNull).toBe(true);
+    expect(columns.pickupFailCount.hasDefault).toBe(true);
+    expect(columns.pickupFailCount.columnType).toContain("PgInteger");
+  });
+
+  it("has lastPickupFailureAt column (nullable timestamptz)", () => {
+    const columns = getTableColumns(issues);
+    expect(Object.keys(columns)).toContain("lastPickupFailureAt");
+    expect(columns.lastPickupFailureAt.notNull).toBe(false);
+    expect(columns.lastPickupFailureAt.columnType).toContain("PgTimestamp");
+  });
+
+  it("has lastReconciledAt column (nullable timestamptz)", () => {
+    const columns = getTableColumns(issues);
+    expect(Object.keys(columns)).toContain("lastReconciledAt");
+    expect(columns.lastReconciledAt.notNull).toBe(false);
+    expect(columns.lastReconciledAt.columnType).toContain("PgTimestamp");
+  });
+});
+
+describe("issue_dependencies schema", () => {
+  it("has all required columns", () => {
+    const columns = getTableColumns(issueDependencies);
+    const columnNames = Object.keys(columns);
+
+    const expectedColumns = [
+      "issueId",
+      "dependsOnIssueId",
+      "companyId",
+      "createdAt",
+    ];
+
+    for (const col of expectedColumns) {
+      expect(columnNames, `missing column: ${col}`).toContain(col);
+    }
+
+    expect(columnNames).toHaveLength(expectedColumns.length);
+  });
+
+  it("has correct column properties", () => {
+    const columns = getTableColumns(issueDependencies);
+
+    // All columns except createdAt should be notNull
+    expect(columns.issueId.notNull).toBe(true);
+    expect(columns.dependsOnIssueId.notNull).toBe(true);
+    expect(columns.companyId.notNull).toBe(true);
+    expect(columns.createdAt.notNull).toBe(true);
+  });
+
+  it("has correct column types", () => {
+    const columns = getTableColumns(issueDependencies);
+
+    expect(columns.issueId.columnType).toContain("PgUUID");
+    expect(columns.dependsOnIssueId.columnType).toContain("PgUUID");
+    expect(columns.companyId.columnType).toContain("PgUUID");
+    expect(columns.createdAt.columnType).toContain("PgTimestamp");
+  });
+
+  it("has default value for createdAt", () => {
+    const columns = getTableColumns(issueDependencies);
+    expect(columns.createdAt.hasDefault).toBe(true);
   });
 });

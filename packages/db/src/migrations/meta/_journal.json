@@ -337,6 +337,13 @@
       "when": 1775018974799,
       "tag": "0047_grey_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1775019472830,
+      "tag": "0048_rapid_magdalene",
+      "breakpoints": true
     }
   ]
 }

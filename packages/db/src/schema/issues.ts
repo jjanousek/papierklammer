@@ -17,6 +17,7 @@ import { companies } from "./companies.js";
 import { heartbeatRuns } from "./heartbeat_runs.js";
 import { projectWorkspaces } from "./project_workspaces.js";
 import { executionWorkspaces } from "./execution_workspaces.js";
+import { executionLeases } from "./execution_leases.js";
 
 export const issues = pgTable(
   "issues",
@@ -51,6 +52,10 @@ export const issues = pgTable(
       .references((): AnyPgColumn => executionWorkspaces.id, { onDelete: "set null" }),
     executionWorkspacePreference: text("execution_workspace_preference"),
     executionWorkspaceSettings: jsonb("execution_workspace_settings").$type<Record<string, unknown>>(),
+    executionLeaseId: uuid("execution_lease_id").references((): AnyPgColumn => executionLeases.id),
+    pickupFailCount: integer("pickup_fail_count").notNull().default(0),
+    lastPickupFailureAt: timestamp("last_pickup_failure_at", { withTimezone: true }),
+    lastReconciledAt: timestamp("last_reconciled_at", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),

@@ -2,6 +2,8 @@ import { type AnyPgColumn, pgTable, uuid, text, timestamp, jsonb, index, integer
 import { companies } from "./companies.js";
 import { agents } from "./agents.js";
 import { agentWakeupRequests } from "./agent_wakeup_requests.js";
+import { dispatchIntents } from "./dispatch_intents.js";
+import { executionEnvelopes } from "./execution_envelopes.js";
 
 export const heartbeatRuns = pgTable(
   "heartbeat_runs",
@@ -38,6 +40,8 @@ export const heartbeatRuns = pgTable(
     }),
     processLossRetryCount: integer("process_loss_retry_count").notNull().default(0),
     contextSnapshot: jsonb("context_snapshot").$type<Record<string, unknown>>(),
+    intentId: uuid("intent_id").references((): AnyPgColumn => dispatchIntents.id),
+    envelopeId: uuid("envelope_id").references((): AnyPgColumn => executionEnvelopes.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
