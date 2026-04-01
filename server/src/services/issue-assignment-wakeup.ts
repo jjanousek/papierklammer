@@ -77,6 +77,7 @@ export async function queueIssueAssignmentIntent(input: {
     projectId: string | null;
   };
   reason: string;
+  rethrowOnError?: boolean;
 }) {
   if (!input.issue.assigneeAgentId || input.issue.status === "backlog") return;
 
@@ -88,7 +89,7 @@ export async function queueIssueAssignmentIntent(input: {
       targetAgentId: input.issue.assigneeAgentId,
       intentType: "issue_assigned",
       priority: ISSUE_ASSIGNED_PRIORITY,
-      dedupeKey: `assignment:${input.issue.id}`,
+      dedupeKey: `issue:${input.issue.id}`,
       sourceEventId: input.reason,
     });
   } catch (err) {
@@ -96,6 +97,7 @@ export async function queueIssueAssignmentIntent(input: {
       { err, issueId: input.issue.id },
       "failed to create issue_assigned intent",
     );
+    if (input.rethrowOnError) throw err;
     return null;
   }
 }

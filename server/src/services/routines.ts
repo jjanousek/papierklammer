@@ -30,8 +30,9 @@ import { logger } from "../middleware/logger.js";
 import { issueService } from "./issues.js";
 import { secretService } from "./secrets.js";
 import { parseCron, validateCron } from "./cron.js";
-import { heartbeatService } from "./heartbeat.js";
-import { queueIssueAssignmentWakeup, type IssueAssignmentWakeupDeps } from "./issue-assignment-wakeup.js";
+
+import { queueIssueAssignmentIntent } from "./issue-assignment-wakeup.js";
+import { intentQueueService } from "./intent-queue.js";
 import { logActivity } from "./activity-log.js";
 
 const OPEN_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked"];
@@ -138,10 +139,10 @@ function normalizeWebhookTimestampMs(rawTimestamp: string) {
   return parsed > 1e12 ? parsed : parsed * 1000;
 }
 
-export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeupDeps } = {}) {
+export function routineService(db: Db) {
   const issueSvc = issueService(db);
   const secretsSvc = secretService(db);
-  const heartbeat = deps.heartbeat ?? heartbeatService(db);
+  const intentQueue = intentQueueService(db);
 
   async function getRoutineById(id: string) {
     return db
@@ -629,14 +630,12 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           return updated ?? createdRun;
         }
 
-        // Keep the dispatch lock until the issue is linked to a queued heartbeat run.
-        await queueIssueAssignmentWakeup({
-          heartbeat,
+        // Keep the dispatch lock until the issue is linked to a queued intent.
+        await queueIssueAssignmentIntent({
+          db,
+          intentQueue,
           issue: createdIssue,
           reason: "issue_assigned",
-          mutation: "create",
-          contextSource: "routine.dispatch",
-          requestedByActorType: input.source === "schedule" ? "system" : undefined,
           rethrowOnError: true,
         });
         const updated = await finalizeRun(createdRun.id, {

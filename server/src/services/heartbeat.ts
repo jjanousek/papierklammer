@@ -2246,6 +2246,24 @@ export function heartbeatService(db: Db) {
     activeRunExecutions.add(run.id);
 
     try {
+    // Enforce envelope for scheduler-sourced runs (backward compat: skip for legacy paths)
+    if (run.invocationSource === "scheduler") {
+      try {
+        await dispatcherService(db).requireEnvelopeForRun(run.id);
+      } catch (envelopeErr) {
+        await setRunStatus(runId, "failed", {
+          error: envelopeErr instanceof Error ? envelopeErr.message : "Missing execution envelope",
+          errorCode: "missing_envelope",
+          finishedAt: new Date(),
+        });
+        await setWakeupStatus(run.wakeupRequestId, "failed", {
+          finishedAt: new Date(),
+          error: "Missing execution envelope",
+        });
+        return;
+      }
+    }
+
     const agent = await getAgent(run.agentId);
     if (!agent) {
       await setRunStatus(runId, "failed", {

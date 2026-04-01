@@ -229,6 +229,11 @@ export function schedulerService(db: Db) {
 
     const admission = await checkAdmission(intent, now);
     if (!admission.admitted) {
+      // Skip notBefore intents — leave them queued for later processing
+      // (aligned with batch method processQueuedIntents which also skips these)
+      if (admission.reason === "notBefore is in the future") {
+        return admission;
+      }
       // Defer if at capacity, reject otherwise
       const deferReasons = ["agent at max concurrent runs"];
       if (admission.reason && deferReasons.includes(admission.reason)) {
@@ -341,8 +346,8 @@ export function schedulerService(db: Db) {
       .set({ envelopeId: envelope.id, updatedAt: new Date() })
       .where(eq(heartbeatRuns.id, run.id));
 
-    // Consume the intent (admitted → consumed)
-    await intentQueue.consumeIntent(intent.id, run.id);
+    // Intent remains 'admitted' after run creation.
+    // Consumption happens later when the run starts executing.
 
     logger.info(
       {

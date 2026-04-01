@@ -172,9 +172,9 @@ describeDB("schedulerService", () => {
       expect(result.leaseId).toBeDefined();
       expect(result.envelopeId).toBeDefined();
 
-      // Verify intent was consumed
+      // Verify intent remains admitted (consumption happens when run starts executing)
       const updatedIntent = await intentQueue.getIntent(intent.id);
-      expect(updatedIntent!.status).toBe("consumed");
+      expect(updatedIntent!.status).toBe("admitted");
 
       // Verify lease was created
       const [lease] = await db
@@ -524,7 +524,7 @@ describeDB("schedulerService", () => {
   // ─── VAL-HARD-017: Scheduler respects notBefore field ─────────────────────
 
   describe("processIntent — notBefore", () => {
-    it("skips intent with notBefore in the future", async () => {
+    it("skips intent with notBefore in the future (stays queued)", async () => {
       await seedTestData();
       const futureTime = new Date(Date.now() + 60_000);
       const intent = await createTestIntent({ notBefore: futureTime });
@@ -534,10 +534,9 @@ describeDB("schedulerService", () => {
       expect(result.admitted).toBe(false);
       expect(result.reason).toContain("notBefore is in the future");
 
-      // Intent should stay queued (not rejected or deferred)
-      // The processIntent rejects but the reason is about timing
+      // Intent should stay queued — skipped, not rejected
       const updatedIntent = await intentQueue.getIntent(intent.id);
-      expect(updatedIntent!.status).toBe("rejected");
+      expect(updatedIntent!.status).toBe("queued");
     });
 
     it("admits intent with notBefore in the past", async () => {
@@ -735,12 +734,12 @@ describeDB("schedulerService", () => {
       expect(result.admitted).toBe(2);
       expect(result.deferred).toBe(0);
 
-      // Both should be consumed
+      // Both should be admitted (consumption happens when run starts executing)
       const highIntent = await intentQueue.getIntent(highPriority.id);
-      expect(highIntent!.status).toBe("consumed");
+      expect(highIntent!.status).toBe("admitted");
 
       const lowIntent = await intentQueue.getIntent(lowPriority.id);
-      expect(lowIntent!.status).toBe("consumed");
+      expect(lowIntent!.status).toBe("admitted");
 
       // Verify the high priority run was created first by comparing run createdAt
       const runs = await db.select().from(heartbeatRuns).orderBy(asc(heartbeatRuns.createdAt));

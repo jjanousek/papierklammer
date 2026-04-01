@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import express from "express";
 import request from "supertest";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   activityLog,
   agentWakeupRequests,
@@ -10,6 +10,7 @@ import {
   companies,
   companyMemberships,
   createDb,
+  dispatchIntents,
   heartbeatRunEvents,
   heartbeatRuns,
   instanceSettings,
@@ -27,54 +28,8 @@ import {
 import { errorHandler } from "../middleware/index.js";
 import { accessService } from "../services/access.js";
 
-vi.mock("../services/index.js", async () => {
-  const actual = await vi.importActual<typeof import("../services/index.js")>("../services/index.js");
-  const { randomUUID } = await import("node:crypto");
-  const { eq } = await import("drizzle-orm");
-  const { heartbeatRuns, issues } = await import("@papierklammer/db");
-
-  return {
-    ...actual,
-    routineService: (db: any) =>
-      actual.routineService(db, {
-        heartbeat: {
-          wakeup: async (agentId: string, wakeupOpts: any) => {
-            const issueId =
-              (typeof wakeupOpts?.payload?.issueId === "string" && wakeupOpts.payload.issueId) ||
-              (typeof wakeupOpts?.contextSnapshot?.issueId === "string" && wakeupOpts.contextSnapshot.issueId) ||
-              null;
-            if (!issueId) return null;
-
-            const issue = await db
-              .select({ companyId: issues.companyId })
-              .from(issues)
-              .where(eq(issues.id, issueId))
-              .then((rows: Array<{ companyId: string }>) => rows[0] ?? null);
-            if (!issue) return null;
-
-            const queuedRunId = randomUUID();
-            await db.insert(heartbeatRuns).values({
-              id: queuedRunId,
-              companyId: issue.companyId,
-              agentId,
-              invocationSource: wakeupOpts?.source ?? "assignment",
-              triggerDetail: wakeupOpts?.triggerDetail ?? null,
-              status: "queued",
-              contextSnapshot: { ...(wakeupOpts?.contextSnapshot ?? {}), issueId },
-            });
-            await db
-              .update(issues)
-              .set({
-                executionRunId: queuedRunId,
-                executionLockedAt: new Date(),
-              })
-              .where(eq(issues.id, issueId));
-            return { id: queuedRunId };
-          },
-        },
-      }),
-  };
-});
+// routineService no longer needs a heartbeat mock — it uses the intent queue
+// (DB-backed) for assignment wakeups instead of heartbeat.wakeup().
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
 const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
@@ -98,6 +53,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
     await db.delete(activityLog);
     await db.delete(routineRuns);
     await db.delete(routineTriggers);
+    await db.delete(dispatchIntents);
     await db.delete(heartbeatRunEvents);
     await db.delete(heartbeatRuns);
     await db.delete(agentWakeupRequests);
@@ -233,7 +189,9 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
     expect(detailRes.body.triggers[0]?.id).toBe(triggerRes.body.trigger.id);
     expect(detailRes.body.recentRuns).toHaveLength(1);
     expect(detailRes.body.recentRuns[0]?.id).toBe(runRes.body.id);
-    expect(detailRes.body.activeIssue?.id).toBe(runRes.body.linkedIssueId);
+    // With intent-driven dispatch, activeIssue is only populated once the scheduler
+    // creates a heartbeat run. Until then, the issue has no live execution run.
+    // The issue still exists and is linked to the routine run.
 
     const runsRes = await request(app).get(`/api/routines/${routineId}/runs?limit=10`);
     expect(runsRes.status).toBe(200);
@@ -255,7 +213,8 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
       originId: routineId,
       originKind: "routine_execution",
     });
-    expect(issue?.executionRunId).toBeTruthy();
+    // With intent-driven dispatch, executionRunId is set later by the scheduler,
+    // not during routine dispatch. An intent is created instead.
 
     const actions = await db
       .select({

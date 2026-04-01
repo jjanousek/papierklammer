@@ -38,8 +38,9 @@ function parseHeartbeatPolicy(agent: typeof agents.$inferSelect) {
  * this creates timer_hint dispatch_intent rows for each open issue
  * assigned to agents whose heartbeat timer has elapsed.
  *
- * Timer hints have the lowest priority (0) and use dedupeKey 'timer:<issueId>'
- * so they are superseded when higher-priority intents exist.
+ * Timer hints have the lowest priority (0) and use dedupeKey 'issue:<issueId>'
+ * (unified with assignment intents) so they are superseded when higher-priority
+ * intents exist for the same issue.
  */
 export async function tickTimers(
   db: Db,
@@ -102,7 +103,7 @@ export async function tickTimers(
           targetAgentId: agent.id,
           intentType: "timer_hint",
           priority: TIMER_HINT_PRIORITY,
-          dedupeKey: `timer:${issue.id}`,
+          dedupeKey: `issue:${issue.id}`,
           sourceEventId: "heartbeat_timer",
         });
         intentsCreated += 1;

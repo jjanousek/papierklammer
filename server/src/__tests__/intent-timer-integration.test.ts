@@ -220,7 +220,7 @@ describeDB("intent-timer-integration", () => {
       expect(intents.length).toBe(0);
     });
 
-    it("uses dedupeKey 'timer:<issueId>' for deduplication", async () => {
+    it("uses dedupeKey 'issue:<issueId>' for deduplication", async () => {
       await seedTestData({ intervalSec: 60, lastHeartbeatAt: new Date(Date.now() - 120_000) });
 
       const { tickTimers } = await import("../services/timer-intent-bridge.js");
@@ -231,7 +231,7 @@ describeDB("intent-timer-integration", () => {
         .from(dispatchIntents)
         .where(eq(dispatchIntents.issueId, issueId));
       expect(intents.length).toBe(1);
-      expect(intents[0].dedupeKey).toBe(`timer:${issueId}`);
+      expect(intents[0].dedupeKey).toBe(`issue:${issueId}`);
     });
   });
 
@@ -249,7 +249,7 @@ describeDB("intent-timer-integration", () => {
         targetAgentId: agentId,
         intentType: "timer_hint",
         priority: 0,
-        dedupeKey: `timer:${issueId}`,
+        dedupeKey: `issue:${issueId}`,
       });
       expect(timerHint.status).toBe("queued");
 
@@ -261,7 +261,7 @@ describeDB("intent-timer-integration", () => {
         targetAgentId: agentId,
         intentType: "issue_assigned",
         priority: 40,
-        dedupeKey: `timer:${issueId}`,
+        dedupeKey: `issue:${issueId}`,
       });
       expect(assigned.status).toBe("queued");
 
@@ -281,7 +281,7 @@ describeDB("intent-timer-integration", () => {
         targetAgentId: agentId,
         intentType: "issue_assigned",
         priority: 40,
-        dedupeKey: `timer:${issueId}`,
+        dedupeKey: `issue:${issueId}`,
       });
 
       // Now create a timer_hint with the same dedupeKey — it should be auto-superseded
@@ -292,7 +292,7 @@ describeDB("intent-timer-integration", () => {
         targetAgentId: agentId,
         intentType: "timer_hint",
         priority: 0,
-        dedupeKey: `timer:${issueId}`,
+        dedupeKey: `issue:${issueId}`,
       });
 
       // The timer_hint should be superseded because a higher-priority intent exists
@@ -403,7 +403,7 @@ describeDB("intent-timer-integration", () => {
       expect(intents.length).toBe(0);
     });
 
-    it("uses dedupeKey 'assignment:<issueId>'", async () => {
+    it("uses dedupeKey 'issue:<issueId>'", async () => {
       await seedTestData();
 
       const { queueIssueAssignmentIntent } = await import(
@@ -422,7 +422,7 @@ describeDB("intent-timer-integration", () => {
         .from(dispatchIntents)
         .where(eq(dispatchIntents.issueId, issueId));
       expect(intents.length).toBe(1);
-      expect(intents[0].dedupeKey).toBe(`assignment:${issueId}`);
+      expect(intents[0].dedupeKey).toBe(`issue:${issueId}`);
     });
   });
 });
