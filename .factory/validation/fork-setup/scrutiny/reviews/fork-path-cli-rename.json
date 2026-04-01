@@ -1,0 +1,34 @@
+{
+  "featureId": "fork-path-cli-rename",
+  "reviewedAt": "2026-04-01T05:15:04Z",
+  "commitId": "9b5e2167f5178927786919b9fbe90981591941e4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature largely implements the requested path/branding rename and adds strong verification tests, but it leaves a blocking runtime inconsistency in smoke onboarding flows: the Docker image still invokes the old package name and the version variable rename is only partially propagated across workflow/script/Dockerfile boundaries.",
+    "issues": [
+      {
+        "file": "Dockerfile.onboard-smoke",
+        "line": 40,
+        "severity": "blocking",
+        "description": "The onboarding smoke container still runs `npx --yes \"paperclipai@${PAPIERKLAMMER_VERSION}\" ...` instead of the renamed package. This contradicts the CLI rename intent and can fail once only `papierklammer` is published."
+      },
+      {
+        "file": "scripts/docker-onboard-smoke.sh",
+        "line": 243,
+        "severity": "blocking",
+        "description": "The script still passes `--build-arg PAPERCLIPAI_VERSION=...` and uses `PAPERCLIPAI_VERSION` (e.g., line 7), while `Dockerfile.onboard-smoke` now expects `PAPIERKLAMMER_VERSION` and `release-smoke.yml` sets `PAPIERKLAMMER_VERSION` (line 69). The requested smoke version is no longer wired through correctly."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The rename-worker skill procedure hardcodes `rg` for verification, but this environment does not provide `rg`; workers fall back to other search mechanisms.",
+      "evidence": ".factory/skills/rename-worker/SKILL.md step 3 requires ripgrep; transcript/handoff for session c1f0b8f2-5b35-4412-8a21-b277a2030875 shows grep-based verification commands."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed handoff, commit diff, skill, and transcript skeleton. The rename is mostly complete, but the smoke Docker path has blocking old/new CLI naming and version-variable wiring defects, so this feature should not pass as-is."
+}

@@ -12,6 +12,7 @@ Environment variables, external dependencies, and setup notes.
 - Node.js 25.6.1 (>=20 required)
 - pnpm 9.15.4
 - macOS darwin arm64
+- `rg` (ripgrep) is not installed in this mission environment; use factory `Grep`/`Glob` tools or `grep` fallback commands when needed.
 
 ## Database
 
@@ -38,3 +39,8 @@ npx drizzle-kit generate  # Generate SQL migration
 ```
 
 Migrations are auto-applied on server startup.
+
+## Known Local Validation Quirks
+
+- Full-suite `pnpm test:run` can intermittently fail in this environment due to transient local-state/disk pressure issues (including observed `ENOSPC` cases); rerunning after temp cleanup has resolved these without code changes.
+- Intermittent flakes were observed during milestone work in `board-mutation-guard.test.ts` and `agent-skills-routes.test.ts`; treat single failures there as potentially non-deterministic and re-run to confirm before escalating.
