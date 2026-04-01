@@ -1,7 +1,7 @@
 {
   "milestone": "fork-setup",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
@@ -20,61 +20,26 @@
     }
   },
   "reviewsSummary": {
-    "total": 5,
-    "passed": 4,
-    "failed": 1,
-    "failedFeatures": [
-      "fork-path-cli-rename"
-    ]
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
   },
-  "blockingIssues": [
-    {
-      "featureId": "fork-path-cli-rename",
-      "severity": "blocking",
-      "description": "Dockerfile.onboard-smoke still invokes `npx --yes \"paperclipai@${PAPIERKLAMMER_VERSION}\" ...`, leaving old package naming in the smoke path and risking onboarding smoke failure against renamed publishing."
-    },
-    {
-      "featureId": "fork-path-cli-rename",
-      "severity": "blocking",
-      "description": "Smoke version wiring is inconsistent: scripts/docker-onboard-smoke.sh still passes `PAPERCLIPAI_VERSION` while Dockerfile.onboard-smoke and release workflow use `PAPIERKLAMMER_VERSION`, so requested version propagation is broken."
-    }
-  ],
-  "appliedUpdates": [
-    {
-      "target": "library",
-      "description": "Updated .factory/library/environment.md with mission-verified environment facts: missing `rg` tooling and local validation quirks (ENOSPC/transient flake behavior).",
-      "sourceFeature": "fork-package-rename"
-    }
-  ],
+  "blockingIssues": [],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "skill:rename-worker",
-      "suggestion": "Remove hard dependence on `rg` in verification steps; add an explicit fallback path (`grep`/factory tools) and preflight tool-availability check.",
-      "evidence": "Multiple review reports (fork-package-rename, fork-path-cli-rename) observed `rg` missing in this environment and worker deviations from scripted procedure.",
-      "isSystemic": true
-    },
-    {
-      "target": "skill:rename-worker",
-      "suggestion": "Include extensionless infra files (Dockerfiles, workflow scripts) in required rename sweeps to avoid missing old/new token references after extension-based replacements.",
-      "evidence": "fork-env-var-rename review noted a second manual pass was required because extension-based matching omitted Dockerfiles.",
-      "isSystemic": true
-    },
-    {
-      "target": "skill:backend-worker",
-      "suggestion": "For schema-only features, allow DB tests under packages/db and relax server-test-path assumptions; clarify when strict tests-first flow is expected vs acceptable schema-first migration sequencing.",
-      "evidence": "fork-new-schema-tables and fork-existing-table-columns reviews both found skill guidance mismatched practical DB-schema implementation/testing patterns used in this repo.",
+      "suggestion": "Add a lightweight path for small scoped rename fix-ups so workers are not required to add new red tests when existing validator coverage already verifies the change.",
+      "evidence": "Fix feature fix-docker-smoke-rename required straightforward string substitutions across Docker smoke files; reviewer observation and worker skill feedback indicate the mandatory tests-first step created unnecessary process overhead versus the repo's existing validation commands.",
       "isSystemic": true
     }
   ],
   "rejectedObservations": [
     {
-      "observation": "Repeated `rg`-missing notes from multiple feature reviews.",
-      "reason": "duplicate"
-    },
-    {
-      "observation": "Single-run ordering complaint ('bulk rename happened before test creation') for fork-env-var-rename.",
-      "reason": "ambiguous"
+      "observation": "`rename-worker` should stop requiring rg tooling in this environment.",
+      "reason": "already-documented"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/fork-setup/scrutiny/synthesis.round1.json"
 }

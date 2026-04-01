@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-docker-smoke-rename",
+  "reviewedAt": "2026-04-01T05:30:43Z",
+  "commitId": "31b514ce0e6aceb347b06f4bc65150ba2428d004",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix commit addresses both blocking findings from the prior review: Dockerfile.onboard-smoke now invokes the renamed npm package (papierklammer), and scripts/docker-onboard-smoke.sh now uses PAPIERKLAMMER_VERSION consistently for env/defaults, metadata, npx invocation, and docker build args. Workflow checks show no remaining PAPERCLIPAI_VERSION references.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The rename-worker procedure is too rigid for small rename fix-ups in this environment: it requires red/green test-first plus ripgrep usage for every rename, but workers are relying on grep + existing validators because rg is unavailable and writing fresh failing tests for simple string substitutions is often unnecessary overhead.",
+      "evidence": ".factory/skills/rename-worker/SKILL.md (Work Procedure steps 2-3) mandates tests-first and rg; transcript skeleton for worker session 5e3c7d9d-cc24-432d-9328-2bcbaabf1f27 shows grep/read/edit flow without new red tests and handoff.skillFeedback explicitly notes test-first overkill for this fix."
+    }
+  ],
+  "addressesFailureFrom": ".factory/validation/fork-setup/scrutiny/reviews/fork-path-cli-rename.json",
+  "summary": "Reviewed the prior failed review, the fix transcript skeleton, and both relevant diffs (original commit 9b5e2167f5178927786919b9fbe90981591941e4 and fix commit 31b514ce0e6aceb347b06f4bc65150ba2428d004). The fix adequately resolves the original Docker smoke rename failures."
+}
