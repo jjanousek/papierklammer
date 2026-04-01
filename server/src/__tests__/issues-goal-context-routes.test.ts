@@ -22,6 +22,27 @@ const mockGoalService = vi.hoisted(() => ({
   getDefaultCompanyGoal: vi.fn(),
 }));
 
+vi.mock("../services/projections.js", () => ({
+  projectionService: () => ({
+    getIssueProjection: vi.fn(async () => ({
+      projectedStatus: "todo",
+      activeRunId: null,
+      activeLeaseId: null,
+      pickupFailCount: 0,
+      lastReconciledAt: null,
+    })),
+    projectIssuesList: vi.fn(async (issues: any[]) => issues.map((i: any) => ({
+      ...i,
+      projectedStatus: i.status,
+      activeRunId: null,
+      activeLeaseId: null,
+      pickupFailCount: 0,
+      lastReconciledAt: null,
+    }))),
+    invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
+  }),
+}));
+
 vi.mock("../services/index.js", () => ({
   accessService: () => ({
     canUser: vi.fn(),

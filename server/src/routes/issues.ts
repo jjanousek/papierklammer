@@ -41,6 +41,7 @@ import { queueIssueAssignmentIntent } from "../services/issue-assignment-wakeup.
 import { intentQueueService } from "../services/intent-queue.js";
 import { leaseManagerService } from "../services/lease-manager.js";
 import { eventLogService } from "../services/event-log.js";
+import { projectionService } from "../services/projections.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 const updateIssueRouteSchema = updateIssueSchema.extend({
@@ -63,6 +64,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   const routinesSvc = routineService(db);
   const leaseMgr = leaseManagerService(db);
   const eventLog = eventLogService(db);
+  const projections = projectionService(db);
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -319,7 +321,9 @@ export function issueRoutes(db: Db, storage: StorageService) {
         req.query.includeRoutineExecutions === "true" || req.query.includeRoutineExecutions === "1",
       q: req.query.q as string | undefined,
     });
-    res.json(result);
+    // Enrich issue list with projections (VAL-PROJ-030)
+    const projected = await projections.projectIssuesList(result);
+    res.json(projected);
   });
 
   router.get("/companies/:companyId/labels", async (req, res) => {
@@ -384,11 +388,12 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     assertCompanyAccess(req, issue.companyId);
-    const [{ project, goal }, ancestors, mentionedProjectIds, documentPayload] = await Promise.all([
+    const [{ project, goal }, ancestors, mentionedProjectIds, documentPayload, issueProjection] = await Promise.all([
       resolveIssueProjectAndGoal(issue),
       svc.getAncestors(issue.id),
       svc.findMentionedProjectIds(issue.id),
       documentsSvc.getIssueDocumentPayload(issue),
+      projections.getIssueProjection(issue.id),
     ]);
     const mentionedProjects = mentionedProjectIds.length > 0
       ? await projectsSvc.listByIds(issue.companyId, mentionedProjectIds)
@@ -407,6 +412,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
       mentionedProjects,
       currentExecutionWorkspace,
       workProducts,
+      // Projection metadata (VAL-PROJ-031)
+      ...(issueProjection ?? {}),
     });
   });
 
@@ -1131,6 +1138,12 @@ export function issueRoutes(db: Db, storage: StorageService) {
           agentId: actor.agentId,
         },
       }).catch((err) => logger.warn({ err, issueId: issue.id }, "failed to emit issue_status_changed event"));
+
+      // Invalidate active intents and leases when issue goes to done/cancelled (VAL-PROJ-012)
+      if (issue.status === "done" || issue.status === "cancelled") {
+        void projections.invalidateOnDone(issue.id, issue.companyId).catch((err) =>
+          logger.warn({ err, issueId: issue.id }, "failed to invalidate intents/leases on issue done"));
+      }
     }
 
     if (actor.runId) {
