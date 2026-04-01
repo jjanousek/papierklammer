@@ -2,7 +2,7 @@ commands:
   install: pnpm install
   build: pnpm build
   typecheck: pnpm -r typecheck
-  test: pnpm test:run --max-workers=4
+  test: pnpm test:run --max-workers=1
   lint: echo "no lint configured"
   db_generate: cd packages/db && pnpm build && npx drizzle-kit generate
   db_migrate: pnpm db:migrate
