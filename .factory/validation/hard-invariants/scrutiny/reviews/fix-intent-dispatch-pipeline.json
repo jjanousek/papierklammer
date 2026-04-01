@@ -1,0 +1,50 @@
+{
+  "featureId": "fix-intent-dispatch-pipeline",
+  "reviewedAt": "2026-04-01T08:32:16Z",
+  "commitId": "4f483ccd856e3580e57fc76396d00a2bd51e9b7d",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The fix correctly routes issue-assignment wakeups through intents, unifies timer/assignment dedupe keys, and changes scheduler notBefore handling to skip future intents. However, the fix does not fully close prior dispatcher integration failures, and intent lifecycle handling is still incomplete because no runtime path consumes admitted intents when execution begins.",
+    "issues": [
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 325,
+        "severity": "blocking",
+        "description": "Dispatcher integration failure from the prior dispatcher review remains unresolved: scheduler still constructs execution_envelopes directly via `insert(executionEnvelopes)` instead of routing production dispatch through `dispatcherService.dispatchRun(...)`. `dispatchRun(...)` is still only referenced in dispatcher tests, not production call paths."
+      },
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 2284,
+        "severity": "blocking",
+        "description": "The prior runtime-flow gap also remains: executeRun continues deriving execution context from `run.contextSnapshot` and `resolveWorkspaceForRun(...)` (lines 2284+ / 2353+) rather than treating the envelope as authoritative dispatch context. Envelope data is only injected later as `context.envelope` (line 2866), so the fix does not fully address the earlier dispatcher runtime-path failure."
+      },
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 350,
+        "severity": "blocking",
+        "description": "Intent lifecycle remains incomplete versus the fix requirement: scheduler now leaves intents admitted and comments that consumption happens when run execution starts, but no execution path performs that transition. `consumeIntent(...)` has no call sites outside `intent-queue.ts`, so admitted intents are not consumed when runs begin."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Shared architecture documentation states the production flow is Scheduler -> Dispatcher -> heartbeat execution, but production code still bypasses dispatcher dispatch wiring.",
+      "evidence": ".factory/library/architecture.md:31-33 documents `... -> Scheduler (admission) -> ... -> Dispatcher (execution_envelopes) -> heartbeat_runs ...`, while production code in server/src/services/scheduler.ts:325 inserts envelopes directly and server/src/services/dispatcher.ts:204 `dispatchRun(...)` is unused outside tests."
+    },
+    {
+      "area": "skills",
+      "observation": "backend-worker procedure signaling remains inconsistent for fix work: transcript shows implementation edits before targeted failing-test (red) validation, while handoff reports followedProcedure=true.",
+      "evidence": "worker-transcripts.jsonl entry for session 7164c831-350c-4992-b348-8a3080a5ee2a shows multiple Edit operations before targeted vitest runs; handoff.skillFeedback.followedProcedure is true with a suggested change noting test-first is impractical for fix/refactor tasks."
+    },
+    {
+      "area": "knowledge",
+      "observation": "Intent-driven routine dispatch currently weakens coalescing determinism (second concurrent dispatch may fail before scheduler creates a run), but this operational caveat is not captured in shared library notes.",
+      "evidence": "Handoff discoveredIssues records this behavior; test expectation was broadened in server/src/__tests__/routines-service.test.ts:282-296 to allow `failed` alongside `issue_created`/`coalesced`."
+    }
+  ],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/intent-timer-integration.json; /Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/scheduler-service.json; /Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/dispatcher-envelope-service.json",
+  "summary": "Reviewed feature fix-intent-dispatch-pipeline against its handoff commit, transcript skeleton, prior failed reviews, and current code paths. Assignment-intent routing and dedupe-key/notBefore fixes landed, but this fix does not fully close dispatcher-runtime failures from prior scrutiny and leaves admitted intents without a runtime consume transition. Result: fail."
+}

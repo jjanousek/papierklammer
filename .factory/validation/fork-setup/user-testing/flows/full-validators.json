@@ -1,0 +1,59 @@
+{
+  "milestone": "fork-setup",
+  "groupId": "full-validators",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T05:45:49Z",
+  "assertions": [
+    {
+      "id": "VAL-FORK-014",
+      "status": "fail",
+      "reason": "`pnpm test:run` exited with code 1 due to one failing test: @papierklammer/server src/__tests__/agent-permissions-routes.test.ts > keeps task assignment enabled when agent creation privilege is enabled (AssertionError: expected spy to be called; Number of calls: 0).",
+      "evidence": [
+        "fork-setup/full-validators/pnpm-test-run.log",
+        "fork-setup/full-validators/pnpm-test-run.exit"
+      ]
+    },
+    {
+      "id": "VAL-FORK-015",
+      "status": "pass",
+      "reason": "`pnpm build` completed successfully with exit code 0 across workspace packages.",
+      "evidence": [
+        "fork-setup/full-validators/pnpm-build.log",
+        "fork-setup/full-validators/pnpm-build.exit"
+      ]
+    },
+    {
+      "id": "VAL-FORK-016",
+      "status": "pass",
+      "reason": "`pnpm -r typecheck` completed successfully with exit code 0.",
+      "evidence": [
+        "fork-setup/full-validators/pnpm-typecheck.log",
+        "fork-setup/full-validators/pnpm-typecheck.exit"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "vitest",
+    "typecheck",
+    "build"
+  ],
+  "commands": [
+    {
+      "command": "pnpm test:run",
+      "exitCode": 1,
+      "observation": "Test suite ran to completion with 1 failed test file and 1 failed test; summary: 153 passed files, 1 failed file; 806 passed tests, 1 failed, 1 skipped."
+    },
+    {
+      "command": "pnpm -r typecheck",
+      "exitCode": 0,
+      "observation": "Workspace typecheck completed successfully with no reported type errors."
+    },
+    {
+      "command": "pnpm build",
+      "exitCode": 0,
+      "observation": "Workspace build completed successfully; UI emitted chunk-size warnings only, not build errors."
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

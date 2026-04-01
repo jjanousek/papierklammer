@@ -1,0 +1,87 @@
+{
+  "milestone": "fork-setup",
+  "groupId": "schema-and-migration",
+  "surface": "vitest",
+  "assertions": [
+    {
+      "id": "VAL-FORK-007",
+      "status": "pass",
+      "reason": "Schema verification test suite passed and includes dispatch_intents column/type assertions.",
+      "evidence": [
+        "fork-setup/schema-and-migration/schema-new-tables.test.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-008",
+      "status": "pass",
+      "reason": "Schema verification test suite passed and includes execution_leases column/type assertions.",
+      "evidence": [
+        "fork-setup/schema-and-migration/schema-new-tables.test.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-009",
+      "status": "pass",
+      "reason": "Schema verification test suite passed and includes execution_envelopes column assertions.",
+      "evidence": [
+        "fork-setup/schema-and-migration/schema-new-tables.test.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-010",
+      "status": "pass",
+      "reason": "Schema verification test suite passed and includes control_plane_events column/type assertions.",
+      "evidence": [
+        "fork-setup/schema-and-migration/schema-new-tables.test.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-011",
+      "status": "pass",
+      "reason": "Schema verification test suite passed and includes heartbeat_runs intentId and envelopeId assertions.",
+      "evidence": [
+        "fork-setup/schema-and-migration/schema-new-tables.test.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-012",
+      "status": "pass",
+      "reason": "Schema verification test suite passed and includes issues executionLeaseId/pickupFailCount/lastPickupFailureAt/lastReconciledAt assertions.",
+      "evidence": [
+        "fork-setup/schema-and-migration/schema-new-tables.test.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-013",
+      "status": "pass",
+      "reason": "Migration validation passed in migration-related DB tests and explicit pnpm db:migrate command completed without errors.",
+      "evidence": [
+        "fork-setup/schema-and-migration/client.test.log",
+        "fork-setup/schema-and-migration/db-migrate.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "vitest",
+    "pnpm db:migrate"
+  ],
+  "commands": [
+    {
+      "command": "pnpm test:run packages/db/src/schema-new-tables.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest reported 1 file passed, 19 tests passed."
+    },
+    {
+      "command": "pnpm test:run packages/db/src/client.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest reported 1 file passed, 4 migration-focused tests passed."
+    },
+    {
+      "command": "pnpm db:migrate",
+      "exitCode": 0,
+      "observation": "Migration runner connected to embedded-postgres and completed 49 pending migrations without error."
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

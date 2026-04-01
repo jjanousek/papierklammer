@@ -1,0 +1,48 @@
+{
+  "milestone": "fork-setup",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 16,
+    "passed": 15,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-FORK-001",
+    "VAL-FORK-002",
+    "VAL-FORK-003",
+    "VAL-FORK-004",
+    "VAL-FORK-005",
+    "VAL-FORK-006",
+    "VAL-FORK-007",
+    "VAL-FORK-008",
+    "VAL-FORK-009",
+    "VAL-FORK-010",
+    "VAL-FORK-011",
+    "VAL-FORK-012",
+    "VAL-FORK-013",
+    "VAL-FORK-015",
+    "VAL-FORK-016"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-FORK-014",
+      "reason": "Full-suite `pnpm test:run` failed in validation runs (first failure in agent-permissions-routes, second failure in costs-service invalid to-date check)."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added `Flow Validator Guidance: vitest` section defining isolation boundaries and serialized heavy validator execution guidance.",
+      "source": "setup"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Documented observed full-suite test instability during fork-setup validation to guide re-runs and triage.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}

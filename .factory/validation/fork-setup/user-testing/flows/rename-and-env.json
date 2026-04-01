@@ -1,0 +1,77 @@
+{
+  "milestone": "fork-setup",
+  "groupId": "rename-and-env",
+  "surface": "vitest",
+  "assertions": [
+    {
+      "id": "VAL-FORK-001",
+      "status": "pass",
+      "reason": "fork-rename-verification.test.ts passed; checks confirmed no @paperclipai scope references remain in package.json files and workspace package names.",
+      "evidence": [
+        "fork-setup/rename-and-env/fork-rename-verification.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-002",
+      "status": "pass",
+      "reason": "fork-rename-verification.test.ts passed; checks confirmed no @paperclipai imports remain in TypeScript source files.",
+      "evidence": [
+        "fork-setup/rename-and-env/fork-rename-verification.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-003",
+      "status": "pass",
+      "reason": "fork-env-var-rename-verification.test.ts passed; checks confirmed no process.env.PAPERCLIP_* references remain and env usage is migrated.",
+      "evidence": [
+        "fork-setup/rename-and-env/fork-env-var-rename-verification.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-004",
+      "status": "pass",
+      "reason": "fork-path-cli-rename-verification.test.ts passed; checks confirmed legacy ~/.paperclip* path references are removed and new ~/.papierklammer* defaults are present.",
+      "evidence": [
+        "fork-setup/rename-and-env/fork-path-cli-rename-verification.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-005",
+      "status": "pass",
+      "reason": "fork-path-cli-rename-verification.test.ts passed; checks confirmed CLI binary/name/branding use papierklammer.",
+      "evidence": [
+        "fork-setup/rename-and-env/fork-path-cli-rename-verification.log"
+      ]
+    },
+    {
+      "id": "VAL-FORK-006",
+      "status": "pass",
+      "reason": "fork-env-var-rename-verification.test.ts passed; checks confirmed adapter env builder uses PAPIERKLAMMER_* keys and no PAPERCLIP_* injection remains.",
+      "evidence": [
+        "fork-setup/rename-and-env/fork-env-var-rename-verification.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "vitest"
+  ],
+  "commands": [
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" test:run server/src/__tests__/fork-rename-verification.test.ts",
+      "exitCode": 0,
+      "observation": "1 file passed, 5 tests passed."
+    },
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" test:run server/src/__tests__/fork-env-var-rename-verification.test.ts",
+      "exitCode": 0,
+      "observation": "1 file passed, 8 tests passed."
+    },
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" test:run server/src/__tests__/fork-path-cli-rename-verification.test.ts",
+      "exitCode": 0,
+      "observation": "1 file passed, 13 tests passed."
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

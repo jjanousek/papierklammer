@@ -1,0 +1,51 @@
+{
+  "featureId": "fix-multitenant-atomicity",
+  "reviewedAt": "2026-04-01T08:29:57.149471Z",
+  "commitId": "12774dc5c5af2e6874d9bd72fc3113645862e4e9",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The fix successfully adds most company-scoped filters, atomic intent transition guards, and TTL persistence for lease renewal, but it does not fully resolve the original failures: lease grant exclusivity is still not atomically enforced under true concurrency, and prior dispatcher integration failures remain unresolved in production flow.",
+    "issues": [
+      {
+        "file": "server/src/services/lease-manager.ts",
+        "line": 86,
+        "severity": "blocking",
+        "description": "grantLease still relies on a read-then-insert pattern against execution_leases. The `FOR UPDATE` lock applies only to matched lease rows; when no active lease row exists yet, concurrent transactions can both pass the check and insert active leases for the same issue. This does not satisfy the required atomic enforcement (lock issue row or enforce with partial unique index)."
+      },
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 323,
+        "severity": "blocking",
+        "description": "Original dispatcher-envelope blocking failure remains unresolved: scheduler still creates execution envelopes directly instead of routing dispatch through `dispatcherService.dispatchRun()`, so dispatcher runtime controls are not the authoritative production path."
+      },
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 2353,
+        "severity": "blocking",
+        "description": "Original dispatcher-envelope blocking failure remains unresolved: executeRun still performs inline workspace resolution (`resolveWorkspaceForRun`), so envelope context is not the sole immutable source of dispatch context end-to-end."
+      },
+      {
+        "file": "server/src/services/intent-queue.ts",
+        "line": 379,
+        "severity": "non_blocking",
+        "description": "`invalidateForClosedIssue` leaves `companyId` optional; when omitted, the update runs without a tenant predicate. This keeps a multi-tenant footgun despite the stated company-scoping objective."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill says to write and run failing tests first (red phase), but this run edited service code before feature-specific test execution.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md (Work Procedure step 3) vs transcript skeleton for workerSessionId 1d025cfd-c927-4f2a-ad4d-d94ea63515e2 (Edit calls start at step 26; targeted test-file runs appear later around steps 65+)."
+    },
+    {
+      "area": "conventions",
+      "observation": "Shared architecture states scheduler→dispatcher data flow, but production scheduler still builds envelopes directly.",
+      "evidence": ".factory/library/architecture.md (Data Flow: Intent → Scheduler → Lease Manager → Dispatcher) vs server/src/services/scheduler.ts:323 (`insert(executionEnvelopes)` directly)."
+    }
+  ],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/intent-queue-service.json; /Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/scheduler-service.json; /Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/lease-manager-service.json; /Users/aischool/work/papierklammer_droid/.factory/validation/hard-invariants/scrutiny/reviews/dispatcher-envelope-service.json",
+  "summary": "Reviewed fix-multitenant-atomicity against the four prior failed feature reviews. Tenant scoping and TTL fixes landed, but the fix is still insufficient to close all original failures due to a remaining atomic lease race and unresolved dispatcher production-path integration gaps."
+}
