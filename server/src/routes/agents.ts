@@ -62,6 +62,7 @@ import {
   loadDefaultAgentInstructionsBundle,
   resolveDefaultAgentInstructionsBundleRole,
 } from "../services/default-agent-instructions.js";
+import { leaseManagerService } from "../services/lease-manager.js";
 
 export function agentRoutes(db: Db) {
   const DEFAULT_INSTRUCTIONS_PATH_KEYS: Record<string, string> = {
@@ -94,6 +95,7 @@ export function agentRoutes(db: Db) {
   const companySkills = companySkillService(db);
   const workspaceOperations = workspaceOperationService(db);
   const instanceSettings = instanceSettingsService(db);
+  const leaseMgr = leaseManagerService(db);
   const strictSecretsMode = process.env.PAPIERKLAMMER_SECRETS_STRICT_MODE === "true";
 
   async function getCurrentUserRedactionOptions() {
@@ -2189,6 +2191,37 @@ export function agentRoutes(db: Db) {
     }
 
     res.json(run);
+  });
+
+  router.post("/heartbeat-runs/:runId/lease/renew", async (req, res) => {
+    const runId = req.params.runId as string;
+    const run = await heartbeat.getRun(runId);
+    if (!run) {
+      res.status(404).json({ error: "Heartbeat run not found" });
+      return;
+    }
+    assertCompanyAccess(req, run.companyId);
+
+    const renewed = await leaseMgr.renewLeaseForRunActivity(runId);
+    if (!renewed) {
+      res.status(404).json({ error: "No active lease found for this run" });
+      return;
+    }
+
+    const actor = getActorInfo(req);
+    await logActivity(db, {
+      companyId: run.companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      action: "lease.renewed",
+      entityType: "execution_lease",
+      entityId: renewed.id,
+      details: { runId, source: "keepalive" },
+    });
+
+    res.json(renewed);
   });
 
   router.get("/heartbeat-runs/:runId/events", async (req, res) => {

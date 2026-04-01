@@ -39,6 +39,7 @@ import { shouldWakeAssigneeOnCheckout } from "./issues-checkout-wakeup.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
 import { queueIssueAssignmentIntent } from "../services/issue-assignment-wakeup.js";
 import { intentQueueService } from "../services/intent-queue.js";
+import { leaseManagerService } from "../services/lease-manager.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 const updateIssueRouteSchema = updateIssueSchema.extend({
@@ -59,6 +60,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   const workProductsSvc = workProductService(db);
   const documentsSvc = documentService(db);
   const routinesSvc = routineService(db);
+  const leaseMgr = leaseManagerService(db);
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -1107,6 +1109,12 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
     await routinesSvc.syncRunStatusForIssue(issue.id);
 
+    // Renew active lease on issue status change or inline comment (VAL-HARD-026)
+    if (req.body.status !== undefined || commentBody) {
+      void leaseMgr.renewLeaseForIssueActivity(id).catch((err) =>
+        logger.warn({ err, issueId: id }, "failed to renew lease on issue update"));
+    }
+
     if (actor.runId) {
       await heartbeat.reportRunActivity(actor.runId).catch((err) =>
         logger.warn({ err, runId: actor.runId }, "failed to clear detached run warning after issue activity"));
@@ -1539,6 +1547,10 @@ export function issueRoutes(db: Db, storage: StorageService) {
       agentId: actor.agentId ?? undefined,
       userId: actor.actorType === "user" ? actor.actorId : undefined,
     });
+
+    // Renew active lease on comment creation (VAL-HARD-026)
+    void leaseMgr.renewLeaseForIssueActivity(id).catch((err) =>
+      logger.warn({ err, issueId: id }, "failed to renew lease on issue comment"));
 
     if (actor.runId) {
       await heartbeat.reportRunActivity(actor.runId).catch((err) =>

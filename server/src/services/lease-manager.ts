@@ -249,5 +249,92 @@ export function leaseManagerService(db: Db) {
 
       return row ?? null;
     },
+
+    /**
+     * Renew the active lease for an issue, if one exists.
+     *
+     * This is used when agent activity (comments, status changes) occurs
+     * on an issue that has an active lease. If no active lease exists,
+     * returns null without error.
+     */
+    async renewLeaseForIssueActivity(issueId: string): Promise<typeof executionLeases.$inferSelect | null> {
+      const [activeLease] = await db
+        .select()
+        .from(executionLeases)
+        .where(
+          and(
+            eq(executionLeases.issueId, issueId),
+            sql`${executionLeases.state} IN ('granted', 'renewed')`,
+          ),
+        )
+        .limit(1);
+
+      if (!activeLease) return null;
+
+      const now = new Date();
+      const ttlMs = getOriginalTtlMs(activeLease);
+      const newExpiresAt = new Date(now.getTime() + ttlMs);
+
+      const [updated] = await db
+        .update(executionLeases)
+        .set({
+          state: "renewed",
+          renewedAt: now,
+          expiresAt: newExpiresAt,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(executionLeases.id, activeLease.id),
+            sql`${executionLeases.state} IN ('granted', 'renewed')`,
+          ),
+        )
+        .returning();
+
+      return updated ?? null;
+    },
+
+    /**
+     * Renew the active lease associated with a run, if one exists.
+     *
+     * This is used for explicit keepalive requests that reference a runId.
+     * If no active lease exists for the given runId, returns null.
+     */
+    async renewLeaseForRunActivity(runId: string): Promise<typeof executionLeases.$inferSelect | null> {
+      const [activeLease] = await db
+        .select()
+        .from(executionLeases)
+        .where(
+          and(
+            eq(executionLeases.runId, runId),
+            sql`${executionLeases.state} IN ('granted', 'renewed')`,
+          ),
+        )
+        .limit(1);
+
+      if (!activeLease) return null;
+
+      const now = new Date();
+      const ttlMs = getOriginalTtlMs(activeLease);
+      const newExpiresAt = new Date(now.getTime() + ttlMs);
+
+      const [updated] = await db
+        .update(executionLeases)
+        .set({
+          state: "renewed",
+          renewedAt: now,
+          expiresAt: newExpiresAt,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(executionLeases.id, activeLease.id),
+            sql`${executionLeases.state} IN ('granted', 'renewed')`,
+          ),
+        )
+        .returning();
+
+      return updated ?? null;
+    },
   };
 }
