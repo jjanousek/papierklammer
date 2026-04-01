@@ -1,5 +1,5 @@
-import type { Db } from "@paperclipai/db";
-import { companies, instanceSettings } from "@paperclipai/db";
+import type { Db } from "@papierklammer/db";
+import { companies, instanceSettings } from "@papierklammer/db";
 import {
   instanceGeneralSettingsSchema,
   type InstanceGeneralSettings,
@@ -8,7 +8,7 @@ import {
   type PatchInstanceGeneralSettings,
   type InstanceSettings,
   type PatchInstanceExperimentalSettings,
-} from "@paperclipai/shared";
+} from "@papierklammer/shared";
 import { eq } from "drizzle-orm";
 
 const DEFAULT_SINGLETON_KEY = "default";

@@ -14,7 +14,7 @@ import {
   heartbeatRuns,
   projects,
   workspaceRuntimeServices,
-} from "@paperclipai/db";
+} from "@papierklammer/db";
 import { eq } from "drizzle-orm";
 import {
   cleanupExecutionWorkspaceArtifacts,
@@ -29,7 +29,7 @@ import {
   type RealizedExecutionWorkspace,
 } from "../services/workspace-runtime.ts";
 import { resolvePaperclipConfigPath } from "../paths.ts";
-import type { WorkspaceOperation } from "@paperclipai/shared";
+import type { WorkspaceOperation } from "@papierklammer/shared";
 import type { WorkspaceOperationRecorder } from "../services/workspace-operations.ts";
 import {
   getEmbeddedPostgresTestSupport,

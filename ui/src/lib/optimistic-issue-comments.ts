@@ -1,4 +1,4 @@
-import type { Issue, IssueComment } from "@paperclipai/shared";
+import type { Issue, IssueComment } from "@papierklammer/shared";
 
 export interface IssueCommentReassignment {
   assigneeAgentId: string | null;

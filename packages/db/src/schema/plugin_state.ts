@@ -7,7 +7,7 @@ import {
   index,
   unique,
 } from "drizzle-orm/pg-core";
-import type { PluginStateScopeKind } from "@paperclipai/shared";
+import type { PluginStateScopeKind } from "@papierklammer/shared";
 import { plugins } from "./plugins.js";
 
 /**
