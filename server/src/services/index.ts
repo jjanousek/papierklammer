@@ -30,6 +30,8 @@ export { notifyHireApproved, type NotifyHireApprovedInput } from "./hire-hook.js
 export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
 export { reconcilePersistedRuntimeServicesOnStartup, restartDesiredRuntimeServicesOnStartup } from "./workspace-runtime.js";
 export { eventLogService } from "./event-log.js";
+export { intentQueueService, INTENT_TYPES, INTENT_PRIORITY_MAP, getIntentPriority } from "./intent-queue.js";
+export type { IntentType } from "./intent-queue.js";
 export { projectionService, type IssueProjection } from "./projections.js";
 export { reconcilerService, type ReconcileResult } from "./reconciler.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";

@@ -1,15 +1,16 @@
 import type { Db } from "@papierklammer/db";
 import { logger } from "../middleware/logger.js";
 import type { intentQueueService } from "./intent-queue.js";
+import { INTENT_PRIORITY_MAP } from "./intent-queue.js";
 
 type WakeupTriggerDetail = "manual" | "ping" | "callback" | "system";
 type WakeupSource = "timer" | "assignment" | "on_demand" | "automation";
 
 /**
  * Priority for issue_assigned intents.
- * Event-driven intents use priority >= 10; issue_assigned is one of the highest.
+ * Re-exported from the canonical INTENT_PRIORITY_MAP for backward compat.
  */
-export const ISSUE_ASSIGNED_PRIORITY = 40;
+export const ISSUE_ASSIGNED_PRIORITY = INTENT_PRIORITY_MAP.issue_assigned;
 
 export interface IssueAssignmentWakeupDeps {
   wakeup: (

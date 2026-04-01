@@ -20,6 +20,31 @@ export const INTENT_TYPES = [
 export type IntentType = (typeof INTENT_TYPES)[number];
 
 /**
+ * Priority levels for intent types.
+ *
+ * Higher value = processed first.  Event-driven intents have meaningful
+ * priority; timer_hint is intentionally lowest (0) so it is always
+ * superseded when a real event exists.
+ */
+export const INTENT_PRIORITY_MAP: Record<IntentType, number> = {
+  manager_escalation: 50,
+  issue_assigned: 40,
+  issue_comment_mentioned: 30,
+  dependency_unblocked: 30,
+  approval_resolved: 30,
+  retry_after_failure: 20,
+  timer_hint: 0,
+};
+
+/**
+ * Return the canonical priority for a given intent type.
+ * Falls back to 0 for unknown types.
+ */
+export function getIntentPriority(intentType: string): number {
+  return (INTENT_PRIORITY_MAP as Record<string, number>)[intentType] ?? 0;
+}
+
+/**
  * Valid intent status values and their allowed transitions.
  *
  * State machine:
@@ -111,7 +136,7 @@ export function intentQueueService(db: Db) {
     async createIntent(input: CreateIntentInput) {
       validateCreateInput(input);
 
-      const effectivePriority = input.priority ?? 0;
+      const effectivePriority = input.priority ?? getIntentPriority(input.intentType);
 
       // Timer hint supersession: if creating a timer_hint and a higher-priority
       // queued intent already exists for the same dedupeKey, auto-supersede the

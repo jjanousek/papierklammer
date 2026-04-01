@@ -22,6 +22,15 @@ const HEARTBEAT_MAX_CONCURRENT_RUNS_MAX = 10;
 const DEFAULT_LEASE_TTL_SEC = 300;
 
 /**
+ * Default threshold for disabling timer_hint intents.
+ *
+ * If an issue's pickupFailCount exceeds this value, timer_hint intents
+ * targeting that issue are auto-rejected.  This prevents fruitless
+ * retry loops when an agent repeatedly fails to pick up work.
+ */
+const DEFAULT_TIMER_HINT_DISABLE_THRESHOLD = 5;
+
+/**
  * Issue statuses considered closed / terminal.
  * An intent for an issue in one of these statuses is rejected.
  */
@@ -118,6 +127,18 @@ export function schedulerService(db: Db) {
     }
     if (CLOSED_ISSUE_STATUSES.includes(issue.status)) {
       return { admitted: false, reason: "issue closed" };
+    }
+
+    // 2a. Timer hint disable — reject timer_hint intents when the issue's
+    // pickupFailCount exceeds the configured threshold (VAL-THRU-008)
+    if (
+      intent.intentType === "timer_hint" &&
+      issue.pickupFailCount >= DEFAULT_TIMER_HINT_DISABLE_THRESHOLD
+    ) {
+      return {
+        admitted: false,
+        reason: `timer_hint disabled: pickupFailCount (${issue.pickupFailCount}) >= threshold (${DEFAULT_TIMER_HINT_DISABLE_THRESHOLD})`,
+      };
     }
 
     // 2b. Dependency gate — issue must not have unresolved dependencies (VAL-REL-009)

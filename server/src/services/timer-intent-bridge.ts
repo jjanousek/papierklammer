@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import { agents, issues } from "@papierklammer/db";
 import type { intentQueueService } from "./intent-queue.js";
+import { INTENT_PRIORITY_MAP } from "./intent-queue.js";
 import { parseObject, asNumber, asBoolean } from "../adapters/utils.js";
 
 /**
@@ -12,9 +13,9 @@ const OPEN_ACTIONABLE_STATUSES = ["todo", "in_progress", "in_review", "blocked"]
 
 /**
  * Timer hint priority: lowest priority value.
- * Event-driven intents use priority >= 10.
+ * Re-exported from the canonical INTENT_PRIORITY_MAP for backward compat.
  */
-export const TIMER_HINT_PRIORITY = 0;
+export const TIMER_HINT_PRIORITY = INTENT_PRIORITY_MAP.timer_hint;
 
 /**
  * Parse heartbeat policy from agent's runtimeConfig.

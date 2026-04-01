@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import { issueDependencies, issues } from "@papierklammer/db";
 import { badRequest, conflict, notFound } from "../errors.js";
-import { intentQueueService } from "./intent-queue.js";
+import { intentQueueService, INTENT_PRIORITY_MAP } from "./intent-queue.js";
 import { eventLogService } from "./event-log.js";
 import { logger } from "../middleware/logger.js";
 
@@ -284,7 +284,7 @@ export function dependencyService(db: Db) {
             projectId: depIssue.projectId ?? "",
             targetAgentId: depIssue.assigneeAgentId,
             intentType: "dependency_unblocked",
-            priority: 30, // Same as other event-driven intents
+            priority: INTENT_PRIORITY_MAP.dependency_unblocked,
             dedupeKey: `dep_unblocked:${depIssue.id}`,
           });
 
