@@ -88,12 +88,17 @@ export function dispatcherService(db: Db) {
     workspaceId: string | null;
     companyId: string;
   }): Promise<{ workspaceId: string | null; error: string | null }> {
-    // If explicit workspace specified, verify it exists
+    // If explicit workspace specified, verify it exists (company-scoped)
     if (input.workspaceId) {
       const [workspace] = await db
         .select({ id: projectWorkspaces.id })
         .from(projectWorkspaces)
-        .where(eq(projectWorkspaces.id, input.workspaceId));
+        .where(
+          and(
+            eq(projectWorkspaces.id, input.workspaceId),
+            eq(projectWorkspaces.companyId, input.companyId),
+          ),
+        );
       if (workspace) {
         return { workspaceId: workspace.id, error: null };
       }
@@ -103,13 +108,18 @@ export function dispatcherService(db: Db) {
       };
     }
 
-    // Resolve project from intent or issue
+    // Resolve project from intent or issue (company-scoped)
     let projectId = input.projectId;
     if (!projectId) {
       const [issue] = await db
         .select({ projectId: issues.projectId })
         .from(issues)
-        .where(eq(issues.id, input.issueId));
+        .where(
+          and(
+            eq(issues.id, input.issueId),
+            eq(issues.companyId, input.companyId),
+          ),
+        );
       projectId = issue?.projectId ?? null;
     }
 

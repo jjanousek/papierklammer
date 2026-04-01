@@ -344,6 +344,13 @@
       "when": 1775019472830,
       "tag": "0048_rapid_magdalene",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1775028478686,
+      "tag": "0049_nebulous_lucky_pierre",
+      "breakpoints": true
     }
   ]
 }

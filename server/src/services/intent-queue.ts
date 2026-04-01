@@ -119,6 +119,7 @@ export function intentQueueService(db: Db) {
           .from(dispatchIntents)
           .where(
             and(
+              eq(dispatchIntents.companyId, input.companyId),
               eq(dispatchIntents.dedupeKey, input.dedupeKey),
               eq(dispatchIntents.status, "queued"),
               gt(dispatchIntents.priority, effectivePriority),
@@ -162,6 +163,7 @@ export function intentQueueService(db: Db) {
           })
           .where(
             and(
+              eq(dispatchIntents.companyId, input.companyId),
               eq(dispatchIntents.dedupeKey, input.dedupeKey),
               eq(dispatchIntents.status, "queued"),
             ),
@@ -202,32 +204,42 @@ export function intentQueueService(db: Db) {
 
     /**
      * Transition queued → admitted. Sets resolvedAt.
+     * Atomic: includes status predicate in WHERE clause to prevent concurrent transitions.
      */
     async admitIntent(intentId: string) {
       const intent = await requireIntent(intentId);
       assertTransition(intent.status, "admitted");
 
-      const [updated] = await db
+      const rows = await db
         .update(dispatchIntents)
         .set({
           status: "admitted",
           resolvedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(dispatchIntents.id, intentId))
+        .where(
+          and(
+            eq(dispatchIntents.id, intentId),
+            eq(dispatchIntents.status, "queued"),
+          ),
+        )
         .returning();
 
-      return updated;
+      if (rows.length === 0) {
+        throw conflict(`Intent ${intentId} was concurrently modified — expected status 'queued'`);
+      }
+      return rows[0];
     },
 
     /**
      * Transition queued → rejected.
+     * Atomic: includes status predicate in WHERE clause.
      */
     async rejectIntent(intentId: string, reason: string) {
       const intent = await requireIntent(intentId);
       assertTransition(intent.status, "rejected");
 
-      const [updated] = await db
+      const rows = await db
         .update(dispatchIntents)
         .set({
           status: "rejected",
@@ -235,59 +247,86 @@ export function intentQueueService(db: Db) {
           updatedAt: new Date(),
           sourceEventId: reason,
         })
-        .where(eq(dispatchIntents.id, intentId))
+        .where(
+          and(
+            eq(dispatchIntents.id, intentId),
+            eq(dispatchIntents.status, "queued"),
+          ),
+        )
         .returning();
 
-      return updated;
+      if (rows.length === 0) {
+        throw conflict(`Intent ${intentId} was concurrently modified — expected status 'queued'`);
+      }
+      return rows[0];
     },
 
     /**
      * Transition admitted → consumed. Records the runId.
+     * Atomic: includes status predicate in WHERE clause.
      */
     async consumeIntent(intentId: string, runId: string) {
       const intent = await requireIntent(intentId);
       assertTransition(intent.status, "consumed");
 
-      const [updated] = await db
+      const rows = await db
         .update(dispatchIntents)
         .set({
           status: "consumed",
           updatedAt: new Date(),
         })
-        .where(eq(dispatchIntents.id, intentId))
+        .where(
+          and(
+            eq(dispatchIntents.id, intentId),
+            eq(dispatchIntents.status, "admitted"),
+          ),
+        )
         .returning();
 
-      return updated;
+      if (rows.length === 0) {
+        throw conflict(`Intent ${intentId} was concurrently modified — expected status 'admitted'`);
+      }
+      return rows[0];
     },
 
     /**
      * Transition queued → superseded.
+     * Atomic: includes status predicate in WHERE clause.
      */
     async supersedeIntent(intentId: string) {
       const intent = await requireIntent(intentId);
       assertTransition(intent.status, "superseded");
 
-      const [updated] = await db
+      const rows = await db
         .update(dispatchIntents)
         .set({
           status: "superseded",
           resolvedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(dispatchIntents.id, intentId))
+        .where(
+          and(
+            eq(dispatchIntents.id, intentId),
+            eq(dispatchIntents.status, "queued"),
+          ),
+        )
         .returning();
 
-      return updated;
+      if (rows.length === 0) {
+        throw conflict(`Intent ${intentId} was concurrently modified — expected status 'queued'`);
+      }
+      return rows[0];
     },
 
     /**
      * Transition queued → deferred.
+     * Atomic: includes status predicate in WHERE clause.
      */
     async deferIntent(intentId: string, reason: string) {
       const intent = await requireIntent(intentId);
       assertTransition(intent.status, "deferred");
 
-      const [updated] = await db
+      const rows = await db
         .update(dispatchIntents)
         .set({
           status: "deferred",
@@ -295,10 +334,18 @@ export function intentQueueService(db: Db) {
           updatedAt: new Date(),
           sourceEventId: reason,
         })
-        .where(eq(dispatchIntents.id, intentId))
+        .where(
+          and(
+            eq(dispatchIntents.id, intentId),
+            eq(dispatchIntents.status, "queued"),
+          ),
+        )
         .returning();
 
-      return updated;
+      if (rows.length === 0) {
+        throw conflict(`Intent ${intentId} was concurrently modified — expected status 'queued'`);
+      }
+      return rows[0];
     },
 
     /**
@@ -326,9 +373,18 @@ export function intentQueueService(db: Db) {
 
     /**
      * Reject all queued intents for a closed/cancelled issue.
+     * Requires companyId for multi-tenant isolation.
      * Returns the count of rejected intents.
      */
-    async invalidateForClosedIssue(issueId: string) {
+    async invalidateForClosedIssue(issueId: string, companyId?: string) {
+      const conditions = [
+        eq(dispatchIntents.issueId, issueId),
+        eq(dispatchIntents.status, "queued"),
+      ];
+      if (companyId) {
+        conditions.push(eq(dispatchIntents.companyId, companyId));
+      }
+
       const result = await db
         .update(dispatchIntents)
         .set({
@@ -337,12 +393,7 @@ export function intentQueueService(db: Db) {
           updatedAt: new Date(),
           sourceEventId: "issue closed",
         })
-        .where(
-          and(
-            eq(dispatchIntents.issueId, issueId),
-            eq(dispatchIntents.status, "queued"),
-          ),
-        )
+        .where(and(...conditions))
         .returning();
 
       return result.length;

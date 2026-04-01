@@ -1094,4 +1094,92 @@ describeDB("leaseManagerService", () => {
       expect(lease.state).toBe("granted");
     });
   });
+
+  // ─── TTL preservation on renewal ──────────────────────────────────────────
+
+  describe("TTL preservation on renewal", () => {
+    it("stores original TTL at grant time and reuses it for renewal", async () => {
+      await seedTestData();
+      const customTtl = 120; // 2 minutes
+
+      const lease = await svc.grantLease({
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId,
+        runId,
+        companyId,
+        ttlSeconds: customTtl,
+      });
+
+      // Verify the TTL was stored
+      const [row] = await db
+        .select()
+        .from(executionLeases)
+        .where(eq(executionLeases.id, lease.id));
+      expect(row.ttlSeconds).toBe(customTtl);
+
+      // Wait briefly and renew
+      await new Promise((r) => setTimeout(r, 50));
+
+      const renewed = await svc.renewLease(lease.id);
+
+      // The renewed expiresAt should be now() + original customTtl, not DEFAULT_LEASE_TTL_SEC
+      const now = new Date();
+      const expectedExpiry = new Date(now.getTime() + customTtl * 1000);
+      const diff = Math.abs(renewed.expiresAt.getTime() - expectedExpiry.getTime());
+      expect(diff).toBeLessThan(2000);
+
+      // Specifically it should NOT be now + 300s (default TTL)
+      const defaultExpiry = new Date(now.getTime() + DEFAULT_LEASE_TTL_SEC * 1000);
+      const defaultDiff = Math.abs(renewed.expiresAt.getTime() - defaultExpiry.getTime());
+      // If customTtl != DEFAULT_LEASE_TTL_SEC, the diff from default should be large
+      expect(defaultDiff).toBeGreaterThan(100_000); // > 100 seconds difference
+    });
+
+    it("stores default TTL when no custom TTL provided", async () => {
+      await seedTestData();
+
+      const lease = await svc.grantLease({
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId,
+        runId,
+        companyId,
+      });
+
+      const [row] = await db
+        .select()
+        .from(executionLeases)
+        .where(eq(executionLeases.id, lease.id));
+      expect(row.ttlSeconds).toBe(DEFAULT_LEASE_TTL_SEC);
+    });
+
+    it("preserves custom TTL across multiple renewals", async () => {
+      await seedTestData();
+      const customTtl = 60; // 1 minute
+
+      const lease = await svc.grantLease({
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId,
+        runId,
+        companyId,
+        ttlSeconds: customTtl,
+      });
+
+      // First renewal
+      await new Promise((r) => setTimeout(r, 30));
+      const renewed1 = await svc.renewLease(lease.id);
+
+      // Second renewal
+      await new Promise((r) => setTimeout(r, 30));
+      const renewed2 = await svc.renewLease(lease.id);
+
+      // Both renewals should use the custom TTL
+      const now = new Date();
+      const expectedExpiry = new Date(now.getTime() + customTtl * 1000);
+      const diff = Math.abs(renewed2.expiresAt.getTime() - expectedExpiry.getTime());
+      expect(diff).toBeLessThan(2000);
+    });
+  });
 });

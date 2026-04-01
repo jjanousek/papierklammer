@@ -1,0 +1,1 @@
+ALTER TABLE "execution_leases" ADD COLUMN "ttl_seconds" integer;

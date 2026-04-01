@@ -709,4 +709,215 @@ describeDB("intentQueueService", () => {
       expect(found).toBeNull();
     });
   });
+
+  // ─── Multi-tenant isolation ───────────────────────────────────────────────
+
+  describe("multi-tenant isolation", () => {
+    it("deduplication does not cross company boundaries", async () => {
+      await seedTestData();
+
+      // Create a second company with its own data
+      const companyId2 = randomUUID();
+      const agentId2 = randomUUID();
+      const projectId2 = randomUUID();
+      const issueId2 = randomUUID();
+
+      await db.insert(companies).values({
+        id: companyId2,
+        name: "OtherCo",
+        issuePrefix: `O${companyId2.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+      await db.insert(agents).values({
+        id: agentId2,
+        companyId: companyId2,
+        name: "OtherAgent",
+        role: "engineer",
+        status: "active",
+        adapterType: "codex_local",
+        adapterConfig: {},
+        runtimeConfig: {},
+        permissions: {},
+      });
+      await db.insert(projects).values({
+        id: projectId2,
+        companyId: companyId2,
+        name: "OtherProject",
+        status: "active",
+      });
+      await db.insert(issues).values({
+        id: issueId2,
+        companyId: companyId2,
+        title: "Other Issue",
+        status: "todo",
+        priority: "medium",
+        projectId: projectId2,
+      });
+
+      // Create intent in company1 with dedupeKey
+      const intent1 = await svc.createIntent({
+        companyId,
+        issueId,
+        projectId,
+        targetAgentId: agentId,
+        intentType: "timer_hint",
+        priority: 0,
+        dedupeKey: "shared-key",
+      });
+
+      // Create intent in company2 with same dedupeKey — should NOT supersede company1's intent
+      const intent2 = await svc.createIntent({
+        companyId: companyId2,
+        issueId: issueId2,
+        projectId: projectId2,
+        targetAgentId: agentId2,
+        intentType: "issue_assigned",
+        priority: 10,
+        dedupeKey: "shared-key",
+      });
+
+      // Company1's intent should still be queued (not superseded)
+      const [row1] = await db
+        .select()
+        .from(dispatchIntents)
+        .where(eq(dispatchIntents.id, intent1.id));
+      expect(row1.status).toBe("queued");
+
+      // Company2's intent should also be queued
+      expect(intent2.status).toBe("queued");
+    });
+
+    it("timer hint supersession check is company-scoped", async () => {
+      await seedTestData();
+
+      // Create a second company with its own data
+      const companyId2 = randomUUID();
+      const agentId2 = randomUUID();
+      const projectId2 = randomUUID();
+      const issueId2 = randomUUID();
+
+      await db.insert(companies).values({
+        id: companyId2,
+        name: "OtherCo",
+        issuePrefix: `O${companyId2.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+      await db.insert(agents).values({
+        id: agentId2,
+        companyId: companyId2,
+        name: "OtherAgent",
+        role: "engineer",
+        status: "active",
+        adapterType: "codex_local",
+        adapterConfig: {},
+        runtimeConfig: {},
+        permissions: {},
+      });
+      await db.insert(projects).values({
+        id: projectId2,
+        companyId: companyId2,
+        name: "OtherProject",
+        status: "active",
+      });
+      await db.insert(issues).values({
+        id: issueId2,
+        companyId: companyId2,
+        title: "Other Issue",
+        status: "todo",
+        priority: "medium",
+        projectId: projectId2,
+      });
+
+      // Create a high-priority intent in company2 with a dedupeKey
+      await svc.createIntent({
+        companyId: companyId2,
+        issueId: issueId2,
+        projectId: projectId2,
+        targetAgentId: agentId2,
+        intentType: "issue_assigned",
+        priority: 40,
+        dedupeKey: "shared-key",
+      });
+
+      // Create a timer_hint in company1 with same dedupeKey
+      // Should NOT be auto-superseded because the higher-priority intent is in a different company
+      const timerIntent = await svc.createIntent({
+        companyId,
+        issueId,
+        projectId,
+        targetAgentId: agentId,
+        intentType: "timer_hint",
+        priority: 0,
+        dedupeKey: "shared-key",
+      });
+
+      expect(timerIntent.status).toBe("queued");
+    });
+
+    it("invalidateForClosedIssue with companyId is scoped", async () => {
+      await seedTestData();
+
+      // Create a second company with its own issue having the same issue ID format
+      const companyId2 = randomUUID();
+      const agentId2 = randomUUID();
+      const projectId2 = randomUUID();
+      const issueId2 = randomUUID();
+
+      await db.insert(companies).values({
+        id: companyId2,
+        name: "OtherCo",
+        issuePrefix: `O${companyId2.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+      await db.insert(agents).values({
+        id: agentId2,
+        companyId: companyId2,
+        name: "OtherAgent",
+        role: "engineer",
+        status: "active",
+        adapterType: "codex_local",
+        adapterConfig: {},
+        runtimeConfig: {},
+        permissions: {},
+      });
+      await db.insert(projects).values({
+        id: projectId2,
+        companyId: companyId2,
+        name: "OtherProject",
+        status: "active",
+      });
+      await db.insert(issues).values({
+        id: issueId2,
+        companyId: companyId2,
+        title: "Other Issue",
+        status: "todo",
+        priority: "medium",
+        projectId: projectId2,
+      });
+
+      // Create intents for both companies for their respective issues
+      await svc.createIntent({
+        companyId,
+        issueId,
+        projectId,
+        targetAgentId: agentId,
+        intentType: "issue_assigned",
+      });
+      await svc.createIntent({
+        companyId: companyId2,
+        issueId: issueId2,
+        projectId: projectId2,
+        targetAgentId: agentId2,
+        intentType: "issue_assigned",
+      });
+
+      // Invalidate with companyId — should only affect company1's intents
+      const count = await svc.invalidateForClosedIssue(issueId, companyId);
+      expect(count).toBe(1);
+
+      // Company2's intent should still be queued
+      const company2Intents = await svc.findQueuedIntents({ companyId: companyId2 });
+      expect(company2Intents.length).toBe(1);
+    });
+  });
 });

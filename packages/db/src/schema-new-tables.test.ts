@@ -85,6 +85,7 @@ describe("execution_leases schema", () => {
       "agentId",
       "runId",
       "state",
+      "ttlSeconds",
       "companyId",
       "grantedAt",
       "renewedAt",
@@ -115,6 +116,7 @@ describe("execution_leases schema", () => {
     // Optional columns
     expect(columns.issueId.notNull).toBe(false);
     expect(columns.runId.notNull).toBe(false);
+    expect(columns.ttlSeconds.notNull).toBe(false);
     expect(columns.renewedAt.notNull).toBe(false);
     expect(columns.releasedAt.notNull).toBe(false);
     expect(columns.releaseReason.notNull).toBe(false);

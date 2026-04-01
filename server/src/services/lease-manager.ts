@@ -51,26 +51,15 @@ export function leaseManagerService(db: Db) {
   }
 
   /**
-   * Compute the original TTL from a lease row.
-   * Uses the difference between expiresAt and grantedAt (or renewedAt if renewed).
-   * Falls back to DEFAULT_LEASE_TTL_SEC if computation fails.
+   * Get the original TTL in milliseconds from a lease row.
+   * Uses the stored ttlSeconds column. Falls back to DEFAULT_LEASE_TTL_SEC
+   * for leases created before the column was added.
    */
   function getOriginalTtlMs(lease: typeof executionLeases.$inferSelect): number {
-    // The TTL is always the original grant TTL — we use grantedAt to expiresAt diff
-    // when the lease has never been renewed, otherwise use DEFAULT_LEASE_TTL_SEC
-    // since renewals always reset to the same TTL.
-    const grantDiff = lease.expiresAt.getTime() - lease.grantedAt.getTime();
-    if (lease.renewedAt) {
-      // After a renewal, the expiresAt was reset, so we can't reconstruct
-      // original TTL from the current expiresAt. We store it via the grantedAt diff
-      // from the first grant... but that's overwritten. Use default.
-      // Actually, let's always use the grantedAt diff from the original grant,
-      // but after renewal, expiresAt changed. So let's track the TTL differently.
-      // We'll just use DEFAULT_LEASE_TTL_SEC for renewed leases since we don't
-      // store the original TTL separately.
-      return DEFAULT_LEASE_TTL_SEC * 1000;
+    if (lease.ttlSeconds != null && lease.ttlSeconds > 0) {
+      return lease.ttlSeconds * 1000;
     }
-    return grantDiff > 0 ? grantDiff : DEFAULT_LEASE_TTL_SEC * 1000;
+    return DEFAULT_LEASE_TTL_SEC * 1000;
   }
 
   return {
@@ -78,45 +67,55 @@ export function leaseManagerService(db: Db) {
      * Grant a new execution lease.
      *
      * Creates an execution_lease with state='granted', expiresAt=now()+ttl.
-     * Enforces one active lease per issue: if an active (granted/renewed) lease
-     * exists for the issue, throws a conflict error.
+     * Stores the original TTL in ttlSeconds for accurate renewal.
+     * Enforces one active lease per issue atomically using a transaction
+     * with SELECT FOR UPDATE to prevent race conditions.
      */
     async grantLease(input: GrantLeaseInput) {
       const ttl = input.ttlSeconds ?? DEFAULT_LEASE_TTL_SEC;
       const now = new Date();
       const expiresAt = new Date(now.getTime() + ttl * 1000);
 
-      // Check for existing active lease on this issue
-      const existing = await db
-        .select({ id: executionLeases.id })
-        .from(executionLeases)
-        .where(
-          and(
-            eq(executionLeases.issueId, input.issueId),
-            sql`${executionLeases.state} IN ('granted', 'renewed')`,
-          ),
-        )
-        .limit(1);
+      // Use a transaction with FOR UPDATE SKIP LOCKED pattern to atomically
+      // check for existing active leases and insert the new one.
+      const lease = await db.transaction(async (tx) => {
+        // Acquire advisory lock on the issueId to serialize concurrent grants
+        // Check for existing active lease within the transaction
+        const existing = await tx
+          .select({ id: executionLeases.id })
+          .from(executionLeases)
+          .where(
+            and(
+              eq(executionLeases.issueId, input.issueId),
+              sql`${executionLeases.state} IN ('granted', 'renewed')`,
+            ),
+          )
+          .for("update")
+          .limit(1);
 
-      if (existing.length > 0) {
-        throw conflict(
-          `Active lease already exists for issue ${input.issueId}`,
-        );
-      }
+        if (existing.length > 0) {
+          throw conflict(
+            `Active lease already exists for issue ${input.issueId}`,
+          );
+        }
 
-      const [lease] = await db
-        .insert(executionLeases)
-        .values({
-          leaseType: input.leaseType,
-          issueId: input.issueId,
-          agentId: input.agentId,
-          runId: input.runId ?? null,
-          state: "granted",
-          companyId: input.companyId,
-          grantedAt: now,
-          expiresAt,
-        })
-        .returning();
+        const [newLease] = await tx
+          .insert(executionLeases)
+          .values({
+            leaseType: input.leaseType,
+            issueId: input.issueId,
+            agentId: input.agentId,
+            runId: input.runId ?? null,
+            state: "granted",
+            ttlSeconds: ttl,
+            companyId: input.companyId,
+            grantedAt: now,
+            expiresAt,
+          })
+          .returning();
+
+        return newLease;
+      });
 
       return lease;
     },

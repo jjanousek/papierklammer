@@ -883,4 +883,101 @@ describeDB("schedulerService", () => {
       expect(timeDiff).toBeLessThan(1000); // within 1 second
     });
   });
+
+  // ─── Multi-tenant isolation ───────────────────────────────────────────────
+
+  describe("multi-tenant isolation", () => {
+    it("does not admit intent for issue in a different company", async () => {
+      await seedTestData();
+
+      // Create a second company
+      const companyId2 = randomUUID();
+      await db.insert(companies).values({
+        id: companyId2,
+        name: "OtherCo",
+        issuePrefix: `O${companyId2.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+
+      // The intent references the correct issue/agent/workspace but has a different companyId
+      // This simulates a cross-tenant data leak attempt
+      const crossTenantIntent = await intentQueue.createIntent({
+        companyId: companyId2,  // Wrong company
+        issueId,               // Issue belongs to companyId, not companyId2
+        projectId,
+        targetAgentId: agentId,
+        intentType: "issue_assigned",
+        priority: 10,
+        workspaceId,
+      });
+
+      const result = await scheduler.processIntent(crossTenantIntent.id);
+
+      // Should be rejected because the issue doesn't belong to companyId2
+      expect(result.admitted).toBe(false);
+      expect(result.reason).toContain("issue not found");
+    });
+
+    it("does not see workspace from another company", async () => {
+      // Seed company1 without workspace
+      await seedTestData({ withWorkspace: false });
+
+      // Create a workspace in a different company
+      const companyId2 = randomUUID();
+      const wsId2 = randomUUID();
+      await db.insert(companies).values({
+        id: companyId2,
+        name: "OtherCo",
+        issuePrefix: `O${companyId2.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+      await db.insert(projectWorkspaces).values({
+        id: wsId2,
+        companyId: companyId2,
+        projectId,
+        name: "other-workspace",
+        sourceType: "local_path",
+        cwd: "/tmp/other-workspace",
+        isPrimary: true,
+      });
+
+      // Intent in company1 referencing company2's workspace
+      const intent = await createTestIntent({ workspaceId: wsId2 });
+      const result = await scheduler.processIntent(intent.id);
+
+      expect(result.admitted).toBe(false);
+      expect(result.reason).toContain("workspace not found");
+    });
+
+    it("does not count runs from another company toward capacity", async () => {
+      await seedTestData();
+
+      // Create a second company with a running run for the same agent ID
+      // (normally agents are unique per company, but this tests the query filter)
+      const companyId2 = randomUUID();
+      await db.insert(companies).values({
+        id: companyId2,
+        name: "OtherCo",
+        issuePrefix: `O${companyId2.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+
+      // Create a running run in company2 for the same agentId
+      // (This is artificial but tests the company filter)
+      await db.insert(heartbeatRuns).values({
+        companyId: companyId2,
+        agentId,
+        invocationSource: "scheduler",
+        status: "running",
+        startedAt: new Date(),
+      });
+
+      // Company1's intent should still be admitted because the running run
+      // is in a different company
+      const intent = await createTestIntent();
+      const result = await scheduler.processIntent(intent.id);
+
+      expect(result.admitted).toBe(true);
+    });
+  });
 });

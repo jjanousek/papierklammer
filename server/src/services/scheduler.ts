@@ -60,13 +60,19 @@ export function schedulerService(db: Db) {
   const budgets = budgetService(db);
 
   /**
-   * Count currently running runs for an agent.
+   * Count currently running runs for an agent, scoped to a company.
    */
-  async function countRunningRunsForAgent(agentId: string): Promise<number> {
+  async function countRunningRunsForAgent(agentId: string, companyId: string): Promise<number> {
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(heartbeatRuns)
-      .where(and(eq(heartbeatRuns.agentId, agentId), eq(heartbeatRuns.status, "running")));
+      .where(
+        and(
+          eq(heartbeatRuns.agentId, agentId),
+          eq(heartbeatRuns.companyId, companyId),
+          eq(heartbeatRuns.status, "running"),
+        ),
+      );
     return Number(count ?? 0);
   }
 
@@ -92,11 +98,16 @@ export function schedulerService(db: Db) {
       return { admitted: false, reason: "notBefore is in the future" };
     }
 
-    // 2. Issue still open
+    // 2. Issue still open (company-scoped)
     const [issue] = await db
       .select()
       .from(issues)
-      .where(eq(issues.id, intent.issueId));
+      .where(
+        and(
+          eq(issues.id, intent.issueId),
+          eq(issues.companyId, intent.companyId),
+        ),
+      );
     if (!issue) {
       return { admitted: false, reason: "issue not found" };
     }
@@ -109,12 +120,17 @@ export function schedulerService(db: Db) {
       return { admitted: false, reason: "assignee mismatch" };
     }
 
-    // 4. Workspace exists and is available
+    // 4. Workspace exists and is available (company-scoped)
     if (intent.workspaceId) {
       const [workspace] = await db
         .select()
         .from(projectWorkspaces)
-        .where(eq(projectWorkspaces.id, intent.workspaceId));
+        .where(
+          and(
+            eq(projectWorkspaces.id, intent.workspaceId),
+            eq(projectWorkspaces.companyId, intent.companyId),
+          ),
+        );
       if (!workspace) {
         return { admitted: false, reason: "workspace not found" };
       }
@@ -123,20 +139,26 @@ export function schedulerService(db: Db) {
       const workspaces = await db
         .select({ id: projectWorkspaces.id })
         .from(projectWorkspaces)
-        .where(eq(projectWorkspaces.projectId, issue.projectId))
+        .where(
+          and(
+            eq(projectWorkspaces.projectId, issue.projectId),
+            eq(projectWorkspaces.companyId, intent.companyId),
+          ),
+        )
         .limit(1);
       if (workspaces.length === 0) {
         return { admitted: false, reason: "workspace not found" };
       }
     }
 
-    // 5. No active execution lease on the issue
+    // 5. No active execution lease on the issue (company-scoped)
     const activeLeases = await db
       .select({ id: executionLeases.id })
       .from(executionLeases)
       .where(
         and(
           eq(executionLeases.issueId, intent.issueId),
+          eq(executionLeases.companyId, intent.companyId),
           sql`${executionLeases.state} IN ('granted', 'renewed')`,
         ),
       )
@@ -145,16 +167,21 @@ export function schedulerService(db: Db) {
       return { admitted: false, reason: "active lease exists on issue" };
     }
 
-    // 6. Agent not at maxConcurrentRuns capacity
+    // 6. Agent not at maxConcurrentRuns capacity (company-scoped)
     const [agent] = await db
       .select()
       .from(agents)
-      .where(eq(agents.id, intent.targetAgentId));
+      .where(
+        and(
+          eq(agents.id, intent.targetAgentId),
+          eq(agents.companyId, intent.companyId),
+        ),
+      );
     if (!agent) {
       return { admitted: false, reason: "agent not found" };
     }
     const maxConcurrentRuns = getMaxConcurrentRuns(agent);
-    const runningCount = await countRunningRunsForAgent(intent.targetAgentId);
+    const runningCount = await countRunningRunsForAgent(intent.targetAgentId, intent.companyId);
     if (runningCount >= maxConcurrentRuns) {
       return { admitted: false, reason: "agent at max concurrent runs" };
     }
@@ -215,7 +242,7 @@ export function schedulerService(db: Db) {
     // Admit the intent
     await intentQueue.admitIntent(intentId);
 
-    // Create execution lease
+    // Create execution lease with stored TTL for accurate renewal
     const leaseExpiresAt = new Date(now.getTime() + DEFAULT_LEASE_TTL_SEC * 1000);
     const [lease] = await db
       .insert(executionLeases)
@@ -224,6 +251,7 @@ export function schedulerService(db: Db) {
         issueId: intent.issueId,
         agentId: intent.targetAgentId,
         state: "granted",
+        ttlSeconds: DEFAULT_LEASE_TTL_SEC,
         companyId: intent.companyId,
         grantedAt: now,
         expiresAt: leaseExpiresAt,
@@ -255,7 +283,7 @@ export function schedulerService(db: Db) {
       .set({ runId: run.id, updatedAt: new Date() })
       .where(eq(executionLeases.id, lease.id));
 
-    // Resolve workspace for envelope
+    // Resolve workspace for envelope (company-scoped)
     let resolvedWorkspaceId = intent.workspaceId;
     if (!resolvedWorkspaceId && intent.projectId) {
       const [primaryWs] = await db
@@ -264,6 +292,7 @@ export function schedulerService(db: Db) {
         .where(
           and(
             eq(projectWorkspaces.projectId, intent.projectId),
+            eq(projectWorkspaces.companyId, intent.companyId),
             eq(projectWorkspaces.isPrimary, true),
           ),
         )
@@ -271,11 +300,16 @@ export function schedulerService(db: Db) {
       if (primaryWs) {
         resolvedWorkspaceId = primaryWs.id;
       } else {
-        // Fall back to first workspace for the project
+        // Fall back to first workspace for the project (company-scoped)
         const [firstWs] = await db
           .select({ id: projectWorkspaces.id })
           .from(projectWorkspaces)
-          .where(eq(projectWorkspaces.projectId, intent.projectId))
+          .where(
+            and(
+              eq(projectWorkspaces.projectId, intent.projectId),
+              eq(projectWorkspaces.companyId, intent.companyId),
+            ),
+          )
           .limit(1);
         resolvedWorkspaceId = firstWs?.id ?? null;
       }

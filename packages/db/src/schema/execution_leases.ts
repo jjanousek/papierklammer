@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, index, integer } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 import { issues } from "./issues.js";
 import { agents } from "./agents.js";
@@ -13,6 +13,7 @@ export const executionLeases = pgTable(
     agentId: uuid("agent_id").notNull().references(() => agents.id),
     runId: uuid("run_id").references(() => heartbeatRuns.id),
     state: text("state").notNull().default("granted"),
+    ttlSeconds: integer("ttl_seconds"),
     companyId: uuid("company_id").notNull().references(() => companies.id),
     grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
     renewedAt: timestamp("renewed_at", { withTimezone: true }),
