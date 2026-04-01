@@ -80,23 +80,23 @@ if (process.env.npm_config_authenticated_private === "true") {
 
 const env: NodeJS.ProcessEnv = {
   ...process.env,
-  PAPERCLIP_UI_DEV_MIDDLEWARE: "true",
+  PAPIERKLAMMER_UI_DEV_MIDDLEWARE: "true",
 };
 
 if (mode === "dev") {
-  env.PAPERCLIP_DEV_SERVER_STATUS_FILE = devServerStatusFilePath;
-  env.PAPERCLIP_MIGRATION_AUTO_APPLY ??= "true";
+  env.PAPIERKLAMMER_DEV_SERVER_STATUS_FILE = devServerStatusFilePath;
+  env.PAPIERKLAMMER_MIGRATION_AUTO_APPLY ??= "true";
 }
 
 if (mode === "watch") {
-  env.PAPERCLIP_MIGRATION_PROMPT ??= "never";
-  env.PAPERCLIP_MIGRATION_AUTO_APPLY ??= "true";
+  env.PAPIERKLAMMER_MIGRATION_PROMPT ??= "never";
+  env.PAPIERKLAMMER_MIGRATION_AUTO_APPLY ??= "true";
 }
 
 if (tailscaleAuth) {
-  env.PAPERCLIP_DEPLOYMENT_MODE = "authenticated";
-  env.PAPERCLIP_DEPLOYMENT_EXPOSURE = "private";
-  env.PAPERCLIP_AUTH_BASE_URL_MODE = "auto";
+  env.PAPIERKLAMMER_DEPLOYMENT_MODE = "authenticated";
+  env.PAPIERKLAMMER_DEPLOYMENT_EXPOSURE = "private";
+  env.PAPIERKLAMMER_AUTH_BASE_URL_MODE = "auto";
   env.HOST = "0.0.0.0";
   console.log("[paperclip] dev mode: authenticated/private (tailscale-friendly) on 0.0.0.0");
 } else {
@@ -379,7 +379,7 @@ async function refreshPendingMigrations() {
 
 async function maybePreflightMigrations(options: { interactive?: boolean; autoApply?: boolean; exitOnDecline?: boolean } = {}) {
   const interactive = options.interactive ?? mode === "watch";
-  const autoApply = options.autoApply ?? env.PAPERCLIP_MIGRATION_AUTO_APPLY === "true";
+  const autoApply = options.autoApply ?? env.PAPIERKLAMMER_MIGRATION_AUTO_APPLY === "true";
   const exitOnDecline = options.exitOnDecline ?? mode === "watch";
 
   const payload = await refreshPendingMigrations();

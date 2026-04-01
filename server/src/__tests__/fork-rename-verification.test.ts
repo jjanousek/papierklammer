@@ -72,8 +72,8 @@ describe("fork-rename-verification: @paperclipai → @papierklammer", () => {
     const srcFiles = collectFiles(ROOT, [".ts", ".tsx", ".js", ".mjs", ".json"]);
     const violations: { file: string; line: string }[] = [];
     const excludePatterns = [
-      "PAPERCLIP_ARCHITECTURE_REPORT",
-      "PAPERCLIP_FORK_SPEC",
+      "PAPIERKLAMMER_ARCHITECTURE_REPORT",
+      "PAPIERKLAMMER_FORK_SPEC",
       "fork-rename-verification", // this test file itself
       "pnpm-lock.yaml",
     ];

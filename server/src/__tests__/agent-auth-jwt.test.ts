@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocalAgentJwt, verifyLocalAgentJwt } from "../agent-auth-jwt.js";
 
 describe("agent local JWT", () => {
-  const secretEnv = "PAPERCLIP_AGENT_JWT_SECRET";
-  const ttlEnv = "PAPERCLIP_AGENT_JWT_TTL_SECONDS";
-  const issuerEnv = "PAPERCLIP_AGENT_JWT_ISSUER";
-  const audienceEnv = "PAPERCLIP_AGENT_JWT_AUDIENCE";
+  const secretEnv = "PAPIERKLAMMER_AGENT_JWT_SECRET";
+  const ttlEnv = "PAPIERKLAMMER_AGENT_JWT_TTL_SECONDS";
+  const issuerEnv = "PAPIERKLAMMER_AGENT_JWT_ISSUER";
+  const audienceEnv = "PAPIERKLAMMER_AGENT_JWT_AUDIENCE";
 
   const originalEnv = {
     secret: process.env[secretEnv],

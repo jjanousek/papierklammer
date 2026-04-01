@@ -59,13 +59,13 @@ ENV NODE_ENV=production \
   HOST=0.0.0.0 \
   PORT=3100 \
   SERVE_UI=true \
-  PAPERCLIP_HOME=/paperclip \
-  PAPERCLIP_INSTANCE_ID=default \
+  PAPIERKLAMMER_HOME=/paperclip \
+  PAPIERKLAMMER_INSTANCE_ID=default \
   USER_UID=${USER_UID} \
   USER_GID=${USER_GID} \
-  PAPERCLIP_CONFIG=/paperclip/instances/default/config.json \
-  PAPERCLIP_DEPLOYMENT_MODE=authenticated \
-  PAPERCLIP_DEPLOYMENT_EXPOSURE=private
+  PAPIERKLAMMER_CONFIG=/paperclip/instances/default/config.json \
+  PAPIERKLAMMER_DEPLOYMENT_MODE=authenticated \
+  PAPIERKLAMMER_DEPLOYMENT_EXPOSURE=private
 
 VOLUME ["/paperclip"]
 EXPOSE 3100
