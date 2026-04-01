@@ -12,6 +12,7 @@ import {
 import { intentQueueService } from "./intent-queue.js";
 import { budgetService } from "./budgets.js";
 import { eventLogService } from "./event-log.js";
+import { dependencyService } from "./dependency.js";
 import { logger } from "../middleware/logger.js";
 import { parseObject, asNumber } from "../adapters/utils.js";
 
@@ -60,6 +61,7 @@ export function schedulerService(db: Db) {
   const intentQueue = intentQueueService(db);
   const budgets = budgetService(db);
   const eventLog = eventLogService(db);
+  const deps = dependencyService(db);
 
   /**
    * Count currently running runs for an agent, scoped to a company.
@@ -115,6 +117,12 @@ export function schedulerService(db: Db) {
     }
     if (CLOSED_ISSUE_STATUSES.includes(issue.status)) {
       return { admitted: false, reason: "issue closed" };
+    }
+
+    // 2b. Dependency gate — issue must not have unresolved dependencies (VAL-REL-009)
+    const blocked = await deps.hasUnresolvedDependencies(intent.issueId, intent.companyId);
+    if (blocked) {
+      return { admitted: false, reason: "blocked on dependency" };
     }
 
     // 3. Assignee matches targetAgentId
@@ -237,7 +245,7 @@ export function schedulerService(db: Db) {
         return admission;
       }
       // Defer if at capacity, reject otherwise
-      const deferReasons = ["agent at max concurrent runs"];
+      const deferReasons = ["agent at max concurrent runs", "blocked on dependency"];
       if (admission.reason && deferReasons.includes(admission.reason)) {
         await intentQueue.deferIntent(intentId, admission.reason);
       } else {

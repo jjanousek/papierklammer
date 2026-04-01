@@ -3,10 +3,12 @@ import type { Db } from "@papierklammer/db";
 import {
   executionLeases,
   heartbeatRuns,
+  issueDependencies,
   issues,
 } from "@papierklammer/db";
 import { intentQueueService } from "./intent-queue.js";
 import { leaseManagerService } from "./lease-manager.js";
+import { dependencyService } from "./dependency.js";
 
 /**
  * Active run statuses considered "running" for projection purposes.
@@ -45,6 +47,7 @@ export interface IssueProjection {
 export function projectionService(db: Db) {
   const intentQueue = intentQueueService(db);
   const leaseMgr = leaseManagerService(db);
+  const deps = dependencyService(db);
 
   return {
     /**
@@ -57,6 +60,7 @@ export function projectionService(db: Db) {
      * @param activeRun - The active heartbeat run for this issue, or null
      * @param activeLease - The active execution lease for this issue, or null
      * @param checkoutRunId - The checkoutRunId on the issue (indicates checkout happened)
+     * @param hasUnresolvedDeps - Whether the issue has unresolved dependencies (optional)
      */
     projectIssueStatus(
       issue: {
@@ -68,6 +72,7 @@ export function projectionService(db: Db) {
       activeRun: { id: string; status: string } | null,
       activeLease: { id: string; state: string } | null,
       checkoutRunId: string | null,
+      hasUnresolvedDeps = false,
     ): IssueProjection {
       // If issue is done, always project as done
       if (issue.status === "done") {
@@ -112,6 +117,18 @@ export function projectionService(db: Db) {
         };
       }
 
+      // If issue has unresolved dependencies, project as blocked_on_dependency
+      // (only when there's no active run with checkout already — active work takes precedence)
+      if (hasUnresolvedDeps) {
+        return {
+          projectedStatus: "blocked_on_dependency",
+          activeRunId: runIsActive ? activeRun.id : null,
+          activeLeaseId: leaseIsActive ? activeLease.id : null,
+          pickupFailCount: issue.pickupFailCount,
+          lastReconciledAt: issue.lastReconciledAt,
+        };
+      }
+
       // If run exists (active or not) but no checkout, or run is cancelled/failed
       // → raw status, but still report active run/lease metadata if they exist
       return {
@@ -134,6 +151,7 @@ export function projectionService(db: Db) {
       const [issue] = await db
         .select({
           id: issues.id,
+          companyId: issues.companyId,
           status: issues.status,
           executionRunId: issues.executionRunId,
           checkoutRunId: issues.checkoutRunId,
@@ -166,6 +184,9 @@ export function projectionService(db: Db) {
       // Fetch active lease for the issue
       const activeLease = await leaseMgr.getActiveLease(issueId);
 
+      // Check for unresolved dependencies (VAL-REL-008)
+      const hasUnresolvedDeps = await deps.hasUnresolvedDependencies(issueId, issue.companyId);
+
       return this.projectIssueStatus(
         issue,
         activeRun,
@@ -173,6 +194,7 @@ export function projectionService(db: Db) {
           ? { id: activeLease.id, state: activeLease.state }
           : null,
         issue.checkoutRunId,
+        hasUnresolvedDeps,
       );
     },
 
@@ -274,6 +296,39 @@ export function projectionService(db: Db) {
         }
       }
 
+      // Batch fetch dependency data for all issues (VAL-REL-008)
+      // Find which issues have at least one unresolved dependency
+      const depBlockedSet = new Set<string>();
+      if (issueIds.length > 0) {
+        // Get all dependencies for these issues
+        const allDeps = await db
+          .select({
+            issueId: issueDependencies.issueId,
+            dependsOnIssueId: issueDependencies.dependsOnIssueId,
+          })
+          .from(issueDependencies)
+          .where(inArray(issueDependencies.issueId, issueIds));
+
+        if (allDeps.length > 0) {
+          // Get unique dep target IDs and their statuses
+          const depTargetIds = [...new Set(allDeps.map((d) => d.dependsOnIssueId))];
+          const depIssueStatuses = await db
+            .select({ id: issues.id, status: issues.status })
+            .from(issues)
+            .where(inArray(issues.id, depTargetIds));
+
+          const statusMap = new Map(depIssueStatuses.map((i) => [i.id, i.status]));
+
+          // For each issue, check if any dependency is not done
+          for (const dep of allDeps) {
+            const depStatus = statusMap.get(dep.dependsOnIssueId);
+            if (!depStatus || depStatus !== "done") {
+              depBlockedSet.add(dep.issueId);
+            }
+          }
+        }
+      }
+
       // Project each issue
       return issueRows.map((issue) => {
         const activeRun = issue.executionRunId
@@ -286,6 +341,7 @@ export function projectionService(db: Db) {
           activeRun,
           activeLease,
           issue.checkoutRunId,
+          depBlockedSet.has(issue.id),
         );
 
         return {

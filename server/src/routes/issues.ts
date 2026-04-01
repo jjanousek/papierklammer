@@ -42,6 +42,7 @@ import { intentQueueService } from "../services/intent-queue.js";
 import { leaseManagerService } from "../services/lease-manager.js";
 import { eventLogService } from "../services/event-log.js";
 import { projectionService } from "../services/projections.js";
+import { dependencyService } from "../services/dependency.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 const updateIssueRouteSchema = updateIssueSchema.extend({
@@ -65,6 +66,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   const leaseMgr = leaseManagerService(db);
   const eventLog = eventLogService(db);
   const projections = projectionService(db);
+  const depSvc = dependencyService(db);
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -1143,6 +1145,12 @@ export function issueRoutes(db: Db, storage: StorageService) {
       if (issue.status === "done" || issue.status === "cancelled") {
         void projections.invalidateOnDone(issue.id, issue.companyId).catch((err) =>
           logger.warn({ err, issueId: issue.id }, "failed to invalidate intents/leases on issue done"));
+      }
+
+      // When issue goes to done, create dependency_unblocked intents for dependents (VAL-REL-010)
+      if (issue.status === "done") {
+        void depSvc.onDependencyCompleted(issue.id, issue.companyId).catch((err) =>
+          logger.warn({ err, issueId: issue.id }, "failed to create dependency_unblocked intents"));
       }
     }
 
