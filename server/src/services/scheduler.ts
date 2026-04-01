@@ -13,6 +13,7 @@ import { intentQueueService } from "./intent-queue.js";
 import { budgetService } from "./budgets.js";
 import { eventLogService } from "./event-log.js";
 import { dependencyService } from "./dependency.js";
+import { lookupWarmWorkspace } from "./warm-workspace-pool.js";
 import { logger } from "../middleware/logger.js";
 import { parseObject, asNumber } from "../adapters/utils.js";
 
@@ -343,7 +344,22 @@ export function schedulerService(db: Db) {
       .where(eq(executionLeases.id, lease.id));
 
     // Resolve workspace for envelope (company-scoped)
+    // First, check the warm workspace pool for sticky routing
     let resolvedWorkspaceId = intent.workspaceId;
+    if (!resolvedWorkspaceId && intent.projectId) {
+      const warmWs = await lookupWarmWorkspace(db, intent.projectId);
+      if (warmWs) {
+        resolvedWorkspaceId = warmWs.workspaceId;
+        logger.debug(
+          {
+            intentId: intent.id,
+            projectId: intent.projectId,
+            warmWorkspaceId: warmWs.workspaceId,
+          },
+          "Scheduler using warm workspace for sticky routing",
+        );
+      }
+    }
     if (!resolvedWorkspaceId && intent.projectId) {
       const [primaryWs] = await db
         .select({ id: projectWorkspaces.id })

@@ -34,6 +34,7 @@ import { intentQueueService } from "./intent-queue.js";
 import { dispatcherService } from "./dispatcher.js";
 import { eventLogService } from "./event-log.js";
 import { terminalStatePolicyService } from "./terminal-state-policy.js";
+import { registerCompletedRunWorkspace } from "./warm-workspace-pool.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
@@ -3086,6 +3087,21 @@ export function heartbeatService(db: Db) {
             }
           } catch (err) {
             logger.warn({ err, runId: finalizedRun.id }, "failed to enforce terminal-state policy");
+          }
+        }
+
+        // Register completed run's workspace in warm pool for sticky routing
+        if (outcome === "succeeded" || outcome === "failed") {
+          try {
+            const runContext = parseObject(finalizedRun.contextSnapshot);
+            registerCompletedRunWorkspace(db, {
+              workspaceId: readNonEmptyString(runContext.workspaceId),
+              cwd: resolvedWorkspace?.cwd ?? null,
+              projectId: readNonEmptyString(runContext.projectId),
+              projectWorkspaceId: resolvedWorkspace?.workspaceId ?? readNonEmptyString(runContext.workspaceId),
+            });
+          } catch (err) {
+            logger.warn({ err, runId: finalizedRun.id }, "failed to register workspace in warm pool");
           }
         }
       }
