@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import { dispatchIntents } from "@papierklammer/db";
 import { badRequest, conflict, notFound } from "../errors.js";
@@ -99,11 +99,59 @@ export function intentQueueService(db: Db) {
      * Create a new dispatch intent.
      * Handles deduplication: if a queued intent with the same dedupeKey exists,
      * supersede the older one and keep the new one.
+     *
+     * Special handling for timer_hint intents: if a higher-priority queued intent
+     * already exists with the same dedupeKey, the timer_hint is auto-superseded
+     * on creation (it never becomes active). This ensures event-driven intents
+     * always take precedence over timer hints.
      */
     async createIntent(input: CreateIntentInput) {
       validateCreateInput(input);
 
-      // Deduplication: supersede existing queued intents with the same dedupeKey
+      const effectivePriority = input.priority ?? 0;
+
+      // Timer hint supersession: if creating a timer_hint and a higher-priority
+      // queued intent already exists for the same dedupeKey, auto-supersede the
+      // new timer_hint immediately.
+      if (input.dedupeKey && input.intentType === "timer_hint") {
+        const higherPriorityExists = await db
+          .select({ id: dispatchIntents.id })
+          .from(dispatchIntents)
+          .where(
+            and(
+              eq(dispatchIntents.dedupeKey, input.dedupeKey),
+              eq(dispatchIntents.status, "queued"),
+              gt(dispatchIntents.priority, effectivePriority),
+            ),
+          )
+          .limit(1);
+
+        if (higherPriorityExists.length > 0) {
+          // Insert the timer_hint as immediately superseded
+          const [row] = await db
+            .insert(dispatchIntents)
+            .values({
+              companyId: input.companyId,
+              issueId: input.issueId,
+              projectId: input.projectId,
+              goalId: input.goalId ?? null,
+              workspaceId: input.workspaceId ?? null,
+              targetAgentId: input.targetAgentId,
+              intentType: input.intentType,
+              priority: effectivePriority,
+              status: "superseded",
+              dedupeKey: input.dedupeKey ?? null,
+              sourceEventId: input.sourceEventId ?? null,
+              notBefore: input.notBefore ?? null,
+              resolvedAt: new Date(),
+            })
+            .returning();
+
+          return row;
+        }
+      }
+
+      // Standard deduplication: supersede existing queued intents with the same dedupeKey
       if (input.dedupeKey) {
         await db
           .update(dispatchIntents)
@@ -130,7 +178,7 @@ export function intentQueueService(db: Db) {
           workspaceId: input.workspaceId ?? null,
           targetAgentId: input.targetAgentId,
           intentType: input.intentType,
-          priority: input.priority ?? 0,
+          priority: effectivePriority,
           status: "queued",
           dedupeKey: input.dedupeKey ?? null,
           sourceEventId: input.sourceEventId ?? null,

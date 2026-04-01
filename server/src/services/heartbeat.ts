@@ -28,6 +28,8 @@ import { costService } from "./costs.js";
 import { companySkillService } from "./company-skills.js";
 import { budgetService, type BudgetEnforcementScope } from "./budgets.js";
 import { secretService } from "./secrets.js";
+import { tickTimers as tickTimersViaIntents } from "./timer-intent-bridge.js";
+import { intentQueueService } from "./intent-queue.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
@@ -3946,38 +3948,15 @@ export function heartbeatService(db: Db) {
     resumeQueuedRuns,
 
     tickTimers: async (now = new Date()) => {
-      const allAgents = await db.select().from(agents);
-      let checked = 0;
-      let enqueued = 0;
-      let skipped = 0;
-
-      for (const agent of allAgents) {
-        if (agent.status === "paused" || agent.status === "terminated" || agent.status === "pending_approval") continue;
-        const policy = parseHeartbeatPolicy(agent);
-        if (!policy.enabled || policy.intervalSec <= 0) continue;
-
-        checked += 1;
-        const baseline = new Date(agent.lastHeartbeatAt ?? agent.createdAt).getTime();
-        const elapsedMs = now.getTime() - baseline;
-        if (elapsedMs < policy.intervalSec * 1000) continue;
-
-        const run = await enqueueWakeup(agent.id, {
-          source: "timer",
-          triggerDetail: "system",
-          reason: "heartbeat_timer",
-          requestedByActorType: "system",
-          requestedByActorId: "heartbeat_scheduler",
-          contextSnapshot: {
-            source: "scheduler",
-            reason: "interval_elapsed",
-            now: now.toISOString(),
-          },
-        });
-        if (run) enqueued += 1;
-        else skipped += 1;
-      }
-
-      return { checked, enqueued, skipped };
+      // Delegate to intent-based timer bridge: creates timer_hint dispatch_intents
+      // instead of directly creating heartbeat_runs via enqueueWakeup().
+      const intentQueue = intentQueueService(db);
+      const result = await tickTimersViaIntents(db, intentQueue, now);
+      return {
+        checked: result.checked,
+        enqueued: result.intentsCreated,
+        skipped: result.skipped,
+      };
     },
 
     cancelRun: (runId: string) => cancelRunInternal(runId),
