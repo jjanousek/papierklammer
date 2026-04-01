@@ -1,0 +1,16 @@
+commands:
+  install: pnpm install
+  build: pnpm build
+  typecheck: pnpm -r typecheck
+  test: pnpm test:run --max-workers=4
+  lint: echo "no lint configured"
+  db_generate: cd packages/db && pnpm build && npx drizzle-kit generate
+  db_migrate: pnpm db:migrate
+
+services:
+  api:
+    start: PORT=3100 pnpm dev:once
+    stop: lsof -ti :3100 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3100/api/health
+    port: 3100
+    depends_on: []
