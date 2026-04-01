@@ -1,0 +1,45 @@
+{
+  "featureId": "scheduler-service",
+  "reviewedAt": "2026-04-01T07:01:29Z",
+  "commitId": "8edaa9f3b5db49fd01a5c728e38d179831d572f4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The scheduler service includes the required methods and broad test coverage, but it has blocking contract/security defects: admitted intents are immediately consumed, admission checks are not company-scoped, and future notBefore intents are rejected instead of skipped.",
+    "issues": [
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 311,
+        "severity": "blocking",
+        "description": "processIntent immediately calls consumeIntent after admitting and creating run/envelope. This skips the admitted state required by scheduler admission behavior (VAL-HARD-010 expects admitted intents after scheduling) and marks intents consumed before downstream execution lifecycle."
+      },
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 99,
+        "severity": "blocking",
+        "description": "Admission checks are not company-scoped: lookups for issue, workspace, active lease, and agent use only record IDs (e.g., lines 99, 117, 126, 139, 152). With independent foreign keys on dispatch_intents, this allows cross-company reference mixing and violates company isolation invariants."
+      },
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 210,
+        "severity": "blocking",
+        "description": "Future notBefore intents are rejected by processIntent via the generic failure path (checkAdmission returns \"notBefore is in the future\" at line 92, then rejectIntent at line 210). Contract requires future notBefore intents to be skipped/deferred until due, not permanently rejected."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill mandates test-first sequencing, but the worker implemented service code before tests while still reporting followedProcedure=true.",
+      "evidence": "Transcript skeleton shows Create server/src/services/scheduler.ts followed by Create server/src/__tests__/scheduler.test.ts; handoff.skillFeedback.followedProcedure is true."
+    },
+    {
+      "area": "services",
+      "observation": "Worker validation commands diverged from shared service command defaults, risking known flaky behavior.",
+      "evidence": "Transcript includes `pnpm test:run --max-workers=4`; .factory/services.yaml defines `test: pnpm test:run --max-workers=1`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review failed: scheduler admission flow and tests are substantial, but blocking issues remain in intent state transition semantics, company isolation enforcement, and notBefore handling."
+}

@@ -1,0 +1,139 @@
+{
+  "milestone": "hard-invariants",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" test:run --max-workers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 6,
+    "passed": 1,
+    "failed": 5,
+    "failedFeatures": [
+      "intent-queue-service",
+      "intent-timer-integration",
+      "scheduler-service",
+      "lease-manager-service",
+      "dispatcher-envelope-service"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "intent-queue-service",
+      "severity": "blocking",
+      "description": "Intent deduplication is not company-scoped, so one tenant can supersede queued intents from another tenant when dedupe keys collide."
+    },
+    {
+      "featureId": "intent-queue-service",
+      "severity": "blocking",
+      "description": "Intent state transitions use read-then-write updates without previous-state predicates, allowing concurrent TOCTOU races to violate the state machine."
+    },
+    {
+      "featureId": "intent-timer-integration",
+      "severity": "blocking",
+      "description": "Issue assignment wakeups still use legacy heartbeat wakeup paths in production call sites instead of creating issue_assigned intents."
+    },
+    {
+      "featureId": "intent-timer-integration",
+      "severity": "blocking",
+      "description": "Assignment and timer dedupe keys are incompatible, preventing assignment intents from superseding timer hints for the same issue."
+    },
+    {
+      "featureId": "scheduler-service",
+      "severity": "blocking",
+      "description": "Scheduler immediately consumes intents after admission/run creation, skipping the required admitted state lifecycle."
+    },
+    {
+      "featureId": "scheduler-service",
+      "severity": "blocking",
+      "description": "Scheduler admission lookups are not consistently company-scoped, creating cross-company data access and isolation risk."
+    },
+    {
+      "featureId": "scheduler-service",
+      "severity": "blocking",
+      "description": "Intents with future notBefore are rejected instead of skipped/deferred until they become due."
+    },
+    {
+      "featureId": "lease-manager-service",
+      "severity": "blocking",
+      "description": "Lease renewal does not preserve original custom TTL after the first renewal and can inflate renewed leases to default TTL."
+    },
+    {
+      "featureId": "lease-manager-service",
+      "severity": "blocking",
+      "description": "One-active-lease enforcement uses non-atomic check-then-insert logic, so concurrent grant attempts can create multiple active leases."
+    },
+    {
+      "featureId": "dispatcher-envelope-service",
+      "severity": "blocking",
+      "description": "Production scheduler path still builds envelopes/runs directly and does not invoke dispatcherService.dispatchRun as the authoritative dispatch flow."
+    },
+    {
+      "featureId": "dispatcher-envelope-service",
+      "severity": "blocking",
+      "description": "Heartbeat executeRun still resolves workspace/context inline instead of using only pre-constructed envelope context."
+    },
+    {
+      "featureId": "dispatcher-envelope-service",
+      "severity": "blocking",
+      "description": "Runs without envelopes are still executable because runtime does not enforce requireEnvelopeForRun in the active execution path."
+    },
+    {
+      "featureId": "dispatcher-envelope-service",
+      "severity": "blocking",
+      "description": "New dispatcher issue/workspace lookups omit companyId filters, violating multi-tenant company-scope invariants."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "backend-worker skill",
+      "suggestion": "Require validator commands to be run from `.factory/services.yaml` verbatim (including configured max-workers), and require handoff to call out any justified deviations.",
+      "evidence": "Multiple hard-invariants reviews observed workers using `pnpm test:run --max-workers=4` while services.yaml canonical test command is `pnpm test:run --max-workers=1`.",
+      "isSystemic": true
+    },
+    {
+      "target": "backend-worker skill",
+      "suggestion": "Clarify and enforce the red-phase expectation (tests first, expected fail before implementation), or explicitly relax it so skill feedback is consistent.",
+      "evidence": "Multiple reviews flagged service implementation before first test execution while handoff still reported `followedProcedure: true`.",
+      "isSystemic": true
+    },
+    {
+      "target": "backend-worker skill",
+      "suggestion": "Add an explicit implementation checklist item for company-scoped query predicates on all service lookups and updates.",
+      "evidence": "Blocking company-scope violations were found in scheduler and dispatcher feature implementations.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add a canonical dispatch-intent dedupeKey convention for cross-intent supersession semantics (e.g., issue-scoped keys shared across timer/assignment/event intents where supersession is required).",
+      "evidence": "Timer and assignment intent features used incompatible dedupe keys (`timer:<issueId>` vs `assignment:<issueId>`), causing required supersession behavior gaps.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Repeated reports that services.yaml and worker test commands diverged.",
+      "reason": "duplicate"
+    },
+    {
+      "observation": "Repeated reports about backend-worker red-phase/test-first adherence mismatch.",
+      "reason": "duplicate"
+    }
+  ],
+  "previousRound": null
+}

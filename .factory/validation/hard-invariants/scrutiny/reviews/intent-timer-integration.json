@@ -1,0 +1,39 @@
+{
+  "featureId": "intent-timer-integration",
+  "reviewedAt": "2026-04-01T07:01:28Z",
+  "commitId": "7f3e7fee4f1d7c4851086f8b0e41b3f7bfd82976",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Timer tick integration into dispatch intents is implemented, but issue-assignment integration was not wired into production call paths and dedupe-key semantics do not allow issue_assigned intents to supersede timer hints for the same issue.",
+    "issues": [
+      {
+        "file": "server/src/routes/issues.ts",
+        "line": 990,
+        "severity": "blocking",
+        "description": "Issue assignment still uses the legacy wakeup path instead of intent creation. `queueIssueAssignmentWakeup(...)` is still called here (also in `server/src/services/routines.ts:633`), and `queueIssueAssignmentWakeup` still calls `heartbeat.wakeup(...)` directly (`server/src/services/issue-assignment-wakeup.ts:45-46`). This does not satisfy the feature requirement to modify assignment wakeups to create `issue_assigned` dispatch intents."
+      },
+      {
+        "file": "server/src/services/issue-assignment-wakeup.ts",
+        "line": 91,
+        "severity": "blocking",
+        "description": "The new assignment intent path uses `dedupeKey: assignment:${issueId}`, while timer intents use `dedupeKey: timer:${issueId}` (`server/src/services/timer-intent-bridge.ts:105`). Because keys differ, assignment-driven stronger intents cannot supersede timer hints for the same issue via deduplication, conflicting with VAL-HARD-008 intent supersession semantics (`validation-contract.md:123`)."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The shared-state docs do not define a canonical dedupeKey scheme across intent types for the same issue, which allows incompatible keys that break cross-type supersession behavior.",
+      "evidence": "`.factory/library/architecture.md` documents deduplication conceptually but not key conventions; implementation now uses `timer:${issueId}` (`server/src/services/timer-intent-bridge.ts:105`) and `assignment:${issueId}` (`server/src/services/issue-assignment-wakeup.ts:91`)."
+    },
+    {
+      "area": "conventions",
+      "observation": "Mission AGENTS.md requires company-scoped queries, but intent dedupe checks in intent-queue are not company-filtered.",
+      "evidence": "Mission `AGENTS.md` states company-scoped multi-tenancy. In `server/src/services/intent-queue.ts:122-124` and `:165-166`, dedupe conditions only match on dedupeKey/status/priority without `companyId` filtering."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review failed with two blocking gaps: assignment wakeups remain on legacy `heartbeat.wakeup` call paths, and assignment/timer dedupe keys are incompatible for required timer supersession semantics. Review artifact written for scrutiny validator triage."
+}

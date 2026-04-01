@@ -1,0 +1,33 @@
+{
+  "featureId": "stale-run-reaper",
+  "reviewedAt": "2026-04-01T07:02:40Z",
+  "commitId": "db9a3b5b5642128e9f899d910fc9db0827c83e7c",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature implementation covers the requested behavior: expired-lease run reaping, issue lock release, control-plane event emission, pickup-failure increments, periodic scheduling in index.ts, and focused test coverage. One non-blocking edge-case remains around duplicate processing when a run has multiple expired lease rows.",
+    "issues": [
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 1989,
+        "severity": "non_blocking",
+        "description": "The stale-run query joins `heartbeat_runs` to `execution_leases` by `runId` and processes each joined row independently. Because `execution_leases.runId` is indexed but not unique (see `packages/db/src/schema/execution_leases.ts`), a single run with multiple expired lease rows can be processed multiple times, causing duplicate `run_cancelled` events and multiple `pickupFailCount` increments for one run."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill says to write tests first (red phase) before implementation, but this worker implemented heartbeat/index changes before creating the new stale-run-reaper test file. If this workflow is acceptable, the skill guidance should be clarified to avoid inconsistent adherence signals.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md (Work Procedure step 3) vs transcript skeleton for workerSessionId eb89be8e-cf9f-4a59-b705-c245c463e53a showing Edit(heartbeat.ts/index.ts) before Create(server/src/__tests__/stale-run-reaper.test.ts)."
+    },
+    {
+      "area": "services",
+      "observation": "Shared command guidance is inconsistent for test concurrency: services.yaml defines test as `pnpm test:run --max-workers=1`, but this worker validated with `pnpm test:run --max-workers=4`.",
+      "evidence": ".factory/services.yaml command `test: pnpm test:run --max-workers=1`; handoff verification lists `pnpm test:run --max-workers=4`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed stale-run-reaper at commit db9a3b5b5642128e9f899d910fc9db0827c83e7c, including transcript skeleton and diff. Result: PASS with one non-blocking edge-case (possible duplicate processing for runs with multiple expired leases) and two shared-state documentation/skill observations."
+}

@@ -1,0 +1,45 @@
+{
+  "featureId": "lease-manager-service",
+  "reviewedAt": "2026-04-01T07:03:13Z",
+  "commitId": "74045d3ed78fd44f2b4cf698103808f4023cc4a1",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Implementation is close, but two blocking correctness issues remain: renewal does not preserve original TTL after the first renewal for non-default leases, and active-lease exclusivity is enforced with a non-atomic check-then-insert pattern that does not guarantee exactly-one success under real concurrency.",
+    "issues": [
+      {
+        "file": "server/src/services/lease-manager.ts",
+        "line": 63,
+        "severity": "blocking",
+        "description": "`renewLease` does not preserve the original TTL once a lease has already been renewed. `getOriginalTtlMs` returns `DEFAULT_LEASE_TTL_SEC` whenever `renewedAt` is set, so a lease granted with custom TTL (e.g. checkout TTL 60s) gets renewed to 300s on second+ renewal, violating the expected behavior to extend by the original TTL."
+      },
+      {
+        "file": "server/src/services/lease-manager.ts",
+        "line": 90,
+        "severity": "blocking",
+        "description": "`grantLease` enforces one-active-lease via `SELECT` then `INSERT` without transactional locking or a DB uniqueness guard. Concurrent callers can pass the pre-check before either insert commits, allowing multiple active leases for the same issue and violating the required concurrent behavior (exactly one succeeds)."
+      },
+      {
+        "file": "server/src/__tests__/lease-manager.test.ts",
+        "line": 447,
+        "severity": "non_blocking",
+        "description": "Renewal tests do not cover repeated renewals for custom TTL leases; they only assert monotonic extension for default TTL. This gap allowed the TTL-regression bug to pass tests."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "`backend-worker` procedure specifies a red phase (`Run pnpm test:run \u2014 new tests should FAIL`) before implementation, but the transcript shows tests were created and implementation was added before any lease-manager test execution. `skillFeedback.followedProcedure: true` in handoff appears overly permissive.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md:32-43; transcript skeleton for session 0375e79d-3cd8-4518-9fa2-b162e060de4f shows Create lease-manager.test.ts -> Create lease-manager.ts -> Execute `npx vitest run src/__tests__/lease-manager.test.ts`."
+    },
+    {
+      "area": "services",
+      "observation": "Shared command guidance is inconsistent for test concurrency: `services.yaml` declares `pnpm test:run --max-workers=1`, but worker ran full-suite tests with `--max-workers=4`.",
+      "evidence": ".factory/services.yaml:5 vs transcript skeleton command `pnpm test:run --max-workers=4`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed handoff, diff, transcript skeleton, and skill/doc context for lease-manager-service. Result: fail due to two blocking issues (non-atomic concurrent grant enforcement and incorrect TTL preservation across repeated renewals for custom TTL leases), plus one test-coverage gap and two shared-state observations."
+}

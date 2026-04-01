@@ -1,0 +1,57 @@
+{
+  "featureId": "dispatcher-envelope-service",
+  "reviewedAt": "2026-04-01T07:03:05Z",
+  "commitId": "c6681a77",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit adds envelope/dispatcher service code and broad tests, but the runtime flow does not actually use the dispatcher path and does not enforce the no-envelope guard in executeRun. There are also company-scope violations in new dispatcher queries.",
+    "issues": [
+      {
+        "file": "server/src/services/scheduler.ts",
+        "line": 284,
+        "severity": "blocking",
+        "description": "Dispatcher flow is not integrated into production dispatch: scheduler.processIntent still resolves workspace and creates execution_envelopes directly instead of calling dispatcherService.dispatchRun(). This bypasses the feature’s intended dispatcher/envelope flow and makes dispatcher-specific rejection/event behavior non-authoritative."
+      },
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 2335,
+        "severity": "blocking",
+        "description": "executeRun still performs inline workspace/context resolution (resolveWorkspaceForRun) rather than consuming a pre-constructed envelope as the source of dispatch context, so requirement (3) in the feature description is not implemented end-to-end."
+      },
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 2844,
+        "severity": "blocking",
+        "description": "Runs without envelopes are not blocked. executeRun only conditionally injects envelope context when run.envelopeId exists and otherwise continues execution; dispatcher.requireEnvelopeForRun() is never invoked by the runtime path."
+      },
+      {
+        "file": "server/src/services/dispatcher.ts",
+        "line": 96,
+        "severity": "blocking",
+        "description": "Company-scoped invariant is violated in new dispatcher queries: explicit workspace lookup (.where(eq(projectWorkspaces.id, input.workspaceId))) and issue lookup (.where(eq(issues.id, input.issueId))) omit companyId filters, enabling cross-company data access risk."
+      },
+      {
+        "file": "server/src/__tests__/dispatcher-envelope.test.ts",
+        "line": 194,
+        "severity": "non_blocking",
+        "description": "VAL-HARD-031’s stated evidence expects an attempted envelope update to fail, but the immutability test does not attempt an update and instead asserts API shape/comments. Coverage is useful but does not directly exercise update rejection semantics."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "Procedure-adherence signaling is weak: backend-worker requires test-first red/green, but this run implemented services before tests and first targeted test execution was already green while handoff.skillFeedback still marked followedProcedure=true.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md:32-41 requires red phase; transcript skeleton for workerSessionId 5b71292b-3957-4dfe-b598-b0612477c566 shows Create envelope.ts/dispatcher.ts before test execution, and first vitest run reports all 26 tests passing."
+    },
+    {
+      "area": "skills",
+      "observation": "backend-worker skill does not explicitly restate the company-scope query rule, which appears to be an error-prone gap for service implementations.",
+      "evidence": "Mission AGENTS.md:29 states all queries must include companyId; dispatcher.ts:96 and dispatcher.ts:112 introduce unscoped lookups in a newly implemented service."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed feature metadata, handoff, commit c6681a77 diff, transcript skeleton, backend-worker skill, mission AGENTS, services.yaml, and library architecture notes. Result is fail with four blocking issues: dispatcher path not wired into runtime flow, executeRun still does inline context resolution, no-envelope runs are not blocked, and dispatcher has company-scope query violations."
+}

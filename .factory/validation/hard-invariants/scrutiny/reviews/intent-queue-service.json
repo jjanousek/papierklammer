@@ -1,0 +1,45 @@
+{
+  "featureId": "intent-queue-service",
+  "reviewedAt": "2026-04-01T07:01:04Z",
+  "commitId": "545987660fbfcc825d5d4d807c2bedb176ecebb6",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature delivers the requested service surface and broad test coverage, but two blocking correctness issues remain: deduplication is not company-scoped and state transitions are implemented with read-then-write (non-atomic) updates that can violate invariants under concurrency.",
+    "issues": [
+      {
+        "file": "server/src/services/intent-queue.ts",
+        "line": 117,
+        "severity": "blocking",
+        "description": "Deduplication updates queued intents by dedupeKey without a companyId predicate (`where dedupe_key = ? and status = 'queued'`). This can supersede intents belonging to other companies that happen to share a dedupeKey, violating company-scoped isolation requirements."
+      },
+      {
+        "file": "server/src/services/intent-queue.ts",
+        "line": 162,
+        "severity": "blocking",
+        "description": "State transitions are implemented as a separate read (`requireIntent`) followed by `update ... where id = ?` (e.g., admit/reject/consume/supersede/defer). Because the update does not constrain the prior status, concurrent callers can both succeed and bypass intended transition guards (TOCTOU race), breaking hard state-machine invariants."
+      },
+      {
+        "file": "server/src/services/intent-queue.ts",
+        "line": 199,
+        "severity": "non_blocking",
+        "description": "`consumeIntent(intentId, runId)` documents that it records `runId`, but `runId` is unused and not persisted. This is misleading API behavior/documentation and should be aligned (either persist via schema support or remove/rename parameter and comment)."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "`backend-worker` procedure says to run tests in a red phase before implementation and explicitly calls out concurrency coverage where relevant, but this run implemented tests+service before first execution and added only sequential transition tests. If this workflow is acceptable, the skill should be clarified; if not, enforcement/feedback is inconsistent.",
+      "evidence": "Skill: .factory/skills/backend-worker/SKILL.md:32-42. Transcript skeleton for workerSessionId cf4ddbe4-2f54-4957-aba8-832f88c826f2 shows Create(intent-queue.test.ts) then Create(intent-queue.ts), with first test run afterward."
+    },
+    {
+      "area": "services",
+      "observation": "Canonical test command in services.yaml uses `--max-workers=1`, but worker verification used `pnpm test:run --max-workers=4` and also reported intermittent parallel flakiness. Shared guidance across skill/mission docs appears inconsistent with operational command defaults.",
+      "evidence": ".factory/services.yaml:5 (`pnpm test:run --max-workers=1`), handoff verification command used `pnpm test:run --max-workers=4`, and handoff `discoveredIssues` notes intermittent test flakiness."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed feature intent-queue-service at commit 545987660fbfcc825d5d4d807c2bedb176ecebb6, including transcript skeleton and full diff. Result is FAIL due to two blocking issues: tenant-unsafe deduplication and non-atomic transition updates that can violate state invariants under concurrency."
+}
