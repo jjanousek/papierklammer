@@ -7,6 +7,7 @@ export default defineConfig({
       "packages/adapters/codex-local",
       "packages/adapters/opencode-local",
       "packages/orchestrator-console",
+      "packages/orchestrator-tui",
       "server",
       "ui",
       "cli",

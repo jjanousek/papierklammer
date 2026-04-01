@@ -1,0 +1,43 @@
+{
+  "name": "@papierklammer/orchestrator-tui",
+  "version": "0.1.0",
+  "description": "Full-screen terminal UI for Papierklammer orchestrator console",
+  "type": "module",
+  "bin": {
+    "papierklammer-tui": "dist/index.js"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/papierklammer/papierklammer",
+    "directory": "packages/orchestrator-tui"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.tsx",
+    "./*": "./src/*.tsx"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ink": "^6.0.0",
+    "ink-text-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "@types/react": "^19.0.0",
+    "ink-testing-library": "^4.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
