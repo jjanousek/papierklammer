@@ -1,0 +1,55 @@
+{
+  "milestone": "hard-invariants",
+  "groupId": "stale-run-reaper",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T08:49:16Z",
+  "assertions": [
+    {
+      "id": "VAL-HARD-050",
+      "status": "pass",
+      "reason": "Vitest describe block `VAL-HARD-050` executed in `server/src/__tests__/stale-run-reaper.test.ts` and all related checks passed in a green run (19/19 tests passed).",
+      "evidence": [
+        "hard-invariants/stale-run-reaper/vitest-stale-run-reaper.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-051",
+      "status": "pass",
+      "reason": "Vitest describe block `VAL-HARD-051` executed and passed within the same successful stale reaper test file run.",
+      "evidence": [
+        "hard-invariants/stale-run-reaper/vitest-stale-run-reaper.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-052",
+      "status": "pass",
+      "reason": "Vitest describe block `VAL-HARD-052` executed and passed, confirming stale-run cancellation event emission behavior in the tested suite.",
+      "evidence": [
+        "hard-invariants/stale-run-reaper/vitest-stale-run-reaper.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-053",
+      "status": "pass",
+      "reason": "Vitest describe block `VAL-HARD-053` executed and passed, including pickup failure count increment checks on checkout timeout scenarios.",
+      "evidence": [
+        "hard-invariants/stale-run-reaper/vitest-stale-run-reaper.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "commands": [
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" test:run --max-workers=1 server/src/__tests__/stale-run-reaper.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest completed successfully: 1 test file passed, 19 tests passed."
+    }
+  ],
+  "frictions": [
+    "Test output was very noisy due to repeated embedded Postgres TRUNCATE NOTICE cascade logs, but this did not affect assertion execution or final pass/fail results."
+  ],
+  "blockers": []
+}

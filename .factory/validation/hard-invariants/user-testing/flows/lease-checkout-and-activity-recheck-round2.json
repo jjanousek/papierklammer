@@ -1,0 +1,133 @@
+{
+  "groupId": "lease-checkout-and-activity-recheck-round2",
+  "testedAt": "2026-04-01T09:18:45Z",
+  "isolation": {
+    "surface": "vitest",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "evidenceDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/hard-invariants/lease-checkout-and-activity-recheck-round2",
+    "productCodeModified": false
+  },
+  "toolsUsed": [
+    "Read",
+    "Grep",
+    "pnpm",
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-HARD-025",
+      "title": "Checkout TTL enforced",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run targeted test for checkout TTL constant",
+          "expected": "checkoutTtlSec default is 60s",
+          "observed": "`lease-manager.test.ts` test `has checkout TTL of 60 seconds` passed"
+        },
+        {
+          "action": "Run targeted test for stale granted lease timeout behavior",
+          "expected": "Lease past checkout TTL is expired and run is cancelled",
+          "observed": "`stale-run-reaper.test.ts` test `expires and cancels a run whose lease is still granted but past expiresAt` passed"
+        },
+        {
+          "action": "Run targeted test for no-checkout pickup failure",
+          "expected": "pickupFailCount increments when run never checks out",
+          "observed": "`stale-run-reaper.test.ts` test `increments pickupFailCount when run never checked out the issue` passed"
+        }
+      ],
+      "evidence": {
+        "logs": [
+          "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025-rerun.log",
+          "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025-rerun.exitcode"
+        ],
+        "terminalSnapshots": [
+          "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025-rerun.log"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-HARD-026",
+      "title": "Lease renewal on agent activity",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run targeted test for comment-driven activity renewal",
+          "expected": "Activity renews active lease and sets renewedAt",
+          "observed": "`lease-renewal-on-activity.test.ts` test `renewLeaseForIssueActivity renews lease when active lease exists` passed (renewedAt asserted non-null)"
+        },
+        {
+          "action": "Run targeted test for status-change activity renewal",
+          "expected": "Status change renewal extends active lease",
+          "observed": "`lease-renewal-on-activity.test.ts` test `renewLeaseForIssueActivity renews when called after status change` passed"
+        },
+        {
+          "action": "Run targeted test for explicit keepalive renewal",
+          "expected": "Keepalive renews active lease by runId",
+          "observed": "`lease-renewal-on-activity.test.ts` test `renewLeaseForRunActivity renews by runId` passed"
+        }
+      ],
+      "evidence": {
+        "logs": [
+          "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-026-rerun.log",
+          "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-026-rerun.exitcode"
+        ],
+        "terminalSnapshots": [
+          "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-026-rerun.log"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "commands": [
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" vitest \"/Users/aischool/work/papierklammer_droid/server/src/__tests__/lease-manager.test.ts\" \"/Users/aischool/work/papierklammer_droid/server/src/__tests__/stale-run-reaper.test.ts\" -t \"has checkout TTL of 60 seconds|expires and cancels a run whose lease is still granted but past expiresAt|increments pickupFailCount when run never checked out the issue\"",
+      "exitCode": 243,
+      "observation": "Failed with EACCES (pnpm attempted to spawn repo path as executable).",
+      "evidence": [
+        "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025.log",
+        "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025.exitcode"
+      ]
+    },
+    {
+      "command": "cd \"/Users/aischool/work/papierklammer_droid\" && pnpm vitest \"server/src/__tests__/lease-manager.test.ts\" \"server/src/__tests__/stale-run-reaper.test.ts\" -t \"has checkout TTL of 60 seconds|expires and cancels a run whose lease is still granted but past expiresAt|increments pickupFailCount when run never checked out the issue\"",
+      "exitCode": 0,
+      "observation": "Passed: 2 test files, 3 targeted tests passed.",
+      "evidence": [
+        "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025-rerun.log",
+        "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-025-rerun.exitcode"
+      ]
+    },
+    {
+      "command": "cd \"/Users/aischool/work/papierklammer_droid\" && pnpm vitest \"server/src/__tests__/lease-renewal-on-activity.test.ts\" -t \"renewLeaseForIssueActivity renews lease when active lease exists|renewLeaseForIssueActivity renews when called after status change|renewLeaseForRunActivity renews by runId\"",
+      "exitCode": 0,
+      "observation": "Passed: 1 test file, 3 targeted tests passed.",
+      "evidence": [
+        "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-026-rerun.log",
+        "hard-invariants/lease-checkout-and-activity-recheck-round2/vitest-val-hard-026-rerun.exitcode"
+      ]
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Vitest output includes high-volume embedded Postgres TRUNCATE CASCADE NOTICE lines, making summaries harder to read.",
+      "resolved": true,
+      "resolution": "Used targeted test-name patterns and relied on final Vitest summary lines in saved logs.",
+      "affectedAssertions": [
+        "VAL-HARD-025",
+        "VAL-HARD-026"
+      ]
+    },
+    {
+      "description": "Initial pnpm invocation used incorrect `--dir` form and failed with EACCES.",
+      "resolved": true,
+      "resolution": "Re-ran the same targeted tests from repository root using `cd ... && pnpm vitest ...`.",
+      "affectedAssertions": [
+        "VAL-HARD-025"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 2 assertions via targeted Vitest surface: VAL-HARD-025 pass, VAL-HARD-026 pass. One command invocation failed initially (exit 243) and was retried successfully."
+}

@@ -1,0 +1,120 @@
+{
+  "milestone": "hard-invariants",
+  "groupId": "scheduler-admission",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T08:46:19.866516+00:00",
+  "assertions": [
+    {
+      "id": "VAL-HARD-010",
+      "status": "pass",
+      "reason": "Vitest pattern 'valid admission' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-010.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-011",
+      "status": "pass",
+      "reason": "Vitest pattern 'closed issue' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-011.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-012",
+      "status": "pass",
+      "reason": "Vitest pattern 'assignee mismatch' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-012.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-013",
+      "status": "pass",
+      "reason": "Vitest pattern 'workspace missing' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-013.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-014",
+      "status": "pass",
+      "reason": "Vitest pattern 'active lease on issue' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-014.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-015",
+      "status": "pass",
+      "reason": "Vitest pattern 'agent at capacity' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-015.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-016",
+      "status": "pass",
+      "reason": "Vitest pattern 'budget exhausted' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-016.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-017",
+      "status": "pass",
+      "reason": "Vitest pattern 'notBefore' in server/src/__tests__/scheduler.test.ts passed",
+      "evidence": [
+        "hard-invariants/scheduler-admission/VAL-HARD-017.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "vitest",
+    "pnpm"
+  ],
+  "commands": [
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t valid admission",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t closed issue",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t assignee mismatch",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t workspace missing",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t active lease on issue",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t agent at capacity",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t budget exhausted",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/scheduler.test.ts -t notBefore",
+      "exitCode": 0,
+      "observation": "Vitest run passed"
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

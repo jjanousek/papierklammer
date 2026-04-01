@@ -1,0 +1,90 @@
+{
+  "milestone": "hard-invariants",
+  "groupId": "intent-queue-and-timer",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T08:45:54.084586Z",
+  "assertions": [
+    {
+      "id": "VAL-HARD-001",
+      "status": "pass",
+      "reason": "Mapped createIntent persistence tests passed in intent-queue.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-queue.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-002",
+      "status": "pass",
+      "reason": "Mapped required-field validation tests passed in intent-queue.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-queue.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-003",
+      "status": "pass",
+      "reason": "Mapped intent-type acceptance/rejection tests passed in intent-queue.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-queue.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-004",
+      "status": "pass",
+      "reason": "Mapped deduplication/supersession tests passed in intent-queue.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-queue.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-005",
+      "status": "pass",
+      "reason": "Mapped state transition and invalid-transition tests passed in intent-queue.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-queue.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-006",
+      "status": "pass",
+      "reason": "Mapped closed-issue invalidation tests passed in intent-queue.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-queue.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-007",
+      "status": "pass",
+      "reason": "Mapped timer tick integration tests confirmed timer_hint intents without heartbeat runs.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-timer-integration.test.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-008",
+      "status": "pass",
+      "reason": "Mapped timer supersession tests passed in intent-timer-integration.test.ts.",
+      "evidence": [
+        "hard-invariants/intent-queue-and-timer/intent-timer-integration.test.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "vitest",
+    "pnpm"
+  ],
+  "commands": [
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/intent-queue.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest passed: 1 file, 35 tests."
+    },
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/intent-timer-integration.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest passed: 1 file, 14 tests."
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

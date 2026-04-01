@@ -1,0 +1,19 @@
+{
+  "milestone": "hard-invariants",
+  "round": 2,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-HARD-025",
+    "VAL-HARD-026"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/hard-invariants/user-testing/synthesis.round1.json"
+}

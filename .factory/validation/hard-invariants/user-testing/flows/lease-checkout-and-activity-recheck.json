@@ -1,0 +1,61 @@
+{
+  "milestone": "hard-invariants",
+  "groupId": "lease-checkout-and-activity-recheck",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T08:55:47Z",
+  "assertions": [
+    {
+      "id": "VAL-HARD-025",
+      "status": "fail",
+      "reason": "Targeted Vitest evidence confirms checkout TTL default is 60s and timeout reaping cancels runs plus increments pickupFailCount, but the lease transitions to state=expired (lease_expired event) rather than being released as asserted.",
+      "evidence": [
+        "hard-invariants/lease-checkout-and-activity-recheck/vitest-lease-manager-targeted.log",
+        "hard-invariants/lease-checkout-and-activity-recheck/vitest-stale-run-reaper-targeted.log",
+        "hard-invariants/lease-checkout-and-activity-recheck/coverage-discovery.txt"
+      ]
+    },
+    {
+      "id": "VAL-HARD-026",
+      "status": "blocked",
+      "reason": "Current Vitest suite does not exercise activity-triggered lease renewal via comments, status changes, or explicit keepalive requests; renewal is only directly tested through manual renewLease calls.",
+      "evidence": [
+        "hard-invariants/lease-checkout-and-activity-recheck/vitest-lease-manager-targeted.log",
+        "hard-invariants/lease-checkout-and-activity-recheck/coverage-discovery.txt"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "Grep",
+    "Read",
+    "pnpm",
+    "vitest"
+  ],
+  "commands": [
+    {
+      "command": "pnpm vitest server/src/__tests__/lease-manager.test.ts -t \"has checkout TTL of 60 seconds|full lifecycle: grant → renew → release\"",
+      "exitCode": 0,
+      "observation": "2 targeted tests passed (43 skipped). Confirms 60s checkout TTL constant and explicit renew/release lease lifecycle behavior."
+    },
+    {
+      "command": "pnpm vitest server/src/__tests__/stale-run-reaper.test.ts -t \"expires and cancels a run whose lease is still granted but past expiresAt|increments pickupFailCount when run never checked out the issue\"",
+      "exitCode": 0,
+      "observation": "2 targeted tests passed (17 skipped). Confirms stale lease timeout causes run cancellation, lease expiration, and pickupFailCount increment without checkout."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Targeted test output is noisy due to repeated Postgres TRUNCATE CASCADE NOTICE lines.",
+      "resolved": true,
+      "resolution": "Captured full raw Vitest output in evidence logs and relied on test summary lines for outcome extraction."
+    }
+  ],
+  "blockers": [
+    {
+      "description": "No existing Vitest coverage for activity-driven lease renewal triggers (comment/status/keepalive) required by VAL-HARD-026.",
+      "affectedAssertions": [
+        "VAL-HARD-026"
+      ],
+      "quickFixAttempted": "Searched test and service call sites for renewLease/keepalive/comment/status-triggered renewal paths; found only direct lease-manager method tests."
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "milestone": "hard-invariants",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 36,
+    "passed": 34,
+    "failed": 1,
+    "blocked": 1
+  },
+  "passedAssertions": [
+    "VAL-HARD-001",
+    "VAL-HARD-002",
+    "VAL-HARD-003",
+    "VAL-HARD-004",
+    "VAL-HARD-005",
+    "VAL-HARD-006",
+    "VAL-HARD-007",
+    "VAL-HARD-008",
+    "VAL-HARD-010",
+    "VAL-HARD-011",
+    "VAL-HARD-012",
+    "VAL-HARD-013",
+    "VAL-HARD-014",
+    "VAL-HARD-015",
+    "VAL-HARD-016",
+    "VAL-HARD-017",
+    "VAL-HARD-020",
+    "VAL-HARD-021",
+    "VAL-HARD-022",
+    "VAL-HARD-023",
+    "VAL-HARD-024",
+    "VAL-HARD-030",
+    "VAL-HARD-031",
+    "VAL-HARD-032",
+    "VAL-HARD-033",
+    "VAL-HARD-034",
+    "VAL-HARD-040",
+    "VAL-HARD-041",
+    "VAL-HARD-042",
+    "VAL-HARD-043",
+    "VAL-HARD-050",
+    "VAL-HARD-051",
+    "VAL-HARD-052",
+    "VAL-HARD-053"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-HARD-025",
+      "reason": "Targeted Vitest evidence confirms checkout TTL default is 60s and timeout reaping cancels runs plus increments pickupFailCount, but the lease transitions to state=expired (lease_expired event) rather than being released as asserted."
+    }
+  ],
+  "blockedAssertions": [
+    {
+      "id": "VAL-HARD-026",
+      "blockedBy": "Current Vitest suite does not exercise activity-triggered lease renewal via comments, status changes, or explicit keepalive requests; renewal is only directly tested through manual renewLease calls."
+    }
+  ],
+  "appliedUpdates": [],
+  "previousRound": null
+}

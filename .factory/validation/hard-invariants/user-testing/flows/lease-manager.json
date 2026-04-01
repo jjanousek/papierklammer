@@ -1,0 +1,92 @@
+{
+  "milestone": "hard-invariants",
+  "groupId": "lease-manager",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T08:45:52Z",
+  "assertions": [
+    {
+      "id": "VAL-HARD-020",
+      "status": "pass",
+      "reason": "lease-manager.test.ts includes grantLease tests asserting state=granted and expiry behavior; suite passed.",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-021",
+      "status": "pass",
+      "reason": "lease-manager.test.ts includes conflict tests for second active lease on same issue; suite passed.",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-022",
+      "status": "pass",
+      "reason": "lease-manager.test.ts renewLease tests assert renewedAt is set and expiresAt is extended; suite passed.",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-023",
+      "status": "pass",
+      "reason": "lease-manager.test.ts expireLeases tests assert expired-state transition for past-due leases; suite passed.",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-024",
+      "status": "pass",
+      "reason": "lease-manager.test.ts releaseLease tests assert state=released with releaseReason on completion-style release; suite passed.",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-025",
+      "status": "blocked",
+      "reason": "Assigned mapped test file does not include the required checkout-timeout scenario (dispatch + no checkout -> run cancelled + lease released + pickupFailCount increment).",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-026",
+      "status": "blocked",
+      "reason": "Assigned mapped test file validates explicit renewLease calls but does not exercise comment/status/keepalive activity-triggered renewal paths required by the assertion.",
+      "evidence": [
+        "hard-invariants/lease-manager/lease-manager-vitest.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "commands": [
+    {
+      "command": "pnpm test:run --max-workers=1 server/src/__tests__/lease-manager.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest completed successfully: 1 file passed, 45 tests passed."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Test output includes extensive Postgres TRUNCATE CASCADE NOTICE logs, which adds noise during assertion evidence review.",
+      "resolved": true,
+      "resolution": "Captured full raw output in evidence log for traceability."
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Assertion-level coverage gap in assigned mapped file for VAL-HARD-025 and VAL-HARD-026 required scenarios.",
+      "affectedAssertions": [
+        "VAL-HARD-025",
+        "VAL-HARD-026"
+      ],
+      "quickFixAttempted": "Reviewed assigned test file mapping and searched for checkout-timeout/activity-triggered renewal scenarios; not present in mapped file."
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "milestone": "hard-invariants",
+  "groupId": "dispatcher-envelope-workspace",
+  "surface": "vitest",
+  "testedAt": "2026-04-01T08:48:41Z",
+  "assertions": [
+    {
+      "id": "VAL-HARD-030",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated envelope creation at dispatch with required fields.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-031",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated envelope immutability via service API constraints.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-032",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated heartbeat run links to `envelopeId`.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-033",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated adapter envelope context fields are populated.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-034",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated runs without envelopes are rejected.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-040",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated workspace resolution from issue→project→workspace chain.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-041",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated failed project workspace resolution rejects dispatch and emits `workspace_resolution_failed`.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-042",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated `workspaceBindingMode` is set appropriately in envelope.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    },
+    {
+      "id": "VAL-HARD-043",
+      "status": "pass",
+      "reason": "`dispatcher-envelope.test.ts` validated dispatch-time workspace verification rejects deleted/missing workspaces.",
+      "evidence": [
+        "hard-invariants/dispatcher-envelope-workspace/vitest-dispatcher-envelope.log"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "commands": [
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid test:run --max-workers=1 server/src/__tests__/dispatcher-envelope.test.ts",
+      "exitCode": 0,
+      "observation": "Vitest passed: 1 test file, 26 tests, 0 failures."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The test output included extensive embedded Postgres TRUNCATE cascade NOTICE logs, which added noise while reviewing evidence.",
+      "resolved": true,
+      "resolution": "Used the final Vitest summary and targeted test mapping to determine assertion outcomes.",
+      "affectedAssertions": [
+        "VAL-HARD-030",
+        "VAL-HARD-031",
+        "VAL-HARD-032",
+        "VAL-HARD-033",
+        "VAL-HARD-034",
+        "VAL-HARD-040",
+        "VAL-HARD-041",
+        "VAL-HARD-042",
+        "VAL-HARD-043"
+      ]
+    }
+  ],
+  "blockers": []
+}
