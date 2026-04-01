@@ -2,6 +2,7 @@ import { and, eq, sql, lte } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import { executionLeases } from "@papierklammer/db";
 import { conflict, notFound } from "../errors.js";
+import { eventLogService } from "./event-log.js";
 
 /**
  * Default TTL for execution leases: 5 minutes.
@@ -38,6 +39,8 @@ export interface GrantLeaseInput {
  * Factory function following the project's service pattern.
  */
 export function leaseManagerService(db: Db) {
+  const eventLog = eventLogService(db);
+
   /**
    * Fetch a lease by ID. Throws notFound if missing.
    */
@@ -151,6 +154,23 @@ export function leaseManagerService(db: Db) {
         .where(eq(executionLeases.id, leaseId))
         .returning();
 
+      // Emit lease_renewed event
+      if (updated) {
+        await eventLog.emit({
+          companyId: updated.companyId,
+          entityType: "lease",
+          entityId: leaseId,
+          eventType: "lease_renewed",
+          payload: {
+            leaseId,
+            issueId: updated.issueId,
+            agentId: updated.agentId,
+            renewedAt: now.toISOString(),
+            expiresAt: newExpiresAt.toISOString(),
+          },
+        });
+      }
+
       return updated;
     },
 
@@ -205,7 +225,29 @@ export function leaseManagerService(db: Db) {
             lte(executionLeases.expiresAt, now),
           ),
         )
-        .returning({ id: executionLeases.id });
+        .returning({
+          id: executionLeases.id,
+          companyId: executionLeases.companyId,
+          issueId: executionLeases.issueId,
+          agentId: executionLeases.agentId,
+          runId: executionLeases.runId,
+        });
+
+      // Emit lease_expired events for each expired lease
+      for (const lease of expired) {
+        await eventLog.emit({
+          companyId: lease.companyId,
+          entityType: "lease",
+          entityId: lease.id,
+          eventType: "lease_expired",
+          payload: {
+            leaseId: lease.id,
+            issueId: lease.issueId,
+            agentId: lease.agentId,
+            runId: lease.runId,
+          },
+        });
+      }
 
       return expired.map((row) => row.id);
     },
@@ -291,6 +333,24 @@ export function leaseManagerService(db: Db) {
         )
         .returning();
 
+      // Emit lease_renewed event
+      if (updated) {
+        await eventLog.emit({
+          companyId: updated.companyId,
+          entityType: "lease",
+          entityId: updated.id,
+          eventType: "lease_renewed",
+          payload: {
+            leaseId: updated.id,
+            issueId: updated.issueId,
+            agentId: updated.agentId,
+            renewedAt: now.toISOString(),
+            expiresAt: newExpiresAt.toISOString(),
+            source: "issue_activity",
+          },
+        });
+      }
+
       return updated ?? null;
     },
 
@@ -333,6 +393,24 @@ export function leaseManagerService(db: Db) {
           ),
         )
         .returning();
+
+      // Emit lease_renewed event
+      if (updated) {
+        await eventLog.emit({
+          companyId: updated.companyId,
+          entityType: "lease",
+          entityId: updated.id,
+          eventType: "lease_renewed",
+          payload: {
+            leaseId: updated.id,
+            issueId: updated.issueId,
+            agentId: updated.agentId,
+            renewedAt: now.toISOString(),
+            expiresAt: newExpiresAt.toISOString(),
+            source: "run_activity",
+          },
+        });
+      }
 
       return updated ?? null;
     },

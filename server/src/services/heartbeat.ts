@@ -10,7 +10,6 @@ import {
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
-  controlPlaneEvents,
   executionLeases,
   heartbeatRunEvents,
   heartbeatRuns,
@@ -33,6 +32,7 @@ import { secretService } from "./secrets.js";
 import { tickTimers as tickTimersViaIntents } from "./timer-intent-bridge.js";
 import { intentQueueService } from "./intent-queue.js";
 import { dispatcherService } from "./dispatcher.js";
+import { eventLogService } from "./event-log.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
@@ -885,6 +885,7 @@ function resolveNextSessionState(input: {
 
 export function heartbeatService(db: Db) {
   const instanceSettings = instanceSettingsService(db);
+  const eventLog = eventLogService(db);
   const getCurrentUserRedactionOptions = async () => ({
     enabled: (await instanceSettings.getGeneral()).censorUsernameInLogs,
   });
@@ -2082,7 +2083,7 @@ export function heartbeatService(db: Db) {
       }
 
       // Emit run_cancelled event
-      await db.insert(controlPlaneEvents).values({
+      await eventLog.emit({
         companyId: run.companyId,
         entityType: "run",
         entityId: run.id,
@@ -2097,7 +2098,7 @@ export function heartbeatService(db: Db) {
       });
 
       // Emit lease_expired event
-      await db.insert(controlPlaneEvents).values({
+      await eventLog.emit({
         companyId: run.companyId,
         entityType: "lease",
         entityId: lease.id,
@@ -3043,6 +3044,27 @@ export function heartbeatService(db: Db) {
           },
         });
         await releaseIssueExecutionAndPromote(finalizedRun);
+
+        // Emit run lifecycle event to control plane event log
+        const runEventType = outcome === "succeeded"
+          ? "run_completed"
+          : outcome === "cancelled"
+            ? "run_cancelled"
+            : "run_failed";
+        await eventLog.emit({
+          companyId: finalizedRun.companyId,
+          entityType: "run",
+          entityId: finalizedRun.id,
+          eventType: runEventType,
+          payload: {
+            runId: finalizedRun.id,
+            agentId: finalizedRun.agentId,
+            issueId: readNonEmptyString(parseObject(finalizedRun.contextSnapshot).issueId),
+            status,
+            exitCode: adapterResult.exitCode,
+            errorCode: finalizedRun.errorCode,
+          },
+        }).catch((err) => logger.warn({ err, runId: finalizedRun.id }, "failed to emit run event"));
       }
 
       if (finalizedRun) {

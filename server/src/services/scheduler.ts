@@ -11,6 +11,7 @@ import {
 } from "@papierklammer/db";
 import { intentQueueService } from "./intent-queue.js";
 import { budgetService } from "./budgets.js";
+import { eventLogService } from "./event-log.js";
 import { logger } from "../middleware/logger.js";
 import { parseObject, asNumber } from "../adapters/utils.js";
 
@@ -58,6 +59,7 @@ function normalizeMaxConcurrentRuns(value: unknown) {
 export function schedulerService(db: Db) {
   const intentQueue = intentQueueService(db);
   const budgets = budgetService(db);
+  const eventLog = eventLogService(db);
 
   /**
    * Count currently running runs for an agent, scoped to a company.
@@ -240,12 +242,41 @@ export function schedulerService(db: Db) {
         await intentQueue.deferIntent(intentId, admission.reason);
       } else {
         await intentQueue.rejectIntent(intentId, admission.reason ?? "admission denied");
+
+        // Emit intent_rejected event
+        await eventLog.emit({
+          companyId: intent.companyId,
+          entityType: "intent",
+          entityId: intentId,
+          eventType: "intent_rejected",
+          payload: {
+            intentId,
+            intentType: intent.intentType,
+            issueId: intent.issueId,
+            agentId: intent.targetAgentId,
+            reason: admission.reason ?? "admission denied",
+          },
+        });
       }
       return admission;
     }
 
     // Admit the intent
     await intentQueue.admitIntent(intentId);
+
+    // Emit intent_admitted event
+    await eventLog.emit({
+      companyId: intent.companyId,
+      entityType: "intent",
+      entityId: intentId,
+      eventType: "intent_admitted",
+      payload: {
+        intentId,
+        intentType: intent.intentType,
+        issueId: intent.issueId,
+        agentId: intent.targetAgentId,
+      },
+    });
 
     // Create execution lease with stored TTL for accurate renewal
     const leaseExpiresAt = new Date(now.getTime() + DEFAULT_LEASE_TTL_SEC * 1000);
@@ -262,6 +293,21 @@ export function schedulerService(db: Db) {
         expiresAt: leaseExpiresAt,
       })
       .returning();
+
+    // Emit lease_allocated event
+    await eventLog.emit({
+      companyId: intent.companyId,
+      entityType: "lease",
+      entityId: lease.id,
+      eventType: "lease_allocated",
+      payload: {
+        leaseId: lease.id,
+        issueId: intent.issueId,
+        agentId: intent.targetAgentId,
+        ttlSeconds: DEFAULT_LEASE_TTL_SEC,
+        expiresAt: leaseExpiresAt.toISOString(),
+      },
+    });
 
     // Create heartbeat_run (queued status, linked to intent)
     const [run] = await db
@@ -345,6 +391,22 @@ export function schedulerService(db: Db) {
       .update(heartbeatRuns)
       .set({ envelopeId: envelope.id, updatedAt: new Date() })
       .where(eq(heartbeatRuns.id, run.id));
+
+    // Emit run_started event
+    await eventLog.emit({
+      companyId: intent.companyId,
+      entityType: "run",
+      entityId: run.id,
+      eventType: "run_started",
+      payload: {
+        runId: run.id,
+        agentId: intent.targetAgentId,
+        issueId: intent.issueId,
+        intentId: intent.id,
+        leaseId: lease.id,
+        envelopeId: envelope.id,
+      },
+    });
 
     // Intent remains 'admitted' after run creation.
     // Consumption happens later when the run starts executing.

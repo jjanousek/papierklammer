@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   agents,
   companies,
+  controlPlaneEvents,
   createDb,
   dispatchIntents,
   issues,
@@ -42,6 +43,7 @@ describeDB("intentQueueService", () => {
   }, 30_000);
 
   afterEach(async () => {
+    await db.delete(controlPlaneEvents);
     await db.delete(dispatchIntents);
     await db.delete(issues);
     await db.delete(projects);

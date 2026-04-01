@@ -9,6 +9,7 @@ import {
   agents,
   companies,
   companyMemberships,
+  controlPlaneEvents,
   createDb,
   dispatchIntents,
   heartbeatRunEvents,
@@ -50,6 +51,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
   }, 20_000);
 
   afterEach(async () => {
+    await db.delete(controlPlaneEvents);
     await db.delete(activityLog);
     await db.delete(routineRuns);
     await db.delete(routineTriggers);

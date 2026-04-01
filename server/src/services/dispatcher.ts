@@ -1,13 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import {
-  controlPlaneEvents,
   heartbeatRuns,
   issues,
   projectWorkspaces,
   projects,
 } from "@papierklammer/db";
 import { envelopeService, type CreateEnvelopeInput } from "./envelope.js";
+import { eventLogService } from "./event-log.js";
 import { badRequest } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 
@@ -60,6 +60,7 @@ export interface DispatchRunResult {
  */
 export function dispatcherService(db: Db) {
   const envelopes = envelopeService(db);
+  const eventLog = eventLogService(db);
 
   /**
    * Resolve the workspace binding mode for a dispatch.
@@ -176,7 +177,7 @@ export function dispatcherService(db: Db) {
     runId: string;
     reason: string;
   }) {
-    await db.insert(controlPlaneEvents).values({
+    await eventLog.emit({
       companyId: input.companyId,
       entityType: "run",
       entityId: input.runId,

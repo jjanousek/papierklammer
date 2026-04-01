@@ -40,6 +40,7 @@ import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.
 import { queueIssueAssignmentIntent } from "../services/issue-assignment-wakeup.js";
 import { intentQueueService } from "../services/intent-queue.js";
 import { leaseManagerService } from "../services/lease-manager.js";
+import { eventLogService } from "../services/event-log.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 const updateIssueRouteSchema = updateIssueSchema.extend({
@@ -61,6 +62,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   const documentsSvc = documentService(db);
   const routinesSvc = routineService(db);
   const leaseMgr = leaseManagerService(db);
+  const eventLog = eventLogService(db);
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -1115,6 +1117,22 @@ export function issueRoutes(db: Db, storage: StorageService) {
         logger.warn({ err, issueId: id }, "failed to renew lease on issue update"));
     }
 
+    // Emit issue_status_changed event when status changes
+    if (req.body.status !== undefined && existing.status !== issue.status) {
+      void eventLog.emit({
+        companyId: issue.companyId,
+        entityType: "issue",
+        entityId: issue.id,
+        eventType: "issue_status_changed",
+        payload: {
+          issueId: issue.id,
+          from: existing.status,
+          to: issue.status,
+          agentId: actor.agentId,
+        },
+      }).catch((err) => logger.warn({ err, issueId: issue.id }, "failed to emit issue_status_changed event"));
+    }
+
     if (actor.runId) {
       await heartbeat.reportRunActivity(actor.runId).catch((err) =>
         logger.warn({ err, runId: actor.runId }, "failed to clear detached run warning after issue activity"));
@@ -1342,7 +1360,42 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
     const checkoutRunId = requireAgentRunId(req, res);
     if (req.actor.type === "agent" && !checkoutRunId) return;
-    const updated = await svc.checkout(id, req.body.agentId, req.body.expectedStatuses, checkoutRunId);
+
+    let updated;
+    try {
+      updated = await svc.checkout(id, req.body.agentId, req.body.expectedStatuses, checkoutRunId);
+    } catch (err) {
+      // Emit checkout_conflict event on failure
+      if (err instanceof HttpError && err.status === 409) {
+        void eventLog.emit({
+          companyId: issue.companyId,
+          entityType: "issue",
+          entityId: issue.id,
+          eventType: "checkout_conflict",
+          payload: {
+            issueId: issue.id,
+            agentId: req.body.agentId,
+            runId: checkoutRunId,
+            reason: "checkout_conflict",
+          },
+        }).catch((e) => logger.warn({ err: e, issueId: issue.id }, "failed to emit checkout_conflict event"));
+      }
+      throw err;
+    }
+
+    // Emit checkout_acquired event on success
+    void eventLog.emit({
+      companyId: issue.companyId,
+      entityType: "issue",
+      entityId: issue.id,
+      eventType: "checkout_acquired",
+      payload: {
+        issueId: issue.id,
+        agentId: req.body.agentId,
+        runId: checkoutRunId,
+      },
+    }).catch((e) => logger.warn({ err: e, issueId: issue.id }, "failed to emit checkout_acquired event"));
+
     const actor = getActorInfo(req);
 
     await logActivity(db, {

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import { dispatchIntents } from "@papierklammer/db";
 import { badRequest, conflict, notFound } from "../errors.js";
+import { eventLogService } from "./event-log.js";
 
 /**
  * Known dispatch intent types.
@@ -56,6 +57,8 @@ export interface FindQueuedIntentsFilters {
 }
 
 export function intentQueueService(db: Db) {
+  const eventLog = eventLogService(db);
+
   /**
    * Validate required fields for intent creation.
    */
@@ -148,6 +151,21 @@ export function intentQueueService(db: Db) {
             })
             .returning();
 
+          // Emit intent_created event (even for auto-superseded timer hints)
+          await eventLog.emit({
+            companyId: input.companyId,
+            entityType: "intent",
+            entityId: row.id,
+            eventType: "intent_created",
+            payload: {
+              intentType: input.intentType,
+              issueId: input.issueId,
+              agentId: input.targetAgentId,
+              projectId: input.projectId,
+              status: "superseded",
+            },
+          });
+
           return row;
         }
       }
@@ -187,6 +205,21 @@ export function intentQueueService(db: Db) {
           notBefore: input.notBefore ?? null,
         })
         .returning();
+
+      // Emit intent_created event
+      await eventLog.emit({
+        companyId: input.companyId,
+        entityType: "intent",
+        entityId: row.id,
+        eventType: "intent_created",
+        payload: {
+          intentType: input.intentType,
+          issueId: input.issueId,
+          agentId: input.targetAgentId,
+          projectId: input.projectId,
+          status: "queued",
+        },
+      });
 
       return row;
     },

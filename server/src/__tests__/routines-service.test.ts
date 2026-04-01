@@ -7,6 +7,7 @@ import {
   companies,
   companySecrets,
   companySecretVersions,
+  controlPlaneEvents,
   createDb,
   dispatchIntents,
   heartbeatRuns,
@@ -42,6 +43,7 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
   }, 20_000);
 
   afterEach(async () => {
+    await db.delete(controlPlaneEvents);
     await db.delete(activityLog);
     await db.delete(routineRuns);
     await db.delete(routineTriggers);

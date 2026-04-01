@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   agents,
   companies,
+  controlPlaneEvents,
   createDb,
   dispatchIntents,
   heartbeatRuns,
@@ -42,6 +43,7 @@ describeDB("intent-timer-integration", () => {
   }, 30_000);
 
   afterEach(async () => {
+    await db.delete(controlPlaneEvents);
     await db.delete(dispatchIntents);
     await db.delete(heartbeatRuns);
     await db.delete(issues);
