@@ -269,7 +269,158 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
     expect(routineIssues[0]?.id).toBe(previousIssue.id);
   });
 
-  it("serializes concurrent dispatches — one succeeds, duplicate is handled via constraint", async () => {
+  it("coalesces when the existing routine issue has a queued dispatch intent but no heartbeat run", async () => {
+    const { agentId, companyId, issueSvc, routine, svc } = await seedFixture();
+    const previousRunId = randomUUID();
+    const previousIssue = await issueSvc.create(companyId, {
+      projectId: routine.projectId,
+      title: routine.title,
+      description: routine.description,
+      status: "todo",
+      priority: routine.priority,
+      assigneeAgentId: routine.assigneeAgentId,
+      originKind: "routine_execution",
+      originId: routine.id,
+      originRunId: previousRunId,
+    });
+
+    await db.insert(routineRuns).values({
+      id: previousRunId,
+      companyId,
+      routineId: routine.id,
+      triggerId: null,
+      source: "manual",
+      status: "issue_created",
+      triggeredAt: new Date("2026-03-20T12:00:00.000Z"),
+      linkedIssueId: previousIssue.id,
+    });
+
+    // Create a queued dispatch intent for the issue (no heartbeat run yet —
+    // the scheduler hasn't admitted the intent and created the run).
+    await db.insert(dispatchIntents).values({
+      id: randomUUID(),
+      companyId,
+      issueId: previousIssue.id,
+      projectId: routine.projectId,
+      targetAgentId: agentId,
+      intentType: "issue_assigned",
+      priority: 40,
+      status: "queued",
+      dedupeKey: `issue:${previousIssue.id}`,
+    });
+
+    // No heartbeat run exists — but the queued intent should be sufficient
+    // for coalescing.
+    const run = await svc.runRoutine(routine.id, { source: "manual" });
+    expect(run.status).toBe("coalesced");
+    expect(run.linkedIssueId).toBe(previousIssue.id);
+    expect(run.coalescedIntoRunId).toBe(previousRunId);
+
+    // Verify only one issue was created for the routine
+    const routineIssues = await db
+      .select({ id: issues.id })
+      .from(issues)
+      .where(eq(issues.originId, routine.id));
+
+    expect(routineIssues).toHaveLength(1);
+    expect(routineIssues[0]?.id).toBe(previousIssue.id);
+  });
+
+  it("coalesces when the existing routine issue has an admitted dispatch intent but no heartbeat run", async () => {
+    const { agentId, companyId, issueSvc, routine, svc } = await seedFixture();
+    const previousRunId = randomUUID();
+    const previousIssue = await issueSvc.create(companyId, {
+      projectId: routine.projectId,
+      title: routine.title,
+      description: routine.description,
+      status: "todo",
+      priority: routine.priority,
+      assigneeAgentId: routine.assigneeAgentId,
+      originKind: "routine_execution",
+      originId: routine.id,
+      originRunId: previousRunId,
+    });
+
+    await db.insert(routineRuns).values({
+      id: previousRunId,
+      companyId,
+      routineId: routine.id,
+      triggerId: null,
+      source: "manual",
+      status: "issue_created",
+      triggeredAt: new Date("2026-03-20T12:00:00.000Z"),
+      linkedIssueId: previousIssue.id,
+    });
+
+    // Create an admitted dispatch intent (scheduler has admitted it, but the
+    // heartbeat run hasn't been created yet by the dispatcher).
+    await db.insert(dispatchIntents).values({
+      id: randomUUID(),
+      companyId,
+      issueId: previousIssue.id,
+      projectId: routine.projectId,
+      targetAgentId: agentId,
+      intentType: "issue_assigned",
+      priority: 40,
+      status: "admitted",
+      dedupeKey: `issue:${previousIssue.id}`,
+      resolvedAt: new Date(),
+    });
+
+    const run = await svc.runRoutine(routine.id, { source: "manual" });
+    expect(run.status).toBe("coalesced");
+    expect(run.linkedIssueId).toBe(previousIssue.id);
+    expect(run.coalescedIntoRunId).toBe(previousRunId);
+  });
+
+  it("does not coalesce when the dispatch intent is consumed (terminal state)", async () => {
+    const { agentId, companyId, issueSvc, routine, svc } = await seedFixture();
+    const previousRunId = randomUUID();
+    const previousIssue = await issueSvc.create(companyId, {
+      projectId: routine.projectId,
+      title: routine.title,
+      description: routine.description,
+      status: "todo",
+      priority: routine.priority,
+      assigneeAgentId: routine.assigneeAgentId,
+      originKind: "routine_execution",
+      originId: routine.id,
+      originRunId: previousRunId,
+    });
+
+    await db.insert(routineRuns).values({
+      id: previousRunId,
+      companyId,
+      routineId: routine.id,
+      triggerId: null,
+      source: "manual",
+      status: "issue_created",
+      triggeredAt: new Date("2026-03-20T12:00:00.000Z"),
+      linkedIssueId: previousIssue.id,
+    });
+
+    // Create a consumed dispatch intent — this represents a completed cycle
+    // and should NOT trigger coalescing.
+    await db.insert(dispatchIntents).values({
+      id: randomUUID(),
+      companyId,
+      issueId: previousIssue.id,
+      projectId: routine.projectId,
+      targetAgentId: agentId,
+      intentType: "issue_assigned",
+      priority: 40,
+      status: "consumed",
+      dedupeKey: `issue:${previousIssue.id}`,
+      resolvedAt: new Date(),
+    });
+
+    // No live heartbeat run, no active intent → should create a new issue
+    const run = await svc.runRoutine(routine.id, { source: "manual" });
+    expect(run.status).toBe("issue_created");
+    expect(run.linkedIssueId).not.toBe(previousIssue.id);
+  });
+
+  it("serializes concurrent dispatches — second coalesces via intent detection", async () => {
     const { routine, svc } = await seedFixture();
 
     const [first, second] = await Promise.all([
@@ -277,14 +428,13 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
       svc.runRoutine(routine.id, { source: "manual" }),
     ]);
 
-    // With intent-driven dispatch, coalescing requires the scheduler to have
-    // created a heartbeat run. Without that, the second dispatch fails due to
-    // the unique constraint when no live execution is found.
+    // With intent-aware coalescing, the first dispatch creates an issue and a
+    // queued intent. The second dispatch detects the pending intent and
+    // coalesces. Alternatively, the unique constraint catches the race.
     const statuses = [first.status, second.status].sort();
     expect(statuses).toContain("issue_created");
-    // The second concurrent dispatch either coalesces (if the heartbeat run
-    // exists from the first dispatch) or fails (if only an intent was created).
-    // In the intent-driven path, the second dispatch may get "failed".
+    // The second concurrent dispatch should coalesce via intent detection or
+    // via the unique constraint conflict handler.
     expect(statuses.every((s) => ["issue_created", "coalesced", "failed"].includes(s))).toBe(true);
 
     const routineIssues = await db

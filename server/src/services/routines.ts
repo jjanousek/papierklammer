@@ -4,6 +4,7 @@ import type { Db } from "@papierklammer/db";
 import {
   agents,
   companySecrets,
+  dispatchIntents,
   goals,
   heartbeatRuns,
   issues,
@@ -37,6 +38,7 @@ import { logActivity } from "./activity-log.js";
 
 const OPEN_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked"];
 const LIVE_HEARTBEAT_RUN_STATUSES = ["queued", "running"];
+const ACTIVE_INTENT_STATUSES = ["queued", "admitted"];
 const TERMINAL_ISSUE_STATUSES = new Set(["done", "cancelled"]);
 const MAX_CATCH_UP_RUNS = 25;
 const WEEKDAY_INDEX: Record<string, number> = {
@@ -373,6 +375,46 @@ export function routineService(db: Db) {
       }
     }
 
+    // Intent-aware: for routines still missing a live issue, check for
+    // queued/admitted dispatch_intents as evidence of a pending execution.
+    const stillMissingRoutineIds = routineIds.filter((routineId) => !rowsByOriginId.has(routineId));
+    if (stillMissingRoutineIds.length > 0) {
+      const intentBoundRows = await db
+        .selectDistinctOn([issues.originId], {
+          originId: issues.originId,
+          id: issues.id,
+          identifier: issues.identifier,
+          title: issues.title,
+          status: issues.status,
+          priority: issues.priority,
+          updatedAt: issues.updatedAt,
+        })
+        .from(issues)
+        .innerJoin(
+          dispatchIntents,
+          and(
+            eq(dispatchIntents.issueId, issues.id),
+            eq(dispatchIntents.companyId, issues.companyId),
+            inArray(dispatchIntents.status, ACTIVE_INTENT_STATUSES),
+          ),
+        )
+        .where(
+          and(
+            eq(issues.companyId, companyId),
+            eq(issues.originKind, "routine_execution"),
+            inArray(issues.originId, stillMissingRoutineIds),
+            inArray(issues.status, OPEN_ISSUE_STATUSES),
+            isNull(issues.hiddenAt),
+          ),
+        )
+        .orderBy(issues.originId, desc(issues.updatedAt), desc(issues.createdAt));
+
+      for (const row of intentBoundRows) {
+        if (!row.originId) continue;
+        rowsByOriginId.set(row.originId, row);
+      }
+    }
+
     const map = new Map<string, RoutineListItem["activeIssue"]>();
     for (const row of rowsByOriginId.values()) {
       if (!row.originId) continue;
@@ -419,6 +461,7 @@ export function routineService(db: Db) {
   }
 
   async function findLiveExecutionIssue(routine: typeof routines.$inferSelect, executor: Db = db) {
+    // 1. Check for issues with a live heartbeat run via executionRunId
     const executionBoundIssue = await executor
       .select()
       .from(issues)
@@ -443,7 +486,8 @@ export function routineService(db: Db) {
       .then((rows) => rows[0]?.issues ?? null);
     if (executionBoundIssue) return executionBoundIssue;
 
-    return executor
+    // 2. Legacy fallback: check via contextSnapshot
+    const legacyBoundIssue = await executor
       .select()
       .from(issues)
       .innerJoin(
@@ -452,6 +496,36 @@ export function routineService(db: Db) {
           eq(heartbeatRuns.companyId, issues.companyId),
           inArray(heartbeatRuns.status, LIVE_HEARTBEAT_RUN_STATUSES),
           sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = cast(${issues.id} as text)`,
+        ),
+      )
+      .where(
+        and(
+          eq(issues.companyId, routine.companyId),
+          eq(issues.originKind, "routine_execution"),
+          eq(issues.originId, routine.id),
+          inArray(issues.status, OPEN_ISSUE_STATUSES),
+          isNull(issues.hiddenAt),
+        ),
+      )
+      .orderBy(desc(issues.updatedAt), desc(issues.createdAt))
+      .limit(1)
+      .then((rows) => rows[0]?.issues ?? null);
+    if (legacyBoundIssue) return legacyBoundIssue;
+
+    // 3. Intent-aware: check for queued/admitted dispatch_intents as an
+    //    alternative to heartbeat runs. With intent-driven dispatch, the
+    //    heartbeat run is created by the scheduler after the intent is
+    //    admitted, so we also consider pending intents to avoid duplicate
+    //    dispatches.
+    return executor
+      .select()
+      .from(issues)
+      .innerJoin(
+        dispatchIntents,
+        and(
+          eq(dispatchIntents.issueId, issues.id),
+          eq(dispatchIntents.companyId, issues.companyId),
+          inArray(dispatchIntents.status, ACTIVE_INTENT_STATUSES),
         ),
       )
       .where(
