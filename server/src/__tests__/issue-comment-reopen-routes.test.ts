@@ -24,6 +24,8 @@ const mockHeartbeatService = vi.hoisted(() => ({
   cancelRun: vi.fn(async () => null),
 }));
 
+const mockEventLogEmit = vi.hoisted(() => vi.fn(async () => undefined));
+
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
 }));
@@ -45,6 +47,35 @@ vi.mock("../services/index.js", () => ({
     syncRunStatusForIssue: vi.fn(async () => undefined),
   }),
   workProductService: () => ({}),
+}));
+
+vi.mock("../services/event-log.js", () => ({
+  eventLogService: () => ({ emit: mockEventLogEmit }),
+}));
+
+vi.mock("../services/intent-queue.js", () => ({
+  intentQueueService: () => ({
+    createIntent: vi.fn(async () => ({})),
+    invalidateForClosedIssue: vi.fn(async () => 0),
+  }),
+}));
+
+vi.mock("../services/lease-manager.js", () => ({
+  leaseManagerService: () => ({
+    renewLeaseForIssueActivity: vi.fn(async () => undefined),
+  }),
+}));
+
+vi.mock("../services/projections.js", () => ({
+  projectionService: () => ({
+    invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
+    getIssueProjection: vi.fn(async () => null),
+    projectIssuesList: vi.fn(async (rows: unknown[]) => rows),
+  }),
+}));
+
+vi.mock("../services/issue-assignment-wakeup.js", () => ({
+  queueIssueAssignmentIntent: vi.fn(async () => undefined),
 }));
 
 function createApp() {
@@ -184,6 +215,64 @@ describe("issue comment reopen routes", () => {
         details: expect.objectContaining({
           source: "issue_comment_interrupt",
           issueId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }),
+    );
+  });
+
+  it("emits issue_status_changed event in the PATCH reopen flow", async () => {
+    mockIssueService.getById.mockResolvedValue(makeIssue("done"));
+    mockIssueService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
+      ...makeIssue("done"),
+      ...patch,
+    }));
+
+    const res = await request(createApp())
+      .patch("/api/issues/11111111-1111-4111-8111-111111111111")
+      .send({ comment: "reopen please", reopen: true });
+
+    expect(res.status).toBe(200);
+
+    // Wait for fire-and-forget event emission to settle
+    await new Promise((r) => setTimeout(r, 50));
+
+    // The status changed from done → todo, so issue_status_changed should be emitted
+    expect(mockEventLogEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityType: "issue",
+        eventType: "issue_status_changed",
+        payload: expect.objectContaining({
+          from: "done",
+          to: "todo",
+        }),
+      }),
+    );
+  });
+
+  it("emits issue_status_changed event in the POST comment reopen flow", async () => {
+    mockIssueService.getById.mockResolvedValue(makeIssue("done"));
+    mockIssueService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
+      ...makeIssue("done"),
+      ...patch,
+    }));
+
+    const res = await request(createApp())
+      .post("/api/issues/11111111-1111-4111-8111-111111111111/comments")
+      .send({ body: "reopening this", reopen: true });
+
+    expect(res.status).toBe(201);
+
+    // Wait for fire-and-forget event emission to settle
+    await new Promise((r) => setTimeout(r, 50));
+
+    // The status changed from done → todo via the comment reopen path
+    expect(mockEventLogEmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityType: "issue",
+        eventType: "issue_status_changed",
+        payload: expect.objectContaining({
+          from: "done",
+          to: "todo",
         }),
       }),
     );

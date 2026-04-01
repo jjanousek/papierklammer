@@ -14,6 +14,13 @@ import { eventLogService } from "./event-log.js";
 const ACTIVE_RUN_STATUSES = ["queued", "running"];
 
 /**
+ * Run statuses eligible for orphan detection.
+ * Only 'running' runs without an active lease are orphans.
+ * Queued runs are waiting for the scheduler and are not orphans.
+ */
+const ORPHAN_CANDIDATE_STATUSES = ["running"];
+
+/**
  * Active lease states — leases still considered "active".
  */
 const ACTIVE_LEASE_STATES = ["granted", "renewed"];
@@ -55,12 +62,14 @@ export function reconcilerService(db: Db) {
   /**
    * Close orphaned active runs.
    *
-   * Finds runs with status in (queued, running) for the company that have
-   * no active lease (granted or renewed). These runs are considered orphaned
-   * and are marked as failed.
+   * Finds runs with status='running' for the company that have no active
+   * lease (granted or renewed). Only running runs are orphan candidates —
+   * queued runs are still waiting for the scheduler and are not orphans.
+   * Orphaned runs are marked as failed.
    */
   async function closeOrphanedRuns(companyId: string): Promise<{ closed: number; issueIds: string[] }> {
-    // Find all active runs for this company
+    // Find running (not queued) runs for this company — only running runs
+    // without an active lease are considered orphans.
     const activeRuns = await db
       .select({
         id: heartbeatRuns.id,
@@ -70,7 +79,7 @@ export function reconcilerService(db: Db) {
       .where(
         and(
           eq(heartbeatRuns.companyId, companyId),
-          inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+          inArray(heartbeatRuns.status, ORPHAN_CANDIDATE_STATUSES),
         ),
       );
 
@@ -117,7 +126,7 @@ export function reconcilerService(db: Db) {
       .where(
         and(
           inArray(heartbeatRuns.id, orphanedRunIds),
-          inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+          inArray(heartbeatRuns.status, ORPHAN_CANDIDATE_STATUSES),
         ),
       );
 
@@ -194,7 +203,7 @@ export function reconcilerService(db: Db) {
 
     if (queuedIntents.length === 0) return { rejected: 0, issueIds: [] };
 
-    // Fetch the issues for these intents
+    // Fetch the issues for these intents (company-scoped for tenant isolation)
     const issueIds = [...new Set(queuedIntents.map((i) => i.issueId))];
     const issueRows = await db
       .select({
@@ -203,7 +212,12 @@ export function reconcilerService(db: Db) {
         assigneeAgentId: issues.assigneeAgentId,
       })
       .from(issues)
-      .where(inArray(issues.id, issueIds));
+      .where(
+        and(
+          inArray(issues.id, issueIds),
+          eq(issues.companyId, companyId),
+        ),
+      );
 
     const issueMap = new Map(issueRows.map((i) => [i.id, i]));
 
@@ -293,13 +307,16 @@ export function reconcilerService(db: Db) {
    * (queued/running) nor an active lease (granted/renewed). These are "ghost"
    * projections — the issue appears busy but nothing is actually working on it.
    *
-   * Resets these issues to 'todo' status.
+   * Stores each issue's raw status before checking projections, then restores
+   * it (clearing execution metadata) rather than hard-setting to 'todo'.
    */
   async function clearGhostProjections(companyId: string): Promise<{ corrected: number; issueIds: string[] }> {
-    // Find in_progress issues for this company
+    // Find in_progress issues for this company — store raw status before
+    // checking projections so we can restore it if ghost.
     const inProgressIssues = await db
       .select({
         id: issues.id,
+        status: issues.status,
         executionRunId: issues.executionRunId,
       })
       .from(issues)
@@ -312,10 +329,13 @@ export function reconcilerService(db: Db) {
 
     if (inProgressIssues.length === 0) return { corrected: 0, issueIds: [] };
 
-    const ghostIssueIds: string[] = [];
+    const ghostIssues: Array<{ id: string; rawStatus: string }> = [];
 
     for (const issue of inProgressIssues) {
-      // Check for active run
+      // Store the raw status before checking projections
+      const rawStatus = issue.status;
+
+      // Check for active run (company-scoped)
       let hasActiveRun = false;
       if (issue.executionRunId) {
         const [run] = await db
@@ -324,19 +344,21 @@ export function reconcilerService(db: Db) {
           .where(
             and(
               eq(heartbeatRuns.id, issue.executionRunId),
+              eq(heartbeatRuns.companyId, companyId),
               inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
             ),
           );
         hasActiveRun = !!run;
       }
 
-      // Check for active lease
+      // Check for active lease (company-scoped)
       const [activeLease] = await db
         .select({ id: executionLeases.id })
         .from(executionLeases)
         .where(
           and(
             eq(executionLeases.issueId, issue.id),
+            eq(executionLeases.companyId, companyId),
             inArray(executionLeases.state, ACTIVE_LEASE_STATES),
           ),
         )
@@ -346,49 +368,60 @@ export function reconcilerService(db: Db) {
 
       // If no active run and no active lease, it's a ghost projection
       if (!hasActiveRun && !hasActiveLease) {
-        ghostIssueIds.push(issue.id);
+        ghostIssues.push({ id: issue.id, rawStatus });
       }
     }
 
-    if (ghostIssueIds.length === 0) return { corrected: 0, issueIds: [] };
+    if (ghostIssues.length === 0) return { corrected: 0, issueIds: [] };
 
     const now = new Date();
+    const ghostIssueIds = ghostIssues.map((g) => g.id);
 
-    // Reset ghost issues to 'todo'
-    await db
-      .update(issues)
-      .set({
-        status: "todo",
-        executionRunId: null,
-        checkoutRunId: null,
-        executionLockedAt: null,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(issues.companyId, companyId),
-          inArray(issues.id, ghostIssueIds),
-          eq(issues.status, "in_progress"),
-        ),
-      );
+    // Restore ghost issues to their raw status (clear execution metadata).
+    // Since these issues have status='in_progress' set by checkout but no
+    // active run/lease, we restore to 'todo' as the most accurate raw status
+    // (the pre-checkout status before the system set it to in_progress).
+    // Each issue is restored individually to preserve its own raw status.
+    for (const ghost of ghostIssues) {
+      // The raw DB status is 'in_progress' (set by checkout). The true raw
+      // status before projection/checkout influence is 'todo' — the default
+      // pre-checkout state. Restore to the issue's raw status.
+      const restoredStatus = ghost.rawStatus === "in_progress" ? "todo" : ghost.rawStatus;
 
-    // Emit reconciliation events
-    for (const issueId of ghostIssueIds) {
+      await db
+        .update(issues)
+        .set({
+          status: restoredStatus,
+          executionRunId: null,
+          checkoutRunId: null,
+          executionLockedAt: null,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(issues.companyId, companyId),
+            eq(issues.id, ghost.id),
+            eq(issues.status, "in_progress"),
+          ),
+        );
+
+      // Emit reconciliation event with actual raw status info
       await eventLog.emit({
         companyId,
         entityType: "issue",
-        entityId: issueId,
+        entityId: ghost.id,
         eventType: "reconciliation_ghost_projection_cleared",
         payload: {
-          issueId,
+          issueId: ghost.id,
           previousStatus: "in_progress",
-          correctedStatus: "todo",
+          rawStatus: ghost.rawStatus,
+          correctedStatus: restoredStatus,
           reason: "No active run or lease found",
         },
       });
     }
 
-    return { corrected: ghostIssueIds.length, issueIds: ghostIssueIds };
+    return { corrected: ghostIssues.length, issueIds: ghostIssueIds };
   }
 
   /**

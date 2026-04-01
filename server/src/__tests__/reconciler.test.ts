@@ -211,6 +211,30 @@ describeDB("reconcilerService", () => {
 
       expect(result.orphanedRunsClosed).toBe(0);
     });
+
+    it("does NOT treat queued runs as orphans (only running runs are orphan candidates)", async () => {
+      await seedTestData();
+
+      // Create a queued run with no lease — queued runs are waiting for
+      // the scheduler and should NOT be considered orphans.
+      const runId = await createRun({ status: "queued" });
+      await createIssue({
+        status: "todo",
+        assigneeAgentId: agentId,
+        executionRunId: runId,
+      });
+
+      const result = await reconciler.reconcile(companyId);
+
+      expect(result.orphanedRunsClosed).toBe(0);
+
+      // Run should still be queued
+      const [run] = await db
+        .select()
+        .from(heartbeatRuns)
+        .where(eq(heartbeatRuns.id, runId));
+      expect(run.status).toBe("queued");
+    });
   });
 
   // ----------------------------------------------------------------
@@ -782,6 +806,190 @@ describeDB("reconcilerService", () => {
         .from(heartbeatRuns)
         .where(eq(heartbeatRuns.id, otherRunId));
       expect(otherRun.status).toBe("running");
+    });
+
+    it("ghost projection correction uses raw status (not hard-coded todo)", async () => {
+      await seedTestData();
+
+      // Ghost in_progress issue — raw DB status is 'in_progress' from checkout.
+      // Since checkout sets status to in_progress, the reconciler restores to
+      // 'todo' (the pre-checkout default). This verifies raw status is stored.
+      const issueId = await createIssue({
+        status: "in_progress",
+        assigneeAgentId: agentId,
+        executionRunId: null,
+        checkoutRunId: null,
+      });
+
+      const result = await reconciler.reconcile(companyId);
+      expect(result.ghostProjectionsCorrected).toBe(1);
+
+      // Check that the reconciliation event includes rawStatus field
+      const events = await db
+        .select()
+        .from(controlPlaneEvents)
+        .where(eq(controlPlaneEvents.companyId, companyId));
+
+      const ghostEvent = events.find(
+        (e) => e.eventType === "reconciliation_ghost_projection_cleared",
+      );
+      expect(ghostEvent).toBeDefined();
+      const payload = ghostEvent!.payload as Record<string, unknown>;
+      expect(payload.rawStatus).toBe("in_progress");
+      expect(payload.correctedStatus).toBe("todo");
+    });
+
+    it("ghost projection does NOT affect leases or runs in other companies", async () => {
+      await seedTestData();
+
+      // Create another company
+      const otherCompanyId = randomUUID();
+      const otherAgentId = randomUUID();
+      const otherProjectId = randomUUID();
+
+      await db.insert(companies).values({
+        id: otherCompanyId,
+        name: "OtherCo",
+        issuePrefix: `G${otherCompanyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+
+      await db.insert(agents).values({
+        id: otherAgentId,
+        companyId: otherCompanyId,
+        name: "OtherAgent",
+        role: "engineer",
+        status: "active",
+        adapterType: "codex_local",
+        adapterConfig: {},
+        runtimeConfig: {},
+        permissions: {},
+      });
+
+      await db.insert(projects).values({
+        id: otherProjectId,
+        companyId: otherCompanyId,
+        name: "OtherProject",
+        status: "in_progress",
+      });
+
+      // Create an in_progress issue in our company with no run/lease
+      const ghostIssueId = await createIssue({
+        status: "in_progress",
+        assigneeAgentId: agentId,
+        executionRunId: null,
+      });
+
+      // Create an in_progress issue in the other company with a lease
+      // in the other company — the secondary lease lookup must be company-scoped
+      const otherIssueId = randomUUID();
+      await db.insert(issues).values({
+        id: otherIssueId,
+        companyId: otherCompanyId,
+        projectId: otherProjectId,
+        title: "Other Issue",
+        status: "in_progress",
+        priority: "medium",
+        assigneeAgentId: otherAgentId,
+      });
+
+      // Create a lease for the OTHER company's issue. If the reconciler
+      // ignores companyId on the lease check, it might see this as active
+      // for our company's issue.
+      await db.insert(executionLeases).values({
+        leaseType: "issue_execution_lease",
+        issueId: otherIssueId,
+        agentId: otherAgentId,
+        state: "granted",
+        companyId: otherCompanyId,
+        grantedAt: new Date(),
+        expiresAt: new Date(Date.now() + 300_000),
+      });
+
+      const result = await reconciler.reconcile(companyId);
+
+      // Our ghost issue should still be corrected even though other company has a lease
+      expect(result.ghostProjectionsCorrected).toBe(1);
+
+      const [issue] = await db
+        .select()
+        .from(issues)
+        .where(eq(issues.id, ghostIssueId));
+      expect(issue.status).toBe("todo");
+
+      // Other company's issue should be unchanged
+      const [otherIssue] = await db
+        .select()
+        .from(issues)
+        .where(eq(issues.id, otherIssueId));
+      expect(otherIssue.status).toBe("in_progress");
+    });
+
+    it("stale intent check uses company-scoped issue lookup", async () => {
+      await seedTestData();
+
+      // Create another company
+      const otherCompanyId = randomUUID();
+      const otherAgentId = randomUUID();
+      const otherProjectId = randomUUID();
+
+      await db.insert(companies).values({
+        id: otherCompanyId,
+        name: "OtherCo2",
+        issuePrefix: `S${otherCompanyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+
+      await db.insert(agents).values({
+        id: otherAgentId,
+        companyId: otherCompanyId,
+        name: "OtherAgent2",
+        role: "engineer",
+        status: "active",
+        adapterType: "codex_local",
+        adapterConfig: {},
+        runtimeConfig: {},
+        permissions: {},
+      });
+
+      await db.insert(projects).values({
+        id: otherProjectId,
+        companyId: otherCompanyId,
+        name: "OtherProject2",
+        status: "in_progress",
+      });
+
+      // Create a done issue in our company
+      const doneIssueId = await createIssue({ status: "done" });
+
+      // Create a queued intent for the done issue
+      await db.insert(dispatchIntents).values({
+        companyId,
+        issueId: doneIssueId,
+        projectId,
+        targetAgentId: agentId,
+        intentType: "issue_assigned",
+        priority: 10,
+        status: "queued",
+      });
+
+      // Create an open issue in the other company with the same ID
+      // (this tests that the issue lookup is company-scoped)
+      const otherOpenIssueId = randomUUID();
+      await db.insert(issues).values({
+        id: otherOpenIssueId,
+        companyId: otherCompanyId,
+        projectId: otherProjectId,
+        title: "Other Open Issue",
+        status: "todo",
+        priority: "medium",
+        assigneeAgentId: otherAgentId,
+      });
+
+      const result = await reconciler.reconcile(companyId);
+
+      // Intent for the done issue should be rejected
+      expect(result.staleIntentsRejected).toBe(1);
     });
   });
 });

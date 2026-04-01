@@ -1124,8 +1124,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
         logger.warn({ err, issueId: id }, "failed to renew lease on issue update"));
     }
 
-    // Emit issue_status_changed event when status changes
-    if (req.body.status !== undefined && existing.status !== issue.status) {
+    // Emit issue_status_changed event when status changes (including reopen flow)
+    if (existing.status !== issue.status) {
       void eventLog.emit({
         companyId: issue.companyId,
         entityType: "issue",
@@ -1581,6 +1581,20 @@ export function issueRoutes(db: Db, storage: StorageService) {
           identifier: currentIssue.identifier,
         },
       });
+
+      // Emit issue_status_changed event for reopen flow
+      void eventLog.emit({
+        companyId: currentIssue.companyId,
+        entityType: "issue",
+        entityId: currentIssue.id,
+        eventType: "issue_status_changed",
+        payload: {
+          issueId: currentIssue.id,
+          from: issue.status,
+          to: "todo",
+          agentId: actor.agentId,
+        },
+      }).catch((err) => logger.warn({ err, issueId: currentIssue.id }, "failed to emit issue_status_changed event on reopen"));
     }
 
     if (interruptRequested) {
