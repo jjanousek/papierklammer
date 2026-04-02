@@ -303,7 +303,7 @@ describe("InputBar", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -340,7 +340,7 @@ describe("InputBar", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -376,7 +376,7 @@ describe("Streaming and turn completion", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -413,7 +413,7 @@ describe("Streaming and turn completion", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -474,7 +474,7 @@ describe("useChat integration via App", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -508,7 +508,7 @@ describe("useChat integration via App", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,

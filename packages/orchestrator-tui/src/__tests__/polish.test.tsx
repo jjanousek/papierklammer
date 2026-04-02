@@ -63,7 +63,7 @@ describe("API connection error handling (VAL-TUI-031)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -83,7 +83,7 @@ describe("API connection error handling (VAL-TUI-031)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -103,7 +103,7 @@ describe("API connection error handling (VAL-TUI-031)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -128,7 +128,7 @@ describe("API connection error handling (VAL-TUI-031)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -211,7 +211,7 @@ describe("API connection error handling (VAL-TUI-031)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={100}
       />,
@@ -291,7 +291,7 @@ describe("Help overlay (VAL-TUI-033)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -319,7 +319,7 @@ describe("Help overlay (VAL-TUI-033)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -351,7 +351,7 @@ describe("Help overlay (VAL-TUI-033)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -402,7 +402,7 @@ describe("Graceful shutdown (VAL-TUI-034)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
         spawnFn={mockSpawn}
@@ -435,7 +435,7 @@ describe("Graceful shutdown (VAL-TUI-034)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -467,7 +467,7 @@ describe("Codex crash auto-restart (VAL-TUI-030)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
         spawnFn={mockSpawn}
@@ -513,7 +513,7 @@ describe("Codex crash auto-restart (VAL-TUI-030)", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
         spawnFn={mockSpawn}

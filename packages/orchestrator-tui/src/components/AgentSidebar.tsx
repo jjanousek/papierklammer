@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Text, useFocus, useInput } from "ink";
+import { Box, Text, useInput } from "ink";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
 const STATUS_DOT: Record<string, { symbol: string; color: string }> = {
@@ -20,6 +20,8 @@ export interface AgentSidebarProps {
   agents: AgentOverview[];
   /** Override max visible agents for testing */
   maxVisible?: number;
+  /** Whether the sidebar is currently focused for keyboard navigation */
+  focused?: boolean;
   /** Whether the sidebar is connected to the orchestrator API */
   connected?: boolean;
   /** Error message from the last failed poll */
@@ -29,16 +31,16 @@ export interface AgentSidebarProps {
 export function AgentSidebar({
   agents,
   maxVisible = DEFAULT_MAX_VISIBLE,
+  focused = false,
   connected = true,
   error = null,
 }: AgentSidebarProps): React.ReactElement {
-  const { isFocused } = useFocus({ id: "sidebar" });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
 
   useInput(
     (_input, key) => {
-      if (!isFocused) return;
+      if (!focused) return;
       if (key.downArrow) {
         setSelectedIndex((prev) => {
           const next = Math.min(prev + 1, agents.length - 1);
@@ -60,10 +62,10 @@ export function AgentSidebar({
         });
       }
     },
-    { isActive: isFocused },
+    { isActive: focused },
   );
 
-  const borderColor = isFocused ? "cyan" : undefined;
+  const borderColor = focused ? "cyan" : undefined;
 
   const hasMoreAbove = scrollOffset > 0;
   const hasMoreBelow = scrollOffset + maxVisible < agents.length;
@@ -96,8 +98,8 @@ export function AgentSidebar({
             const isSelected = idx === selectedIndex;
             return (
               <Text
-                key={agent.agentId}
-                inverse={isSelected && isFocused}
+                key={`${agent.agentId}:${idx}`}
+                inverse={isSelected && focused}
               >
                 <Text color={dot.color}>{dot.symbol}</Text>{" "}
                 {agent.name || agent.agentId} ({agent.status})

@@ -283,6 +283,47 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     unmount();
   });
 
+  it("keeps the TUI alive and surfaces a Codex error when send fails", async () => {
+    const mockProc = createMockProcess();
+    const mockSpawn = vi.fn().mockReturnValue(mockProc);
+    const mockFetch = createMockFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick(100);
+
+    stdin.write("Why did the send fail?");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, {
+      id: 1,
+      error: { code: -32000, message: "thread/start failed in test" },
+    });
+    await tick(100);
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("You:");
+    expect(frame).toContain("Why did the send fail?");
+    expect(frame).toContain("Error: thread/start failed: thread/start failed in test");
+    expect(frame).not.toContain("thinking...");
+
+    unmount();
+  });
+
   it("command execution blocks appear in chat during streaming", async () => {
     const mockProc = createMockProcess();
     const mockSpawn = vi.fn().mockReturnValue(mockProc);

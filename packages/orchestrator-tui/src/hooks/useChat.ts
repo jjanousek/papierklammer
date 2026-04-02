@@ -29,6 +29,8 @@ export interface UseChatResult {
   onTurnCompleted: () => void;
   /** Track a command execution. */
   onCommandExecution: (command: string, output: string) => void;
+  /** Surface an assistant-visible error without crashing the TUI. */
+  onError: (message: string) => void;
   /** Set the thinking state (e.g. between send and first delta). */
   setIsThinking: (thinking: boolean) => void;
 }
@@ -99,6 +101,23 @@ export function useChat(): UseChatResult {
     [],
   );
 
+  const onError = useCallback((message: string): void => {
+    setStreamingText("");
+    setIsThinking(false);
+    const assistantMessage: ChatMessage = {
+      role: "assistant",
+      text: `Error: ${message}`,
+      timestamp: new Date(),
+      items:
+        pendingCommandItemsRef.current.length > 0
+          ? [...pendingCommandItemsRef.current]
+          : undefined,
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+    pendingCommandItemsRef.current = [];
+    setPendingCommandItems([]);
+  }, []);
+
   return {
     messages,
     streamingText,
@@ -108,6 +127,7 @@ export function useChat(): UseChatResult {
     onDelta,
     onTurnCompleted,
     onCommandExecution,
+    onError,
     setIsThinking,
   };
 }

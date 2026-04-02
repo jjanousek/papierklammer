@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { spawn } from "node:child_process";
 import { render } from "ink";
 import React from "react";
 import { App } from "./components/App.js";
@@ -12,5 +13,11 @@ if (showHelp) {
 }
 
 render(
-  <App url={flags.url} apiKey={flags.apiKey} companyId={flags.companyId} />,
+  <App
+    url={flags.url}
+    apiKey={flags.apiKey}
+    companyId={flags.companyId}
+    spawnFn={spawn}
+    enableCodex
+  />,
 );

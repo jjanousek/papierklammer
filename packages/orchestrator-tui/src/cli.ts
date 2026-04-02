@@ -23,9 +23,15 @@ Options:
  */
 export function parseArgs(argv: string[]): ParseArgsResult {
   const flags: CliFlags = {
-    url: "http://localhost:3100",
-    apiKey: "",
-    companyId: "",
+    url:
+      process.env.PAPIERKLAMMER_TUI_URL ||
+      process.env.PAPIERKLAMMER_API_URL ||
+      "http://localhost:3100",
+    apiKey:
+      process.env.PAPIERKLAMMER_TUI_API_KEY ||
+      process.env.PAPIERKLAMMER_API_KEY ||
+      "",
+    companyId: process.env.PAPIERKLAMMER_TUI_COMPANY_ID || "",
   };
 
   let showHelp = false;

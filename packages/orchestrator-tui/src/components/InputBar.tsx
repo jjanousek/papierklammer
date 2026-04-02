@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Text, useFocus } from "ink";
+import { Box, Text } from "ink";
 import TextInput from "ink-text-input";
 
 export interface InputBarProps {
@@ -7,6 +7,8 @@ export interface InputBarProps {
   onSubmit?: (text: string) => void;
   /** Whether input is disabled (e.g. while Codex is thinking). */
   disabled?: boolean;
+  /** Whether the input bar is currently focused. */
+  focused?: boolean;
   /** Called when the input bar gains or loses focus. */
   onFocusChange?: (isFocused: boolean) => void;
 }
@@ -20,16 +22,16 @@ export interface InputBarProps {
 export function InputBar({
   onSubmit,
   disabled = false,
+  focused = false,
   onFocusChange,
 }: InputBarProps): React.ReactElement {
-  const { isFocused } = useFocus({ id: "input" });
   const [value, setValue] = useState("");
 
   useEffect(() => {
-    onFocusChange?.(isFocused);
-  }, [isFocused, onFocusChange]);
+    onFocusChange?.(focused);
+  }, [focused, onFocusChange]);
 
-  const borderColor = isFocused ? "green" : undefined;
+  const borderColor = focused ? "green" : undefined;
 
   const handleSubmit = useCallback(
     (text: string) => {
@@ -68,7 +70,7 @@ export function InputBar({
             value={value}
             onChange={handleChange}
             onSubmit={handleSubmit}
-            focus={isFocused}
+            focus={focused}
             placeholder="Type a message..."
           />
         </Box>

@@ -44,6 +44,14 @@ export function useOrchestratorStatus(
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const poll = useCallback(async () => {
+    if (!companyId) {
+      setAgents([]);
+      setTotalActiveRuns(0);
+      setConnected(false);
+      setError(null);
+      return;
+    }
+
     try {
       const endpoint = `${url.replace(/\/+$/, "")}/api/orchestrator/status?companyId=${encodeURIComponent(companyId)}`;
       const res = await fetchFn(endpoint, {

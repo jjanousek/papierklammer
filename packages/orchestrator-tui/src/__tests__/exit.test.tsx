@@ -30,7 +30,7 @@ afterEach(() => {
 describe("Ctrl+C exit", () => {
   it("exits the app when Ctrl+C is pressed", async () => {
     const { stdin, unmount, lastFrame } = render(
-      <App url="http://localhost:3100" apiKey="" companyId="" fetchFn={mockFetch} pollInterval={60000} />,
+      <App url="http://localhost:3100" apiKey="" companyId="test-company" fetchFn={mockFetch} pollInterval={60000} />,
     );
 
     // Verify app is rendered
@@ -49,7 +49,7 @@ describe("Ctrl+C exit", () => {
 
   it("restores terminal by disabling alternate screen buffer on exit", async () => {
     const { stdin, unmount } = render(
-      <App url="http://localhost:3100" apiKey="" companyId="" fetchFn={mockFetch} pollInterval={60000} />,
+      <App url="http://localhost:3100" apiKey="" companyId="test-company" fetchFn={mockFetch} pollInterval={60000} />,
     );
 
     // Simulate Ctrl+C to trigger exit and cleanup

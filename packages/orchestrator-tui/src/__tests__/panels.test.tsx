@@ -236,7 +236,7 @@ describe("Keyboard navigation", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -277,7 +277,7 @@ describe("Keyboard navigation", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -318,7 +318,7 @@ describe("Keyboard navigation", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -412,7 +412,7 @@ describe("Agent list scrolling", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -473,7 +473,7 @@ describe("Agent list scrolling", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -514,7 +514,7 @@ describe("Agent list scrolling", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
@@ -597,7 +597,7 @@ describe("Sidebar with API data", () => {
       <App
         url="http://localhost:3100"
         apiKey=""
-        companyId=""
+        companyId="test-company"
         fetchFn={mockFetch}
         pollInterval={60000}
       />,
