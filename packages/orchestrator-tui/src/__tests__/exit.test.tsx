@@ -6,6 +6,16 @@ import { App } from "../components/App.js";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let stdoutWriteMock: any;
 
+const mockFetch = vi.fn().mockResolvedValue({
+  ok: true,
+  json: async () => ({
+    agents: [],
+    totalActiveRuns: 0,
+    totalQueuedIntents: 0,
+    totalActiveLeases: 0,
+  }),
+});
+
 beforeEach(() => {
   // Suppress alternate screen buffer escape codes during tests
   stdoutWriteMock = vi
@@ -20,7 +30,7 @@ afterEach(() => {
 describe("Ctrl+C exit", () => {
   it("exits the app when Ctrl+C is pressed", async () => {
     const { stdin, unmount, lastFrame } = render(
-      <App url="http://localhost:3100" apiKey="" companyId="" />,
+      <App url="http://localhost:3100" apiKey="" companyId="" fetchFn={mockFetch} pollInterval={60000} />,
     );
 
     // Verify app is rendered
@@ -39,7 +49,7 @@ describe("Ctrl+C exit", () => {
 
   it("restores terminal by disabling alternate screen buffer on exit", async () => {
     const { stdin, unmount } = render(
-      <App url="http://localhost:3100" apiKey="" companyId="" />,
+      <App url="http://localhost:3100" apiKey="" companyId="" fetchFn={mockFetch} pollInterval={60000} />,
     );
 
     // Simulate Ctrl+C to trigger exit and cleanup

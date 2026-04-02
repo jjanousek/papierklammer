@@ -1,7 +1,17 @@
 import React from "react";
 import { Box, Text } from "ink";
 
-export function HeaderBar(): React.ReactElement {
+export interface HeaderBarProps {
+  connected: boolean;
+  totalAgents: number;
+  totalActiveRuns: number;
+}
+
+export function HeaderBar({
+  connected,
+  totalAgents,
+  totalActiveRuns,
+}: HeaderBarProps): React.ReactElement {
   return (
     <Box
       flexDirection="row"
@@ -16,7 +26,14 @@ export function HeaderBar(): React.ReactElement {
       <Text bold color="cyan">
         Papierklammer
       </Text>
-      <Text dimColor>Status: Placeholder</Text>
+      <Box>
+        <Text color={connected ? "green" : "red"}>
+          {connected ? "Connected" : "Disconnected"}
+        </Text>
+        <Text dimColor>
+          {" "}| {totalAgents} agent{totalAgents !== 1 ? "s" : ""} | {totalActiveRuns} active run{totalActiveRuns !== 1 ? "s" : ""}
+        </Text>
+      </Box>
     </Box>
   );
 }
