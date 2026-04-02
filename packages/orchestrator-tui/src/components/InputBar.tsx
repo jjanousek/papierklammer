@@ -1,7 +1,11 @@
 import React from "react";
-import { Box, Text } from "ink";
+import { Box, Text, useFocus } from "ink";
 
 export function InputBar(): React.ReactElement {
+  const { isFocused } = useFocus({ id: "input" });
+
+  const borderColor = isFocused ? "green" : undefined;
+
   return (
     <Box
       borderStyle="single"
@@ -9,9 +13,10 @@ export function InputBar(): React.ReactElement {
       borderBottom={false}
       borderLeft={false}
       borderRight={false}
+      borderColor={borderColor}
       paddingX={1}
     >
-      <Text dimColor>{">"} Type a message...</Text>
+      <Text dimColor={!isFocused}>{">"} Type a message...</Text>
     </Box>
   );
 }

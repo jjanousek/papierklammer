@@ -13,30 +13,55 @@ function statusDot(status: string): { symbol: string; color: string } {
   return STATUS_DOT[status] ?? { symbol: "●", color: "gray" };
 }
 
+/** Default max visible agents before scrolling kicks in */
+const DEFAULT_MAX_VISIBLE = 20;
+
 export interface AgentSidebarProps {
   agents: AgentOverview[];
+  /** Override max visible agents for testing */
+  maxVisible?: number;
 }
 
 export function AgentSidebar({
   agents,
+  maxVisible = DEFAULT_MAX_VISIBLE,
 }: AgentSidebarProps): React.ReactElement {
   const { isFocused } = useFocus({ id: "sidebar" });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   useInput(
     (_input, key) => {
       if (!isFocused) return;
       if (key.downArrow) {
-        setSelectedIndex((prev) => Math.min(prev + 1, agents.length - 1));
+        setSelectedIndex((prev) => {
+          const next = Math.min(prev + 1, agents.length - 1);
+          // Scroll down if selection moves past visible window
+          if (next >= scrollOffset + maxVisible) {
+            setScrollOffset(next - maxVisible + 1);
+          }
+          return next;
+        });
       }
       if (key.upArrow) {
-        setSelectedIndex((prev) => Math.max(prev - 1, 0));
+        setSelectedIndex((prev) => {
+          const next = Math.max(prev - 1, 0);
+          // Scroll up if selection moves above visible window
+          if (next < scrollOffset) {
+            setScrollOffset(next);
+          }
+          return next;
+        });
       }
     },
     { isActive: isFocused },
   );
 
   const borderColor = isFocused ? "cyan" : undefined;
+
+  const hasMoreAbove = scrollOffset > 0;
+  const hasMoreBelow = scrollOffset + maxVisible < agents.length;
+  const visibleAgents = agents.slice(scrollOffset, scrollOffset + maxVisible);
 
   return (
     <Box
@@ -52,19 +77,24 @@ export function AgentSidebar({
       {agents.length === 0 ? (
         <Text dimColor>No agents connected</Text>
       ) : (
-        agents.map((agent, idx) => {
-          const dot = statusDot(agent.status);
-          const isSelected = idx === selectedIndex;
-          return (
-            <Text
-              key={agent.agentId}
-              inverse={isSelected && isFocused}
-            >
-              <Text color={dot.color}>{dot.symbol}</Text>{" "}
-              {agent.name || agent.agentId} ({agent.status})
-            </Text>
-          );
-        })
+        <>
+          {hasMoreAbove && <Text dimColor>▲ more above</Text>}
+          {visibleAgents.map((agent, visIdx) => {
+            const idx = scrollOffset + visIdx;
+            const dot = statusDot(agent.status);
+            const isSelected = idx === selectedIndex;
+            return (
+              <Text
+                key={agent.agentId}
+                inverse={isSelected && isFocused}
+              >
+                <Text color={dot.color}>{dot.symbol}</Text>{" "}
+                {agent.name || agent.agentId} ({agent.status})
+              </Text>
+            );
+          })}
+          {hasMoreBelow && <Text dimColor>▼ more below</Text>}
+        </>
       )}
     </Box>
   );
