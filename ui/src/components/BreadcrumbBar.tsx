@@ -88,10 +88,12 @@ export function BreadcrumbBar() {
                     <li aria-hidden="true" style={{ color: "var(--fg-dim)", fontSize: "12px" }}>/</li>
                   )}
                   <li className={cn("inline-flex items-center", isLast ? "min-w-0" : "shrink-0")}>
-                    {isLast || !crumb.href ? (
+                    {isLast ? (
                       <span className="truncate" style={{ color: "var(--fg)", fontWeight: 500 }}>{crumb.label}</span>
-                    ) : (
+                    ) : crumb.href ? (
                       <Link to={crumb.href} className="hover:opacity-70" style={{ color: "var(--fg-muted)", textDecoration: "none" }}>{crumb.label}</Link>
+                    ) : (
+                      <span className="truncate" style={{ color: "var(--fg-muted)" }}>{crumb.label}</span>
                     )}
                   </li>
                 </Fragment>

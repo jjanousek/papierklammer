@@ -3961,7 +3961,7 @@ function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }
             API key created — copy it now, it will not be shown again.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-[var(--bg-darker)]px-3 py-1.5 text-xs font-mono text-[var(--alive)] truncate">
+            <code className="flex-1 bg-[var(--bg-darker)] px-3 py-1.5 text-xs font-mono text-[var(--alive)] truncate">
               {tokenVisible ? newToken : newToken.replace(/./g, "•")}
             </code>
             <Button

@@ -1,0 +1,28 @@
+{
+  "featureId": "gui-layout-navigation-polish",
+  "reviewedAt": "2026-04-02T23:22:04Z",
+  "commitId": "eb65d2ce11a4d23e2b832f309621e39fcdf17fa4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Reviewed mission artifacts, worker transcript skeleton, handoff, and commit eb65d2ce. The layout/navigation restyle is mostly aligned with the feature scope, but breadcrumb coloring has a requirement-breaking logic issue.",
+    "issues": [
+      {
+        "file": "ui/src/components/BreadcrumbBar.tsx",
+        "line": 91,
+        "severity": "blocking",
+        "description": "Breadcrumb rendering treats any crumb without href as active (`var(--fg)`) via `isLast || !crumb.href`, so non-last crumbs without href are not muted. This violates the expected behavior \"Last item --fg, others --fg-muted\". Reproducible with current breadcrumb definitions on pages that provide multi-item trails without href on the first item (e.g., ui/src/pages/InstanceSettings.tsx:35-38, ui/src/pages/InstanceGeneralSettings.tsx:15-18, ui/src/pages/InstanceExperimentalSettings.tsx:15-18)."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The gui-worker skill's startup command is out of sync with the repository services manifest.",
+      "evidence": ".factory/skills/gui-worker/SKILL.md step 5 instructs `pnpm dev`, while .factory/services.yaml defines `api.start` as `PORT=3100 pnpm dev:once`; transcript skeleton for session 5d18f4ab-b96e-4ea8-a697-3d1f3e44bca2 shows the worker used `PORT=3100 pnpm dev:once`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Scrutiny result: fail. A blocking breadcrumb styling logic bug remains for non-last crumbs without href; otherwise the reviewed feature changes are scoped and largely consistent with the intended GUI polish."
+}

@@ -1,0 +1,28 @@
+{
+  "featureId": "gui-detail-pages",
+  "reviewedAt": "2026-04-02T23:23:02Z",
+  "commitId": "faf649067b576dfeb75375b498898073ed3b0bf5",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Implementation substantially matches the feature description and validation assertions for AgentDetail/IssueDetail design-system restyling (header, tab treatment, transcript styling, inline editors, comment thread, and properties panel). One high-confidence styling regression was introduced in AgentDetail due to a malformed Tailwind class token.",
+    "issues": [
+      {
+        "file": "ui/src/pages/AgentDetail.tsx",
+        "line": 3964,
+        "severity": "non_blocking",
+        "description": "Malformed class token `bg-[var(--bg-darker)]px-3` is missing a space before `px-3`, so both intended utilities are not applied (`bg-[var(--bg-darker)]` and `px-3`). This breaks styling of the newly created API key code block."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "Troubleshooting for embedded Postgres shared-memory lock failures during GUI validation is not documented in mission shared state, even though it affected this worker session.",
+      "evidence": "Transcript skeleton for session `53db8b05-c16f-4c4c-9035-651763f8fa83` shows repeated recovery steps (`stale lock`, `shared memory block issue`, manual `ipcrm`/process cleanup, and DB directory reset) before visual verification could proceed."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass with one non-blocking issue: the feature meets expected behavior for detail-page design-system polish, but includes a malformed class string in AgentDetail that causes a local styling regression."
+}
