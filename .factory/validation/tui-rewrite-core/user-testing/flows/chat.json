@@ -1,0 +1,115 @@
+{
+  "milestone": "tui-rewrite-core",
+  "groupId": "chat",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:22:03.794075+00:00",
+  "isolation": {
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "constraints": [
+      "repository-only operations",
+      "file-scoped vitest run",
+      "no product code modifications"
+    ]
+  },
+  "toolsUsed": [
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-CHAT-001",
+      "title": "User messages display with \"You:\" prefix",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "ChatPanel > renders user messages with You: prefix",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CHAT-002",
+      "title": "Assistant messages display with \"Orchestrator:\" prefix",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "ChatPanel > renders assistant messages with Orchestrator: prefix",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CHAT-003",
+      "title": "Enter sends message and clears input",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "InputBar > calls onSubmit with text on Enter and clears input",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CHAT-004",
+      "title": "Streaming text with blinking cursor",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "ChatPanel > renders streaming text with cursor indicator",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CHAT-005",
+      "title": "Thinking indicator shown/hidden correctly",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "ChatPanel > renders thinking indicator when isThinking is true",
+        "additionalTest": "ChatPanel > does not show thinking indicator when streaming text is present",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CHAT-006",
+      "title": "Input disabled while thinking",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "useChat integration via App > input is disabled while thinking",
+        "additionalTest": "InputBar > shows waiting message when disabled",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CHAT-007",
+      "title": "Message history renders multiple exchanges",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+        "testName": "MessageList > renders message history correctly",
+        "log": "tui-rewrite-core/chat/vitest-chat.log"
+      }
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "mkdir -p /Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/chat",
+      "exitCode": 0,
+      "observation": "Created mission evidence directory for chat flow artifacts."
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/chat.test.tsx --reporter=verbose",
+      "exitCode": 0,
+      "observation": "chat.test.tsx passed (1 file, 27 tests), including all mapped VAL-TUI-CHAT-001..007 assertions."
+    },
+    {
+      "command": "python3 (write assertion-evidence-map.json)",
+      "exitCode": 0,
+      "observation": "Saved assertion-to-test mapping evidence file under mission evidence directory."
+    }
+  ],
+  "evidenceFiles": [
+    "tui-rewrite-core/chat/vitest-chat.log",
+    "tui-rewrite-core/chat/assertion-evidence-map.json"
+  ],
+  "frictions": [],
+  "blockers": []
+}

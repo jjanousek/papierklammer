@@ -1,0 +1,162 @@
+{
+  "milestone": "tui-rewrite-core",
+  "groupId": "core-layout",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:22:35Z",
+  "toolsUsed": ["vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-CORE-001",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/cli.test.ts",
+        "testNames": [
+          "declares papierklammer-tui as a bin entry in package.json",
+          "has type module in package.json",
+          "has correct package name"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/cli.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CORE-002",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+        "testNames": [
+          "renders all 5 regions in one frame"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/layout.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CORE-003",
+      "status": "blocked",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/cli.test.ts",
+        "testNames": [
+          "sets showHelp to true when --help is passed",
+          "sets showHelp to true when -h is passed",
+          "parses --url flag correctly",
+          "parses --api-key flag correctly",
+          "uses default url when --url is not provided"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/cli.test.log"
+      },
+      "reason": "Scoped vitest coverage verifies --help/-h, --url, --api-key, and default URL, but no test in cli.test.ts asserts --company-id parsing."
+    },
+    {
+      "id": "VAL-TUI-CORE-004",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/exit.test.tsx",
+        "testNames": [
+          "exits the app when Ctrl+C is pressed",
+          "restores terminal by disabling alternate screen buffer on exit"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/exit.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-CORE-005",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+        "testNames": [
+          "catches render errors and displays fallback message"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/layout.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-AGENT-001",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+        "testNames": [
+          "renders agents with correct status indicators",
+          "renders status text for each agent"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/panels.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-AGENT-002",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+        "testNames": [
+          "shows Connected status when connected",
+          "shows Disconnected status when not connected",
+          "shows agent count",
+          "shows active run count"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/panels.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-AGENT-003",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+        "testNames": [
+          "shows scroll indicators when agent list exceeds maxVisible",
+          "does not show scroll indicators when all agents fit",
+          "shows ▲ indicator when scrolled past the beginning"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/panels.test.log"
+      }
+    },
+    {
+      "id": "VAL-TUI-UX-004",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+        "testNames": [
+          "shows disconnected state by default",
+          "shows connected state",
+          "shows threadId when active",
+          "shows model name when available",
+          "shows all info together"
+        ],
+        "commandLog": "tui-rewrite-core/core-layout/panels.test.log"
+      }
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run \"packages/orchestrator-tui/src/__tests__/cli.test.ts\"",
+      "exitCode": 0,
+      "observation": "1 file passed, 11 tests passed."
+    },
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run \"packages/orchestrator-tui/src/__tests__/layout.test.tsx\"",
+      "exitCode": 0,
+      "observation": "1 file passed, 9 tests passed."
+    },
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run \"packages/orchestrator-tui/src/__tests__/exit.test.tsx\"",
+      "exitCode": 0,
+      "observation": "1 file passed, 2 tests passed."
+    },
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run \"packages/orchestrator-tui/src/__tests__/panels.test.tsx\"",
+      "exitCode": 0,
+      "observation": "1 file passed, 28 tests passed."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "VAL-TUI-CORE-003 contract includes --company-id parsing, but current file-scoped vitest coverage does not include a dedicated --company-id parse assertion in cli.test.ts.",
+      "resolved": false,
+      "resolution": "Marked assertion as blocked due to incomplete scoped evidence."
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Missing direct vitest assertion for --company-id parsing in the scoped cli test file.",
+      "affectedAssertions": ["VAL-TUI-CORE-003"],
+      "quickFixAttempted": "Searched all orchestrator-tui tests for company-id parse coverage; none found."
+    }
+  ]
+}

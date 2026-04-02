@@ -1,0 +1,187 @@
+{
+  "milestone": "tui-rewrite-core",
+  "groupId": "codex-client",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:21:07Z",
+  "assertions": [
+    {
+      "id": "VAL-TUI-CODEX-001",
+      "title": "Subprocess spawn",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "spawns codex app-server subprocess on construction"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-002",
+      "title": "Initialize handshake",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "sends initialize request and initialized notification"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-003",
+      "title": "Thread creation returns threadId",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "starts a thread and returns threadId",
+          "injects baseInstructions on thread start"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-004",
+      "title": "BaseInstructions injected on thread start",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "injects baseInstructions on thread start"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-005",
+      "title": "Turn start and delta streaming",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "starts a turn and streams deltas via callbacks"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-006",
+      "title": "Turn completion callback",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "fires onTurnCompleted callback"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-007",
+      "title": "Multi-turn on same thread",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "supports multi-turn on the same thread"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-008",
+      "title": "Auto-reconnect on subprocess crash",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "auto-reconnects on subprocess exit"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-009",
+      "title": "Destroy sends SIGTERM",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "destroy sends SIGTERM to subprocess",
+          "rejects pending requests on destroy"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-010",
+      "title": "Malformed JSONL lines ignored",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "ignores malformed JSONL lines"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    },
+    {
+      "id": "VAL-TUI-CODEX-011",
+      "title": "Command output delta callback",
+      "status": "pass",
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "tests": [
+          "fires onCommandOutput callback"
+        ],
+        "artifacts": [
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/vitest-codex-client.log",
+          "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-rewrite-core/codex-client/assertion-test-mapping.json"
+        ]
+      }
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm exec vitest run packages/orchestrator-tui/src/__tests__/codex-client.test.ts --reporter=verbose",
+      "exitCode": 0,
+      "observation": "File-scoped Codex client suite passed: 1 file, 19 tests, 0 failures."
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": [
+    "vitest"
+  ]
+}

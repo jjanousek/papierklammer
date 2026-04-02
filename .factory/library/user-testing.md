@@ -55,3 +55,11 @@ Two validation surfaces for this mission:
 - `pnpm exec vitest run <file>` is more reliable than `pnpm test:run -- <file>` for scoped runs
 - Agent-browser Chromium 1217 installed via Playwright CLI (not built-in agent-browser install)
 - Dev server takes ~12 seconds to start with embedded PGlite
+- Current `cli.test.ts` coverage does not include a dedicated `--company-id` parse assertion; treat `VAL-TUI-CORE-003` as blocked until explicit test coverage is added.
+
+## Flow Validator Guidance: vitest
+
+- Isolation boundary: repository-only operations under `/Users/aischool/work/papierklammer_droid`.
+- Do not modify product code or mission contract files from flow validators.
+- Only execute deterministic file-scoped tests in `packages/orchestrator-tui/src/__tests__/`.
+- Store evidence as command logs and assertion-to-test mapping notes for each flow report.
