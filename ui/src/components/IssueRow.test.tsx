@@ -81,7 +81,6 @@ describe("IssueRow", () => {
     const link = container.querySelector("[data-inbox-issue-link]") as HTMLAnchorElement | null;
     expect(link).not.toBeNull();
     expect(link?.className).toContain("hover:opacity-80");
-    expect(link?.className).not.toContain("hover:opacity-80");
 
     act(() => {
       root.unmount();
@@ -101,7 +100,6 @@ describe("IssueRow", () => {
 
     expect(markReadButton).not.toBeNull();
     expect(markReadButton?.className).toContain("hover:opacity-80");
-    expect(markReadButton?.className).not.toContain("hover:opacity-80");
     expect(unreadDot).not.toBeNull();
     expect(unreadDot?.className).toContain("bg-muted-foreground/70");
     expect(unreadDot?.className).not.toContain("bg-blue-600");
