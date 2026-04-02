@@ -1,0 +1,87 @@
+{
+  "milestone": "gui-design-foundation",
+  "round": 2,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 8,
+    "passed": 3,
+    "failed": 5,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-FOUND-008",
+    "VAL-GUI-FOUND-010",
+    "VAL-GUI-FOUND-011"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-FOUND-001",
+      "reason": "Computed-font audits still show 5 visible-text violations per page (dashboard/agents/issues) using ui-monospace stack instead of JetBrains Mono."
+    },
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "reason": "Status markers are 6x6 squares, but observed colors do not match required mapping (alive=#82E88A, error=#FF6060, idle=transparent+border): sampled markers render white or warn-toned fills."
+    },
+    {
+      "id": "VAL-GUI-FOUND-005",
+      "reason": "Typography audits found only 4 compliant section-label instances (dashboard) and none on agents/issues; requirement is 5+ labels at 9-10px, 1-1.5px letter spacing, fg-dim color."
+    },
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "reason": "Computed-style evidence includes multiple visible button instances that do not meet the primitive contract (e.g., 0px or 2px-dashed borders, non-11px font sizes, non-uppercase text), even though some button instances are compliant."
+    },
+    {
+      "id": "VAL-GUI-PRIM-002",
+      "reason": "Representative controls do not satisfy the full primitive contract: search input is monospace/transparent/1px/no-radius/appearance-none but remains 14px (not 11px), and New Issue title textarea is 18px with 0px border."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Documented that primitive input/textarea audits may require opening Issues -> New Issue modal in read-only mode to collect representative textarea evidence.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": ".factory/validation/gui-design-foundation/user-testing/synthesis.round1.json",
+  "generatedAt": "2026-04-03T00:00:00Z",
+  "toolsUsed": [
+    "agent-browser",
+    "curl",
+    "python3"
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser network requests returned no captured entries in this session.",
+      "resolved": true,
+      "resolution": "Used screenshots and DOM/computed-style audits as primary evidence and logged no-request output for traceability.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-001",
+        "VAL-GUI-FOUND-004",
+        "VAL-GUI-FOUND-005",
+        "VAL-GUI-FOUND-008",
+        "VAL-GUI-FOUND-010",
+        "VAL-GUI-FOUND-011",
+        "VAL-GUI-PRIM-001",
+        "VAL-GUI-PRIM-002"
+      ]
+    },
+    {
+      "description": "API-abort loading-state simulation did not surface visible 'loading...' text in dashboard.",
+      "resolved": true,
+      "resolution": "Relied on spinner-specific CSS/DOM audits and blocked-state screenshot evidence.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-010"
+      ]
+    },
+    {
+      "description": "Several pages exposed no visible input/textarea controls for primitive inspection.",
+      "resolved": true,
+      "resolution": "Opened Issues -> New Issue modal without submitting to capture representative textarea computed styles while remaining read-only.",
+      "affectedAssertions": [
+        "VAL-GUI-PRIM-002"
+      ]
+    }
+  ],
+  "blockers": []
+}

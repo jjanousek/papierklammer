@@ -1,0 +1,52 @@
+{
+  "milestone": "gui-design-foundation",
+  "round": 3,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 5,
+    "passed": 3,
+    "failed": 2,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-FOUND-001",
+    "VAL-GUI-FOUND-005",
+    "VAL-GUI-PRIM-002"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "reason": "6x6 square indicators remain but use non-contract colors (e.g., rgb(239,68,68), rgb(249,115,22), rgb(234,179,8), rgb(59,130,246)) instead of alive=#82E88A, error=#FF6060, or idle=transparent+border."
+    },
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "reason": "Button primitive styling is still inconsistent across visible UI; computed-style audit found 20 failing buttons out of 27 sampled (border, size, and uppercase mismatches)."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added guidance that direct navigation to /api/health may miss network-history capture and an explicit fetch('/api/health') capture is more reliable for evidence.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": ".factory/validation/gui-design-foundation/user-testing/synthesis.round2.json",
+  "generatedAt": "2026-04-02T20:26:36Z",
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "frictions": [
+    {
+      "description": "Direct /api/health document navigation did not reliably populate network-history captures.",
+      "resolved": true,
+      "resolution": "Captured health evidence using explicit in-page fetch('/api/health') and saved the response artifact.",
+      "affectedAssertions": [
+        "VAL-GUI-PRIM-001",
+        "VAL-GUI-PRIM-002"
+      ]
+    }
+  ],
+  "blockers": []
+}

@@ -1,0 +1,102 @@
+{
+  "groupId": "primitives-rerun",
+  "testedAt": "2026-04-02T21:02:48.788436+00:00",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "primitives-rerun-516c6d",
+    "readOnly": true,
+    "localOnly": true
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "title": "Buttons transparent with 1px border",
+      "status": "fail",
+      "reason": "Computed-style audit failed for 34 of 39 visible buttons across Dashboard/Agents/Issues; most failures were non-white border color and non-uppercase text.",
+      "contract": {
+        "backgroundColor": "transparent",
+        "border": "1px solid white",
+        "fontFamily": "JetBrains Mono, monospace",
+        "fontSize": "11px",
+        "textTransform": "uppercase",
+        "borderRadius": "0px"
+      },
+      "pagesAudited": {
+        "dashboard": {
+          "url": "http://localhost:3100/dashboard/dashboard",
+          "sampledButtons": 8,
+          "failingButtons": 8,
+          "passingButtons": 0
+        },
+        "agents": {
+          "url": "http://localhost:3100/WEA/agents/all",
+          "sampledButtons": 16,
+          "failingButtons": 13,
+          "passingButtons": 3
+        },
+        "issues": {
+          "url": "http://localhost:3100/WEA/issues",
+          "sampledButtons": 15,
+          "failingButtons": 13,
+          "passingButtons": 2
+        }
+      },
+      "steps": [
+        {
+          "action": "Open Dashboard, Agents, and Issues pages in read-only mode",
+          "expected": "Representative visible standard buttons are available for sampling",
+          "observed": "Visible button instances sampled on all three pages"
+        },
+        {
+          "action": "Run computed-style audit on visible <button> elements for background/border/font-size/text-transform/border-radius",
+          "expected": "All sampled buttons satisfy primitive contract",
+          "observed": "5 pass, 34 fail out of 39 sampled"
+        },
+        {
+          "action": "Capture screenshots and browser diagnostics",
+          "expected": "Evidence artifacts recorded for assertion review",
+          "observed": "Annotated screenshots, per-page audits, summary audit, console/error logs, and network capture saved"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-rerun/dashboard-buttons-annotated-2026-04-03.png",
+          "gui-design-foundation/primitives-rerun/agents-buttons-annotated-2026-04-03.png",
+          "gui-design-foundation/primitives-rerun/issues-buttons-annotated-2026-04-03.png"
+        ],
+        "auditArtifacts": [
+          "gui-design-foundation/primitives-rerun/dashboard-button-audit-2026-04-03.json",
+          "gui-design-foundation/primitives-rerun/agents-button-audit-2026-04-03.json",
+          "gui-design-foundation/primitives-rerun/issues-button-audit-2026-04-03.json",
+          "gui-design-foundation/primitives-rerun/VAL-GUI-PRIM-001-button-contract-summary-2026-04-03.json"
+        ],
+        "consoleErrors": [
+          "gui-design-foundation/primitives-rerun/dashboard-console-errors-2026-04-03.txt",
+          "gui-design-foundation/primitives-rerun/agents-console-errors-2026-04-03.txt",
+          "gui-design-foundation/primitives-rerun/issues-console-errors-2026-04-03.txt"
+        ],
+        "network": [
+          "gui-design-foundation/primitives-rerun/network-requests-after-health-fetch-2026-04-03.txt",
+          "gui-design-foundation/primitives-rerun/health-fetch-2026-04-03.json"
+        ]
+      }
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser network history was sparse in one capture; explicit in-page fetch provided deterministic network evidence.",
+      "resolved": true,
+      "resolution": "Executed fetch(\"/api/health\") and saved both response payload and updated network request log.",
+      "affectedAssertions": [
+        "VAL-GUI-PRIM-001"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Validated VAL-GUI-PRIM-001 via Dashboard/Agents/Issues. Result: fail (5 passed, 34 failed out of 39 sampled visible buttons)."
+}

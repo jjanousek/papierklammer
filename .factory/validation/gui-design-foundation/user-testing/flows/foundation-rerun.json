@@ -1,0 +1,73 @@
+{
+  "groupId": "foundation-rerun",
+  "milestone": "gui-design-foundation",
+  "testedAt": "2026-04-02T21:03:44.787327+00:00",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "val-found-004",
+    "readOnly": true,
+    "scope": "local GUI only"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "title": "Status indicators are 6x6 squares",
+      "status": "fail",
+      "reason": "All audited indicators retained 6x6 size and 0px border-radius, but dashboard includes 6x6 square indicators with non-contract colors (#EF4444, #F97316, #EAB308, #6B7280, #3B82F6) instead of only alive #82E88A, dead #FF6060, or idle transparent+border.",
+      "steps": [
+        {
+          "action": "Open Dashboard, Agents, Issues, and one Issue Detail page in read-only mode",
+          "expected": "Representative status indicators visible for inspection",
+          "observed": "Pages loaded and status indicator candidates were visible/auditable."
+        },
+        {
+          "action": "Capture annotated screenshots on each view",
+          "expected": "Visual evidence for indicator shape and placement",
+          "observed": "Annotated screenshots captured for dashboard, agents, issues, and issue detail."
+        },
+        {
+          "action": "Run computed-style audits for 6x6 square indicator candidates and aggregate results",
+          "expected": "All candidates use allowed status colors and square geometry",
+          "observed": "Aggregate audit found 5 color violations across 11 candidates (violations concentrated on dashboard legend chips)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-dashboard.png",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-agents.png",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-issues.png",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-issue-detail.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-status-dashboard.json",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-status-agents.json",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-status-issues.json",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-status-issue-detail.json",
+          "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-style-audit-summary.json"
+        ],
+        "consoleErrors": "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-console-errors.txt",
+        "network": "gui-design-foundation/foundation-rerun/VAL-GUI-FOUND-004-network.txt",
+        "healthcheck": "gui-design-foundation/foundation-rerun/api-health.json"
+      },
+      "issues": "Dashboard 6x6 indicators labeled Critical/High/Medium/Low/To Do use non-contract colors, causing VAL-GUI-FOUND-004 failure under computed-style audit."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser `get html @ref` did not accept snapshot refs in this run (selector parsing error), so style evidence relied on `eval` computed-style audits.",
+      "resolved": true,
+      "resolution": "Used `agent-browser eval` scripts to extract computed styles directly from DOM.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 1 assertion (VAL-GUI-FOUND-004): fail."
+}
