@@ -145,28 +145,25 @@ function CommentCard({
     <div
       key={comment.id}
       id={`comment-${comment.id}`}
-      className={`border p-3 overflow-hidden min-w-0 rounded-sm duration-1000 ${
+      className={`border-b border-[var(--border)] p-3 overflow-hidden min-w-0 duration-1000 ${
         isQueued
-          ? "border-amber-300/70 bg-amber-50/70 dark:border-amber-500/40 dark:bg-amber-500/10"
+          ? "border-[var(--border-strong)] bg-transparent"
           : isHighlighted
-            ? "border-primary/50 bg-primary/5"
-            : "border-border"
+            ? "border-[var(--border-strong)] bg-transparent"
+            : "border-[var(--border)]"
       } ${isPending ? "opacity-80" : ""}`}
     >
       <div className="flex items-center justify-between mb-1">
         {comment.authorAgentId ? (
           <Link to={`/agents/${comment.authorAgentId}`} className="hover:underline">
-            <Identity
-              name={agentMap?.get(comment.authorAgentId)?.name ?? comment.authorAgentId.slice(0, 8)}
-              size="sm"
-            />
+            <span className="text-[var(--fg)] font-medium text-xs">{agentMap?.get(comment.authorAgentId)?.name ?? comment.authorAgentId.slice(0, 8)}</span>
           </Link>
         ) : (
-          <Identity name="You" size="sm" />
+          <span className="text-[var(--fg)] font-medium text-xs">You</span>
         )}
         <span className="flex items-center gap-1.5">
           {isQueued ? (
-            <span className="inline-flex items-center border border-amber-400/60 bg-amber-100/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-200">
+            <span className="inline-flex items-center border border-[var(--border-strong)] bg-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--warn)]">
               Queued
             </span>
           ) : null}
@@ -187,11 +184,11 @@ function CommentCard({
             />
           ) : null}
           {isPending ? (
-            <span className="text-xs text-muted-foreground">{isQueued ? "Queueing..." : "Sending..."}</span>
+            <span className="text-xs text-[var(--fg-dim)]">{isQueued ? "Queueing..." : "Sending..."}</span>
           ) : (
             <a
               href={`#comment-${comment.id}`}
-              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+              className="text-xs text-[var(--fg-dim)] hover:text-[var(--fg)] hover:underline"
             >
               {formatDateTime(comment.createdAt)}
             </a>
@@ -199,7 +196,7 @@ function CommentCard({
           <CopyMarkdownButton text={comment.body} />
         </span>
       </div>
-      <MarkdownBody className="text-sm">{comment.body}</MarkdownBody>
+      <MarkdownBody className="text-sm text-[var(--fg-muted)]">{comment.body}</MarkdownBody>
       {companyId && !isPending ? (
         <div className="mt-2 space-y-2">
           <PluginSlotOutlet
@@ -213,22 +210,22 @@ function CommentCard({
               parentEntityId: comment.issueId,
             }}
             className="space-y-2"
-            itemClassName="rounded-md"
+            itemClassName=""
             missingBehavior="placeholder"
           />
         </div>
       ) : null}
       {comment.runId && !isPending ? (
-        <div className="mt-2 pt-2 border-t border-border/60">
+        <div className="mt-2 pt-2 border-t border-[var(--border)]">
           {comment.runAgentId ? (
             <Link
               to={`/agents/${comment.runAgentId}/runs/${comment.runId}`}
-              className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:opacity-80"
+              className="inline-flex items-center border border-[var(--border)] bg-transparent px-2 py-1 text-[10px] font-mono text-[var(--fg-dim)] hover:text-[var(--fg)] hover:opacity-80"
             >
               run {comment.runId.slice(0, 8)}
             </Link>
           ) : (
-            <span className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground">
+            <span className="inline-flex items-center border border-[var(--border)] bg-transparent px-2 py-1 text-[10px] font-mono text-[var(--fg-dim)]">
               run {comment.runId.slice(0, 8)}
             </span>
           )}
@@ -265,7 +262,7 @@ const TimelineList = memo(function TimelineList({
         if (item.kind === "run") {
           const run = item.run;
           return (
-            <div key={`run:${run.runId}`} className="border border-border bg-accent/20 p-3 overflow-hidden min-w-0 rounded-sm">
+            <div key={`run:${run.runId}`} className="border-b border-[var(--border)] bg-transparent p-3 overflow-hidden min-w-0">
               <div className="flex items-center justify-between mb-2">
                 <Link to={`/agents/${run.agentId}`} className="hover:underline">
                   <Identity
@@ -281,7 +278,7 @@ const TimelineList = memo(function TimelineList({
                 <span className="text-muted-foreground">Run</span>
                 <Link
                   to={`/agents/${run.agentId}/runs/${run.runId}`}
-                  className="inline-flex items-center rounded-md border border-border bg-accent/40 px-2 py-1 font-mono text-muted-foreground hover:text-foreground hover:opacity-80"
+                  className="inline-flex items-center border border-[var(--border)] bg-transparent px-2 py-1 font-mono text-[var(--fg-dim)] hover:text-[var(--fg)] hover:opacity-80"
                 >
                   {run.runId.slice(0, 8)}
                 </Link>
@@ -552,7 +549,7 @@ export function CommentThread({
               type="checkbox"
               checked={reopen}
               onChange={(e) => setReopen(e.target.checked)}
-              className="rounded border-border"
+              className="border-border"
             />
             Re-open
           </label>

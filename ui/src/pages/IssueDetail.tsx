@@ -878,7 +878,7 @@ export function IssueDetail() {
         onClick={() => fileInputRef.current?.click()}
         disabled={uploadAttachment.isPending || importMarkdownDocument.isPending}
         className={cn(
-          "shadow-none",
+          "",
           attachmentDragActive && "border-primary bg-primary/5",
         )}
       >
@@ -917,7 +917,7 @@ export function IssueDetail() {
       )}
 
       {issue.hiddenAt && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <EyeOff className="h-4 w-4 shrink-0" />
           This issue is hidden
         </div>
@@ -957,7 +957,7 @@ export function IssueDetail() {
           {issue.projectId ? (
             <Link
               to={`/projects/${issue.projectId}`}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground rounded px-1 -mx-1 py-0.5 min-w-0"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1 -mx-1 py-0.5 min-w-0"
             >
               <Hexagon className="h-3 w-3 shrink-0" />
               <span className="truncate">{(projects ?? []).find((p) => p.id === issue.projectId)?.name ?? issue.projectId.slice(0, 8)}</span>
@@ -1039,7 +1039,7 @@ export function IssueDetail() {
               </PopoverTrigger>
             <PopoverContent className="w-44 p-1" align="end">
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 text-destructive"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80 text-destructive"
                 onClick={() => {
                   updateIssue.mutate(
                     { hiddenAt: new Date().toISOString() },
@@ -1115,7 +1115,7 @@ export function IssueDetail() {
           entityType: "issue",
         }}
         className="space-y-3"
-        itemClassName="rounded-lg border border-border p-3"
+        itemClassName=" border border-border p-3"
         missingBehavior="placeholder"
       />
 
@@ -1133,7 +1133,7 @@ export function IssueDetail() {
       {hasAttachments ? (
         <div
         className={cn(
-          "space-y-3 rounded-lg",
+          "space-y-3",
         )}
         onDragEnter={(evt) => {
           evt.preventDefault();
@@ -1160,7 +1160,7 @@ export function IssueDetail() {
 
         <div className="space-y-2">
           {attachmentList.map((attachment) => (
-            <div key={attachment.id} className="border border-border rounded-md p-2">
+            <div key={attachment.id} className="border border-border p-2">
               <div className="flex items-center justify-between gap-2">
                 <a
                   href={attachment.contentPath}
@@ -1189,7 +1189,7 @@ export function IssueDetail() {
                   <img
                     src={attachment.contentPath}
                     alt={attachment.originalFilename ?? "attachment"}
-                    className="mt-2 max-h-56 rounded border border-border object-contain bg-accent/10"
+                    className="mt-2 max-h-56 border border-border object-contain bg-accent/10"
                     loading="lazy"
                   />
                 </a>
@@ -1270,7 +1270,7 @@ export function IssueDetail() {
           {childIssues.length === 0 ? (
             <p className="text-xs text-muted-foreground">No sub-issues.</p>
           ) : (
-            <div className="border border-border rounded-lg divide-y divide-border">
+            <div className="border border-border divide-y divide-border">
               {childIssues.map((child) => (
                 <Link
                   key={child.id}
@@ -1300,7 +1300,7 @@ export function IssueDetail() {
 
         <TabsContent value="activity">
           {linkedRuns && linkedRuns.length > 0 && (
-            <div className="mb-3 px-3 py-2 rounded-lg border border-border">
+            <div className="mb-3 px-3 py-2 border border-border">
               <div className="text-sm font-medium text-muted-foreground mb-1">Cost Summary</div>
               {!issueCostSummary.hasCost && !issueCostSummary.hasTokens ? (
                 <div className="text-xs text-muted-foreground">No cost data yet.</div>
@@ -1358,7 +1358,7 @@ export function IssueDetail() {
         <Collapsible
           open={secondaryOpen.approvals}
           onOpenChange={(open) => setSecondaryOpen((prev) => ({ ...prev, approvals: open }))}
-          className="rounded-lg border border-border"
+          className=" border border-border"
         >
           <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-left">
             <span className="text-sm font-medium text-muted-foreground">

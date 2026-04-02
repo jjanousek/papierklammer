@@ -98,12 +98,12 @@ import {
 } from "../lib/agent-skills-state";
 
 const runStatusIcons: Record<string, { icon: typeof CheckCircle2; color: string }> = {
-  succeeded: { icon: CheckCircle2, color: "text-green-600 dark:text-green-400" },
-  failed: { icon: XCircle, color: "text-red-600 dark:text-red-400" },
-  running: { icon: Loader2, color: "text-cyan-600 dark:text-cyan-400" },
-  queued: { icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
-  timed_out: { icon: Timer, color: "text-orange-600 dark:text-orange-400" },
-  cancelled: { icon: Slash, color: "text-neutral-500 dark:text-neutral-400" },
+  succeeded: { icon: CheckCircle2, color: "text-[var(--alive)]" },
+  failed: { icon: XCircle, color: "text-[var(--dead)]" },
+  running: { icon: Loader2, color: "text-[var(--alive)]" },
+  queued: { icon: Clock, color: "text-[var(--warn)]" },
+  timed_out: { icon: Timer, color: "text-[var(--warn)]" },
+  cancelled: { icon: Slash, color: "text-[var(--fg-muted)]" },
 };
 
 const REDACTED_ENV_VALUE = "***REDACTED***";
@@ -323,15 +323,15 @@ function workspaceOperationPhaseLabel(phase: WorkspaceOperation["phase"]) {
 function workspaceOperationStatusTone(status: WorkspaceOperation["status"]) {
   switch (status) {
     case "succeeded":
-      return "border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-300";
+      return "border-[var(--border)] bg-transparent text-[var(--alive)]";
     case "failed":
-      return "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300";
+      return "border-[var(--border)] bg-transparent text-[var(--dead)]";
     case "running":
-      return "border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300";
+      return "border-[var(--border)] bg-transparent text-[var(--alive)]";
     case "skipped":
-      return "border-yellow-500/20 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300";
+      return "border-[var(--border)] bg-transparent text-[var(--warn)]";
     default:
-      return "border-border bg-muted/40 text-muted-foreground";
+      return "border-[var(--border)] bg-transparent text-[var(--fg-muted)]";
   }
 }
 
@@ -378,7 +378,7 @@ function WorkspaceOperationLogViewer({
         {open ? "Hide full log" : "Show full log"}
       </button>
       {open && (
-        <div className="rounded-md border border-border bg-background/70 p-2">
+        <div className=" border border-border bg-transparent p-2">
           {isLoading && <div className="text-xs text-muted-foreground">Loading log...</div>}
           {error && (
             <div className="text-xs text-destructive">
@@ -389,20 +389,20 @@ function WorkspaceOperationLogViewer({
             <div className="text-xs text-muted-foreground">No persisted log lines.</div>
           )}
           {chunks.length > 0 && (
-            <div className="max-h-64 overflow-y-auto rounded bg-neutral-100 p-2 font-mono text-xs dark:bg-neutral-950">
+            <div className="max-h-64 overflow-y-auto bg-[var(--bg-darker)] p-2 font-mono text-xs">
               {chunks.map((chunk, index) => (
                 <div key={`${chunk.ts}-${index}`} className="flex gap-2">
-                  <span className="shrink-0 text-neutral-500">
+                  <span className="shrink-0 text-[var(--fg-dim)]">
                     {new Date(chunk.ts).toLocaleTimeString("en-US", { hour12: false })}
                   </span>
                   <span
                     className={cn(
                       "shrink-0 w-14",
                       chunk.stream === "stderr"
-                        ? "text-red-600 dark:text-red-300"
+                        ? "text-[var(--dead)]"
                         : chunk.stream === "system"
-                          ? "text-blue-600 dark:text-blue-300"
-                          : "text-muted-foreground",
+                          ? "text-[var(--warn)]"
+                          : "text-[var(--fg-muted)]",
                     )}
                   >
                     [{chunk.stream}]
@@ -428,7 +428,7 @@ function WorkspaceOperationsSection({
   if (operations.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-border bg-background/60 p-3 space-y-3">
+    <div className=" border border-border bg-transparent p-3 space-y-3">
       <div className="text-xs font-medium text-muted-foreground">
         Workspace ({operations.length})
       </div>
@@ -436,7 +436,7 @@ function WorkspaceOperationsSection({
         {operations.map((operation) => {
           const metadata = asRecord(operation.metadata);
           return (
-            <div key={operation.id} className="rounded-md border border-border/70 bg-background/70 p-3 space-y-2">
+            <div key={operation.id} className=" border border-border/70 bg-transparent p-3 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium">{workspaceOperationPhaseLabel(operation.phase)}</div>
                 <WorkspaceOperationStatusBadge status={operation.status} />
@@ -487,8 +487,8 @@ function WorkspaceOperationsSection({
               )}
               {operation.stderrExcerpt && operation.stderrExcerpt.trim() && (
                 <div>
-                  <div className="mb-1 text-xs text-red-700 dark:text-red-300">stderr excerpt</div>
-                  <pre className="rounded-md bg-red-50 p-2 text-xs whitespace-pre-wrap break-all text-red-800 dark:bg-neutral-950 dark:text-red-100">
+                  <div className="mb-1 text-xs text-[var(--dead)]">stderr excerpt</div>
+                  <pre className="bg-[var(--bg-darker)] p-2 text-xs whitespace-pre-wrap break-all text-[var(--dead)]">
                     {redactPathText(operation.stderrExcerpt, censorUsernameInLogs)}
                   </pre>
                 </div>
@@ -496,7 +496,7 @@ function WorkspaceOperationsSection({
               {operation.stdoutExcerpt && operation.stdoutExcerpt.trim() && (
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">stdout excerpt</div>
-                  <pre className="rounded-md bg-neutral-100 p-2 text-xs whitespace-pre-wrap break-all dark:bg-neutral-950">
+                  <pre className="bg-[var(--bg-darker)] p-2 text-xs whitespace-pre-wrap break-all">
                     {redactPathText(operation.stdoutExcerpt, censorUsernameInLogs)}
                   </pre>
                 </div>
@@ -806,22 +806,20 @@ export function AgentDetail() {
   return (
     <div className={cn("space-y-6", isMobile && showConfigActionBar && "pb-24")}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="border-b border-[var(--border)] pb-4">
+        <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <AgentIconPicker
             value={agent.icon}
             onChange={(icon) => updateIcon.mutate(icon)}
           >
-            <button className="shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-accent hover:opacity-80">
-              <AgentIcon icon={agent.icon} className="h-6 w-6" />
+            <button className="shrink-0 flex items-center justify-center h-10 w-10 border border-[var(--border-strong)] bg-transparent hover:opacity-80">
+              <AgentIcon icon={agent.icon} className="h-5 w-5" />
             </button>
           </AgentIconPicker>
-          <div className="min-w-0">
-            <h2 className="text-2xl font-bold truncate">{agent.name}</h2>
-            <p className="text-sm text-muted-foreground truncate">
-              {roleLabels[agent.role] ?? agent.role}
-              {agent.title ? ` - ${agent.title}` : ""}
-            </p>
+          <div className="min-w-0 flex items-center gap-2">
+            <span className={cn("inline-block w-1.5 h-1.5 shrink-0", agentStatusDot[agent.status] ?? agentStatusDotDefault)} />
+            <h2 className="text-[12px] font-medium truncate">{agent.name}</h2>
           </div>
         </div>
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -866,7 +864,7 @@ export function AgentDetail() {
             </PopoverTrigger>
             <PopoverContent className="w-44 p-1" align="end">
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80"
                 onClick={() => {
                   navigator.clipboard.writeText(agent.id);
                   setMoreOpen(false);
@@ -876,7 +874,7 @@ export function AgentDetail() {
                 Copy Agent ID
               </button>
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80"
                 onClick={() => {
                   resetTaskSession.mutate(null);
                   setMoreOpen(false);
@@ -886,7 +884,7 @@ export function AgentDetail() {
                 Reset Sessions
               </button>
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 text-destructive"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80 text-destructive"
                 onClick={() => {
                   agentAction.mutate("terminate");
                   setMoreOpen(false);
@@ -897,6 +895,29 @@ export function AgentDetail() {
               </button>
             </PopoverContent>
           </Popover>
+        </div>
+        </div>
+
+        {/* Key-value metadata */}
+        <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[10px] text-[var(--fg-dim)]">role</span>
+            <span className="text-[10px] text-[var(--fg)]">{roleLabels[agent.role] ?? agent.role}</span>
+          </div>
+          {agent.title && (
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10px] text-[var(--fg-dim)]">title</span>
+              <span className="text-[10px] text-[var(--fg)]">{agent.title}</span>
+            </div>
+          )}
+          <div className="flex items-baseline gap-2">
+            <span className="text-[10px] text-[var(--fg-dim)]">adapter</span>
+            <span className="text-[10px] text-[var(--fg)]">{adapterLabels[agent.adapterType] ?? agent.adapterType}</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[10px] text-[var(--fg-dim)]">status</span>
+            <span className="text-[10px] text-[var(--fg)]">{agent.status}</span>
+          </div>
         </div>
       </div>
 
@@ -937,7 +958,7 @@ export function AgentDetail() {
               : "opacity-0 pointer-events-none"
           )}
         >
-          <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 shadow-lg">
+          <div className="flex items-center gap-2 bg-[var(--bg-dark)] border border-[var(--border-strong)] px-3 py-1.5">
             <Button
               variant="ghost"
               size="sm"
@@ -1072,7 +1093,7 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
   const liveRun = sorted.find((r) => r.status === "running" || r.status === "queued");
   const run = liveRun ?? sorted[0];
   const isLive = run.status === "running" || run.status === "queued";
-  const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-neutral-400" };
+  const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-[var(--fg-muted)]" };
   const StatusIcon = statusInfo.icon;
   const summaryRaw = run.resultJson
     ? String((run.resultJson as Record<string, unknown>).summary ?? (run.resultJson as Record<string, unknown>).result ?? "")
@@ -1102,7 +1123,7 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
         <h3 className="flex items-center gap-2 text-sm font-medium">
           {isLive && (
             <span className="relative flex h-1.5 w-1.5">
-              <span className="relative inline-flex h-1.5 w-1.5 bg-cyan-400" />
+              <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
             </span>
           )}
           {isLive ? "Live Run" : "Latest Run"}
@@ -1118,21 +1139,15 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
       <Link
         to={`/agents/${agentId}/runs/${run.id}`}
         className={cn(
-          "block border rounded-lg p-4 space-y-2 w-full no-underline hover:opacity-80 cursor-pointer",
-          isLive ? "border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]" : "border-border"
+          "block border p-4 space-y-2 w-full no-underline hover:opacity-80 cursor-pointer",
+          isLive ? "border-[var(--alive)]/30" : "border-border"
         )}
       >
         <div className="flex items-center gap-2">
           <StatusIcon className={cn("h-3.5 w-3.5", statusInfo.color, run.status === "running")} />
           <StatusBadge status={run.status} />
           <span className="font-mono text-xs text-muted-foreground">{run.id.slice(0, 8)}</span>
-          <span className={cn(
-            "inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium",
-            run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-              : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
-              : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
-              : "bg-muted text-muted-foreground"
-          )}>
+          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium bg-[var(--bg-darker)] text-[var(--fg-muted)]">
             {sourceLabels[run.invocationSource] ?? run.invocationSource}
           </span>
           <span className="ml-auto text-xs text-muted-foreground">{relativeTime(run.createdAt)}</span>
@@ -1200,7 +1215,7 @@ function AgentOverview({
         {assignedIssues.length === 0 ? (
           <p className="text-sm text-muted-foreground">No recent issues.</p>
         ) : (
-          <div className="border border-border rounded-lg">
+          <div className="border border-border">
             {assignedIssues.slice(0, 10).map((issue) => (
               <EntityRow
                 key={issue.id}
@@ -1247,32 +1262,32 @@ function CostsSection({
   return (
     <div className="space-y-4">
       {runtimeState && (
-        <div className="border border-border rounded-lg p-4">
+        <div className="border border-border p-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 tabular-nums">
             <div>
-              <span className="text-xs text-muted-foreground block">Input tokens</span>
-              <span className="text-lg font-semibold">{formatTokens(runtimeState.totalInputTokens)}</span>
+              <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] block">INPUT TOKENS</span>
+              <span className="text-[15px] font-medium text-[var(--fg)]">{formatTokens(runtimeState.totalInputTokens)}</span>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">Output tokens</span>
-              <span className="text-lg font-semibold">{formatTokens(runtimeState.totalOutputTokens)}</span>
+              <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] block">OUTPUT TOKENS</span>
+              <span className="text-[15px] font-medium text-[var(--fg)]">{formatTokens(runtimeState.totalOutputTokens)}</span>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">Cached tokens</span>
-              <span className="text-lg font-semibold">{formatTokens(runtimeState.totalCachedInputTokens)}</span>
+              <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] block">CACHED TOKENS</span>
+              <span className="text-[15px] font-medium text-[var(--fg)]">{formatTokens(runtimeState.totalCachedInputTokens)}</span>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block">Total cost</span>
-              <span className="text-lg font-semibold">{formatCents(runtimeState.totalCostCents)}</span>
+              <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] block">TOTAL COST</span>
+              <span className="text-[15px] font-medium text-[var(--fg)]">{formatCents(runtimeState.totalCostCents)}</span>
             </div>
           </div>
         </div>
       )}
       {runsWithCost.length > 0 && (
-        <div className="border border-border rounded-lg overflow-hidden">
+        <div className="border border-border overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-border bg-accent/20">
+              <tr className="border-b border-border bg-[var(--bg-dark)]">
                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">Date</th>
                 <th className="text-left px-3 py-2 font-medium text-muted-foreground">Run</th>
                 <th className="text-right px-3 py-2 font-medium text-muted-foreground">Input</th>
@@ -1382,7 +1397,7 @@ function AgentConfigurePage({
             ) : (
               <div className="space-y-2">
                 {(configRevisions ?? []).slice(0, 10).map((revision) => (
-                  <div key={revision.id} className="border border-border/70 rounded-md p-3 space-y-2">
+                  <div key={revision.id} className="border border-border/70 p-3 space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-xs text-muted-foreground">
                         <span className="font-mono">{revision.id.slice(0, 8)}</span>
@@ -1520,7 +1535,7 @@ function ConfigurationTab({
 
       <div>
         <h3 className="text-sm font-medium mb-3">Permissions</h3>
-        <div className="border border-border rounded-lg p-4 space-y-4">
+        <div className="border border-border p-4 space-y-4">
           <div className="flex items-center justify-between gap-4 text-sm">
             <div className="space-y-1">
               <div>Can create new agents</div>
@@ -1919,7 +1934,7 @@ function PromptsTab({
       {(bundle?.warnings ?? []).length > 0 && (
         <div className="space-y-2">
           {(bundle?.warnings ?? []).map((warning) => (
-            <div key={warning} className="rounded-md border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">
+            <div key={warning} className=" border border-[var(--border-strong)] bg-transparent px-3 py-2 text-xs text-[var(--warn)]">
               {warning}
             </div>
           ))}
@@ -2081,7 +2096,7 @@ function PromptsTab({
 
       <div ref={containerRef} className={cn("flex gap-0", isMobile && "flex-col gap-3")}>
         <div className={cn(
-          "border border-border rounded-lg p-3 space-y-3 shrink-0",
+          "border border-border p-3 space-y-3 shrink-0",
           isMobile && showFilePanel && "block",
           isMobile && !showFilePanel && "hidden",
         )} style={isMobile ? undefined : { width: filePanelWidth }}>
@@ -2186,7 +2201,7 @@ function PromptsTab({
                 return (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="ml-3 shrink-0 rounded border border-amber-500/40 bg-amber-500/10 text-amber-200 px-1.5 py-0.5 text-[10px] uppercase tracking-wide cursor-help">
+                      <span className="ml-3 shrink-0 border border-[var(--border-strong)] bg-transparent text-[var(--warn)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide cursor-help">
                         virtual file
                       </span>
                     </TooltipTrigger>
@@ -2197,7 +2212,7 @@ function PromptsTab({
                 );
               }
               return (
-                <span className="ml-3 shrink-0 rounded border border-border text-muted-foreground px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
+                <span className="ml-3 shrink-0 border border-border text-muted-foreground px-1.5 py-0.5 text-[10px] uppercase tracking-wide">
                   {file.isEntryFile ? "entry" : `${file.size}b`}
                 </span>
               );
@@ -2208,12 +2223,12 @@ function PromptsTab({
         {/* Draggable separator */}
         {!isMobile && (
           <div
-            className="w-1 shrink-0 cursor-col-resize hover:opacity-80 active:bg-primary/50 rounded mx-1"
+            className="w-1 shrink-0 cursor-col-resize hover:opacity-80 active:bg-primary/50mx-1"
             onMouseDown={handleSeparatorDrag}
           />
         )}
 
-        <div className={cn("border border-border rounded-lg p-4 space-y-3 min-w-0 flex-1", isMobile && showFilePanel && "hidden")}>
+        <div className={cn("border border-border p-4 space-y-3 min-w-0 flex-1", isMobile && showFilePanel && "hidden")}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               {isMobile && (
@@ -2279,7 +2294,7 @@ function PromptsTab({
             <textarea
               value={displayValue}
               onChange={(event) => setDraft(event.target.value)}
-              className="min-h-[420px] w-full rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm outline-none"
+              className="min-h-[420px] w-full border border-border bg-transparent px-3 py-2 font-mono text-sm outline-none"
               placeholder="File contents"
             />
           )}
@@ -2293,7 +2308,7 @@ function PromptsTab({
 function PromptsTabSkeleton() {
   return (
     <div className="max-w-5xl space-y-4">
-      <div className="rounded-lg border border-border p-4 space-y-4">
+      <div className=" border border-border p-4 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <Skeleton className="h-4 w-40" />
@@ -2311,7 +2326,7 @@ function PromptsTabSkeleton() {
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <div className="rounded-lg border border-border p-3 space-y-3">
+        <div className=" border border-border p-3 space-y-3">
           <div className="flex items-center justify-between">
             <Skeleton className="h-4 w-12" />
             <Skeleton className="h-8 w-16" />
@@ -2319,11 +2334,11 @@ function PromptsTabSkeleton() {
           <Skeleton className="h-10 w-full" />
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-9 w-full rounded-none" />
+              <Skeleton key={index} className="h-9 w-full" />
             ))}
           </div>
         </div>
-        <div className="rounded-lg border border-border p-4 space-y-3">
+        <div className=" border border-border p-4 space-y-3">
           <div className="space-y-2">
             <Skeleton className="h-4 w-48" />
             <Skeleton className="h-3 w-28" />
@@ -2557,7 +2572,7 @@ function AgentSkillsTab({
       </div>
 
       {skillSnapshot?.warnings.length ? (
-        <div className="space-y-1 rounded-xl border border-amber-300/60 bg-amber-50/60 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-200">
+        <div className="space-y-1 border border-[var(--border-strong)] bg-transparent px-4 py-3 text-sm text-[var(--warn)]">
           {skillSnapshot.warnings.map((warning) => (
             <div key={warning}>{warning}</div>
           ))}
@@ -2565,7 +2580,7 @@ function AgentSkillsTab({
       ) : null}
 
       {unsupportedSkillMessage ? (
-        <div className="rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground">
+        <div className=" border border-border px-4 py-3 text-sm text-muted-foreground">
           {unsupportedSkillMessage}
         </div>
       ) : null}
@@ -2717,7 +2732,7 @@ function AgentSkillsTab({
           })()}
 
           {desiredOnlyMissingSkills.length > 0 && (
-            <div className="rounded-xl border border-amber-300/60 bg-amber-50/60 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-200">
+            <div className=" border border-[var(--border-strong)] bg-transparent px-4 py-3 text-sm text-[var(--warn)]">
               <div className="font-medium">Requested skills missing from the company library</div>
               <div className="mt-1 text-xs">
                 {desiredOnlyMissingSkills.join(", ")}
@@ -2756,7 +2771,7 @@ function AgentSkillsTab({
 /* ---- Runs Tab ---- */
 
 function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelected: boolean; agentId: string }) {
-  const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-neutral-400" };
+  const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-[var(--fg-muted)]" };
   const StatusIcon = statusInfo.icon;
   const metrics = runMetrics(run);
   const summary = run.resultJson
@@ -2776,13 +2791,7 @@ function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelect
         <span className="font-mono text-xs text-muted-foreground">
           {run.id.slice(0, 8)}
         </span>
-        <span className={cn(
-          "inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium shrink-0",
-          run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-            : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
-            : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
-            : "bg-muted text-muted-foreground"
-        )}>
+        <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium shrink-0 bg-[var(--bg-darker)] text-[var(--fg-muted)]">
           {sourceLabels[run.invocationSource] ?? run.invocationSource}
         </span>
         <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
@@ -2851,7 +2860,7 @@ function RunsTab({
       );
     }
     return (
-      <div className="border border-border rounded-lg overflow-x-hidden">
+      <div className="border border-border overflow-x-hidden">
         {sorted.map((run) => (
           <RunListItem key={run.id} run={run} isSelected={false} agentId={agentRouteId} />
         ))}
@@ -2864,7 +2873,7 @@ function RunsTab({
     <div className="flex gap-0">
       {/* Left: run list — border stretches full height, content sticks */}
       <div className={cn(
-        "shrink-0 border border-border rounded-lg",
+        "shrink-0 border border-border",
         selectedRun ? "w-72" : "w-full",
       )}>
         <div className="sticky top-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 2rem)" }}>
@@ -3038,7 +3047,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
   return (
     <div className="space-y-4 min-w-0">
       {/* Run summary card */}
-      <div className="border border-border rounded-lg overflow-hidden">
+      <div className="border border-border overflow-hidden">
         <div className="flex flex-col sm:flex-row">
           {/* Left column: status + timing */}
           <div className="flex-1 p-4 space-y-3">
@@ -3110,7 +3119,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
             )}
             {run.error && (
               <div className="text-xs">
-                <span className="text-red-600 dark:text-red-400">{run.error}</span>
+                <span className="text-[var(--dead)]">{run.error}</span>
                 {run.errorCode && <span className="text-muted-foreground ml-1">({run.errorCode})</span>}
               </div>
             )}
@@ -3137,7 +3146,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
                     Login URL:
                     <a
                       href={claudeLoginResult.loginUrl}
-                      className="text-blue-600 underline underline-offset-2 ml-1 break-all dark:text-blue-400"
+                      className="text-[var(--fg)] underline underline-offset-2 ml-1 break-all"
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -3148,12 +3157,12 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
                 {claudeLoginResult && (
                   <>
                     {!!claudeLoginResult.stdout && (
-                      <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">
+                      <pre className="bg-[var(--bg-darker)] p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">
                         {claudeLoginResult.stdout}
                       </pre>
                     )}
                     {!!claudeLoginResult.stderr && (
-                      <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap">
+                      <pre className="bg-[var(--bg-darker)] p-3 text-xs font-mono text-[var(--dead)] overflow-x-auto whitespace-pre-wrap">
                         {claudeLoginResult.stderr}
                       </pre>
                     )}
@@ -3162,7 +3171,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
               </div>
             )}
             {hasNonZeroExit && (
-              <div className="text-xs text-red-600 dark:text-red-400">
+              <div className="text-xs text-[var(--dead)]">
                 Exit code {run.exitCode}
                 {run.signal && <span className="text-muted-foreground ml-1">(signal: {run.signal})</span>}
               </div>
@@ -3255,7 +3264,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
       {touchedIssues && touchedIssues.length > 0 && (
         <div className="space-y-2">
           <span className="text-xs font-medium text-muted-foreground">Issues Touched ({touchedIssues.length})</span>
-          <div className="border border-border rounded-lg divide-y divide-border">
+          <div className="border border-border divide-y divide-border">
             {touchedIssues.map((issue) => (
               <Link
                 key={issue.issueId}
@@ -3276,8 +3285,8 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
       {/* stderr excerpt for failed runs */}
       {run.stderrExcerpt && (
         <div className="space-y-1">
-          <span className="text-xs font-medium text-red-600 dark:text-red-400">stderr</span>
-          <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap">{run.stderrExcerpt}</pre>
+          <span className="text-xs font-medium text-[var(--dead)]">stderr</span>
+          <pre className="bg-[var(--bg-darker)] p-3 text-xs font-mono text-[var(--dead)] overflow-x-auto whitespace-pre-wrap">{run.stderrExcerpt}</pre>
         </div>
       )}
 
@@ -3285,7 +3294,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
       {run.stdoutExcerpt && !run.logRef && (
         <div className="space-y-1">
           <span className="text-xs font-medium text-muted-foreground">stdout</span>
-          <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">{run.stdoutExcerpt}</pre>
+          <pre className="bg-[var(--bg-darker)] p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">{run.stdoutExcerpt}</pre>
         </div>
       )}
 
@@ -3688,14 +3697,14 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
 
   const levelColors: Record<string, string> = {
     info: "text-foreground",
-    warn: "text-yellow-600 dark:text-yellow-400",
-    error: "text-red-600 dark:text-red-400",
+    warn: "text-[var(--warn)]",
+    error: "text-[var(--dead)]",
   };
 
   const streamColors: Record<string, string> = {
     stdout: "text-foreground",
-    stderr: "text-red-600 dark:text-red-300",
-    system: "text-blue-600 dark:text-blue-300",
+    stderr: "text-[var(--dead)]",
+    system: "text-[var(--warn)]",
   };
 
   return (
@@ -3705,7 +3714,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
         censorUsernameInLogs={censorUsernameInLogs}
       />
       {adapterInvokePayload && (
-        <div className="rounded-lg border border-border bg-background/60 p-3 space-y-2">
+        <div className=" border border-border bg-transparent p-3 space-y-2">
           <div className="text-xs font-medium text-muted-foreground">Invocation</div>
           {typeof adapterInvokePayload.adapterType === "string" && (
             <div className="text-xs"><span className="text-muted-foreground">Adapter: </span>{adapterInvokePayload.adapterType}</div>
@@ -3743,7 +3752,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           {adapterInvokePayload.prompt !== undefined && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Prompt</div>
-              <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap">
+              <pre className="bg-[var(--bg-darker)] p-2 text-xs overflow-x-auto whitespace-pre-wrap">
                 {typeof adapterInvokePayload.prompt === "string"
                   ? redactPathText(adapterInvokePayload.prompt, censorUsernameInLogs)
                   : JSON.stringify(redactPathValue(adapterInvokePayload.prompt, censorUsernameInLogs), null, 2)}
@@ -3753,7 +3762,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           {adapterInvokePayload.context !== undefined && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Context</div>
-              <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap">
+              <pre className="bg-[var(--bg-darker)] p-2 text-xs overflow-x-auto whitespace-pre-wrap">
                 {JSON.stringify(redactPathValue(adapterInvokePayload.context, censorUsernameInLogs), null, 2)}
               </pre>
             </div>
@@ -3761,7 +3770,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           {adapterInvokePayload.env !== undefined && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Environment</div>
-              <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
+              <pre className="bg-[var(--bg-darker)] p-2 text-xs overflow-x-auto whitespace-pre-wrap font-mono">
                 {formatEnvForDisplay(adapterInvokePayload.env, censorUsernameInLogs)}
               </pre>
             </div>
@@ -3774,15 +3783,15 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           Transcript ({transcript.length})
         </span>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-border/70 bg-background/70 p-0.5">
+          <div className="inline-flex border border-border/70 bg-transparent p-0.5">
             {(["nice", "raw"] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-[11px] font-medium capitalize",
+                  " px-2.5 py-1 text-[11px] font-medium capitalize",
                   transcriptMode === mode
-                    ? "bg-accent text-foreground shadow-sm"
+                    ? "bg-[var(--bg-dark)] text-[var(--fg)]"
                     : "text-muted-foreground hover:text-foreground",
                 )}
                 onClick={() => setTranscriptMode(mode)}
@@ -3807,16 +3816,16 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
             </Button>
           )}
           {isLive && (
-            <span className="flex items-center gap-1 text-xs text-cyan-400">
+            <span className="flex items-center gap-1 text-xs text-[var(--alive)]">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="relative inline-flex h-1.5 w-1.5 bg-cyan-400" />
+                <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
               </span>
               Live
             </span>
           )}
         </div>
       </div>
-      <div className="max-h-[38rem] overflow-y-auto rounded-2xl border border-border/70 bg-background/40 p-3 sm:p-4">
+      <div className="max-h-[38rem] overflow-y-auto border border-border/70 bg-transparent p-3 sm:p-4">
         <RunTranscriptView
           entries={transcript}
           mode={transcriptMode}
@@ -3824,7 +3833,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           emptyMessage={run.logRef ? "Waiting for transcript..." : "No persisted transcript for this run."}
         />
         {logError && (
-          <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-red-700 dark:text-red-300">
+          <div className="mt-3 border border-[var(--border)] bg-transparent px-3 py-2 text-xs text-[var(--dead)]">
             {logError}
           </div>
         )}
@@ -3832,34 +3841,34 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
       </div>
 
       {(run.status === "failed" || run.status === "timed_out") && (
-        <div className="rounded-lg border border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-950/20 p-3 space-y-2">
-          <div className="text-xs font-medium text-red-700 dark:text-red-300">Failure details</div>
+        <div className=" border border-[var(--border)] bg-transparent p-3 space-y-2">
+          <div className="text-xs font-medium text-[var(--dead)]">Failure details</div>
           {run.error && (
-            <div className="text-xs text-red-600 dark:text-red-200">
-              <span className="text-red-700 dark:text-red-300">Error: </span>
+            <div className="text-xs text-[var(--dead)]">
+              <span className="text-[var(--dead)]">Error: </span>
               {redactPathText(run.error, censorUsernameInLogs)}
             </div>
           )}
           {run.stderrExcerpt && run.stderrExcerpt.trim() && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">stderr excerpt</div>
-              <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
+              <div className="text-xs text-[var(--dead)] mb-1">stderr excerpt</div>
+              <pre className="bg-[var(--bg-darker)] p-2 text-xs overflow-x-auto whitespace-pre-wrap text-[var(--dead)]">
                 {redactPathText(run.stderrExcerpt, censorUsernameInLogs)}
               </pre>
             </div>
           )}
           {run.resultJson && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">adapter result JSON</div>
-              <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
+              <div className="text-xs text-[var(--dead)] mb-1">adapter result JSON</div>
+              <pre className="bg-[var(--bg-darker)] p-2 text-xs overflow-x-auto whitespace-pre-wrap text-[var(--dead)]">
                 {JSON.stringify(redactPathValue(run.resultJson, censorUsernameInLogs), null, 2)}
               </pre>
             </div>
           )}
           {run.stdoutExcerpt && run.stdoutExcerpt.trim() && !run.resultJson && (
             <div>
-              <div className="text-xs text-red-700 dark:text-red-300 mb-1">stdout excerpt</div>
-              <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
+              <div className="text-xs text-[var(--dead)] mb-1">stdout excerpt</div>
+              <pre className="bg-[var(--bg-darker)] p-2 text-xs overflow-x-auto whitespace-pre-wrap text-[var(--dead)]">
                 {redactPathText(run.stdoutExcerpt, censorUsernameInLogs)}
               </pre>
             </div>
@@ -3870,7 +3879,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
       {events.length > 0 && (
         <div>
           <div className="mb-2 text-xs font-medium text-muted-foreground">Events ({events.length})</div>
-          <div className="bg-neutral-100 dark:bg-neutral-950 rounded-lg p-3 font-mono text-xs space-y-0.5">
+          <div className="bg-[var(--bg-darker)] p-3 font-mono text-xs space-y-0.5">
             {events.map((evt) => {
               const color = evt.color
                 ?? (evt.level ? levelColors[evt.level] : null)
@@ -3879,10 +3888,10 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
 
               return (
                 <div key={evt.id} className="flex gap-2">
-                  <span className="text-neutral-400 dark:text-neutral-600 shrink-0 select-none w-16">
+                  <span className="text-[var(--fg-dim)] shrink-0 select-none w-16">
                     {new Date(evt.createdAt).toLocaleTimeString("en-US", { hour12: false })}
                   </span>
-                  <span className={cn("shrink-0 w-14", evt.stream ? (streamColors[evt.stream] ?? "text-neutral-500") : "text-neutral-500")}>
+                  <span className={cn("shrink-0 w-14", evt.stream ? (streamColors[evt.stream] ?? "text-[var(--fg-dim)]") : "text-[var(--fg-dim)]")}>
                     {evt.stream ? `[${evt.stream}]` : ""}
                   </span>
                   <span className={cn("break-all", color)}>
@@ -3947,12 +3956,12 @@ function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }
     <div className="space-y-6">
       {/* New token banner */}
       {newToken && (
-        <div className="border border-yellow-300 dark:border-yellow-600/40 bg-yellow-50 dark:bg-yellow-500/5 rounded-lg p-4 space-y-2">
-          <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+        <div className="border border-[var(--border-strong)] bg-transparent p-4 space-y-2">
+          <p className="text-sm font-medium text-[var(--warn)]">
             API key created — copy it now, it will not be shown again.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-neutral-100 dark:bg-neutral-950 rounded px-3 py-1.5 text-xs font-mono text-green-700 dark:text-green-300 truncate">
+            <code className="flex-1 bg-[var(--bg-darker)]px-3 py-1.5 text-xs font-mono text-[var(--alive)] truncate">
               {tokenVisible ? newToken : newToken.replace(/./g, "•")}
             </code>
             <Button
@@ -3985,7 +3994,7 @@ function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }
       )}
 
       {/* Create new key */}
-      <div className="border border-border rounded-lg p-4 space-y-3">
+      <div className="border border-border p-4 space-y-3">
         <h3 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
           <Key className="h-3.5 w-3.5" />
           Create API Key
@@ -4026,7 +4035,7 @@ function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }
           <h3 className="text-xs font-medium text-muted-foreground mb-2">
             Active Keys
           </h3>
-          <div className="border border-border rounded-lg divide-y divide-border">
+          <div className="border border-border divide-y divide-border">
             {activeKeys.map((key: AgentKey) => (
               <div key={key.id} className="flex items-center justify-between px-4 py-2.5">
                 <div>
@@ -4056,7 +4065,7 @@ function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }
           <h3 className="text-xs font-medium text-muted-foreground mb-2">
             Revoked Keys
           </h3>
-          <div className="border border-border rounded-lg divide-y divide-border opacity-50">
+          <div className="border border-border divide-y divide-border opacity-50">
             {revokedKeys.map((key: AgentKey) => (
               <div key={key.id} className="flex items-center justify-between px-4 py-2.5">
                 <div>

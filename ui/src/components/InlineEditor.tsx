@@ -143,8 +143,7 @@ export function InlineEditor({
       <div
         className={cn(
           markdownPad,
-          "rounded",
-          multilineFocused ? "bg-transparent" : "hover:opacity-80",
+          multilineFocused ? "bg-transparent border border-[var(--border-strong)]" : "hover:opacity-80 border border-transparent",
         )}
         onFocusCapture={() => setMultilineFocused(true)}
         onBlurCapture={(event) => {
@@ -220,7 +219,7 @@ export function InlineEditor({
         }}
         onKeyDown={handleKeyDown}
         className={cn(
-          "w-full bg-transparent rounded outline-none resize-none overflow-hidden",
+          "w-full bg-transparent outline-none resize-none overflow-hidden border border-[var(--border-strong)] font-mono text-[11px]",
           pad,
           className
         )}
@@ -235,7 +234,7 @@ export function InlineEditor({
   return (
     <DisplayTag
       className={cn(
-        "cursor-pointer rounded hover:opacity-80 overflow-hidden",
+        "cursor-pointer hover:opacity-80 overflow-hidden border border-transparent",
         pad,
         !value && "text-muted-foreground italic",
         className,
