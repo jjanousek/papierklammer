@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { cn } from "../lib/utils";
-import { issueStatusIcon, issueStatusIconDefault } from "../lib/status-colors";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
@@ -8,6 +7,30 @@ const allStatuses = ["backlog", "todo", "in_progress", "in_review", "done", "can
 
 function statusLabel(status: string): string {
   return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Map issue statuses to design-system semantic colors.
+ * Active/running statuses → alive (#82E88A)
+ * Error/blocked statuses → dead (#FF6060)
+ * Idle/backlog statuses → transparent with border
+ */
+function statusSquareStyle(status: string): { bg: string; border?: string } {
+  switch (status) {
+    case "done":
+    case "in_review":
+      return { bg: "var(--alive)" };
+    case "in_progress":
+      return { bg: "var(--warn)" };
+    case "blocked":
+    case "cancelled":
+      return { bg: "var(--dead)" };
+    case "todo":
+      return { bg: "var(--fg-muted)" };
+    case "backlog":
+    default:
+      return { bg: "transparent", border: "1px solid var(--fg-muted)" };
+  }
 }
 
 interface StatusIconProps {
@@ -19,32 +42,33 @@ interface StatusIconProps {
 
 export function StatusIcon({ status, onChange, className, showLabel }: StatusIconProps) {
   const [open, setOpen] = useState(false);
-  const colorClass = issueStatusIcon[status] ?? issueStatusIconDefault;
-  const isDone = status === "done";
+  const style = statusSquareStyle(status);
 
-  const circle = (
+  const square = (
     <span
+      data-testid="status-indicator"
       className={cn(
-        "relative inline-flex h-4 w-4 rounded-full border-2 shrink-0",
-        colorClass,
+        "inline-block shrink-0",
         onChange && !showLabel && "cursor-pointer",
         className
       )}
-    >
-      {isDone && (
-        <span className="absolute inset-0 m-auto h-2 w-2 rounded-full bg-current" />
-      )}
-    </span>
+      style={{
+        width: "6px",
+        height: "6px",
+        backgroundColor: style.bg,
+        border: style.border ?? "none",
+      }}
+    />
   );
 
-  if (!onChange) return showLabel ? <span className="inline-flex items-center gap-1.5">{circle}<span className="text-sm">{statusLabel(status)}</span></span> : circle;
+  if (!onChange) return showLabel ? <span className="inline-flex items-center gap-1.5">{square}<span className="text-[11px] text-[var(--fg-muted)]">{statusLabel(status)}</span></span> : square;
 
   const trigger = showLabel ? (
-    <button className="inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1 py-0.5 transition-colors">
-      {circle}
-      <span className="text-sm">{statusLabel(status)}</span>
+    <button className="inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 px-1 -mx-1 py-0.5 transition-opacity">
+      {square}
+      <span className="text-[11px] text-[var(--fg-muted)]">{statusLabel(status)}</span>
     </button>
-  ) : circle;
+  ) : square;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -55,7 +79,7 @@ export function StatusIcon({ status, onChange, className, showLabel }: StatusIco
             key={s}
             variant="ghost"
             size="sm"
-            className={cn("w-full justify-start gap-2 text-xs", s === status && "bg-accent")}
+            className={cn("w-full justify-start gap-2 text-xs normal-case", s === status && "bg-[var(--bg-darker)]")}
             onClick={() => {
               onChange(s);
               setOpen(false);
