@@ -1,0 +1,240 @@
+{
+  "groupId": "codex-protocol",
+  "testedAt": "2026-04-02T02:02:03.597171Z",
+  "isolation": {
+    "surface": "vitest CLI only",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "constraints": [
+      "No dev server/browser",
+      "No product code modifications",
+      "Evidence written only under assigned mission evidence directory"
+    ]
+  },
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-022",
+      "title": "Codex app-server spawned as subprocess",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to codex-client tests",
+          "expected": "Coverage for subprocess spawn and initialize handshake sequence",
+          "observed": "Mapped to tests for spawning codex app-server and initialize -> initialized handshake"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest with targeted names",
+          "expected": "Targeted tests pass",
+          "observed": "2 passed, 17 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-022-vitest.txt",
+        "keyLines": [
+          "CodexClient > spawns codex app-server subprocess on construction",
+          "CodexClient > sends initialize request and initialized notification"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-023",
+      "title": "Thread created on first message",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to useCodex + codex-client tests",
+          "expected": "Coverage for first-message thread creation, turn start, and threadId persistence",
+          "observed": "Mapped to useCodex first send flow and codex-client tests for thread start and turn start"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest commands with targeted names",
+          "expected": "Targeted tests pass",
+          "observed": "Run A: 1 passed, 2 skipped; Run B: 2 passed, 17 skipped; both exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-023-vitest.txt",
+        "keyLines": [
+          "useCodex > creates thread and sends message",
+          "CodexClient > starts a thread and returns threadId",
+          "CodexClient > starts a turn and streams deltas via callbacks"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-024",
+      "title": "Streaming deltas render in real-time",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to codex-client streaming + chat streaming tests",
+          "expected": "Coverage for incremental delta handling and real-time streaming display path",
+          "observed": "Mapped to CodexClient delta callback streaming and chat streaming test"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest commands with targeted names",
+          "expected": "Targeted tests pass",
+          "observed": "Run A: 1 passed, 18 skipped; Run B: 1 passed, 26 skipped; both exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-024-vitest.txt",
+        "keyLines": [
+          "CodexClient > starts a turn and streams deltas via callbacks",
+          "Streaming and turn completion > streaming deltas appear in real-time"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-025",
+      "title": "Turn completion finalizes message",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to useCodex turn completion + chat completion tests",
+          "expected": "Coverage for completion transition and finalized message in history",
+          "observed": "Mapped to useCodex flow with turn/completed and chat test for completion moving message to history"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest commands with targeted names",
+          "expected": "Targeted tests pass",
+          "observed": "Run A: 1 passed, 2 skipped; Run B: 1 passed, 26 skipped; both exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-025-vitest.txt",
+        "keyLines": [
+          "useCodex > creates thread and sends message",
+          "Streaming and turn completion > turn completion moves message to history"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-026",
+      "title": "Multi-turn conversation uses same thread",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to codex-client multi-turn test",
+          "expected": "Second turn uses turn/start with same threadId",
+          "observed": "Mapped to explicit multi-turn same-thread test"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest with targeted name",
+          "expected": "Targeted test passes",
+          "observed": "1 passed, 18 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-026-vitest.txt",
+        "keyLines": [
+          "CodexClient > supports multi-turn on the same thread"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-027",
+      "title": "Skill instructions injected on thread start",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to codex-client baseInstructions test",
+          "expected": "thread/start includes baseInstructions with policy/sandbox params",
+          "observed": "Mapped to explicit baseInstructions injection test"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest with targeted name",
+          "expected": "Targeted test passes",
+          "observed": "1 passed, 18 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-027-vitest.txt",
+        "keyLines": [
+          "CodexClient > injects baseInstructions on thread start"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-028",
+      "title": "Command execution blocks displayed in chat",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to chat rendering + command output callback tests",
+          "expected": "Coverage for command block rendering and command output event handling",
+          "observed": "Mapped to command block rendering tests in chat.test.tsx and command output callback test in codex-client.test.ts"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest commands with targeted names",
+          "expected": "Targeted tests pass",
+          "observed": "Run A: 3 passed, 24 skipped; Run B: 1 passed, 18 skipped; both exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-028-vitest.txt",
+        "keyLines": [
+          "CommandBlock > renders command block with border",
+          "Command execution blocks in chat > renders assistant message with command execution items",
+          "Command execution blocks in chat > renders multiple command blocks in one message",
+          "CodexClient > fires onCommandOutput callback"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-030",
+      "title": "Codex crash shows error and auto-restarts",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to reconnect + disconnect state tests",
+          "expected": "Coverage for subprocess crash handling and automatic restart path",
+          "observed": "Mapped to codex-client auto-reconnect test and useCodex disconnect-on-exit test"
+        },
+        {
+          "action": "Run deterministic file-scoped Vitest commands with targeted names",
+          "expected": "Targeted tests pass",
+          "observed": "Run A: 1 passed, 18 skipped; Run B: 1 passed, 2 skipped; both exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-chat/codex-protocol/VAL-TUI-030-vitest.txt",
+        "keyLines": [
+          "CodexClient > auto-reconnects on subprocess exit",
+          "useCodex > transitions to disconnected on subprocess exit"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Vitest -t includes skipped non-matching tests in verbose output, adding expected noise to assertion logs.",
+      "resolved": true,
+      "resolution": "Used deterministic file-scoped commands and recorded exact passing test lines per assertion.",
+      "affectedAssertions": [
+        "VAL-TUI-022",
+        "VAL-TUI-023",
+        "VAL-TUI-024",
+        "VAL-TUI-025",
+        "VAL-TUI-026",
+        "VAL-TUI-027",
+        "VAL-TUI-028",
+        "VAL-TUI-030"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 8 assigned assertions (VAL-TUI-022, 023, 024, 025, 026, 027, 028, 030) via deterministic file-scoped Vitest runs; all passed."
+}

@@ -1,0 +1,29 @@
+{
+  "milestone": "tui-chat",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-TUI-020",
+    "VAL-TUI-021",
+    "VAL-TUI-022",
+    "VAL-TUI-023",
+    "VAL-TUI-024",
+    "VAL-TUI-025",
+    "VAL-TUI-026",
+    "VAL-TUI-027",
+    "VAL-TUI-028",
+    "VAL-TUI-029",
+    "VAL-TUI-030",
+    "VAL-TUI-032"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}
