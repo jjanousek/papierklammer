@@ -20,9 +20,9 @@ export function FilterBar({ filters, onRemove, onClear }: FilterBarProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {filters.map((f) => (
-        <Badge key={f.key} variant="secondary" className="gap-1 pr-1">
-          <span className="text-muted-foreground">{f.label}:</span>
-          <span>{f.value}</span>
+        <Badge key={f.key} variant="outline" className="gap-1 pr-1 font-mono text-[10px] border-[var(--border-strong)] bg-transparent">
+          <span className="text-[var(--fg-dim)]">{f.label}:</span>
+          <span className="text-[var(--fg)]">{f.value}</span>
           <button
             className="ml-1 hover:opacity-80 p-0.5"
             onClick={() => onRemove(f.key)}
@@ -31,7 +31,7 @@ export function FilterBar({ filters, onRemove, onClear }: FilterBarProps) {
           </button>
         </Badge>
       ))}
-      <Button variant="ghost" size="sm" className="text-xs h-6" onClick={onClear}>
+      <Button variant="ghost" size="sm" className="text-[10px] h-6 font-mono uppercase tracking-wider" onClick={onClear}>
         Clear all
       </Button>
     </div>

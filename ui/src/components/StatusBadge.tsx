@@ -38,7 +38,7 @@ export function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 text-[9px] font-normal whitespace-nowrap shrink-0",
+        "inline-flex items-center px-2 py-0.5 text-[9px] font-mono font-normal whitespace-nowrap shrink-0",
         statusBadgeColors(status)
       )}
     >

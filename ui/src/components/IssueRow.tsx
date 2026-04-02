@@ -53,7 +53,7 @@ export function IssueRow({
       state={issueLinkState}
       data-inbox-issue-link
       className={cn(
-        "group flex items-start gap-2 border-b border-border py-2.5 pl-2 pr-3 text-sm no-underline text-inherit last:border-b-0 sm:items-center sm:py-2 sm:pl-1",
+        "group flex items-start gap-2 border-b border-[var(--border)] py-2.5 pl-2 pr-3 text-[11px] font-mono no-underline text-inherit last:border-b-0 sm:items-center sm:py-2 sm:pl-1",
         selected ? "hover:opacity-80" : "hover:opacity-80",
         className,
       )}
@@ -62,7 +62,7 @@ export function IssueRow({
         {mobileLeading ?? <StatusIcon status={issue.status} className={selectedStatusClass} />}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1 sm:contents">
-        <span className="line-clamp-2 text-sm sm:order-2 sm:min-w-0 sm:flex-1 sm:truncate sm:line-clamp-none">
+        <span className="line-clamp-2 text-[11px] font-mono text-[var(--fg)] sm:order-2 sm:min-w-0 sm:flex-1 sm:truncate sm:line-clamp-none">
           {issue.title}
         </span>
         <span className="flex items-center gap-2 sm:order-1 sm:shrink-0">
@@ -74,17 +74,17 @@ export function IssueRow({
               <span className="hidden shrink-0 sm:inline-flex">
                 <StatusIcon status={issue.status} className={selectedStatusClass} />
               </span>
-              <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              <span className="shrink-0 font-mono text-[10px] text-[var(--fg-dim)]">
                 {identifier}
               </span>
             </>
           )}
           {mobileMeta ? (
             <>
-              <span className="text-xs text-muted-foreground sm:hidden" aria-hidden="true">
+              <span className="text-[10px] text-[var(--fg-dim)] sm:hidden" aria-hidden="true">
                 &middot;
               </span>
-              <span className="text-xs text-muted-foreground sm:hidden">{mobileMeta}</span>
+              <span className="text-[10px] text-[var(--fg-dim)] font-mono sm:hidden">{mobileMeta}</span>
             </>
           ) : null}
         </span>
@@ -93,7 +93,7 @@ export function IssueRow({
         <span className="ml-auto hidden shrink-0 items-center gap-2 sm:order-3 sm:flex sm:gap-3">
           {desktopTrailing}
           {trailingMeta ? (
-            <span className="text-xs text-muted-foreground">{trailingMeta}</span>
+            <span className="text-[10px] text-[var(--fg-dim)] font-mono">{trailingMeta}</span>
           ) : null}
         </span>
       ) : null}
@@ -143,7 +143,7 @@ export function IssueRow({
                 onArchive();
               }}
               disabled={archiveDisabled}
-              className="inline-flex h-4 w-4 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-30"
+              className="inline-flex h-4 w-4 items-center justify-center text-[var(--fg-muted)] opacity-0 transition-opacity hover:text-white group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-30"
               aria-label="Dismiss from inbox"
             >
               <X className="h-3.5 w-3.5" />

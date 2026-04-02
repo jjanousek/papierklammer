@@ -22,7 +22,7 @@ export function PageTabBar({ items, value, onValueChange, align = "center" }: Pa
       <select
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
-        className="h-9 rounded-md border border-border bg-background px-2 py-1 text-base focus:outline-none focus:ring-1 focus:ring-ring"
+        className="h-9 border border-[var(--border-strong)] bg-transparent px-2 py-1 text-[11px] font-mono text-white focus:outline-none"
       >
         {items.map((item) => (
           <option key={item.value} value={item.value}>

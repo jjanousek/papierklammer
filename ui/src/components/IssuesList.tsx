@@ -380,7 +380,7 @@ export function IssuesList({
 
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           {/* View mode toggle */}
-          <div className="flex items-center border border-border rounded-md overflow-hidden mr-1">
+          <div className="flex items-center border border-[var(--border)] overflow-hidden mr-1">
             <Button
               variant="ghost"
               className={cn("p-1.5 border border-white bg-transparent h-auto", viewState.viewMode === "list" ? "text-foreground" : "text-muted-foreground")}
@@ -402,7 +402,7 @@ export function IssuesList({
           {/* Filter */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className={`text-xs ${activeFilterCount > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+              <Button variant="ghost" size="sm" className={`text-[11px] font-mono ${activeFilterCount > 0 ? "text-[var(--alive)]" : ""}`}>
                 <Filter className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
                 <span className="hidden sm:inline">{activeFilterCount > 0 ? `Filters: ${activeFilterCount}` : "Filter"}</span>
                 {activeFilterCount > 0 && (
@@ -422,7 +422,7 @@ export function IssuesList({
             <PopoverContent align="end" className="w-[min(480px,calc(100vw-2rem))] p-0">
               <div className="p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Filters</span>
+                  <span className="text-[11px] font-mono font-medium uppercase tracking-wider">Filters</span>
                   {activeFilterCount > 0 && (
                     <Button
                       variant="ghost"
@@ -436,7 +436,7 @@ export function IssuesList({
 
                 {/* Quick filters */}
                 <div className="space-y-1.5">
-                  <span className="text-xs text-muted-foreground">Quick filters</span>
+                  <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] font-mono">Quick filters</span>
                   <div className="flex flex-wrap gap-1.5">
                     {quickFilterPresets.map((preset) => {
                       const isActive = arraysEqual(viewState.statuses, preset.statuses);
@@ -465,16 +465,16 @@ export function IssuesList({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                   {/* Status */}
                   <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">Status</span>
+                    <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] font-mono">Status</span>
                     <div className="space-y-0.5">
                       {statusOrder.map((s) => (
-                        <label key={s} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                        <label key={s} className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                           <Checkbox
                             checked={viewState.statuses.includes(s)}
                             onCheckedChange={() => updateView({ statuses: toggleInArray(viewState.statuses, s) })}
                           />
                           <StatusIcon status={s} />
-                          <span className="text-sm">{statusLabel(s)}</span>
+                          <span className="text-[11px] font-mono">{statusLabel(s)}</span>
                         </label>
                       ))}
                     </div>
@@ -484,16 +484,16 @@ export function IssuesList({
                   <div className="space-y-3">
                     {/* Priority */}
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Priority</span>
+                      <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] font-mono">Priority</span>
                       <div className="space-y-0.5">
                         {priorityOrder.map((p) => (
-                          <label key={p} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                          <label key={p} className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                             <Checkbox
                               checked={viewState.priorities.includes(p)}
                               onCheckedChange={() => updateView({ priorities: toggleInArray(viewState.priorities, p) })}
                             />
                             <PriorityIcon priority={p} />
-                            <span className="text-sm">{statusLabel(p)}</span>
+                            <span className="text-[11px] font-mono">{statusLabel(p)}</span>
                           </label>
                         ))}
                       </div>
@@ -501,32 +501,32 @@ export function IssuesList({
 
                     {/* Assignee */}
                     <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Assignee</span>
+                      <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] font-mono">Assignee</span>
                       <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                        <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                        <label className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                           <Checkbox
                             checked={viewState.assignees.includes("__unassigned")}
                             onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__unassigned") })}
                           />
-                          <span className="text-sm">No assignee</span>
+                          <span className="text-[11px] font-mono">No assignee</span>
                         </label>
                         {currentUserId && (
-                          <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                          <label className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                             <Checkbox
                               checked={viewState.assignees.includes("__me")}
                               onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__me") })}
                             />
                             <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm">Me</span>
+                            <span className="text-[11px] font-mono">Me</span>
                           </label>
                         )}
                         {(agents ?? []).map((agent) => (
-                          <label key={agent.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                          <label key={agent.id} className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                             <Checkbox
                               checked={viewState.assignees.includes(agent.id)}
                               onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, agent.id) })}
                             />
-                            <span className="text-sm">{agent.name}</span>
+                            <span className="text-[11px] font-mono">{agent.name}</span>
                           </label>
                         ))}
                       </div>
@@ -534,16 +534,16 @@ export function IssuesList({
 
                     {labels && labels.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Labels</span>
+                        <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] font-mono">Labels</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {labels.map((label) => (
-                            <label key={label.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                            <label key={label.id} className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                               <Checkbox
                                 checked={viewState.labels.includes(label.id)}
                                 onCheckedChange={() => updateView({ labels: toggleInArray(viewState.labels, label.id) })}
                               />
                               <span className="h-1.5 w-1.5 " style={{ backgroundColor: label.color }} />
-                              <span className="text-sm">{label.name}</span>
+                              <span className="text-[11px] font-mono">{label.name}</span>
                             </label>
                           ))}
                         </div>
@@ -552,15 +552,15 @@ export function IssuesList({
 
                     {projects && projects.length > 0 && (
                       <div className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Project</span>
+                        <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] font-mono">Project</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {projects.map((project) => (
-                            <label key={project.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
+                            <label key={project.id} className="flex items-center gap-2 px-2 py-1 hover:opacity-80 cursor-pointer">
                               <Checkbox
                                 checked={viewState.projects.includes(project.id)}
                                 onCheckedChange={() => updateView({ projects: toggleInArray(viewState.projects, project.id) })}
                               />
-                              <span className="text-sm">{project.name}</span>
+                              <span className="text-[11px] font-mono">{project.name}</span>
                             </label>
                           ))}
                         </div>
@@ -576,7 +576,7 @@ export function IssuesList({
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs">
+                <Button variant="ghost" size="sm" className="text-[11px] font-mono">
                   <ArrowUpDown className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Sort</span>
                 </Button>
@@ -622,7 +622,7 @@ export function IssuesList({
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs">
+                <Button variant="ghost" size="sm" className="text-[11px] font-mono">
                   <Layers className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Group</span>
                 </Button>
@@ -821,7 +821,7 @@ export function IssuesList({
                           onPointerDownOutside={() => setAssigneeSearch("")}
                         >
                           <input
-                            className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-[11px] outline-none placeholder:text-[var(--fg-dim)]"
+                            className="mb-1 w-full border-b border-[var(--border-strong)] bg-transparent px-2 py-1.5 text-[11px] font-mono outline-none placeholder:text-[var(--fg-dim)]"
                             placeholder="Search assignees..."
                             value={assigneeSearch}
                             onChange={(e) => setAssigneeSearch(e.target.value)}
