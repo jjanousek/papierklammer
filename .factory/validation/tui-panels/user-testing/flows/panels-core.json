@@ -1,0 +1,163 @@
+{
+  "groupId": "panels-core",
+  "testedAt": "2026-04-02T01:29:46.321997Z",
+  "isolation": {
+    "surface": "vitest CLI only",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-010",
+      "title": "Agent sidebar displays agents with status",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to tests in panels.test.tsx",
+          "expected": "Coverage for agent names, status indicators/text, and API-driven sidebar data",
+          "observed": "Mapped to AgentSidebar tests (status indicators + status text) and Sidebar with API data test (renders agents from mock API response)"
+        },
+        {
+          "action": "Run file-scoped Vitest command with targeted test-name pattern",
+          "expected": "Targeted tests pass",
+          "observed": "3 passed, 25 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-panels/panels-core/VAL-TUI-010-vitest.txt",
+        "keyLines": [
+          "AgentSidebar > renders agents with correct status indicators",
+          "AgentSidebar > renders status text for each agent",
+          "Sidebar with API data > renders agents from mock API response"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-011",
+      "title": "Header bar shows system summary",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to HeaderBar tests in panels.test.tsx",
+          "expected": "Coverage for connection status, total agent count, active run count",
+          "observed": "Mapped to HeaderBar tests for connected/disconnected status, agent count, and active run count"
+        },
+        {
+          "action": "Run file-scoped Vitest command with targeted test-name pattern",
+          "expected": "Targeted tests pass",
+          "observed": "4 passed, 24 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-panels/panels-core/VAL-TUI-011-vitest.txt",
+        "keyLines": [
+          "HeaderBar > shows Connected status when connected",
+          "HeaderBar > shows Disconnected status when not connected",
+          "HeaderBar > shows agent count",
+          "HeaderBar > shows active run count"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-012",
+      "title": "Status bar shows Codex state",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to StatusBar tests in panels.test.tsx",
+          "expected": "Coverage for disconnected/connected/thinking states, thread ID, and model",
+          "observed": "Mapped to StatusBar tests covering all required state and metadata combinations"
+        },
+        {
+          "action": "Run file-scoped Vitest command with targeted test-name pattern",
+          "expected": "Targeted tests pass",
+          "observed": "6 passed, 22 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-panels/panels-core/VAL-TUI-012-vitest.txt",
+        "keyLines": [
+          "StatusBar > shows disconnected state by default",
+          "StatusBar > shows connected state",
+          "StatusBar > shows thinking state",
+          "StatusBar > shows threadId when active",
+          "StatusBar > shows model name when available"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-013",
+      "title": "Tab key cycles focus between panels",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to Keyboard navigation test in panels.test.tsx",
+          "expected": "Tab cycles focus sidebar -> input -> sidebar",
+          "observed": "Mapped to test: Tab key cycles focus between sidebar and input bar"
+        },
+        {
+          "action": "Run file-scoped Vitest command with targeted test-name pattern",
+          "expected": "Targeted test passes",
+          "observed": "1 passed, 27 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-panels/panels-core/VAL-TUI-013-vitest.txt",
+        "keyLines": [
+          "Keyboard navigation > Tab key cycles focus between sidebar and input bar"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-014",
+      "title": "Agent sidebar scrolls with arrow keys",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to keyboard + scrolling tests in panels.test.tsx",
+          "expected": "Coverage for arrow-key navigation, long-list scrolling, and visible selected item movement",
+          "observed": "Mapped to tests for arrow key movement and scroll indicators including scrolled-above marker"
+        },
+        {
+          "action": "Run file-scoped Vitest command with targeted test-name pattern",
+          "expected": "Targeted tests pass",
+          "observed": "4 passed, 24 skipped, exit code 0"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-panels/panels-core/VAL-TUI-014-vitest.txt",
+        "keyLines": [
+          "Keyboard navigation > arrow keys move sidebar selection down and up",
+          "Agent list scrolling > shows scroll indicators when agent list exceeds maxVisible",
+          "Agent list scrolling > shows \u25b2 indicator when scrolled past the beginning",
+          "Agent list scrolling > up arrow scrolls back showing agents above"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Vitest -t output still includes non-matching tests as skipped entries, increasing log noise during evidence review.",
+      "resolved": true,
+      "resolution": "Used file-scoped command and verbose reporter, then referenced exact passing test lines per assertion.",
+      "affectedAssertions": [
+        "VAL-TUI-010",
+        "VAL-TUI-011",
+        "VAL-TUI-012",
+        "VAL-TUI-013",
+        "VAL-TUI-014"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 5 assigned assertions (VAL-TUI-010..014) via deterministic file-scoped Vitest commands; all passed with exit code 0."
+}

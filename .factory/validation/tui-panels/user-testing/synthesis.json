@@ -1,0 +1,28 @@
+{
+  "milestone": "tui-panels",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-TUI-010",
+    "VAL-TUI-011",
+    "VAL-TUI-012",
+    "VAL-TUI-013",
+    "VAL-TUI-014"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Documented tui-panels vitest -t skipped-test log noise handling for future evidence collection.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}
