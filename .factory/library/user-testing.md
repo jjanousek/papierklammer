@@ -38,3 +38,4 @@ All validation is through automated Vitest tests. No browser UI testing.
 - Treat `VAL-FORK-014` as failed until full-suite stability is restored.
 - `tui-foundation` validation found that `pnpm test:run -- <file>` can still invoke broader suite paths; use `pnpm exec vitest run <target-file>` for deterministic file-scoped assertion checks.
 - `tui-panels` validation observed that `vitest -t` outputs many skipped non-matching tests even for file-scoped runs; use explicit test-name references from verbose output as evidence, and treat skipped noise as expected.
+- `tui-polish` validation observed intermittent `user-testing-flow-validator` subagent permission-gate exits (`insufficient permission ... --skip-permissions-unsafe`) for one assertion group; when this occurs, run the same deterministic file-scoped Vitest commands directly in the validator session and still capture evidence/flow JSON in the standard paths.

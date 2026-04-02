@@ -1,0 +1,69 @@
+{
+  "groupId": "cross-flow",
+  "testedAt": "2026-04-02T02:31:51Z",
+  "isolation": {
+    "surface": "vitest CLI only",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": ["pnpm", "vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-CROSS-001",
+      "title": "End-to-end chat flow",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to integration test describe block",
+          "expected": "Assertion aligns to integration coverage",
+          "observed": "Mapped to describe(\"End-to-end chat flow (VAL-TUI-CROSS-001)\") in packages/orchestrator-tui/src/__tests__/integration.test.tsx"
+        },
+        {
+          "action": "Run scoped Vitest command with -t VAL-TUI-CROSS-001",
+          "expected": "All tests for this assertion pass",
+          "observed": "3 matching tests passed; VAL-TUI-CROSS-002 tests were skipped by filter"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-polish/cross-flow/VAL-TUI-CROSS-001-vitest.txt",
+        "keyLines": [
+          "End-to-end chat flow (VAL-TUI-CROSS-001) > full flow: render → type message → streaming → finalized message",
+          "End-to-end chat flow (VAL-TUI-CROSS-001) > multi-turn conversation uses same thread",
+          "End-to-end chat flow (VAL-TUI-CROSS-001) > command execution blocks appear in chat during streaming",
+          "Tests 3 passed | 3 skipped (6)"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-CROSS-002",
+      "title": "Agent status updates while chatting",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to integration test describe block",
+          "expected": "Assertion aligns to integration coverage",
+          "observed": "Mapped to describe(\"Agent status updates during chat (VAL-TUI-CROSS-002)\") in packages/orchestrator-tui/src/__tests__/integration.test.tsx"
+        },
+        {
+          "action": "Run scoped Vitest command with -t VAL-TUI-CROSS-002",
+          "expected": "All tests for this assertion pass",
+          "observed": "3 matching tests passed; VAL-TUI-CROSS-001 tests were skipped by filter"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-polish/cross-flow/VAL-TUI-CROSS-002-vitest.txt",
+        "keyLines": [
+          "Agent status updates during chat (VAL-TUI-CROSS-002) > sidebar updates while chat is active without disruption",
+          "Agent status updates during chat (VAL-TUI-CROSS-002) > sidebar updates do not clear streaming text",
+          "Agent status updates during chat (VAL-TUI-CROSS-002) > API error during active chat doesn't crash the app",
+          "Tests 3 passed | 3 skipped (6)"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assigned assertions on file-scoped Vitest runs: 2 passed, 0 failed, 0 blocked."
+}

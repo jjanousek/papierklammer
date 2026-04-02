@@ -1,0 +1,111 @@
+{
+  "groupId": "polish-core",
+  "testedAt": "2026-04-02T02:35:42Z",
+  "isolation": {
+    "surface": "vitest CLI only",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-031",
+      "title": "API connection error displayed gracefully",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to API error handling tests in polish.test.tsx",
+          "expected": "Disconnected/error states render in header/sidebar and app remains stable",
+          "observed": "Mapped to describe(\"API connection error handling (VAL-TUI-031)\") with 9 checks for disconnected/error rendering and non-crash behavior."
+        },
+        {
+          "action": "Run file-scoped Vitest command filtered to VAL-TUI-031",
+          "expected": "All matching tests pass",
+          "observed": "9 passed, 12 skipped, exit code 0."
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-polish/polish-core/VAL-TUI-031-vitest.txt",
+        "keyLines": [
+          "API connection error handling (VAL-TUI-031) > shows Disconnected in header when API fails",
+          "API connection error handling (VAL-TUI-031) > shows error message in header when API fails",
+          "API connection error handling (VAL-TUI-031) > shows Disconnected in sidebar when API fails",
+          "API connection error handling (VAL-TUI-031) > app does not crash when API is unreachable",
+          "Tests 9 passed | 12 skipped (21)"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-033",
+      "title": "Help overlay toggles with ? key",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to Help overlay tests in polish.test.tsx",
+          "expected": "Help overlay appears with ? and dismisses with ? or Escape",
+          "observed": "Mapped to describe(\"Help overlay (VAL-TUI-033)\") with rendering and App-level toggle/dismiss coverage."
+        },
+        {
+          "action": "Run file-scoped Vitest command filtered to VAL-TUI-033",
+          "expected": "All matching tests pass",
+          "observed": "8 passed, 13 skipped, exit code 0."
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-polish/polish-core/VAL-TUI-033-vitest.txt",
+        "keyLines": [
+          "Help overlay (VAL-TUI-033) > HelpOverlay renders keyboard shortcuts when visible",
+          "Help overlay (VAL-TUI-033) > pressing ? in App shows help overlay when sidebar focused",
+          "Help overlay (VAL-TUI-033) > pressing ? again dismisses help overlay",
+          "Help overlay (VAL-TUI-033) > Escape key dismisses help overlay in App",
+          "Tests 8 passed | 13 skipped (21)"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-034",
+      "title": "Graceful shutdown terminates Codex subprocess",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to graceful shutdown tests in polish.test.tsx",
+          "expected": "Ctrl+C sends SIGTERM to Codex subprocess and terminal is restored",
+          "observed": "Mapped to describe(\"Graceful shutdown (VAL-TUI-034)\") with explicit SIGTERM and terminal restore checks."
+        },
+        {
+          "action": "Run file-scoped Vitest command filtered to VAL-TUI-034",
+          "expected": "All matching tests pass",
+          "observed": "2 passed, 19 skipped, exit code 0."
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-polish/polish-core/VAL-TUI-034-vitest.txt",
+        "keyLines": [
+          "Graceful shutdown (VAL-TUI-034) > Ctrl+C sends SIGTERM to Codex subprocess via destroy",
+          "Graceful shutdown (VAL-TUI-034) > terminal is restored after Ctrl+C",
+          "Tests 2 passed | 19 skipped (21)"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The user-testing-flow-validator subagent exited early for this assertion group with a permissions gate error requiring --skip-permissions-unsafe.",
+      "resolved": true,
+      "resolution": "Executed deterministic file-scoped Vitest commands directly in the validator session and recorded equivalent evidence artifacts.",
+      "affectedAssertions": [
+        "VAL-TUI-031",
+        "VAL-TUI-033",
+        "VAL-TUI-034"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assigned assertions (VAL-TUI-031, VAL-TUI-033, VAL-TUI-034) via file-scoped Vitest commands; all passed with exit code 0."
+}
