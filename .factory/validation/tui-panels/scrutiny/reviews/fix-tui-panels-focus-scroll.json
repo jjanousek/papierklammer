@@ -1,0 +1,39 @@
+{
+  "featureId": "fix-tui-panels-focus-scroll",
+  "reviewedAt": "2026-04-02T01:19:31Z",
+  "commitId": "fb09e7720e42a610663db2592b21b17d7e332561",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The fix commit correctly adds InputBar focus participation and AgentSidebar windowed scrolling with indicators, but it does not resolve all prior blocking findings from tui-panels scrutiny.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/hooks/useOrchestratorStatus.ts",
+        "line": 29,
+        "severity": "blocking",
+        "description": "A prior blocking finding remains unresolved: the hook still documents and uses raw fetch (`Uses raw fetch (not OrchestratorClient)` and `fetchFn`) rather than the shared `OrchestratorClient`. The original feature contract and mission AGENTS require `OrchestratorClient`, and the fix commit does not modify this file."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+        "line": 438,
+        "severity": "non_blocking",
+        "description": "The test named `scroll offset changes when selection moves beyond visible window` does not actually move selection or send arrow-key input; it only asserts initial render state. This weakens direct verification for that specific behavior, though adjacent tests partially cover scrolling."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The fix feature scope omitted one previously recorded blocker, allowing a known blocking issue to persist into the rerun.",
+      "evidence": "Prior synthesis lists three blockers including raw fetch vs OrchestratorClient (`.factory/validation/tui-panels/scrutiny/synthesis.json:34`), while `features.json` for `fix-tui-panels-focus-scroll` only scopes Tab focus cycling and sidebar scrolling (`/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/features.json:1497-1506`)."
+    },
+    {
+      "area": "skills",
+      "observation": "The tests-first procedure in the tui-worker skill was not followed in ordering, but handoff still marked followedProcedure=true.",
+      "evidence": "`tui-worker` skill requires tests first (`.factory/skills/tui-worker/SKILL.md:31`). Transcript skeleton shows implementation before test strengthening (line 348: \"Let me implement the InputBar focus changes first\", line 378: \"Now let me strengthen the keyboard navigation tests\"), while handoff `skillFeedback.followedProcedure` is true."
+    }
+  ],
+  "addressesFailureFrom": ".factory/validation/tui-panels/scrutiny/reviews/tui-agent-sidebar-header-status.json",
+  "summary": "Review result: FAIL. The fix addresses two prior blockers (Tab focus cycling and sidebar scrolling/windowing), but the remaining prior blocker about required OrchestratorClient usage is still unresolved, so prior blocking scrutiny findings are not fully closed."
+}

@@ -1,0 +1,64 @@
+{
+  "milestone": "tui-panels",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run --max-workers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "failedFeatures": [
+      "tui-agent-sidebar-header-status"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "tui-agent-sidebar-header-status",
+      "severity": "blocking",
+      "description": "useOrchestratorStatus uses raw fetch instead of OrchestratorClient, diverging from shared-client requirement and bypassing common auth/error behavior."
+    },
+    {
+      "featureId": "tui-agent-sidebar-header-status",
+      "severity": "blocking",
+      "description": "Tab focus cycling between input bar and sidebar is not implemented; only sidebar is focus-enabled so required panel focus switching is missing."
+    },
+    {
+      "featureId": "tui-agent-sidebar-header-status",
+      "severity": "blocking",
+      "description": "AgentSidebar lacks scrolling/windowing behavior for long lists; arrow-key selection exists but no visible-window offset logic is implemented."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "tui-worker skill",
+      "suggestion": "Strengthen the panel milestone procedure to explicitly require OrchestratorClient usage for orchestrator status access (not raw fetch) and to require a red-green test sequence callout for keyboard interaction features.",
+      "evidence": "Feature tui-agent-sidebar-header-status implemented panel polling via raw fetch despite AGENTS guidance and delivered weak keyboard behavior tests that did not enforce Tab focus-cycle and list-scroll requirements.",
+      "isSystemic": false
+    },
+    {
+      "target": "scrutiny/tui skill guidance",
+      "suggestion": "Add a reviewer checklist item to verify handoff `followedProcedure` claims against transcript ordering when tests are expected to be written first.",
+      "evidence": "In tui-agent-sidebar-header-status, transcript skeleton indicates implementation started before key tests were added, while handoff still reported followedProcedure=true.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

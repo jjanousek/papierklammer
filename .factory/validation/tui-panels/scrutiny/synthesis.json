@@ -1,6 +1,6 @@
 {
   "milestone": "tui-panels",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -24,41 +24,42 @@
     "passed": 0,
     "failed": 1,
     "failedFeatures": [
-      "tui-agent-sidebar-header-status"
+      "fix-tui-panels-focus-scroll"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "tui-agent-sidebar-header-status",
+      "featureId": "fix-tui-panels-focus-scroll",
       "severity": "blocking",
-      "description": "useOrchestratorStatus uses raw fetch instead of OrchestratorClient, diverging from shared-client requirement and bypassing common auth/error behavior."
-    },
-    {
-      "featureId": "tui-agent-sidebar-header-status",
-      "severity": "blocking",
-      "description": "Tab focus cycling between input bar and sidebar is not implemented; only sidebar is focus-enabled so required panel focus switching is missing."
-    },
-    {
-      "featureId": "tui-agent-sidebar-header-status",
-      "severity": "blocking",
-      "description": "AgentSidebar lacks scrolling/windowing behavior for long lists; arrow-key selection exists but no visible-window offset logic is implemented."
+      "description": "Prior blocker remains unresolved: packages/orchestrator-tui/src/hooks/useOrchestratorStatus.ts still uses raw fetch/fetchFn instead of the required shared OrchestratorClient from @papierklammer/orchestrator-console."
     }
   ],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "tui-worker skill",
-      "suggestion": "Strengthen the panel milestone procedure to explicitly require OrchestratorClient usage for orchestrator status access (not raw fetch) and to require a red-green test sequence callout for keyboard interaction features.",
-      "evidence": "Feature tui-agent-sidebar-header-status implemented panel polling via raw fetch despite AGENTS guidance and delivered weak keyboard behavior tests that did not enforce Tab focus-cycle and list-scroll requirements.",
+      "suggestion": "Make OrchestratorClient usage an explicit must-pass checklist item for any orchestrator API integration; disallow raw fetch in hooks/components unless the task explicitly permits it.",
+      "evidence": "Original feature tui-agent-sidebar-header-status failed on raw fetch usage and the rerun fix feature fix-tui-panels-focus-scroll left the same blocker unresolved.",
+      "isSystemic": true
+    },
+    {
+      "target": "scrutiny-validator skill",
+      "suggestion": "Add a rerun check that compares prior blocking issues to fix-feature scope and flags any unresolved blocker not explicitly addressed before spawning review.",
+      "evidence": "Round 1 recorded three blockers, but the fix feature scope only targeted focus cycling and sidebar scrolling, leaving the OrchestratorClient blocker open into round 2.",
       "isSystemic": false
     },
     {
-      "target": "scrutiny/tui skill guidance",
-      "suggestion": "Add a reviewer checklist item to verify handoff `followedProcedure` claims against transcript ordering when tests are expected to be written first.",
-      "evidence": "In tui-agent-sidebar-header-status, transcript skeleton indicates implementation started before key tests were added, while handoff still reported followedProcedure=true.",
+      "target": "scrutiny/tui review guidance",
+      "suggestion": "Require reviewers to verify skillFeedback.followedProcedure claims against transcript ordering whenever the worker skill mandates tests-first behavior.",
+      "evidence": "Both original and fix reviews observed implementation-before-tests ordering while handoff reported followedProcedure=true.",
       "isSystemic": false
     }
   ],
-  "rejectedObservations": [],
-  "previousRound": null
+  "rejectedObservations": [
+    {
+      "observation": "Transcript ordering concern repeated across original and fix review reports.",
+      "reason": "duplicate"
+    }
+  ],
+  "previousRound": ".factory/validation/tui-panels/scrutiny/synthesis.round1.json"
 }
