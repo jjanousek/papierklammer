@@ -50,7 +50,7 @@ export function SidebarNavItem({
       <span className="relative shrink-0">
         <Icon className="h-4 w-4" />
         {alert && (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 bg-red-500 shadow-[0_0_0_2px_hsl(var(--background))]" />
+          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 bg-[var(--dead)] shadow-[0_0_0_2px_hsl(var(--background))]" />
         )}
       </span>
       <span className="flex-1 truncate">{label}</span>
@@ -69,9 +69,9 @@ export function SidebarNavItem({
       {liveCount != null && liveCount > 0 && (
         <span className="ml-auto flex items-center gap-1.5">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
+            <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
           </span>
-          <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">{liveCount} live</span>
+          <span className="text-[11px] font-medium text-[var(--alive)]">{liveCount} live</span>
         </span>
       )}
       {badge != null && badge > 0 && (

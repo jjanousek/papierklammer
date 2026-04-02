@@ -102,7 +102,7 @@ describe("IssueRow", () => {
     expect(markReadButton?.className).toContain("hover:opacity-80");
     expect(unreadDot).not.toBeNull();
     expect(unreadDot?.className).toContain("bg-muted-foreground/70");
-    expect(unreadDot?.className).not.toContain("bg-blue-600");
+    expect(unreadDot?.className).not.toContain("bg-[var(--alive)]");
     expect(statusIcon).not.toBeNull();
     expect(statusIcon?.className).toContain("!border-muted-foreground");
     expect(statusIcon?.className).toContain("!text-muted-foreground");

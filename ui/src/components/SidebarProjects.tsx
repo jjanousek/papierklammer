@@ -13,6 +13,7 @@ import {
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useCompany } from "../context/CompanyContext";
+import { Button } from "@/components/ui/button";
 import { useDialog } from "../context/DialogContext";
 import { useSidebar } from "../context/SidebarContext";
 import { authApi } from "../api/auth";
@@ -189,16 +190,18 @@ export function SidebarProjects() {
               Projects
             </span>
           </CollapsibleTrigger>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               openNewProject();
             }}
-            className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/60 hover:text-foreground hover:opacity-80"
+            className="flex items-center justify-center h-4 w-4 text-muted-foreground/60 hover:text-foreground p-0"
             aria-label="New project"
           >
             <Plus className="h-3 w-3" />
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -848,12 +848,12 @@ export function AgentDetail() {
           {mobileLiveRun && (
             <Link
               to={`/agents/${canonicalAgentRef}/runs/${mobileLiveRun.id}`}
-              className="sm:hidden flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 hover:opacity-80 no-underline"
+              className="sm:hidden flex items-center gap-1.5 px-2 py-0.5 bg-[var(--alive)]/10 hover:opacity-80 no-underline"
             >
               <span className="relative flex h-1.5 w-1.5">
-                <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
+                <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
               </span>
-              <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">Live</span>
+              <span className="text-[11px] font-medium text-[var(--alive)]">Live</span>
             </Link>
           )}
 

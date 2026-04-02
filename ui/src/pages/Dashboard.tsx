@@ -25,6 +25,7 @@ import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRa
 import { PageSkeleton } from "../components/PageSkeleton";
 import type { Agent, Issue } from "@papierklammer/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
+import { Button } from "@/components/ui/button";
 
 function getRecentIssues(issues: Issue[]): Issue[] {
   return [...issues]
@@ -197,12 +198,13 @@ export function Dashboard() {
               You have no agents.
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => openOnboarding({ initialStep: 2, companyId: selectedCompanyId! })}
-            className="text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 underline underline-offset-2 shrink-0"
+            className="text-sm font-medium underline underline-offset-2 shrink-0"
           >
             Create one here
-          </button>
+          </Button>
         </div>
       )}
 

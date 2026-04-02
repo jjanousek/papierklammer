@@ -381,20 +381,22 @@ export function IssuesList({
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           {/* View mode toggle */}
           <div className="flex items-center border border-border rounded-md overflow-hidden mr-1">
-            <button
-              className={`p-1.5 ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            <Button
+              variant="ghost"
+              className={cn("p-1.5 border border-white bg-transparent h-auto", viewState.viewMode === "list" ? "text-foreground" : "text-muted-foreground")}
               onClick={() => updateView({ viewMode: "list" })}
               title="List view"
             >
               <List className="h-3.5 w-3.5" />
-            </button>
-            <button
-              className={`p-1.5 ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn("p-1.5 border border-white bg-transparent h-auto", viewState.viewMode === "board" ? "text-foreground" : "text-muted-foreground")}
               onClick={() => updateView({ viewMode: "board" })}
               title="Board view"
             >
               <Columns3 className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           </div>
 
           {/* Filter */}
@@ -422,12 +424,13 @@ export function IssuesList({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Filters</span>
                   {activeFilterCount > 0 && (
-                    <button
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                    <Button
+                      variant="ghost"
+                      className="text-xs text-muted-foreground hover:text-foreground h-auto px-1 py-0.5"
                       onClick={() => updateView({ statuses: [], priorities: [], assignees: [], labels: [] })}
                     >
                       Clear
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -438,17 +441,19 @@ export function IssuesList({
                     {quickFilterPresets.map((preset) => {
                       const isActive = arraysEqual(viewState.statuses, preset.statuses);
                       return (
-                        <button
+                        <Button
                           key={preset.label}
-                          className={`px-2.5 py-1 text-xs border ${
+                          variant="ghost"
+                          className={cn(
+                            "px-2.5 py-1 text-xs border h-auto",
                             isActive
-                              ? "bg-primary text-primary-foreground border-primary"
+                              ? "border-white bg-transparent text-white"
                               : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
-                          }`}
+                          )}
                           onClick={() => updateView({ statuses: isActive ? [] : [...preset.statuses] })}
                         >
                           {preset.label}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -585,11 +590,13 @@ export function IssuesList({
                     ["created", "Created"],
                     ["updated", "Updated"],
                   ] as const).map(([field, label]) => (
-                    <button
+                    <Button
                       key={field}
-                      className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${
-                        viewState.sortField === field ? "bg-accent/50 text-foreground" : "hover:opacity-80 text-muted-foreground"
-                      }`}
+                      variant="ghost"
+                      className={cn(
+                        "flex items-center justify-between w-full px-2 py-1.5 text-sm h-auto",
+                        viewState.sortField === field ? "bg-[var(--bg-darker)] text-foreground" : "text-muted-foreground"
+                      )}
                       onClick={() => {
                         if (viewState.sortField === field) {
                           updateView({ sortDir: viewState.sortDir === "asc" ? "desc" : "asc" });
@@ -604,7 +611,7 @@ export function IssuesList({
                           {viewState.sortDir === "asc" ? "\u2191" : "\u2193"}
                         </span>
                       )}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </PopoverContent>
@@ -628,16 +635,18 @@ export function IssuesList({
                     ["assignee", "Assignee"],
                     ["none", "None"],
                   ] as const).map(([value, label]) => (
-                    <button
+                    <Button
                       key={value}
-                      className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${
-                        viewState.groupBy === value ? "bg-accent/50 text-foreground" : "hover:opacity-80 text-muted-foreground"
-                      }`}
+                      variant="ghost"
+                      className={cn(
+                        "flex items-center justify-between w-full px-2 py-1.5 text-sm h-auto",
+                        viewState.groupBy === value ? "bg-[var(--bg-darker)] text-foreground" : "text-muted-foreground"
+                      )}
                       onClick={() => updateView({ groupBy: value })}
                     >
                       <span>{label}</span>
                       {viewState.groupBy === value && <Check className="h-3.5 w-3.5" />}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </PopoverContent>
@@ -734,11 +743,11 @@ export function IssuesList({
                         {issue.identifier ?? issue.id.slice(0, 8)}
                       </span>
                       {liveIssueIds?.has(issue.id) && (
-                        <span className="inline-flex items-center gap-1 bg-blue-500/10 px-1.5 py-0.5 sm:gap-1.5 sm:px-2">
+                        <span className="inline-flex items-center gap-1 bg-[var(--alive)]/10 px-1.5 py-0.5 sm:gap-1.5 sm:px-2">
                           <span className="relative flex h-1.5 w-1.5">
-                            <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
+                            <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
                           </span>
-                          <span className="hidden text-[11px] font-medium text-blue-600 dark:text-blue-400 sm:inline">
+                          <span className="hidden text-[11px] font-medium text-[var(--alive)] sm:inline">
                             Live
                           </span>
                         </span>
@@ -778,8 +787,9 @@ export function IssuesList({
                         }}
                       >
                         <PopoverTrigger asChild>
-                          <button
-                            className="flex w-[180px] shrink-0 items-center rounded-md px-2 py-1 hover:opacity-80"
+                          <Button
+                            variant="ghost"
+                            className="flex w-[180px] shrink-0 items-center px-2 py-1 h-auto justify-start"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -802,7 +812,7 @@ export function IssuesList({
                                 Assignee
                               </span>
                             )}
-                          </button>
+                          </Button>
                         </PopoverTrigger>
                         <PopoverContent
                           className="w-56 p-1"
@@ -818,10 +828,11 @@ export function IssuesList({
                             autoFocus
                           />
                           <div className="max-h-48 overflow-y-auto overscroll-contain">
-                            <button
+                            <Button
+                              variant="ghost"
                               className={cn(
-                                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:opacity-80",
-                                !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent",
+                                "flex w-full items-center gap-2 px-2 py-1.5 text-xs h-auto justify-start",
+                                !issue.assigneeAgentId && !issue.assigneeUserId && "bg-[var(--bg-darker)]",
                               )}
                               onClick={(e) => {
                                 e.preventDefault();
@@ -830,12 +841,13 @@ export function IssuesList({
                               }}
                             >
                               No assignee
-                            </button>
+                            </Button>
                             {currentUserId && (
-                              <button
+                              <Button
+                                variant="ghost"
                                 className={cn(
-                                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:opacity-80",
-                                  issue.assigneeUserId === currentUserId && "bg-accent",
+                                  "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs h-auto justify-start",
+                                  issue.assigneeUserId === currentUserId && "bg-[var(--bg-darker)]",
                                 )}
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -845,7 +857,7 @@ export function IssuesList({
                               >
                                 <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                 <span>Me</span>
-                              </button>
+                              </Button>
                             )}
                             {(agents ?? [])
                               .filter((agent) => {
@@ -855,11 +867,12 @@ export function IssuesList({
                                   .includes(assigneeSearch.toLowerCase());
                               })
                               .map((agent) => (
-                                <button
+                                <Button
                                   key={agent.id}
+                                  variant="ghost"
                                   className={cn(
-                                    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:opacity-80",
-                                    issue.assigneeAgentId === agent.id && "bg-accent",
+                                    "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs h-auto justify-start",
+                                    issue.assigneeAgentId === agent.id && "bg-[var(--bg-darker)]",
                                   )}
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -868,7 +881,7 @@ export function IssuesList({
                                   }}
                                 >
                                   <Identity name={agent.name} size="sm" className="min-w-0" />
-                                </button>
+                                </Button>
                               ))}
                           </div>
                         </PopoverContent>

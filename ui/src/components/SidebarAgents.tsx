@@ -13,6 +13,7 @@ import { cn, agentRouteRef, agentUrl } from "../lib/utils";
 import { useAgentOrder } from "../hooks/useAgentOrder";
 import { AgentIcon } from "./AgentIconPicker";
 import { BudgetSidebarMarker } from "./BudgetSidebarMarker";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -84,16 +85,18 @@ export function SidebarAgents() {
               Agents
             </span>
           </CollapsibleTrigger>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               openNewAgent();
             }}
-            className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/60 hover:text-foreground hover:opacity-80"
+            className="flex items-center justify-center h-4 w-4 text-muted-foreground/60 hover:text-foreground p-0"
             aria-label="New agent"
           >
             <Plus className="h-3 w-3" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -124,11 +127,11 @@ export function SidebarAgents() {
                     ) : null}
                     {runCount > 0 ? (
                       <span className="relative flex h-1.5 w-1.5">
-                        <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
+                        <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
                       </span>
                     ) : null}
                     {runCount > 0 ? (
-                      <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                      <span className="text-[11px] font-medium text-[var(--alive)]">
                         {runCount} live
                       </span>
                     ) : null}

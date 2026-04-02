@@ -102,10 +102,10 @@ function AgentRunCard({
             <div className="flex items-center gap-2">
               {isActive ? (
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
-                  <span className="relative inline-flex h-1.5 w-1.5 bg-cyan-500" />
+                  <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
                 </span>
               ) : (
-                <span className="inline-flex h-1.5 w-1.5 bg-muted-foreground/35" />
+                <span className="inline-flex h-1.5 w-1.5 bg-transparent border border-[var(--fg-muted)]" />
               )}
               <Identity name={run.agentName} size="sm" className="[&>span:last-child]:!text-[11px]" />
             </div>

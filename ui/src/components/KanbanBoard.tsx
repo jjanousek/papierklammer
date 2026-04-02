@@ -154,7 +154,7 @@ function KanbanCard({
           </span>
           {isLive && (
             <span className="relative flex h-2 w-2 shrink-0 mt-0.5">
-              <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
+              <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
             </span>
           )}
         </div>

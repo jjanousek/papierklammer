@@ -872,7 +872,7 @@ export function RoutineDetail() {
           <TabsTrigger value="runs" className="gap-1.5">
             <Play className="h-3.5 w-3.5" />
             Runs
-            {hasLiveRun && <span className="h-1.5 w-1.5 bg-blue-500" />}
+            {hasLiveRun && <span className="h-1.5 w-1.5 bg-[var(--alive)]" />}
           </TabsTrigger>
 <TabsTrigger value="activity" className="gap-1.5">
             <ActivityIcon className="h-3.5 w-3.5" />

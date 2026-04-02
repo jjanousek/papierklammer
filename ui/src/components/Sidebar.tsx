@@ -18,11 +18,11 @@ import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarProjects } from "./SidebarProjects";
 import { SidebarAgents } from "./SidebarAgents";
 import { useDialog } from "../context/DialogContext";
+import { Button } from "@/components/ui/button";
 import { useCompany } from "../context/CompanyContext";
 import { heartbeatsApi } from "../api/heartbeats";
 import { queryKeys } from "../lib/queryKeys";
 import { useInboxBadge } from "../hooks/useInboxBadge";
-import { Button } from "@/components/ui/button";
 import { PluginSlotOutlet } from "@/plugins/slots";
 
 export function Sidebar() {
@@ -72,13 +72,14 @@ export function Sidebar() {
       <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 px-3 py-2">
         <div className="flex flex-col gap-0.5">
           {/* New Issue button aligned with nav items */}
-          <button
+          <Button
+            variant="ghost"
             onClick={() => openNewIssue()}
-            className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-muted-foreground hover:opacity-80 hover:text-foreground"
+            className="flex items-center gap-2.5 px-3 py-2 justify-start w-full text-muted-foreground hover:text-foreground"
           >
             <SquarePen className="h-4 w-4 shrink-0" />
             <span className="truncate">New Issue</span>
-          </button>
+          </Button>
           <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"

@@ -107,7 +107,7 @@ function getSelectedUnreadButtonClass(selected: boolean): string {
 }
 
 function getSelectedUnreadDotClass(selected: boolean): string {
-  return selected ? "bg-muted-foreground/70" : "bg-blue-600 dark:bg-blue-400";
+  return selected ? "bg-muted-foreground/70" : "bg-[var(--alive)]";
 }
 
 export function InboxIssueMetaLeading({
@@ -134,21 +134,21 @@ export function InboxIssueMetaLeading({
         <span
           className={cn(
             "inline-flex items-center gap-1 px-1.5 py-0.5 sm:gap-1.5 sm:px-2",
-            selected ? "bg-muted" : "bg-blue-500/10",
+            selected ? "bg-muted" : "bg-[var(--alive)]/10",
           )}
         >
           <span className="relative flex h-1.5 w-1.5">
             <span
               className={cn(
                 "relative inline-flex h-1.5 w-1.5",
-                selected ? "bg-muted-foreground/70" : "bg-blue-500",
+                selected ? "bg-muted-foreground/70" : "bg-[var(--alive)]",
               )}
             />
           </span>
           <span
             className={cn(
               "hidden text-[11px] font-medium sm:inline",
-              selected ? "text-muted-foreground" : "text-blue-600 dark:text-blue-400",
+              selected ? "text-muted-foreground" : "text-[var(--alive)]",
             )}
           >
             Live

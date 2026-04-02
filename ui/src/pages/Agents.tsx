@@ -151,55 +151,59 @@ export function Agents() {
         <div className="flex items-center gap-2">
           {/* Filters */}
           <div className="relative">
-            <button
+            <Button
+              variant="ghost"
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider border border-white bg-transparent",
-                filtersOpen || showTerminated ? "text-foreground" : "text-white hover:opacity-80"
+                "flex items-center gap-1.5 px-3 py-1.5 border border-white bg-transparent",
+                filtersOpen || showTerminated ? "text-foreground" : "text-white"
               )}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
               <SlidersHorizontal className="h-3 w-3" />
               Filters
               {showTerminated && <span className="ml-0.5 px-1 bg-foreground/10 text-[10px]">1</span>}
-            </button>
+            </Button>
             {filtersOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 w-48 border border-border bg-popover shadow-md p-1">
-                <button
-                  className="flex items-center gap-2 w-full px-2 py-1.5 text-[11px] text-left hover:opacity-80"
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 w-full px-2 py-1.5 text-left justify-start h-auto"
                   onClick={() => setShowTerminated(!showTerminated)}
                 >
                   <span className={cn(
-                    "flex items-center justify-center h-3.5 w-3.5 border border-border rounded-sm",
+                    "flex items-center justify-center h-3.5 w-3.5 border border-border",
                     showTerminated && "bg-foreground"
                   )}>
                     {showTerminated && <span className="text-background text-[10px] leading-none">&#10003;</span>}
                   </span>
                   Show terminated
-                </button>
+                </Button>
               </div>
             )}
           </div>
           {/* View toggle */}
           {!forceListView && (
             <div className="flex items-center border border-border">
-              <button
+              <Button
+                variant="ghost"
                 className={cn(
-                  "p-1.5 bg-transparent border border-white text-[11px]",
-                  effectiveView === "list" ? "text-foreground" : "text-muted-foreground hover:opacity-80"
+                  "p-1.5 border border-white bg-transparent h-auto",
+                  effectiveView === "list" ? "text-foreground" : "text-muted-foreground"
                 )}
                 onClick={() => setView("list")}
               >
                 <List className="h-3.5 w-3.5" />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 className={cn(
-                  "p-1.5 bg-transparent border border-white text-[11px]",
-                  effectiveView === "org" ? "text-foreground" : "text-muted-foreground hover:opacity-80"
+                  "p-1.5 border border-white bg-transparent h-auto",
+                  effectiveView === "org" ? "text-foreground" : "text-muted-foreground"
                 )}
                 onClick={() => setView("org")}
               >
                 <GitBranch className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </div>
           )}
           <Button size="sm" variant="outline" onClick={openNewAgent}>
@@ -400,13 +404,13 @@ function LiveRunIndicator({
   return (
     <Link
       to={`/agents/${agentRef}/runs/${runId}`}
-      className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 hover:opacity-80 no-underline"
+      className="flex items-center gap-1.5 px-2 py-0.5 bg-[var(--alive)]/10 hover:opacity-80 no-underline"
       onClick={(e) => e.stopPropagation()}
     >
       <span className="relative flex h-1.5 w-1.5">
-        <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
+        <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
       </span>
-      <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+      <span className="text-[11px] font-medium text-[var(--alive)]">
         Live{liveCount > 1 ? ` (${liveCount})` : ""}
       </span>
     </Link>

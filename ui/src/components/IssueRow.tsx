@@ -123,7 +123,7 @@ export function IssueRow({
               <span
                 className={cn(
                   "block h-1.5 w-1.5 transition-opacity duration-300",
-                  selected ? "bg-muted-foreground/70" : "bg-blue-600 dark:bg-blue-400",
+                  selected ? "bg-muted-foreground/70" : "bg-[var(--alive)]",
                   unreadState === "fading" ? "opacity-0" : "opacity-100",
                 )}
               />
