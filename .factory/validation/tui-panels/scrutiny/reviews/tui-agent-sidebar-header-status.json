@@ -1,0 +1,51 @@
+{
+  "featureId": "tui-agent-sidebar-header-status",
+  "reviewedAt": "2026-04-02T00:45:11Z",
+  "commitId": "2ba14eec585c27c6bbbef9495115603f8f9ef121",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Core panel rendering landed, but multiple contract requirements for the tui-panels feature are not fully implemented. The sidebar/header/status UI exists and polling works, however focus/navigation behavior and client integration deviate from the feature spec.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/hooks/useOrchestratorStatus.ts",
+        "line": 29,
+        "severity": "blocking",
+        "description": "Feature contract and mission AGENTS require reusing `OrchestratorClient` from `@papierklammer/orchestrator-console`, but this hook explicitly uses raw fetch (`Uses raw fetch (not OrchestratorClient)`). This misses a stated implementation requirement and bypasses shared client error/auth behavior."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/components/App.tsx",
+        "line": 2,
+        "severity": "blocking",
+        "description": "Tab focus cycling between input bar and sidebar is not implemented as specified. `App` does not use `useFocusManager`, and `InputBar` is rendered as static text (no focus registration), while only `AgentSidebar` uses `useFocus`. This means there are not two focus targets to cycle between."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/components/AgentSidebar.tsx",
+        "line": 55,
+        "severity": "blocking",
+        "description": "Arrow-key selection exists, but scrolling/windowing for long agent lists is missing. The component always renders `agents.map(...)` with no visible-window calculation or offset state, so the required 'scroll when list exceeds panel height' behavior is not implemented."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+        "line": 232,
+        "severity": "non_blocking",
+        "description": "Keyboard-navigation tests are too weak to validate intended behavior. The Tab test only checks that 'Agents' is present (already true pre-Tab), and the arrow-key test only asserts agent names still render, so these tests can pass even when focus/selection behavior is incorrect."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "Skill-procedure adherence reporting appears optimistic: transcript shows implementation work before a red test phase, but handoff marked `followedProcedure: true`.",
+      "evidence": "Transcript skeleton includes: 'I'll create the hook first, then the test file, then update the components.' followed by Create calls for hook/components before creating `panels.test.tsx`; handoff skillFeedback reports followedProcedure=true."
+    },
+    {
+      "area": "skills",
+      "observation": "The tui-worker guidance may need a stronger explicit 'must use OrchestratorClient' requirement, since this feature bypassed the shared client despite AGENTS guidance.",
+      "evidence": "Mission AGENTS coding conventions require using existing `OrchestratorClient`; implementation comment at `packages/orchestrator-tui/src/hooks/useOrchestratorStatus.ts:29` says it intentionally uses raw fetch instead."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review result: FAIL. The implementation delivers visible panels but misses key contract items (OrchestratorClient usage, Tab focus cycling between input/sidebar, and sidebar scrolling window behavior)."
+}
