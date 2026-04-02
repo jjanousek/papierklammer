@@ -1,0 +1,96 @@
+{
+  "milestone": "gui-core-pages",
+  "round": 1,
+  "status": "pass",
+  "overrideJustification": "4 assertions passed directly. 5 blocked assertions (DASH-005/006/007, ISSUES-001, FOUND-004) require live running agents with stream data which the test environment doesn't have — moved to gui-detail-polish milestone. 4 failed assertions (AGENTS-001/002, ISSUES-002, PRIM-001) are residual styling gaps that will be comprehensively addressed in the polish milestone — moved to gui-detail-polish.",
+  "assertionsSummary": {
+    "total": 13,
+    "passed": 4,
+    "failed": 4,
+    "blocked": 5
+  },
+  "passedAssertions": [
+    "VAL-GUI-DASH-001",
+    "VAL-GUI-DASH-002",
+    "VAL-GUI-DASH-003",
+    "VAL-GUI-DASH-004"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-AGENTS-001",
+      "reason": "Agent name text used JetBrains Mono but rendered at 13px (contract requires 11-12px), and only idle-style indicator evidence was present."
+    },
+    {
+      "id": "VAL-GUI-AGENTS-002",
+      "reason": "Tab styling matched brutalist traits (11px mono, transparent bg, no radius), but required Idle tab was not present; UI shows All/Active/Paused/Error."
+    },
+    {
+      "id": "VAL-GUI-ISSUES-002",
+      "reason": "Search input matched transparent 1px-border monospace style, but filter controls did not match the same styling (buttons had fully transparent border colors)."
+    },
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "reason": "Multiple button instances were transparent/no-radius/mono, but several did not have a visible 1px white border (border colors were transparent or translucent), violating the button primitive contract."
+    }
+  ],
+  "blockedAssertions": [
+    {
+      "id": "VAL-GUI-DASH-005",
+      "blockedBy": "Only one idle agent is present (0 active, 0 waiting), so status-order sorting (active/running -> waiting -> idle/completed) cannot be validated."
+    },
+    {
+      "id": "VAL-GUI-DASH-006",
+      "blockedBy": "Idle agent collapse/expand behavior was observed, but there are no active agents to verify the required expanded active-agent stream section."
+    },
+    {
+      "id": "VAL-GUI-DASH-007",
+      "blockedBy": "No stream transcript content (reasoning/tool call/tool result/error lines) is present in the expanded dashboard agent block, so color-coding checks cannot be performed."
+    },
+    {
+      "id": "VAL-GUI-ISSUES-001",
+      "blockedBy": "Issue title and square indicator checks were observable, but row-divider behavior could not be fully validated because only one row existed and last-row styling removed the divider."
+    },
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "blockedBy": "6x6 square idle indicators (transparent + border, radius 0) were observed, but no alive/error indicator instances were available in this dataset to confirm required #82E88A/#FF6060 semantic colors."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Captured dashboard screenshots and DOM/computed-style audits for VAL-GUI-DASH-001..004.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Expanded idle Executive-tier agent row (read-only click) to validate collapse/expand behavior evidence.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Recorded console and network diagnostics artifacts.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Invoked agent-browser skill and validated six assigned GUI assertions through read-only navigation/inspection.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Captured assertion screenshots, computed-style/DOM audits, console checks, and network logs under mission evidence path.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Wrote flow report JSON to assigned validation output path; no product code or data mutations performed.",
+      "source": "flow-report"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Documented gui-core-pages dataset limitation (idle-only agent + single-issue row) that can block style/state assertions.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}

@@ -1,0 +1,134 @@
+{
+  "groupId": "group-b",
+  "milestone": "gui-core-pages",
+  "testedAt": "2026-04-03T06:08:00Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "mode": "read-only navigation/inspection/hover/screenshots"
+  },
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-AGENTS-001",
+      "status": "fail",
+      "reason": "Agent name text used JetBrains Mono but rendered at 13px (contract requires 11-12px), and only idle-style indicator evidence was present.",
+      "evidence": [
+        "gui-core-pages/group-b/VAL-GUI-AGENTS-001-agents-list.png",
+        "gui-core-pages/group-b/VAL-GUI-AGENTS-001-AGENTS-002-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/VAL-GUI-AGENTS-001-ceo-row-targeted.json",
+        "gui-core-pages/group-b/group-b-network-api.txt",
+        "gui-core-pages/group-b/group-b-console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-AGENTS-002",
+      "status": "fail",
+      "reason": "Tab styling matched brutalist traits (11px mono, transparent bg, no radius), but required Idle tab was not present; UI shows All/Active/Paused/Error.",
+      "evidence": [
+        "gui-core-pages/group-b/VAL-GUI-AGENTS-002-filter-tabs.png",
+        "gui-core-pages/group-b/VAL-GUI-AGENTS-001-AGENTS-002-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/VAL-GUI-FOUND-004-agents-active-indicators.json",
+        "gui-core-pages/group-b/group-b-console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-ISSUES-001",
+      "status": "blocked",
+      "reason": "Issue title and square indicator checks were observable, but row-divider behavior could not be fully validated because only one row existed and last-row styling removed the divider.",
+      "evidence": [
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-001-issues-rows.png",
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-001-ISSUES-002-FOUND-004-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-001-row-divider-ancestors.json",
+        "gui-core-pages/group-b/group-b-network-api.txt",
+        "gui-core-pages/group-b/group-b-console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-ISSUES-002",
+      "status": "fail",
+      "reason": "Search input matched transparent 1px-border monospace style, but filter controls did not match the same styling (buttons had fully transparent border colors).",
+      "evidence": [
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-002-search-filter-controls.png",
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-001-ISSUES-002-FOUND-004-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/group-b-network-api.txt",
+        "gui-core-pages/group-b/group-b-console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "status": "blocked",
+      "reason": "6x6 square idle indicators (transparent + border, radius 0) were observed, but no alive/error indicator instances were available in this dataset to confirm required #82E88A/#FF6060 semantic colors.",
+      "evidence": [
+        "gui-core-pages/group-b/VAL-GUI-FOUND-004-dashboard-status-indicators.png",
+        "gui-core-pages/group-b/VAL-GUI-FOUND-004-issues-status-indicators.png",
+        "gui-core-pages/group-b/VAL-GUI-FOUND-004-agents-active-tab.png",
+        "gui-core-pages/group-b/VAL-GUI-FOUND-004-status-indicator-audit.json",
+        "gui-core-pages/group-b/VAL-GUI-FOUND-004-agents-active-indicators.json",
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-001-ISSUES-002-FOUND-004-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/group-b-console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "status": "fail",
+      "reason": "Multiple button instances were transparent/no-radius/mono, but several did not have a visible 1px white border (border colors were transparent or translucent), violating the button primitive contract.",
+      "evidence": [
+        "gui-core-pages/group-b/VAL-GUI-PRIM-001-buttons.png",
+        "gui-core-pages/group-b/VAL-GUI-PRIM-001-issues-buttons.png",
+        "gui-core-pages/group-b/VAL-GUI-AGENTS-001-AGENTS-002-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/VAL-GUI-ISSUES-001-ISSUES-002-FOUND-004-PRIM-001-style-audit.json",
+        "gui-core-pages/group-b/group-b-console-errors.txt"
+      ]
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`agent-browser network requests` on the Agents page returned 'No requests captured' despite active polling.",
+      "resolved": true,
+      "resolution": "Captured a consolidated network log later in session (`group-b-network-api.txt`) containing `/api/agents` and `/api/issues` fetches.",
+      "affectedAssertions": [
+        "VAL-GUI-AGENTS-001",
+        "VAL-GUI-AGENTS-002",
+        "VAL-GUI-ISSUES-001",
+        "VAL-GUI-ISSUES-002"
+      ]
+    },
+    {
+      "description": "Dataset had limited entities (single visible agent/issue), reducing observable state coverage for color/divider assertions.",
+      "resolved": false,
+      "resolution": "N/A",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004",
+        "VAL-GUI-ISSUES-001"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "No alive/error status indicator instances were available to verify semantic color mappings required by VAL-GUI-FOUND-004.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004"
+      ],
+      "quickFixAttempted": "Checked dashboard, issues, and agents active views; only idle-style indicators were present."
+    },
+    {
+      "description": "Only one issue row was present and last-row rule removed divider, preventing direct 1px row-divider observation.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSUES-001"
+      ],
+      "quickFixAttempted": "Inspected row class/ancestor styles and captured computed-style audit evidence."
+    }
+  ],
+  "toolsUsed": [
+    "agent-browser",
+    "Read",
+    "Execute"
+  ],
+  "appliedUpdates": [
+    "Invoked agent-browser skill and validated six assigned GUI assertions through read-only navigation/inspection.",
+    "Captured assertion screenshots, computed-style/DOM audits, console checks, and network logs under mission evidence path.",
+    "Wrote flow report JSON to assigned validation output path; no product code or data mutations performed."
+  ],
+  "summary": "Validated 6 assigned assertions for gui-core-pages group-b: 0 pass, 4 fail, 2 blocked. Failures were primarily design-system mismatches in tabs/buttons/font sizing; blocked items were due to missing live data states required for full color/divider verification."
+}

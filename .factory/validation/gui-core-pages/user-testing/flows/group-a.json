@@ -1,0 +1,120 @@
+{
+  "groupId": "group-a",
+  "milestone": "gui-core-pages",
+  "testedAt": "2026-04-03T06:11:00Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "readOnly": true
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-DASH-001",
+      "status": "pass",
+      "reason": "Dashboard shows Executive/Leads/Workers as horizontal columns with 1px right borders between columns.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-001-dashboard-annotated.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-001-dom.json",
+        "gui-core-pages/group-a/console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-DASH-002",
+      "status": "pass",
+      "reason": "Metrics strip exists below top bar with 5 near-equal width cells (1px spread); labels are 9px uppercase dim and values are 15px weight 500.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-002-metrics.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-002-metrics.json",
+        "gui-core-pages/group-a/console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-DASH-003",
+      "status": "pass",
+      "reason": "Top bar is single-row (36px); logo text is uppercase 12px bold with darker rose background; tabs are present in the same row.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-003-topbar.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-003-topbar.json",
+        "gui-core-pages/group-a/console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-DASH-004",
+      "status": "pass",
+      "reason": "Bottom command bar is docked (38px), includes EXEC prefix, transparent command input, and RUN button.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-004-commandbar.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-004-commandbar.json",
+        "gui-core-pages/group-a/console-errors.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-DASH-005",
+      "status": "blocked",
+      "reason": "Only one idle agent is present (0 active, 0 waiting), so status-order sorting (active/running -> waiting -> idle/completed) cannot be validated.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-005-sorting.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-005-sorting.json",
+        "gui-core-pages/group-a/dashboard-body-text.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-DASH-006",
+      "status": "blocked",
+      "reason": "Idle agent collapse/expand behavior was observed, but there are no active agents to verify the required expanded active-agent stream section.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-006-idle-collapsed.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-006-idle-expanded.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-006-expand.json",
+        "gui-core-pages/group-a/dashboard-body-text-expanded.txt"
+      ]
+    },
+    {
+      "id": "VAL-GUI-DASH-007",
+      "status": "blocked",
+      "reason": "No stream transcript content (reasoning/tool call/tool result/error lines) is present in the expanded dashboard agent block, so color-coding checks cannot be performed.",
+      "evidence": [
+        "gui-core-pages/group-a/VAL-GUI-DASH-007-stream-check.png",
+        "gui-core-pages/group-a/VAL-GUI-DASH-007-stream-colors.json",
+        "gui-core-pages/group-a/dashboard-body-text-expanded.txt"
+      ]
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser network request capture returned no entries on this run.",
+      "resolved": true,
+      "resolution": "Used screenshots plus DOM/computed-style evidence as primary validation artifacts.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-001",
+        "VAL-GUI-DASH-002",
+        "VAL-GUI-DASH-003",
+        "VAL-GUI-DASH-004",
+        "VAL-GUI-DASH-005",
+        "VAL-GUI-DASH-006",
+        "VAL-GUI-DASH-007"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Dashboard test data contains only one idle agent and no active/waiting agents or stream transcript lines.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-005",
+        "VAL-GUI-DASH-006",
+        "VAL-GUI-DASH-007"
+      ],
+      "quickFixAttempted": "Expanded the idle agent card via click to check for additional metadata/stream content, but no active or stream data appeared."
+    }
+  ],
+  "appliedUpdates": [
+    "Captured dashboard screenshots and DOM/computed-style audits for VAL-GUI-DASH-001..004.",
+    "Expanded idle Executive-tier agent row (read-only click) to validate collapse/expand behavior evidence.",
+    "Recorded console and network diagnostics artifacts."
+  ],
+  "summary": "Validated 7 dashboard assertions: 4 passed, 0 failed, 3 blocked due to missing active/waiting/stream data in the current local dataset."
+}
