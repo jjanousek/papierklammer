@@ -1,0 +1,172 @@
+{
+  "groupId": "foundation-audit",
+  "testedAt": "2026-04-02T18:55:54.792400+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "companyContext": "Weather Corp (WEA)",
+    "mode": "read-only GUI validation",
+    "boundary": "localhost:3100 only"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl",
+    "python3"
+  ],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-FOUND-001",
+      "title": "JetBrains Mono loaded globally",
+      "status": "fail",
+      "reason": "Computed-font audits on dashboard/agents/issues each reported 6 visible-text violations using ui-monospace or ui-sans-serif instead of JetBrains Mono.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-dashboard-annotated.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-agents-annotated.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-issues-annotated.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-agents.json",
+          "gui-design-foundation/foundation-audit/audit-issues.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "none in baseline page captures (console-dashboard.txt, console-agents.txt, console-issues.txt)",
+        "network": "GET /api/companies, /api/companies/{id}/agents, /api/companies/{id}/issues captured in network-agents.txt/network-issues.txt"
+      },
+      "issues": "Font stack fallback classes (ui-monospace/ui-sans-serif) are still active on multiple visible text elements."
+    },
+    {
+      "id": "VAL-GUI-FOUND-002",
+      "title": "Pink/rose background palette",
+      "status": "pass",
+      "reason": "Computed root background audit shows body background rgb(196, 135, 142), matching palette color #C4878E.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-dashboard-annotated.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "none",
+        "network": "Dashboard page load requests captured (network-agents.txt/network-issues.txt include common boot APIs)."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-FOUND-003",
+      "title": "Zero border-radius globally",
+      "status": "pass",
+      "reason": "Border-radius audit reported 0 violations on dashboard, agents, and issues pages.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-dashboard-annotated.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-agents-annotated.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-issues-annotated.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-agents.json",
+          "gui-design-foundation/foundation-audit/audit-issues.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "none",
+        "network": "Standard GET boot/API traffic observed in network logs."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-FOUND-006",
+      "title": "1px borders as dividers, no shadows",
+      "status": "pass",
+      "reason": "Audits found boxShadow violations = 0 and confirmed presence of multiple 1px solid border elements (dashboard:16, agents:12, issues:7).",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-dashboard-annotated.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-agents.json",
+          "gui-design-foundation/foundation-audit/audit-issues.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "none",
+        "network": "Normal API fetches captured during page loads."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-FOUND-007",
+      "title": "CSS custom properties defined",
+      "status": "pass",
+      "reason": "All required :root design-system variables were present with non-empty values; missingVars was empty.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-dashboard-annotated.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET boot/API calls observed in network logs."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-FOUND-009",
+      "title": "No CSS gradients anywhere",
+      "status": "pass",
+      "reason": "Gradient audit reported 0 elements with linear/radial/conic gradient backgroundImage across tested pages.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-dashboard-annotated.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-agents-annotated.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-issues-annotated.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-agents.json",
+          "gui-design-foundation/foundation-audit/audit-issues.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "none",
+        "network": "Standard GET API traffic captured."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-FOUND-010",
+      "title": "No loading spinners",
+      "status": "fail",
+      "reason": "Global CSS audit detected keyframes named spin/ping/pulse; contract disallows spin-style loading animations even though no active spinner elements were detected in DOM.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-010-api-blocked-state.png",
+          "gui-design-foundation/foundation-audit/VAL-GUI-FOUND-010-api-blocked-state-2.png"
+        ],
+        "domAudits": [
+          "gui-design-foundation/foundation-audit/audit-dashboard.json",
+          "gui-design-foundation/foundation-audit/audit-loading-state.json",
+          "gui-design-foundation/foundation-audit/audit-summary.json"
+        ],
+        "consoleErrors": "WebSocket closed without opened (console-final.txt) observed after API-blocked experiment; baseline page captures had none.",
+        "network": "API interception used for loading-state simulation; normal requests restored afterward."
+      },
+      "issues": "Presence of @keyframes spin in loaded styles violates strict no-spinner assertion wording."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Offline-mode reload failed with net::ERR_FAILED, so loading-state validation used temporary API request interception instead.",
+      "resolved": true,
+      "resolution": "Applied agent-browser network route \"**/api/**\" --abort, captured screenshots/audit, then removed route and reloaded normally.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-010"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 7 assigned GUI foundation assertions: 5 passed and 2 failed (VAL-GUI-FOUND-001 font-family compliance, VAL-GUI-FOUND-010 no-spinner strict keyframe rule)."
+}

@@ -1,0 +1,157 @@
+{
+  "groupId": "primitives-audit",
+  "testedAt": "2026-04-02T18:59:09Z",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "mode": "read-only",
+    "surface": "agent-browser"
+  },
+  "toolsUsed": ["agent-browser", "curl"],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "title": "Status indicators are 6x6 squares",
+      "status": "fail",
+      "reason": "Observed status indicators are not consistently 6x6 and color mapping does not match spec (e.g., idle marker 10x10 with warn color; dashboard indicators include #ef4444/#f97316/#eab308/#3b82f6).",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/dashboard-initial-annotated.png",
+          "gui-design-foundation/primitives-audit/agents-page-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/status-audit-dashboard.json",
+          "gui-design-foundation/primitives-audit/status-indicator-specific-agents.json"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    },
+    {
+      "id": "VAL-GUI-FOUND-005",
+      "title": "Typography scale correct",
+      "status": "fail",
+      "reason": "Only 4 section-label candidates matched 9-10px + 1px tracking; expected evidence target of 5+ labels was not met, and many uppercase labels are outside the required scale/spacing.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/agents-page-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/section-label-uppercase-audit-agents.json",
+          "gui-design-foundation/primitives-audit/section-label-audit-dashboard.json"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    },
+    {
+      "id": "VAL-GUI-FOUND-008",
+      "title": "No hover background-color changes",
+      "status": "fail",
+      "reason": "Hover changed background color on interactive elements (e.g., Dashboard nav link and issue row link changed from transparent to accent color).",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/issues-page-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/hover-background-audit-issues.txt"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    },
+    {
+      "id": "VAL-GUI-FOUND-011",
+      "title": "Status uses squares only, no SVG icons or emoji",
+      "status": "fail",
+      "reason": "Status marker markup in agent rows uses a rounded-full status element sized 10x10 (not 6x6), so the full requirement was not met even though no emoji/img was found in inspected status rows.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/agents-page-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/agent-list-markup-audit.json",
+          "gui-design-foundation/primitives-audit/status-indicator-specific-agents.json"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    },
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "title": "Buttons transparent with 1px border",
+      "status": "fail",
+      "reason": "Audited button instances are inconsistent with the primitive spec: multiple buttons have 0px border or 2px dashed border, and several use non-11px/non-uppercase styles.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/agents-page-annotated.png",
+          "gui-design-foundation/primitives-audit/dashboard-initial-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/button-style-audit-dashboard.json",
+          "gui-design-foundation/primitives-audit/button-style-audit-issues.json"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    },
+    {
+      "id": "VAL-GUI-PRIM-002",
+      "title": "Inputs transparent with 1px border",
+      "status": "fail",
+      "reason": "Input has transparent background, 1px border, no radius, and appearance none, but font size is 14px instead of required 11px.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/issues-page-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/input-style-audit-issues.json"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    },
+    {
+      "id": "VAL-GUI-PRIM-003",
+      "title": "Tabs active state correct",
+      "status": "pass",
+      "reason": "Agent page tabs show inactive muted color and active foreground color with a 1px active underline pseudo-element; tabs are monospace 11px and border-radius is 0px.",
+      "evidence": {
+        "screenshots": [
+          "gui-design-foundation/primitives-audit/agents-page-annotated.png"
+        ],
+        "styleAudits": [
+          "gui-design-foundation/primitives-audit/tab-style-audit-agents.json",
+          "gui-design-foundation/primitives-audit/tab-after-style-audit-agents.json",
+          "gui-design-foundation/primitives-audit/tab-style-audit-agents.txt"
+        ],
+        "consoleErrors": "none (see console-errors-checks.txt)",
+        "network": "N/A for style assertion"
+      }
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser get html with @ref failed (selector parsing); switched to eval-based DOM extraction for row markup evidence.",
+      "resolved": true,
+      "resolution": "Used agent-browser eval scripts to capture outerHTML snippets and computed styles.",
+      "affectedAssertions": ["VAL-GUI-FOUND-011"]
+    },
+    {
+      "description": "agent-browser network requests command returned no captured entries for this session.",
+      "resolved": true,
+      "resolution": "Recorded style assertions with screenshots + computed-style audits; network evidence marked N/A.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004",
+        "VAL-GUI-FOUND-005",
+        "VAL-GUI-FOUND-008",
+        "VAL-GUI-FOUND-011",
+        "VAL-GUI-PRIM-001",
+        "VAL-GUI-PRIM-002",
+        "VAL-GUI-PRIM-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Validated 7 assigned GUI assertions via read-only browser checks: 1 passed (VAL-GUI-PRIM-003) and 6 failed (VAL-GUI-FOUND-004/005/008/011, VAL-GUI-PRIM-001/002)."
+}

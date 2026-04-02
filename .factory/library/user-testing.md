@@ -57,6 +57,9 @@ Two validation surfaces for this mission:
 - Dev server takes ~12 seconds to start with embedded PGlite
 - Current `cli.test.ts` coverage does not include a dedicated `--company-id` parse assertion; treat `VAL-TUI-CORE-003` as blocked until explicit test coverage is added.
 - In `integration.test.tsx`, one describe label references `VAL-TUI-CROSS-002` while its contained tests map to `VAL-TUI-CROSS-003`/`VAL-TUI-CROSS-004`; map assertions using exact test-case behavior, not describe label text.
+- For GUI loading-state checks, browser offline reload can fail with `net::ERR_FAILED`; API-route interception is a more reliable way to force/loading states for evidence capture.
+- In some agent-browser runs, `get html @ref` can fail to resolve reference tokens; use `agent-browser eval` to extract `outerHTML`/computed styles when needed.
+- In some sessions, `agent-browser network requests` may return no entries; rely on screenshots + computed-style audits as primary evidence for style assertions.
 
 ## Flow Validator Guidance: vitest
 
@@ -64,3 +67,11 @@ Two validation surfaces for this mission:
 - Do not modify product code or mission contract files from flow validators.
 - Only execute deterministic file-scoped tests in `packages/orchestrator-tui/src/__tests__/`.
 - Store evidence as command logs and assertion-to-test mapping notes for each flow report.
+
+## Flow Validator Guidance: agent-browser
+
+- Isolation boundary: local GUI validation only against `http://localhost:3100` for this mission.
+- Use distinct browser sessions per validator and keep checks read-only (navigation, inspection, hover).
+- Do not mutate persisted business state; avoid create/edit/delete actions in the app.
+- Capture screenshots and DOM/computed-style audit outputs for every assigned assertion.
+- Write only the assigned flow report JSON and evidence artifacts under the provided output paths.
