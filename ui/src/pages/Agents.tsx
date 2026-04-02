@@ -153,19 +153,19 @@ export function Agents() {
           <div className="relative">
             <button
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1.5 text-xs border border-border",
-                filtersOpen || showTerminated ? "text-foreground bg-accent" : "text-muted-foreground hover:opacity-80"
+                "flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-wider border border-white bg-transparent",
+                filtersOpen || showTerminated ? "text-foreground" : "text-white hover:opacity-80"
               )}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
               <SlidersHorizontal className="h-3 w-3" />
               Filters
-              {showTerminated && <span className="ml-0.5 px-1 bg-foreground/10 rounded text-[10px]">1</span>}
+              {showTerminated && <span className="ml-0.5 px-1 bg-foreground/10 text-[10px]">1</span>}
             </button>
             {filtersOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 w-48 border border-border bg-popover shadow-md p-1">
                 <button
-                  className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:opacity-80"
+                  className="flex items-center gap-2 w-full px-2 py-1.5 text-[11px] text-left hover:opacity-80"
                   onClick={() => setShowTerminated(!showTerminated)}
                 >
                   <span className={cn(
@@ -184,8 +184,8 @@ export function Agents() {
             <div className="flex items-center border border-border">
               <button
                 className={cn(
-                  "p-1.5",
-                  effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:opacity-80"
+                  "p-1.5 bg-transparent border border-white text-[11px]",
+                  effectiveView === "list" ? "text-foreground" : "text-muted-foreground hover:opacity-80"
                 )}
                 onClick={() => setView("list")}
               >
@@ -193,8 +193,8 @@ export function Agents() {
               </button>
               <button
                 className={cn(
-                  "p-1.5",
-                  effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:opacity-80"
+                  "p-1.5 bg-transparent border border-white text-[11px]",
+                  effectiveView === "org" ? "text-foreground" : "text-muted-foreground hover:opacity-80"
                 )}
                 onClick={() => setView("org")}
               >

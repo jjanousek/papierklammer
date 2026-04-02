@@ -40,6 +40,9 @@
   --radius-md: 0px;
   --radius-lg: 0px;
   --radius-xl: 0px;
+  --font-sans: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-serif: 'JetBrains Mono', monospace;
 }
 
 /* ── Papierklammer Design System ── */
@@ -145,12 +148,13 @@
 @layer base {
   * {
     @apply border-border;
-    font-family: var(--font);
+    font-family: var(--font) !important;
     border-radius: 0 !important;
     box-sizing: border-box;
   }
   button, input, textarea, select {
     font-family: var(--font);
+    font-size: 11px;
     -webkit-appearance: none;
     appearance: none;
     border-radius: 0 !important;

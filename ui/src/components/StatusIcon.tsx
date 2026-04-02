@@ -11,23 +11,34 @@ function statusLabel(status: string): string {
 
 /**
  * Map issue statuses to design-system semantic colors.
- * Active/running statuses → alive (#82E88A)
+ * Active/running/success statuses → alive (#82E88A)
  * Error/blocked statuses → dead (#FF6060)
- * Idle/backlog statuses → transparent with border
+ * In-progress → warn (#E8D560)
+ * Idle/backlog/inactive statuses → transparent with 1px border in --fg-muted
  */
 function statusSquareStyle(status: string): { bg: string; border?: string } {
   switch (status) {
     case "done":
     case "in_review":
+    case "running":
+    case "active":
+    case "succeeded":
+    case "alive":
       return { bg: "var(--alive)" };
     case "in_progress":
+    case "paused":
+    case "pending":
+    case "pending_approval":
       return { bg: "var(--warn)" };
     case "blocked":
     case "cancelled":
+    case "error":
+    case "failed":
+    case "terminated":
       return { bg: "var(--dead)" };
     case "todo":
-      return { bg: "var(--fg-muted)" };
     case "backlog":
+    case "idle":
     default:
       return { bg: "transparent", border: "1px solid var(--fg-muted)" };
   }

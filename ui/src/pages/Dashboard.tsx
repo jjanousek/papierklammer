@@ -309,7 +309,7 @@ export function Dashboard() {
             {/* Recent Activity */}
             {recentActivity.length > 0 && (
               <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                <h3 className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] mb-3">
                   Recent Activity
                 </h3>
                 <div className="border border-border divide-y divide-border overflow-hidden">
@@ -329,7 +329,7 @@ export function Dashboard() {
 
             {/* Recent Tasks */}
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)] mb-3">
                 Recent Tasks
               </h3>
               {recentIssues.length === 0 ? (

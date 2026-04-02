@@ -51,7 +51,7 @@ export function ActiveAgentsPanel({ companyId }: ActiveAgentsPanelProps) {
 
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 className="mb-3 text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)]">
         Agents
       </h3>
       {runs.length === 0 ? (

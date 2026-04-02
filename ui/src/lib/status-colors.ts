@@ -89,13 +89,13 @@ export const agentStatusDot: Record<string, string> = {
   running: "bg-[var(--alive)]",
   active: "bg-[var(--alive)]",
   paused: "bg-[var(--warn)]",
-  idle: "bg-[var(--warn)]",
+  idle: "bg-transparent border border-[var(--fg-muted)]",
   pending_approval: "bg-[var(--warn)]",
   error: "bg-[var(--dead)]",
-  archived: "bg-[var(--fg-dim)]",
+  archived: "bg-transparent border border-[var(--fg-muted)]",
 };
 
-export const agentStatusDotDefault = "bg-[var(--fg-dim)]";
+export const agentStatusDotDefault = "bg-transparent border border-[var(--fg-muted)]";
 
 // ---------------------------------------------------------------------------
 // Priority colors

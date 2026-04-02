@@ -980,7 +980,7 @@ export function NewIssueDialog() {
         {/* Title */}
         <div className="px-4 pt-4 pb-2 shrink-0">
           <textarea
-            className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/50"
+            className="w-full text-[11px] font-medium bg-transparent border border-[var(--border-strong)] outline-none resize-none overflow-hidden placeholder:text-[var(--fg-dim)] px-2 py-1.5"
             placeholder="Issue title"
             rows={1}
             value={title}

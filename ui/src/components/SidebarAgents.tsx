@@ -80,7 +80,7 @@ export function SidebarAgents() {
                 open && "rotate-90"
               )}
             />
-            <span className="text-[10px] font-medium uppercase tracking-widest font-mono text-muted-foreground/60">
+            <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)]">
               Agents
             </span>
           </CollapsibleTrigger>

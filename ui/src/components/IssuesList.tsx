@@ -206,7 +206,7 @@ function IssuesSearchInput({ initialValue, onValueCommitted }: IssuesSearchInput
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search issues..."
-        className="pl-7 text-xs sm:text-sm"
+        className="pl-7"
         aria-label="Search issues"
       />
     </div>
@@ -682,7 +682,7 @@ export function IssuesList({
               <div className="flex items-center py-1.5 pl-1 pr-3">
                 <CollapsibleTrigger className="flex items-center gap-1.5">
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-90" />
-                  <span className="text-sm font-semibold uppercase tracking-wide">
+                  <span className="text-[9px] uppercase tracking-[1px] text-[var(--fg-dim)]">
                     {group.label}
                   </span>
                 </CollapsibleTrigger>
@@ -811,7 +811,7 @@ export function IssuesList({
                           onPointerDownOutside={() => setAssigneeSearch("")}
                         >
                           <input
-                            className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
+                            className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-[11px] outline-none placeholder:text-[var(--fg-dim)]"
                             placeholder="Search assignees..."
                             value={assigneeSearch}
                             onChange={(e) => setAssigneeSearch(e.target.value)}
