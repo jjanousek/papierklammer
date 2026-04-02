@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter, PassThrough } from "node:stream";
 import { CodexClient } from "../codex/client.js";
+import { ORCHESTRATOR_INSTRUCTIONS } from "../codex/base-instructions.js";
 import type {
   InitializeResult,
   ThreadStartResult,
@@ -629,5 +630,50 @@ describe("CodexClient", () => {
     await initP;
 
     expect(client.isConnected).toBe(true);
+  });
+});
+
+// ── VAL-TUI-MGMT-001: BaseInstructions contain orchestrator tool descriptions ──
+
+describe("ORCHESTRATOR_INSTRUCTIONS content (VAL-TUI-MGMT-001)", () => {
+  it("contains all orchestrator management operation descriptions", () => {
+    // Create issues
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("POST /api/orchestrator/issues");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/create/i);
+
+    // Unblock agents
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("POST /api/orchestrator/issues/:id/unblock");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/unblock/i);
+
+    // Nudge agents
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("POST /api/orchestrator/agents/:id/nudge");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/nudge/i);
+
+    // Change priorities
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("PATCH /api/orchestrator/issues/:id/priority");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/priorit/i);
+
+    // Cleanup stale runs
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("DELETE /api/orchestrator/stale/runs");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/cleanup|stale/i);
+
+    // Cleanup stale intents
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("DELETE /api/orchestrator/stale/intents");
+
+    // View status
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("GET /api/orchestrator/status");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/status/i);
+
+    // View stale
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("GET /api/orchestrator/stale");
+
+    // Authentication method
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("Bearer");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toMatch(/Authorization/i);
+  });
+
+  it("mentions the API URL and authentication", () => {
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("API");
+    expect(ORCHESTRATOR_INSTRUCTIONS).toContain("Bearer");
   });
 });

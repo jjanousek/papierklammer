@@ -3,6 +3,93 @@ import { Box, Text, useInput } from "ink";
 import { CommandBlock } from "./CommandBlock.js";
 import type { ChatMessage, CommandItem } from "../hooks/useChat.js";
 
+/** A segment of parsed message text — either plain text or a code block. */
+interface TextSegment {
+  type: "text" | "code";
+  content: string;
+  language?: string;
+}
+
+/**
+ * Parse message text into segments of plain text and code blocks.
+ * Detects triple-backtick fenced code blocks (``` ... ```).
+ */
+function parseMarkdown(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  const regex = /```(\w*)\n?([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add plain text before the code block
+    if (match.index > lastIndex) {
+      const plain = text.slice(lastIndex, match.index);
+      if (plain.trim()) {
+        segments.push({ type: "text", content: plain.trim() });
+      }
+    }
+
+    segments.push({
+      type: "code",
+      content: match[2]?.trimEnd() ?? "",
+      language: match[1] || undefined,
+    });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining plain text after last code block
+  if (lastIndex < text.length) {
+    const remaining = text.slice(lastIndex);
+    if (remaining.trim()) {
+      segments.push({ type: "text", content: remaining.trim() });
+    }
+  }
+
+  // If no code blocks were found, return entire text as one segment
+  if (segments.length === 0 && text.trim()) {
+    segments.push({ type: "text", content: text });
+  }
+
+  return segments;
+}
+
+/**
+ * Render parsed text segments with code blocks visually distinct.
+ */
+function RenderedText({ text }: { text: string }): React.ReactElement {
+  const segments = parseMarkdown(text);
+
+  if (segments.length === 1 && segments[0]?.type === "text") {
+    return <Text>{segments[0].content}</Text>;
+  }
+
+  return (
+    <Box flexDirection="column">
+      {segments.map((segment, idx) => {
+        if (segment.type === "code") {
+          return (
+            <Box
+              key={idx}
+              flexDirection="column"
+              borderStyle="single"
+              borderColor="gray"
+              paddingX={1}
+              marginY={0}
+            >
+              {segment.language ? (
+                <Text dimColor>[{segment.language}]</Text>
+              ) : null}
+              <Text>{segment.content}</Text>
+            </Box>
+          );
+        }
+        return <Text key={idx}>{segment.content}</Text>;
+      })}
+    </Box>
+  );
+}
+
 export interface MessageListProps {
   /** Finalized messages. */
   messages: ChatMessage[];
@@ -103,12 +190,12 @@ export function MessageList({
                 </Text>
               ) : (
                 <Box flexDirection="column">
-                  <Text>
+                  <Box flexDirection="column">
                     <Text color="cyan" bold>
-                      Orchestrator:{" "}
+                      Orchestrator:
                     </Text>
-                    <Text>{msg.text}</Text>
-                  </Text>
+                    <RenderedText text={msg.text} />
+                  </Box>
                   {msg.items?.map((item, cmdIdx) => (
                     <CommandBlock key={cmdIdx} item={item} />
                   ))}
@@ -127,13 +214,15 @@ export function MessageList({
                   <Text dimColor>⠋ thinking...</Text>
                 </Text>
               ) : streamingText ? (
-                <Text>
+                <Box flexDirection="column">
                   <Text color="cyan" bold>
-                    Orchestrator:{" "}
+                    Orchestrator:
                   </Text>
-                  <Text>{streamingText}</Text>
-                  <Text color="yellow">▌</Text>
-                </Text>
+                  <Box>
+                    <RenderedText text={streamingText} />
+                    <Text color="yellow">▌</Text>
+                  </Box>
+                </Box>
               ) : null}
               {pendingCommandItems.map((item, cmdIdx) => (
                 <CommandBlock key={cmdIdx} item={item} />

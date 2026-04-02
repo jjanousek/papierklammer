@@ -19,6 +19,7 @@ import type {
   ItemCompletedParams,
   CommandOutputDeltaParams,
 } from "../codex/types.js";
+import { ORCHESTRATOR_INSTRUCTIONS } from "../codex/base-instructions.js";
 
 export interface AppProps {
   url: string;
@@ -219,7 +220,7 @@ export function App({
     (text: string) => {
       chat.sendMessage(text);
       if (codexEnabled) {
-        void codex.sendMessage(text).catch(() => {
+        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS).catch(() => {
           // useCodex reports the failure via onError; keep the UI alive.
         });
       }

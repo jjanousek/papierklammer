@@ -551,6 +551,155 @@ describe("Agent list scrolling", () => {
   });
 });
 
+// ── Company picker (VAL-TUI-MGMT-004) ────────────────────────────────
+
+describe("Company picker", () => {
+  it("renders company list when no companyId", async () => {
+    const pickerFetch = vi.fn().mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/api/companies")) {
+        return {
+          ok: true,
+          json: async () => [
+            { id: "c1", name: "Alpha Corp", updatedAt: "2026-04-01T00:00:00.000Z" },
+            { id: "c2", name: "Beta Inc", updatedAt: "2026-03-01T00:00:00.000Z" },
+          ],
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          agents: [],
+          totalActiveRuns: 0,
+          totalQueuedIntents: 0,
+          totalActiveLeases: 0,
+        }),
+      };
+    });
+
+    const { lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey=""
+        companyId=""
+        fetchFn={pickerFetch}
+        pollInterval={60000}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Select a company");
+    expect(frame).toContain("Alpha Corp");
+    expect(frame).toContain("Beta Inc");
+
+    unmount();
+  });
+
+  it("selecting a company transitions to main layout", async () => {
+    const pickerFetch = vi.fn().mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/api/companies")) {
+        return {
+          ok: true,
+          json: async () => [
+            { id: "c1", name: "Alpha Corp", updatedAt: "2026-04-01T00:00:00.000Z" },
+          ],
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          agents: [],
+          totalActiveRuns: 0,
+          totalQueuedIntents: 0,
+          totalActiveLeases: 0,
+        }),
+      };
+    });
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey=""
+        companyId=""
+        fetchFn={pickerFetch}
+        pollInterval={60000}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Auto-selects single company
+    const frame = lastFrame()!;
+    // With only one company, App auto-selects it
+    expect(frame).toContain("Agents");
+    expect(frame).toContain("Chat");
+
+    unmount();
+  });
+
+  it("arrow keys navigate company list", async () => {
+    const pickerFetch = vi.fn().mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes("/api/companies")) {
+        return {
+          ok: true,
+          json: async () => [
+            { id: "c1", name: "Alpha Corp", updatedAt: "2026-04-01T00:00:00.000Z" },
+            { id: "c2", name: "Beta Inc", updatedAt: "2026-03-01T00:00:00.000Z" },
+          ],
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          agents: [],
+          totalActiveRuns: 0,
+          totalQueuedIntents: 0,
+          totalActiveLeases: 0,
+        }),
+      };
+    });
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey=""
+        companyId=""
+        fetchFn={pickerFetch}
+        pollInterval={60000}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Initially first company is selected (›)
+    let frame = lastFrame()!;
+    expect(frame).toContain("Select a company");
+
+    // Press down arrow to select second company
+    stdin.write("\u001B[B");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    frame = lastFrame()!;
+    expect(frame).toContain("Alpha Corp");
+    expect(frame).toContain("Beta Inc");
+
+    // Press Enter to select
+    stdin.write("\r");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    frame = lastFrame()!;
+    // Should transition to main layout
+    expect(frame).toContain("Agents");
+    expect(frame).toContain("Chat");
+
+    unmount();
+  });
+});
+
 // ── Integration: sidebar with API data ───────────────────────────────
 
 describe("Sidebar with API data", () => {

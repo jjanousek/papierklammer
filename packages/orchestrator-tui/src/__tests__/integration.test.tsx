@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render } from "ink-testing-library";
 import { EventEmitter, PassThrough } from "node:stream";
 import { App } from "../components/App.js";
+import { ORCHESTRATOR_INSTRUCTIONS } from "../codex/base-instructions.js";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
 // Suppress alternate screen buffer escape codes during tests
@@ -320,6 +321,69 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     expect(frame).toContain("Why did the send fail?");
     expect(frame).toContain("Error: thread/start failed: thread/start failed in test");
     expect(frame).not.toContain("thinking...");
+
+    unmount();
+  });
+
+  it("baseInstructions are injected on thread start (VAL-TUI-MGMT-001)", async () => {
+    const mockProc = createMockProcess();
+    const mockSpawn = vi.fn().mockReturnValue(mockProc);
+    const mockFetch = createMockFetch();
+
+    const sentMessages: unknown[] = [];
+    mockProc.stdin.on("data", (chunk: Buffer) => {
+      const lines = chunk.toString().split("\n").filter(Boolean);
+      for (const line of lines) {
+        sentMessages.push(JSON.parse(line));
+      }
+    });
+
+    const { stdin, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await tick();
+
+    // Initialize
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick();
+
+    // Tab to input
+    stdin.write("\t");
+    await tick();
+    stdin.write("\t");
+    await tick();
+
+    // Send a message — this triggers thread/start with baseInstructions
+    stdin.write("Show me the status");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    // Respond to thread/start
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_instr" } } });
+    await tick();
+
+    // Find the thread/start message
+    const threadStart = sentMessages.find(
+      (m: any) => m.method === "thread/start",
+    ) as { method: string; params: Record<string, unknown> } | undefined;
+
+    expect(threadStart).toBeDefined();
+    expect(threadStart!.params.baseInstructions).toBe(ORCHESTRATOR_INSTRUCTIONS);
+    // Verify it contains the key operation descriptions
+    const instructions = threadStart!.params.baseInstructions as string;
+    expect(instructions).toContain("POST /api/orchestrator/issues");
+    expect(instructions).toContain("POST /api/orchestrator/agents/:id/nudge");
+    expect(instructions).toContain("GET /api/orchestrator/status");
 
     unmount();
   });

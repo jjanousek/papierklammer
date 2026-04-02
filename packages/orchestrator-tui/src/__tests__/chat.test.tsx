@@ -366,6 +366,67 @@ describe("InputBar", () => {
   });
 });
 
+// ── Markdown code block rendering (VAL-TUI-CHAT-008) ───────────────────
+
+describe("Markdown code block rendering", () => {
+  it("renders code blocks in a bordered box distinct from plain text", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "Here is an example:\n```js\nconsole.log('hello');\n```\nThat should work.",
+        timestamp: new Date(),
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <ChatPanel messages={messages} />,
+    );
+    const frame = lastFrame()!;
+    // Code block should be rendered with border (single style uses ┌ or │)
+    expect(frame).toContain("console.log");
+    // Should have border chars indicating a boxed code block
+    expect(frame).toMatch(/[│┌└┐┘─]/);
+    // Plain text should also be present
+    expect(frame).toContain("Here is an example:");
+    expect(frame).toContain("That should work.");
+    unmount();
+  });
+
+  it("renders plain text without code blocks normally", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "Just a plain message with no code blocks.",
+        timestamp: new Date(),
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <ChatPanel messages={messages} />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("Just a plain message with no code blocks.");
+    unmount();
+  });
+
+  it("renders multiple code blocks in one message", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "First:\n```\nblock1\n```\nSecond:\n```\nblock2\n```",
+        timestamp: new Date(),
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <ChatPanel messages={messages} />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("block1");
+    expect(frame).toContain("block2");
+    expect(frame).toContain("First:");
+    expect(frame).toContain("Second:");
+    unmount();
+  });
+});
+
 // ── Streaming and turn completion ──────────────────────────────────────
 
 describe("Streaming and turn completion", () => {
