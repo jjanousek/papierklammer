@@ -39,29 +39,35 @@ export function SidebarNavItem({
       onClick={() => { if (isMobile) setSidebarOpen(false); }}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium",
+          "flex items-center gap-2.5 px-3 py-2 text-[12px]",
           isActive
-            ? "bg-accent text-foreground"
-            : "text-foreground/80 hover:opacity-80 hover:text-foreground",
+            ? "font-medium"
+            : "hover:opacity-70",
           className,
         )
       }
+      style={({ isActive }) => ({
+        color: isActive ? "var(--fg)" : "var(--fg-muted)",
+        fontWeight: isActive ? 500 : 400,
+        background: "transparent",
+      })}
     >
       <span className="relative shrink-0">
         <Icon className="h-4 w-4" />
         {alert && (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 bg-[var(--dead)] shadow-[0_0_0_2px_hsl(var(--background))]" />
+          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 bg-[var(--dead)]" />
         )}
       </span>
       <span className="flex-1 truncate">{label}</span>
       {textBadge && (
         <span
           className={cn(
-            "ml-auto px-1.5 py-0.5 text-[10px] font-medium leading-none",
+            "ml-auto px-1.5 py-0.5 text-[10px] leading-none",
             textBadgeTone === "amber"
-              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-              : "bg-muted text-muted-foreground",
+              ? "text-[var(--warn)]"
+              : "text-[var(--fg-muted)]",
           )}
+          style={{ background: "var(--bg-darker)", fontWeight: 400 }}
         >
           {textBadge}
         </span>
@@ -71,17 +77,16 @@ export function SidebarNavItem({
           <span className="relative flex h-1.5 w-1.5">
             <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
           </span>
-          <span className="text-[11px] font-medium text-[var(--alive)]">{liveCount} live</span>
+          <span className="text-[11px] text-[var(--alive)]">{liveCount} live</span>
         </span>
       )}
       {badge != null && badge > 0 && (
         <span
-          className={cn(
-            "ml-auto px-1.5 py-0.5 text-xs leading-none",
-            badgeTone === "danger"
-              ? "bg-red-600/90 text-red-50"
-              : "bg-primary text-primary-foreground",
-          )}
+          className="ml-auto px-1.5 py-0.5 text-xs leading-none"
+          style={{
+            background: badgeTone === "danger" ? "var(--dead)" : "var(--bg-darker)",
+            color: "var(--fg)",
+          }}
         >
           {badge}
         </span>

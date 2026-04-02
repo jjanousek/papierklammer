@@ -108,10 +108,10 @@ function SortableCompanyItem({
             }}
             className="relative flex items-center justify-center group overflow-visible"
           >
-            {/* Selection indicator pill */}
+            {/* Selection indicator — sharp corners, 1px border highlight */}
             <div
               className={cn(
-                "absolute left-[-14px] w-1 rounded-r-full bg-foreground transition-[height] duration-150",
+                "absolute left-[-14px] w-1 bg-foreground transition-[height] duration-150",
                 isSelected
                   ? "h-5"
                   : "h-0 group-hover:h-2"
@@ -125,21 +125,18 @@ function SortableCompanyItem({
                 logoUrl={company.logoUrl}
                 brandColor={company.brandColor}
                 className={cn(
-                  isSelected
-                    ? "rounded-[14px]"
-                    : "rounded-[22px] group-hover:rounded-[14px]",
-                  isDragging && "shadow-lg",
+                  isSelected && "border border-[var(--fg)]",
                 )}
               />
               {hasLiveAgents && (
                 <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)] ring-2 ring-background" />
+                    <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--dead)]" />
                   </span>
                 </span>
               )}
               {hasUnreadInbox && (
-                <span className="pointer-events-none absolute -bottom-0.5 -right-0.5 z-10 h-2.5 w-2.5 bg-[var(--dead)] ring-2 ring-background" />
+                <span className="pointer-events-none absolute -bottom-0.5 -right-0.5 z-10 h-2.5 w-2.5 bg-[var(--dead)]" />
               )}
             </div>
           </a>
@@ -312,7 +309,8 @@ export function CompanyRail() {
           <TooltipTrigger asChild>
             <button
               onClick={() => openOnboarding()}
-              className="flex items-center justify-center w-11 h-11 rounded-[22px] hover:rounded-[14px] border-2 border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-[border-color,color,border-radius] duration-150"
+              className="flex items-center justify-center w-11 h-11 border-2 border-dashed border-[var(--border)] hover:opacity-70 hover:border-[var(--border-strong)] transition-[border-color,opacity] duration-150"
+              style={{ color: "var(--fg-muted)" }}
               aria-label="Add company"
             >
               <Plus className="h-5 w-5" />

@@ -47,22 +47,23 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 h-full min-h-0 border-r border-border bg-background flex flex-col">
-      {/* Top bar: Company name (bold) + Search — aligned with top sections (no visible border) */}
+    <aside className="w-60 h-full min-h-0 border-r border-[var(--border)] flex flex-col" style={{ background: "var(--bg)" }}>
+      {/* Top bar: Company name (bold) + Search */}
       <div className="flex items-center gap-1 px-3 h-12 shrink-0">
         {selectedCompany?.brandColor && (
           <div
-            className="w-4 h-4 rounded-sm shrink-0 ml-1"
+            className="w-4 h-4 shrink-0 ml-1"
             style={{ backgroundColor: selectedCompany.brandColor }}
           />
         )}
-        <span className="flex-1 text-sm font-bold text-foreground truncate pl-1">
+        <span className="flex-1 truncate pl-1" style={{ fontSize: "12px", fontWeight: 500, color: "var(--fg)" }}>
           {selectedCompany?.name ?? "Select company"}
         </span>
         <Button
           variant="ghost"
           size="icon-sm"
-          className="text-muted-foreground shrink-0"
+          className="shrink-0"
+          style={{ color: "var(--fg-muted)" }}
           onClick={openSearch}
         >
           <Search className="h-4 w-4" />
@@ -75,7 +76,8 @@ export function Sidebar() {
           <Button
             variant="ghost"
             onClick={() => openNewIssue()}
-            className="flex items-center gap-2.5 px-3 py-2 justify-start w-full text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-2.5 px-3 py-2 justify-start w-full hover:opacity-70"
+            style={{ color: "var(--fg-muted)", fontSize: "12px" }}
           >
             <SquarePen className="h-4 w-4 shrink-0" />
             <span className="truncate">New Issue</span>
@@ -93,7 +95,7 @@ export function Sidebar() {
             slotTypes={["sidebar"]}
             context={pluginContext}
             className="flex flex-col gap-0.5"
-            itemClassName="text-[13px] font-medium"
+            itemClassName="text-[12px]"
             missingBehavior="placeholder"
           />
         </div>
@@ -120,7 +122,7 @@ export function Sidebar() {
           slotTypes={["sidebarPanel"]}
           context={pluginContext}
           className="flex flex-col gap-3"
-          itemClassName="rounded-lg border border-border p-3"
+          itemClassName="border border-[var(--border)] p-3"
           missingBehavior="placeholder"
         />
       </nav>

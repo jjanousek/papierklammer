@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboard";
 import { agentsApi, type OrgNode } from "../api/agents";
@@ -13,7 +13,7 @@ import { EmptyState } from "../components/EmptyState";
 import { TopBar, type TopBarTab } from "../components/TopBar";
 import { MetricsStrip } from "../components/MetricsStrip";
 import { TierColumn, type TierInfo } from "../components/TierColumn";
-import { CommandBar } from "../components/CommandBar";
+
 import type { Agent } from "@papierklammer/shared";
 
 const MIN_DASHBOARD_RUNS = 8;
@@ -218,9 +218,7 @@ export function Dashboard() {
     ];
   }, [summary, agents, agentDepthMap]);
 
-  const handleCommand = useCallback((_command: string) => {
-    // Command execution placeholder
-  }, []);
+
 
   if (!selectedCompanyId) {
     if (companies.length === 0) {
@@ -267,7 +265,6 @@ export function Dashboard() {
         ))}
       </div>
 
-      <CommandBar onExecute={handleCommand} />
     </div>
   );
 }

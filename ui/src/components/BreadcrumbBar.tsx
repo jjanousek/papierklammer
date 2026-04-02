@@ -4,14 +4,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useSidebar } from "../context/SidebarContext";
 import { useCompany } from "../context/CompanyContext";
 import { Button } from "@/components/ui/button";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { cn } from "../lib/utils";
 import { Fragment, useMemo } from "react";
 import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
@@ -47,7 +40,7 @@ export function BreadcrumbBar() {
 
   if (breadcrumbs.length === 0) {
     return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center justify-end">
+      <div className="border-b border-[var(--border)] px-4 md:px-6 h-12 shrink-0 flex items-center justify-end">
         {globalToolbarSlots}
       </div>
     );
@@ -68,10 +61,10 @@ export function BreadcrumbBar() {
   // Single breadcrumb = page title (uppercase)
   if (breadcrumbs.length === 1) {
     return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
+      <div className="border-b border-[var(--border)] px-4 md:px-6 h-12 shrink-0 flex items-center">
         {menuButton}
         <div className="min-w-0 overflow-hidden flex-1">
-          <h1 className="text-sm font-semibold uppercase tracking-wider truncate">
+          <h1 className="truncate" style={{ fontSize: "12px", fontWeight: 500, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "1px" }}>
             {breadcrumbs[0].label}
           </h1>
         </div>
@@ -80,32 +73,32 @@ export function BreadcrumbBar() {
     );
   }
 
-  // Multiple breadcrumbs = breadcrumb trail
+  // Multiple breadcrumbs = breadcrumb trail with ASCII separators
   return (
-    <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center">
+    <div className="border-b border-[var(--border)] px-4 md:px-6 h-12 shrink-0 flex items-center">
       {menuButton}
       <div className="min-w-0 overflow-hidden flex-1">
-        <Breadcrumb className="min-w-0 overflow-hidden">
-          <BreadcrumbList className="flex-nowrap">
+        <nav aria-label="breadcrumb" className="min-w-0 overflow-hidden">
+          <ol className="flex flex-nowrap items-center gap-1.5 text-[12px]">
             {breadcrumbs.map((crumb, i) => {
               const isLast = i === breadcrumbs.length - 1;
               return (
                 <Fragment key={i}>
-                  {i > 0 && <BreadcrumbSeparator />}
-                  <BreadcrumbItem className={isLast ? "min-w-0" : "shrink-0"}>
+                  {i > 0 && (
+                    <li aria-hidden="true" style={{ color: "var(--fg-dim)", fontSize: "12px" }}>/</li>
+                  )}
+                  <li className={cn("inline-flex items-center", isLast ? "min-w-0" : "shrink-0")}>
                     {isLast || !crumb.href ? (
-                      <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                      <span className="truncate" style={{ color: "var(--fg)", fontWeight: 500 }}>{crumb.label}</span>
                     ) : (
-                      <BreadcrumbLink asChild>
-                        <Link to={crumb.href}>{crumb.label}</Link>
-                      </BreadcrumbLink>
+                      <Link to={crumb.href} className="hover:opacity-70" style={{ color: "var(--fg-muted)", textDecoration: "none" }}>{crumb.label}</Link>
                     )}
-                  </BreadcrumbItem>
+                  </li>
                 </Fragment>
               );
             })}
-          </BreadcrumbList>
-        </Breadcrumb>
+          </ol>
+        </nav>
       </div>
       {globalToolbarSlots}
     </div>

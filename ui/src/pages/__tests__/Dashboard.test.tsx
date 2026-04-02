@@ -181,12 +181,11 @@ describe("Dashboard tier-column layout", () => {
     expect(container.textContent).toContain("COST");
   });
 
-  it("renders CommandBar at the bottom", () => {
+  it("does not render its own CommandBar (moved to Layout)", () => {
     renderDashboard();
+    // CommandBar is now rendered in Layout, not in Dashboard
     const commandBar = container.querySelector('[data-testid="command-bar"]');
-    expect(commandBar).toBeTruthy();
-    expect(commandBar?.textContent).toContain("EXEC");
-    expect(commandBar?.textContent).toContain("RUN");
+    expect(commandBar).toBeNull();
   });
 
   it("renders active count and idle count in top bar", () => {

@@ -6,6 +6,7 @@ import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
 import { InstanceSidebar } from "./InstanceSidebar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
+import { CommandBar } from "./CommandBar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { CommandPalette } from "./CommandPalette";
 import { NewIssueDialog } from "./NewIssueDialog";
@@ -267,7 +268,7 @@ export function Layout() {
     >
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         Skip to Main Content
       </a>
@@ -427,6 +428,7 @@ export function Layout() {
             </main>
             <PropertiesPanel />
           </div>
+          <CommandBar />
         </div>
       </div>
       {isMobile && <MobileBottomNav visible={mobileNavVisible} />}
