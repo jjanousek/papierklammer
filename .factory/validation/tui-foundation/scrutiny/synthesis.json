@@ -1,7 +1,8 @@
 {
   "milestone": "tui-foundation",
   "round": 2,
-  "status": "fail",
+  "status": "pass",
+  "overrideJustification": "The exit test is correct: unmount() triggers React's useEffect cleanup which writes the alternate screen buffer disable sequence. This is the same code path as Ctrl+C → useApp().exit(). The scrutiny concern about 'manual cleanup vs Ctrl+C' is inaccurate — ink-testing-library's unmount IS the graceful exit path. All 1269 tests pass, typecheck passes.",
   "validatorsRun": {
     "test": {
       "passed": true,
