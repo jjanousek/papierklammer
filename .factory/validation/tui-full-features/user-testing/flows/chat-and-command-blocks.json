@@ -1,0 +1,57 @@
+{
+  "milestone": "tui-full-features",
+  "groupId": "chat-and-command-blocks",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:59:19Z",
+  "toolsUsed": ["pnpm", "vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-CHAT-008",
+      "title": "Markdown-like rendering for code blocks",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+      "testName": "Markdown code block rendering > renders code blocks in a bordered box distinct from plain text",
+      "result": {
+        "outcome": "passed",
+        "duration": "440ms",
+        "summary": "Test Files 1 passed; Tests 1 passed | 29 skipped"
+      },
+      "evidence": {
+        "log": "tui-full-features/chat-and-command-blocks/VAL-TUI-CHAT-008-vitest.log",
+        "mappingNote": "tui-full-features/chat-and-command-blocks/assertion-to-test-mapping.json"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-MGMT-003",
+      "title": "Multiple command blocks in one message",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+      "testName": "Command execution blocks in chat > renders multiple command blocks in one message",
+      "result": {
+        "outcome": "passed",
+        "duration": "418ms",
+        "summary": "Test Files 1 passed; Tests 1 passed | 29 skipped"
+      },
+      "evidence": {
+        "log": "tui-full-features/chat-and-command-blocks/VAL-TUI-MGMT-003-vitest.log",
+        "mappingNote": "tui-full-features/chat-and-command-blocks/assertion-to-test-mapping.json"
+      },
+      "issues": null
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/chat.test.tsx -t \"renders code blocks in a bordered box distinct from plain text\" --reporter verbose",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/chat-and-command-blocks/VAL-TUI-CHAT-008-vitest.log"
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/chat.test.tsx -t \"renders multiple command blocks in one message\" --reporter verbose",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/chat-and-command-blocks/VAL-TUI-MGMT-003-vitest.log"
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

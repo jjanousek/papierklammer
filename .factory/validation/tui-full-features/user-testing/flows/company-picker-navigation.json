@@ -1,0 +1,72 @@
+{
+  "milestone": "tui-full-features",
+  "groupId": "company-picker-navigation",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:58:50.092242Z",
+  "toolsUsed": [
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-MGMT-004",
+      "title": "Company picker renders and selects",
+      "status": "pass",
+      "tests": [
+        "App layout > renders a company picker sorted by recency when no company is preselected",
+        "Company picker > renders company list when no companyId",
+        "Company picker > selecting a company transitions to main layout",
+        "Company picker > arrow keys navigate company list"
+      ],
+      "evidence": {
+        "logs": [
+          "tui-full-features/company-picker-navigation/layout.test.vitest.log",
+          "tui-full-features/company-picker-navigation/panels.test.vitest.log"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-UX-001",
+      "title": "Tab key cycles focus between panels",
+      "status": "pass",
+      "tests": [
+        "Keyboard navigation > Tab key cycles focus between sidebar and input bar"
+      ],
+      "evidence": {
+        "logs": [
+          "tui-full-features/company-picker-navigation/panels.test.vitest.log"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-UX-002",
+      "title": "Arrow keys navigate sidebar selection",
+      "status": "pass",
+      "tests": [
+        "Keyboard navigation > arrow keys move sidebar selection down and up",
+        "Keyboard navigation > arrow keys do not move selection when sidebar is not focused"
+      ],
+      "evidence": {
+        "logs": [
+          "tui-full-features/company-picker-navigation/panels.test.vitest.log"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm -C /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/layout.test.tsx --reporter=verbose",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/company-picker-navigation/layout.test.vitest.log"
+    },
+    {
+      "command": "pnpm -C /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/panels.test.tsx --reporter=verbose",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/company-picker-navigation/panels.test.vitest.log"
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

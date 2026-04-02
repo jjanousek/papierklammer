@@ -1,0 +1,49 @@
+{
+  "milestone": "tui-full-features",
+  "groupId": "codex-mgmt",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:58:49Z",
+  "toolsUsed": ["pnpm", "vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-MGMT-001",
+      "title": "BaseInstructions contain orchestrator tool descriptions",
+      "status": "pass",
+      "testMapping": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+        "testSuite": "ORCHESTRATOR_INSTRUCTIONS content (VAL-TUI-MGMT-001)",
+        "testCase": "contains all orchestrator management operation descriptions"
+      },
+      "evidence": {
+        "logs": [
+          "tui-full-features/codex-mgmt/VAL-TUI-MGMT-001-vitest.log",
+          "tui-full-features/codex-mgmt/VAL-TUI-MGMT-001-vitest-verbose.log"
+        ],
+        "operationChecks": [
+          "POST /api/orchestrator/issues (create issues)",
+          "POST /api/orchestrator/issues/:id/unblock (unblock agents)",
+          "POST /api/orchestrator/agents/:id/nudge (nudge agents)",
+          "PATCH /api/orchestrator/issues/:id/priority (change priorities)",
+          "DELETE /api/orchestrator/stale/runs + stale wording (cleanup stale runs)",
+          "GET /api/orchestrator/status (view status)",
+          "Authentication mentions Bearer/Authorization"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/codex-client.test.ts -t \"contains all orchestrator management operation descriptions\"",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/codex-mgmt/VAL-TUI-MGMT-001-vitest.log"
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/codex-client.test.ts -t \"contains all orchestrator management operation descriptions\" --reporter=verbose",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/codex-mgmt/VAL-TUI-MGMT-001-vitest-verbose.log"
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

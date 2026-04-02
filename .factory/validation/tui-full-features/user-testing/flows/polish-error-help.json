@@ -1,0 +1,107 @@
+{
+  "milestone": "tui-full-features",
+  "groupId": "polish-error-help",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T18:04:57Z",
+  "toolsUsed": ["pnpm", "vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-UX-003",
+      "title": "Help overlay toggles with ? key",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/polish.test.tsx",
+      "testNames": [
+        "pressing ? in App shows help overlay when sidebar focused",
+        "pressing ? again dismisses help overlay",
+        "Escape key dismisses help overlay in App"
+      ],
+      "result": {
+        "outcome": "passed",
+        "summary": "Test Files 1 passed; Tests 3 passed | 18 skipped"
+      },
+      "evidence": {
+        "log": "tui-full-features/polish-error-help/VAL-TUI-UX-003.log"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-ERR-001",
+      "title": "API error graceful degradation",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/polish.test.tsx",
+      "testNames": [
+        "shows Disconnected in header when API fails",
+        "shows Disconnected in sidebar when API fails",
+        "app does not crash when API is unreachable",
+        "AgentSidebar shows Disconnected with error"
+      ],
+      "result": {
+        "outcome": "passed",
+        "summary": "Test Files 1 passed; Tests 4 passed | 17 skipped"
+      },
+      "evidence": {
+        "log": "tui-full-features/polish-error-help/VAL-TUI-ERR-001.log"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-ERR-002",
+      "title": "Codex crash auto-restart with status",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/polish.test.tsx",
+      "testNames": [
+        "shows Codex disconnected when subprocess crashes",
+        "auto-restarts Codex subprocess after crash"
+      ],
+      "result": {
+        "outcome": "passed",
+        "summary": "Test Files 1 passed; Tests 2 passed | 19 skipped"
+      },
+      "evidence": {
+        "log": "tui-full-features/polish-error-help/VAL-TUI-ERR-002.log"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-ERR-003",
+      "title": "Graceful shutdown sends SIGTERM",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/polish.test.tsx",
+      "testNames": [
+        "Ctrl+C sends SIGTERM to Codex subprocess via destroy"
+      ],
+      "result": {
+        "outcome": "passed",
+        "summary": "Test Files 1 passed; Tests 1 passed | 20 skipped"
+      },
+      "evidence": {
+        "log": "tui-full-features/polish-error-help/VAL-TUI-ERR-003.log"
+      },
+      "issues": null
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/polish.test.tsx -t \"pressing \\\\? in App shows help overlay when sidebar focused|pressing \\\\? again dismisses help overlay|Escape key dismisses help overlay in App\"",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/polish-error-help/VAL-TUI-UX-003.log"
+    },
+    {
+      "command": "pnpm exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/polish.test.tsx -t \"shows Disconnected in header when API fails|shows Disconnected in sidebar when API fails|app does not crash when API is unreachable|AgentSidebar shows Disconnected with error\"",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/polish-error-help/VAL-TUI-ERR-001.log"
+    },
+    {
+      "command": "pnpm exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/polish.test.tsx -t \"shows Codex disconnected when subprocess crashes|auto-restarts Codex subprocess after crash\"",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/polish-error-help/VAL-TUI-ERR-002.log"
+    },
+    {
+      "command": "pnpm exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/polish.test.tsx -t \"Ctrl\\\\+C sends SIGTERM to Codex subprocess via destroy\"",
+      "exitCode": 0,
+      "evidenceLog": "tui-full-features/polish-error-help/VAL-TUI-ERR-003.log"
+    }
+  ],
+  "frictions": [],
+  "blockers": []
+}

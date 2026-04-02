@@ -1,0 +1,40 @@
+{
+  "milestone": "tui-full-features",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-TUI-CHAT-008",
+    "VAL-TUI-CROSS-001",
+    "VAL-TUI-CROSS-002",
+    "VAL-TUI-CROSS-003",
+    "VAL-TUI-CROSS-004",
+    "VAL-TUI-CROSS-005",
+    "VAL-TUI-ERR-001",
+    "VAL-TUI-ERR-002",
+    "VAL-TUI-ERR-003",
+    "VAL-TUI-MGMT-001",
+    "VAL-TUI-MGMT-002",
+    "VAL-TUI-MGMT-003",
+    "VAL-TUI-MGMT-004",
+    "VAL-TUI-UX-001",
+    "VAL-TUI-UX-002",
+    "VAL-TUI-UX-003"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added note that integration.test.tsx describe label VAL-TUI-CROSS-002 does not exactly match contained VAL-TUI-CROSS-003/004 assertions; validators should map by test behavior.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null,
+  "generatedAt": "2026-04-02T18:06:22.438616+00:00"
+}

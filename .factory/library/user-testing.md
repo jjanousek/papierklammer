@@ -56,6 +56,7 @@ Two validation surfaces for this mission:
 - Agent-browser Chromium 1217 installed via Playwright CLI (not built-in agent-browser install)
 - Dev server takes ~12 seconds to start with embedded PGlite
 - Current `cli.test.ts` coverage does not include a dedicated `--company-id` parse assertion; treat `VAL-TUI-CORE-003` as blocked until explicit test coverage is added.
+- In `integration.test.tsx`, one describe label references `VAL-TUI-CROSS-002` while its contained tests map to `VAL-TUI-CROSS-003`/`VAL-TUI-CROSS-004`; map assertions using exact test-case behavior, not describe label text.
 
 ## Flow Validator Guidance: vitest
 

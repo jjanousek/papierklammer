@@ -1,0 +1,85 @@
+{
+  "milestone": "tui-full-features",
+  "groupId": "integration-cross",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T18:01:27.224325+00:00",
+  "toolsUsed": ["pnpm", "vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-MGMT-002",
+      "title": "Tool call command executions rendered in chat",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+      "testNames": [
+        "command execution blocks appear in chat during streaming"
+      ],
+      "outcome": "Passed in scoped Vitest run."
+    },
+    {
+      "id": "VAL-TUI-CROSS-001",
+      "title": "Full E2E flow",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+      "testNames": [
+        "full flow: render → type message → streaming → finalized message"
+      ],
+      "outcome": "Passed in scoped Vitest run."
+    },
+    {
+      "id": "VAL-TUI-CROSS-002",
+      "title": "Multi-turn conversation uses same thread",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+      "testNames": [
+        "multi-turn conversation uses same thread"
+      ],
+      "outcome": "Passed in scoped Vitest run."
+    },
+    {
+      "id": "VAL-TUI-CROSS-003",
+      "title": "Background status updates don't disrupt chat",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+      "testNames": [
+        "sidebar updates while chat is active without disruption",
+        "sidebar updates do not clear streaming text"
+      ],
+      "outcome": "Passed in scoped Vitest run."
+    },
+    {
+      "id": "VAL-TUI-CROSS-004",
+      "title": "API error during active chat doesn't crash",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+      "testNames": [
+        "API error during active chat doesn't crash the app"
+      ],
+      "outcome": "Passed in scoped Vitest run."
+    },
+    {
+      "id": "VAL-TUI-CROSS-005",
+      "title": "Command execution blocks during streaming",
+      "status": "pass",
+      "testFile": "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+      "testNames": [
+        "command execution blocks appear in chat during streaming"
+      ],
+      "outcome": "Passed in scoped Vitest run."
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/integration.test.tsx --reporter=verbose",
+      "exitCode": 0,
+      "evidenceLog": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/tui-full-features/integration-cross/vitest-integration-test.log"
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The describe label 'Agent status updates during chat (VAL-TUI-CROSS-002)' in integration.test.tsx covers assertions mapped in the contract as VAL-TUI-CROSS-003 and VAL-TUI-CROSS-004; mapping required using exact test names rather than describe label.",
+      "resolved": true,
+      "resolution": "Mapped each assigned assertion by exact test case name and behavior from validation-contract.md."
+    }
+  ],
+  "blockers": []
+}
