@@ -76,4 +76,14 @@ describe("CLI --help flag", () => {
     const result = parseArgs(["node", "papierklammer-tui"]);
     expect(result.flags.url).toBe("http://localhost:3100");
   });
+
+  it("parses --company-id flag correctly", () => {
+    const result = parseArgs([
+      "node",
+      "papierklammer-tui",
+      "--company-id",
+      "company-123",
+    ]);
+    expect(result.flags.companyId).toBe("company-123");
+  });
 });
