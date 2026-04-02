@@ -89,7 +89,7 @@ export function SidebarAgents() {
               e.stopPropagation();
               openNewAgent();
             }}
-            className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent/50 transition-colors"
+            className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/60 hover:text-foreground hover:opacity-80"
             aria-label="New agent"
           >
             <Plus className="h-3 w-3" />
@@ -109,10 +109,10 @@ export function SidebarAgents() {
                   if (isMobile) setSidebarOpen(false);
                 }}
                 className={cn(
-                  "flex items-center gap-2.5 px-3 py-1.5 text-[13px] font-medium transition-colors",
+                  "flex items-center gap-2.5 px-3 py-1.5 text-[13px] font-medium",
                   activeAgentId === agentRouteRef(agent)
                     ? "bg-accent text-foreground"
-                    : "text-foreground/80 hover:bg-accent/50 hover:text-foreground"
+                    : "text-foreground/80 hover:opacity-80 hover:text-foreground"
                 )}
               >
                 <AgentIcon icon={agent.icon} className="shrink-0 h-3.5 w-3.5 text-muted-foreground" />
@@ -123,9 +123,8 @@ export function SidebarAgents() {
                       <BudgetSidebarMarker title="Agent paused by budget" />
                     ) : null}
                     {runCount > 0 ? (
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
                       </span>
                     ) : null}
                     {runCount > 0 ? (

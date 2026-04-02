@@ -443,8 +443,8 @@ export function DesignGuide() {
           <div className="flex items-center gap-4 flex-wrap">
             {(["running", "active", "paused", "error", "archived"] as const).map((label) => (
               <div key={label} className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className={`inline-flex h-full w-full rounded-full ${agentStatusDot[label] ?? agentStatusDotDefault}`} />
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className={`inline-flex h-full w-full ${agentStatusDot[label] ?? agentStatusDotDefault}`} />
                 </span>
                 <span className="text-xs text-muted-foreground">{label}</span>
               </div>
@@ -460,7 +460,7 @@ export function DesignGuide() {
               ["on_demand", "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"],
               ["automation", "bg-muted text-muted-foreground"],
             ].map(([label, cls]) => (
-              <span key={label} className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
+              <span key={label} className={`px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
                 {label}
               </span>
             ))}
@@ -1036,9 +1036,9 @@ export function DesignGuide() {
                 <span className="text-xs text-muted-foreground">{label}</span>
                 <span className="text-xs font-mono">{pct}%</span>
               </div>
-              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-muted overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-[width,background-color] duration-150 ${color}`}
+                  className={`h-full transition-[width,background-color] duration-150 ${color}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -1061,8 +1061,8 @@ export function DesignGuide() {
           <div className="text-foreground">[12:00:17] INFO  Reconnected successfully</div>
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-cyan-400 animate-pulse" />
-              <span className="inline-flex h-full w-full rounded-full bg-cyan-400" />
+              <span className="absolute inline-flex h-full w-full bg-cyan-400" />
+              <span className="inline-flex h-full w-full bg-cyan-400" />
             </span>
             <span className="text-cyan-400">Live</span>
           </div>
@@ -1106,18 +1106,18 @@ export function DesignGuide() {
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground cursor-pointer">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:opacity-80 hover:text-accent-foreground cursor-pointer">
               <CircleDot className="h-4 w-4" />
               Issues
-              <span className="ml-auto text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+              <span className="ml-auto text-xs bg-primary text-primary-foreground px-1.5 py-0.5">
                 12
               </span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground cursor-pointer">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:opacity-80 hover:text-accent-foreground cursor-pointer">
               <Bot className="h-4 w-4" />
               Agents
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground cursor-pointer">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:opacity-80 hover:text-accent-foreground cursor-pointer">
               <Hexagon className="h-4 w-4" />
               Projects
             </div>
@@ -1130,7 +1130,7 @@ export function DesignGuide() {
               <ListTodo className="h-3.5 w-3.5 inline mr-1" />
               List
             </button>
-            <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent/50 rounded-r-md">
+            <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:opacity-80 rounded-r-md">
               <Target className="h-3.5 w-3.5 inline mr-1" />
               Org
             </button>

@@ -923,7 +923,7 @@ export function NewIssueDialog() {
                   <button
                     key={c.id}
                     className={cn(
-                      "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+                      "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
                       c.id === effectiveCompanyId && "bg-accent",
                     )}
                     onClick={() => {
@@ -1166,7 +1166,7 @@ export function NewIssueDialog() {
         {supportsAssigneeOverrides && (
           <div className="px-4 pb-2 shrink-0">
             <button
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
               onClick={() => setAssigneeOptionsOpen((open) => !open)}
             >
               {assigneeOptionsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -1194,7 +1194,7 @@ export function NewIssueDialog() {
                       <button
                         key={option.value || "default"}
                         className={cn(
-                          "px-2 py-1 rounded-md text-xs border border-border hover:bg-accent/50 transition-colors",
+                          "px-2 py-1 rounded-md text-xs border border-border hover:opacity-80",
                           assigneeThinkingEffort === option.value && "bg-accent"
                         )}
                         onClick={() => setAssigneeThinkingEffort(option.value)}
@@ -1210,14 +1210,14 @@ export function NewIssueDialog() {
                     <button
                       data-slot="toggle"
                       className={cn(
-                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                        "relative inline-flex h-5 w-9 items-center",
                         assigneeChrome ? "bg-green-600" : "bg-muted"
                       )}
                       onClick={() => setAssigneeChrome((value) => !value)}
                     >
                       <span
                         className={cn(
-                          "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                          "inline-block h-3.5 w-3.5 bg-white transition-transform",
                           assigneeChrome ? "translate-x-4.5" : "translate-x-0.5"
                         )}
                       />
@@ -1239,7 +1239,7 @@ export function NewIssueDialog() {
         >
           <div
             className={cn(
-              "rounded-md transition-colors",
+              "rounded-md",
               isFileDragOver && "bg-accent/20",
             )}
           >
@@ -1267,7 +1267,7 @@ export function NewIssueDialog() {
                       <div key={file.id} className="flex items-start justify-between gap-3 rounded-md border border-border/70 px-3 py-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                            <span className="border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                               {file.documentKey}
                             </span>
                             <span className="truncate text-sm">{file.file.name}</span>
@@ -1334,7 +1334,7 @@ export function NewIssueDialog() {
           {/* Status chip */}
           <Popover open={statusOpen} onOpenChange={setStatusOpen}>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:opacity-80">
                 <CircleDot className={cn("h-3 w-3", currentStatus.color)} />
                 {currentStatus.label}
               </button>
@@ -1344,7 +1344,7 @@ export function NewIssueDialog() {
                 <button
                   key={s.value}
                   className={cn(
-                    "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+                    "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
                     s.value === status && "bg-accent"
                   )}
                   onClick={() => { setStatus(s.value); setStatusOpen(false); }}
@@ -1359,7 +1359,7 @@ export function NewIssueDialog() {
           {/* Priority chip */}
           <Popover open={priorityOpen} onOpenChange={setPriorityOpen}>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:opacity-80">
                 {currentPriority ? (
                   <>
                     <currentPriority.icon className={cn("h-3 w-3", currentPriority.color)} />
@@ -1378,7 +1378,7 @@ export function NewIssueDialog() {
                 <button
                   key={p.value}
                   className={cn(
-                    "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+                    "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
                     p.value === priority && "bg-accent"
                   )}
                   onClick={() => { setPriority(p.value); setPriorityOpen(false); }}
@@ -1391,7 +1391,7 @@ export function NewIssueDialog() {
           </Popover>
 
           {/* Labels chip (placeholder) */}
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:opacity-80 text-muted-foreground">
             <Tag className="h-3 w-3" />
             Labels
           </button>
@@ -1405,7 +1405,7 @@ export function NewIssueDialog() {
             multiple
           />
           <button
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:opacity-80 text-muted-foreground"
             onClick={() => stageFileInputRef.current?.click()}
             disabled={createIssue.isPending}
           >
@@ -1416,16 +1416,16 @@ export function NewIssueDialog() {
           {/* More (dates) */}
           <Popover open={moreOpen} onOpenChange={setMoreOpen}>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center justify-center rounded-md border border-border p-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground">
+              <button className="inline-flex items-center justify-center rounded-md border border-border p-1 text-xs hover:opacity-80 text-muted-foreground">
                 <MoreHorizontal className="h-3 w-3" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-44 p-1" align="start">
-              <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground">
+              <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 text-muted-foreground">
                 <Calendar className="h-3 w-3" />
                 Start date
               </button>
-              <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground">
+              <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 text-muted-foreground">
                 <Calendar className="h-3 w-3" />
                 Due date
               </button>
@@ -1448,7 +1448,7 @@ export function NewIssueDialog() {
             <div className="min-h-5 text-right">
               {createIssue.isPending ? (
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                   Creating issue...
                 </span>
               ) : createIssue.isError ? (
@@ -1463,7 +1463,7 @@ export function NewIssueDialog() {
               aria-busy={createIssue.isPending}
             >
               <span className="inline-flex items-center justify-center gap-1.5">
-                {createIssue.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                {createIssue.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
                 <span>{createIssue.isPending ? "Creating..." : "Create Issue"}</span>
               </span>
             </Button>

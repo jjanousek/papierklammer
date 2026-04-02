@@ -80,8 +80,8 @@ describe("IssueRow", () => {
 
     const link = container.querySelector("[data-inbox-issue-link]") as HTMLAnchorElement | null;
     expect(link).not.toBeNull();
-    expect(link?.className).toContain("hover:bg-transparent");
-    expect(link?.className).not.toContain("hover:bg-accent/50");
+    expect(link?.className).toContain("hover:opacity-80");
+    expect(link?.className).not.toContain("hover:opacity-80");
 
     act(() => {
       root.unmount();
@@ -100,8 +100,8 @@ describe("IssueRow", () => {
     const statusIcon = container.querySelector('span[class*="border-muted-foreground"]');
 
     expect(markReadButton).not.toBeNull();
-    expect(markReadButton?.className).toContain("hover:bg-muted/80");
-    expect(markReadButton?.className).not.toContain("hover:bg-blue-500/20");
+    expect(markReadButton?.className).toContain("hover:opacity-80");
+    expect(markReadButton?.className).not.toContain("hover:opacity-80");
     expect(unreadDot).not.toBeNull();
     expect(unreadDot?.className).toContain("bg-muted-foreground/70");
     expect(unreadDot?.className).not.toContain("bg-blue-600");

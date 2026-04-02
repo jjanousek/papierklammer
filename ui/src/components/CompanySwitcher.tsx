@@ -37,7 +37,7 @@ export function CompanySwitcher() {
         >
           <div className="flex items-center gap-2 min-w-0">
             {selectedCompany && (
-              <span className={`h-2 w-2 rounded-full shrink-0 ${statusDotColor(selectedCompany.status)}`} />
+              <span className={`h-1.5 w-1.5 shrink-0 ${statusDotColor(selectedCompany.status)}`} />
             )}
             <span className="text-sm font-medium truncate">
               {selectedCompany?.name ?? "Select company"}
@@ -55,7 +55,7 @@ export function CompanySwitcher() {
             onClick={() => setSelectedCompanyId(company.id)}
             className={company.id === selectedCompany?.id ? "bg-accent" : ""}
           >
-            <span className={`h-2 w-2 rounded-full shrink-0 mr-2 ${statusDotColor(company.status)}`} />
+            <span className={`h-1.5 w-1.5 shrink-0 mr-2 ${statusDotColor(company.status)}`} />
             <span className="truncate">{company.name}</span>
           </DropdownMenuItem>
         ))}

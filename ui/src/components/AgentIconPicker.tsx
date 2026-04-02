@@ -62,7 +62,7 @@ export function AgentIconPicker({ value, onChange, children }: AgentIconPickerPr
                 setSearch("");
               }}
               className={cn(
-                "flex items-center justify-center h-8 w-8 rounded hover:bg-accent transition-colors",
+                "flex items-center justify-center h-8 w-8 rounded hover:opacity-80",
                 (value ?? DEFAULT_ICON) === name && "bg-accent ring-1 ring-primary"
               )}
               title={name}

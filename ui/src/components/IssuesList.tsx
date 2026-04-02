@@ -382,14 +382,14 @@ export function IssuesList({
           {/* View mode toggle */}
           <div className="flex items-center border border-border rounded-md overflow-hidden mr-1">
             <button
-              className={`p-1.5 transition-colors ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`p-1.5 ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "list" })}
               title="List view"
             >
               <List className="h-3.5 w-3.5" />
             </button>
             <button
-              className={`p-1.5 transition-colors ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              className={`p-1.5 ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "board" })}
               title="Board view"
             >
@@ -440,7 +440,7 @@ export function IssuesList({
                       return (
                         <button
                           key={preset.label}
-                          className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                          className={`px-2.5 py-1 text-xs border ${
                             isActive
                               ? "bg-primary text-primary-foreground border-primary"
                               : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
@@ -463,7 +463,7 @@ export function IssuesList({
                     <span className="text-xs text-muted-foreground">Status</span>
                     <div className="space-y-0.5">
                       {statusOrder.map((s) => (
-                        <label key={s} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                        <label key={s} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                           <Checkbox
                             checked={viewState.statuses.includes(s)}
                             onCheckedChange={() => updateView({ statuses: toggleInArray(viewState.statuses, s) })}
@@ -482,7 +482,7 @@ export function IssuesList({
                       <span className="text-xs text-muted-foreground">Priority</span>
                       <div className="space-y-0.5">
                         {priorityOrder.map((p) => (
-                          <label key={p} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                          <label key={p} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                             <Checkbox
                               checked={viewState.priorities.includes(p)}
                               onCheckedChange={() => updateView({ priorities: toggleInArray(viewState.priorities, p) })}
@@ -498,7 +498,7 @@ export function IssuesList({
                     <div className="space-y-1">
                       <span className="text-xs text-muted-foreground">Assignee</span>
                       <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                        <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                        <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                           <Checkbox
                             checked={viewState.assignees.includes("__unassigned")}
                             onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__unassigned") })}
@@ -506,7 +506,7 @@ export function IssuesList({
                           <span className="text-sm">No assignee</span>
                         </label>
                         {currentUserId && (
-                          <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                          <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                             <Checkbox
                               checked={viewState.assignees.includes("__me")}
                               onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__me") })}
@@ -516,7 +516,7 @@ export function IssuesList({
                           </label>
                         )}
                         {(agents ?? []).map((agent) => (
-                          <label key={agent.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                          <label key={agent.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                             <Checkbox
                               checked={viewState.assignees.includes(agent.id)}
                               onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, agent.id) })}
@@ -532,12 +532,12 @@ export function IssuesList({
                         <span className="text-xs text-muted-foreground">Labels</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {labels.map((label) => (
-                            <label key={label.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                            <label key={label.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                               <Checkbox
                                 checked={viewState.labels.includes(label.id)}
                                 onCheckedChange={() => updateView({ labels: toggleInArray(viewState.labels, label.id) })}
                               />
-                              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: label.color }} />
+                              <span className="h-1.5 w-1.5 " style={{ backgroundColor: label.color }} />
                               <span className="text-sm">{label.name}</span>
                             </label>
                           ))}
@@ -550,7 +550,7 @@ export function IssuesList({
                         <span className="text-xs text-muted-foreground">Project</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {projects.map((project) => (
-                            <label key={project.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                            <label key={project.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:opacity-80 cursor-pointer">
                               <Checkbox
                                 checked={viewState.projects.includes(project.id)}
                                 onCheckedChange={() => updateView({ projects: toggleInArray(viewState.projects, project.id) })}
@@ -588,7 +588,7 @@ export function IssuesList({
                     <button
                       key={field}
                       className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${
-                        viewState.sortField === field ? "bg-accent/50 text-foreground" : "hover:bg-accent/50 text-muted-foreground"
+                        viewState.sortField === field ? "bg-accent/50 text-foreground" : "hover:opacity-80 text-muted-foreground"
                       }`}
                       onClick={() => {
                         if (viewState.sortField === field) {
@@ -631,7 +631,7 @@ export function IssuesList({
                     <button
                       key={value}
                       className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${
-                        viewState.groupBy === value ? "bg-accent/50 text-foreground" : "hover:bg-accent/50 text-muted-foreground"
+                        viewState.groupBy === value ? "bg-accent/50 text-foreground" : "hover:opacity-80 text-muted-foreground"
                       }`}
                       onClick={() => updateView({ groupBy: value })}
                     >
@@ -734,10 +734,9 @@ export function IssuesList({
                         {issue.identifier ?? issue.id.slice(0, 8)}
                       </span>
                       {liveIssueIds?.has(issue.id) && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-1.5 py-0.5 sm:gap-1.5 sm:px-2">
-                          <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full animate-pulse rounded-full bg-blue-400 opacity-75" />
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+                        <span className="inline-flex items-center gap-1 bg-blue-500/10 px-1.5 py-0.5 sm:gap-1.5 sm:px-2">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
                           </span>
                           <span className="hidden text-[11px] font-medium text-blue-600 dark:text-blue-400 sm:inline">
                             Live
@@ -754,7 +753,7 @@ export function IssuesList({
                           {(issue.labels ?? []).slice(0, 3).map((label) => (
                             <span
                               key={label.id}
-                              className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                              className="inline-flex items-center border px-1.5 py-0.5 text-[10px] font-medium"
                               style={{
                                 borderColor: label.color,
                                 color: pickTextColorForPillBg(label.color, 0.12),
@@ -780,7 +779,7 @@ export function IssuesList({
                       >
                         <PopoverTrigger asChild>
                           <button
-                            className="flex w-[180px] shrink-0 items-center rounded-md px-2 py-1 transition-colors hover:bg-accent/50"
+                            className="flex w-[180px] shrink-0 items-center rounded-md px-2 py-1 hover:opacity-80"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -790,14 +789,14 @@ export function IssuesList({
                               <Identity name={agentName(issue.assigneeAgentId)!} size="sm" />
                             ) : issue.assigneeUserId ? (
                               <span className="inline-flex items-center gap-1.5 text-xs">
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
+                                <span className="inline-flex h-5 w-5 items-center justify-center border border-dashed border-muted-foreground/35 bg-muted/30">
                                   <User className="h-3 w-3" />
                                 </span>
                                 {formatAssigneeUserLabel(issue.assigneeUserId, currentUserId) ?? "User"}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
+                                <span className="inline-flex h-5 w-5 items-center justify-center border border-dashed border-muted-foreground/35 bg-muted/30">
                                   <User className="h-3 w-3" />
                                 </span>
                                 Assignee
@@ -821,7 +820,7 @@ export function IssuesList({
                           <div className="max-h-48 overflow-y-auto overscroll-contain">
                             <button
                               className={cn(
-                                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50",
+                                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:opacity-80",
                                 !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent",
                               )}
                               onClick={(e) => {
@@ -835,7 +834,7 @@ export function IssuesList({
                             {currentUserId && (
                               <button
                                 className={cn(
-                                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50",
+                                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:opacity-80",
                                   issue.assigneeUserId === currentUserId && "bg-accent",
                                 )}
                                 onClick={(e) => {
@@ -859,7 +858,7 @@ export function IssuesList({
                                 <button
                                   key={agent.id}
                                   className={cn(
-                                    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50",
+                                    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:opacity-80",
                                     issue.assigneeAgentId === agent.id && "bg-accent",
                                   )}
                                   onClick={(e) => {

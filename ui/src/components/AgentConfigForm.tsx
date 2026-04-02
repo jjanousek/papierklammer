@@ -1045,7 +1045,7 @@ function AdapterTypeDropdown({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+        <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:opacity-80 w-full justify-between">
           <span className="inline-flex items-center gap-1.5">
             {value === "opencode_local" ? <OpenCodeLogoIcon className="h-3.5 w-3.5" /> : null}
             <span>{adapterLabels[value] ?? value}</span>
@@ -1062,7 +1062,7 @@ function AdapterTypeDropdown({
               "flex items-center justify-between w-full px-2 py-1.5 text-sm rounded",
               item.comingSoon
                 ? "opacity-40 cursor-not-allowed"
-                : "hover:bg-accent/50",
+                : "hover:opacity-80",
               item.value === value && !item.comingSoon && "bg-accent",
             )}
             onClick={() => {
@@ -1297,7 +1297,7 @@ function EnvVarEditor({
                 </select>
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors shrink-0"
+                  className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:opacity-80 shrink-0"
                   onClick={() => sealRow(i)}
                   disabled={!row.key.trim() || !row.plainValue}
                   title="Create secret from current plain value"
@@ -1315,7 +1315,7 @@ function EnvVarEditor({
                 />
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors shrink-0"
+                  className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:opacity-80 shrink-0"
                   onClick={() => sealRow(i)}
                   disabled={!row.key.trim() || !row.plainValue}
                   title="Store value as secret and replace with reference"
@@ -1327,7 +1327,7 @@ function EnvVarEditor({
             {!isTrailing ? (
               <button
                 type="button"
-                className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                className="shrink-0 p-1 rounded hover:opacity-80 text-muted-foreground hover:text-destructive"
                 onClick={() => removeRow(i)}
               >
                 <X className="h-3.5 w-3.5" />
@@ -1443,7 +1443,7 @@ function ModelDropdown({
         }}
       >
         <PopoverTrigger asChild>
-          <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+          <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:opacity-80 w-full justify-between">
             <span className={cn(!value && "text-muted-foreground")}>
               {selected
                 ? selected.label
@@ -1477,7 +1477,7 @@ function ModelDropdown({
           {onDetectModel && !detectedModel && !modelSearch.trim() && (
             <button
               type="button"
-              className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground"
+              className="flex items-center gap-1.5 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 text-muted-foreground"
               onClick={() => {
                 void handleDetectModel();
               }}
@@ -1503,7 +1503,7 @@ function ModelDropdown({
               <span className="block w-full text-left truncate font-mono text-xs" title={value}>
                 {value}
               </span>
-              <span className="shrink-0 ml-auto text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">
+              <span className="shrink-0 ml-auto text-[9px] font-medium px-1.5 py-0.5 bg-green-500/15 text-green-400 border border-green-500/20">
                 current
               </span>
             </button>
@@ -1512,7 +1512,7 @@ function ModelDropdown({
             <button
               type="button"
               className={cn(
-                "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
+                "flex items-center w-full px-2 py-1.5 text-sm rounded hover:opacity-80",
               )}
               onClick={() => {
                 onChange(detectedModel);
@@ -1522,7 +1522,7 @@ function ModelDropdown({
               <span className="block w-full text-left truncate font-mono text-xs" title={detectedModel}>
                 {detectedModel}
               </span>
-              <span className="shrink-0 ml-auto text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20">
+              <span className="shrink-0 ml-auto text-[9px] font-medium px-1.5 py-0.5 bg-blue-500/15 text-blue-400 border border-blue-500/20">
                 detected
               </span>
             </button>
@@ -1532,7 +1532,7 @@ function ModelDropdown({
               <button
                 type="button"
                 className={cn(
-                  "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
+                  "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:opacity-80",
                   !value && "bg-accent",
                 )}
                 onClick={() => {
@@ -1546,7 +1546,7 @@ function ModelDropdown({
             {canCreateManualModel && (
               <button
                 type="button"
-                className="flex items-center justify-between gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50"
+                className="flex items-center justify-between gap-2 w-full px-2 py-1.5 text-sm rounded hover:opacity-80"
                 onClick={() => {
                   onChange(manualModel);
                   onOpenChange(false);
@@ -1569,7 +1569,7 @@ function ModelDropdown({
                     type="button"
                     key={m.id}
                     className={cn(
-                      "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
+                      "flex items-center w-full px-2 py-1.5 text-sm rounded hover:opacity-80",
                       m.id === value && "bg-accent",
                     )}
                     onClick={() => {
@@ -1619,7 +1619,7 @@ function ThinkingEffortDropdown({
     <Field label="Thinking effort" hint={help.thinkingEffort}>
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:opacity-80 w-full justify-between">
             <span className={cn(!value && "text-muted-foreground")}>{selected?.label ?? "Auto"}</span>
             <ChevronDown className="h-3 w-3 text-muted-foreground" />
           </button>
@@ -1629,7 +1629,7 @@ function ThinkingEffortDropdown({
             <button
               key={option.id || "auto"}
               className={cn(
-                "flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
+                "flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:opacity-80",
                 option.id === value && "bg-accent",
               )}
               onClick={() => {

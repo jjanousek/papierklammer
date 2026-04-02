@@ -99,10 +99,10 @@ export function BudgetPolicyCard({
         <span>Remaining</span>
         <span>{summary.amount > 0 ? formatCents(summary.remainingAmount) : "Unlimited"}</span>
       </div>
-      <div className={cn("h-2 overflow-hidden rounded-full", isPlain ? "bg-border/70" : "bg-muted/70")}>
+      <div className={cn("h-2 overflow-hidden ", isPlain ? "bg-border/70" : "bg-muted/70")}>
         <div
           className={cn(
-            "h-full rounded-full transition-[width,background-color] duration-200",
+            "h-full transition-[width,background-color] duration-200",
             summary.status === "hard_stop"
               ? "bg-red-400"
               : summary.status === "warning"
@@ -199,7 +199,7 @@ export function BudgetPolicyCard({
             <CardTitle className="mt-1 text-base">{summary.scopeName}</CardTitle>
             <CardDescription className="mt-1">{windowLabel(summary.windowKind)}</CardDescription>
           </div>
-          <div className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em]", statusTone(summary.status))}>
+          <div className={cn("inline-flex items-center gap-2 border px-3 py-1 text-[11px] uppercase tracking-[0.18em]", statusTone(summary.status))}>
             <StatusIcon className="h-3.5 w-3.5" />
             {summary.paused ? "Paused" : summary.status === "warning" ? "Warning" : summary.status === "hard_stop" ? "Hard stop" : "Healthy"}
           </div>

@@ -45,7 +45,7 @@ function OrgTreeNode({
     <div>
       <Link
         to={hrefFn(node.id)}
-        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer hover:bg-accent/50 no-underline text-inherit"
+        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer hover:opacity-80 no-underline text-inherit"
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
         {hasChildren ? (
@@ -66,7 +66,7 @@ function OrgTreeNode({
         )}
         <span
           className={cn(
-            "h-2 w-2 rounded-full shrink-0",
+            "h-1.5 w-1.5 shrink-0",
             node.status === "active"
               ? "bg-green-400"
               : node.status === "paused"

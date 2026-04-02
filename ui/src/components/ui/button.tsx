@@ -15,9 +15,9 @@ const buttonVariants = cva(
         outline:
           "border border-[var(--border-strong)] bg-transparent text-white hover:opacity-80",
         secondary:
-          "bg-[var(--bg-darker)] text-white border border-transparent hover:opacity-80",
+          "bg-[var(--bg-darker)] text-white border border-[var(--border-strong)] hover:opacity-80",
         ghost:
-          "bg-transparent text-white hover:opacity-70",
+          "bg-transparent text-white border border-transparent hover:opacity-80",
         link: "text-white underline-offset-4 hover:underline",
       },
       size: {

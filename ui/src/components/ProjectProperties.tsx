@@ -54,7 +54,7 @@ function SaveIndicator({ state }: { state: ProjectFieldSaveState }) {
   if (state === "saving") {
     return (
       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-        <Loader2 className="h-3 w-3 animate-spin" />
+        <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
         Saving
       </span>
     );
@@ -123,7 +123,7 @@ function ProjectStatusPicker({ status, onChange }: { status: string; onChange: (
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
+            "inline-flex items-center px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
             colorClass,
           )}
         >
@@ -172,7 +172,7 @@ function ArchiveDangerZone({
       </p>
       {archivePending ? (
         <Button size="sm" variant="destructive" disabled>
-          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+          <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
           {isArchive ? "Archiving..." : "Unarchiving..."}
         </Button>
       ) : confirming ? (
@@ -570,7 +570,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                   availableGoals.map((goal) => (
                     <button
                       key={goal.id}
-                      className="flex items-center w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
+                      className="flex items-center w-full px-2 py-1.5 text-xs rounded hover:opacity-80"
                       onClick={() => addGoal(goal.id)}
                     >
                       {goal.title}
@@ -604,7 +604,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border text-[10px] text-muted-foreground hover:text-foreground"
+                  className="inline-flex h-4 w-4 items-center justify-center border border-border text-[10px] text-muted-foreground hover:text-foreground"
                   aria-label="Codebase help"
                 >
                   ?
@@ -735,7 +735,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                         <span className="text-[11px] font-medium">{service.serviceName}</span>
                         <span
                           className={cn(
-                            "rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-wide",
+                            "px-1.5 py-0.5 text-[10px] uppercase tracking-wide",
                             service.status === "running"
                               ? "bg-green-500/15 text-green-700 dark:text-green-300"
                               : service.status === "failed"
@@ -863,7 +863,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border text-[10px] text-muted-foreground hover:text-foreground"
+                      className="inline-flex h-4 w-4 items-center justify-center border border-border text-[10px] text-muted-foreground hover:text-foreground"
                       aria-label="Execution workspaces help"
                     >
                       ?
@@ -889,7 +889,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                     <button
                       data-slot="toggle"
                       className={cn(
-                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                        "relative inline-flex h-5 w-9 items-center",
                         executionWorkspacesEnabled ? "bg-green-600" : "bg-muted",
                       )}
                       type="button"
@@ -901,7 +901,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                     >
                       <span
                         className={cn(
-                          "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                          "inline-block h-3.5 w-3.5 bg-white transition-transform",
                           executionWorkspacesEnabled ? "translate-x-4.5" : "translate-x-0.5",
                         )}
                       />
@@ -928,7 +928,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                       <button
                         data-slot="toggle"
                         className={cn(
-                          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                          "relative inline-flex h-5 w-9 items-center",
                           executionWorkspaceDefaultMode === "isolated_workspace" ? "bg-green-600" : "bg-muted",
                         )}
                         type="button"
@@ -945,7 +945,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                       >
                         <span
                           className={cn(
-                            "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                            "inline-block h-3.5 w-3.5 bg-white transition-transform",
                             executionWorkspaceDefaultMode === "isolated_workspace"
                               ? "translate-x-4.5"
                               : "translate-x-0.5",
@@ -957,7 +957,7 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                     <div className="border-t border-border/60 pt-2">
                       <button
                         type="button"
-                        className="flex w-full items-center gap-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex w-full items-center gap-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
                         onClick={() => setExecutionWorkspaceAdvancedOpen((open) => !open)}
                       >
                         {executionWorkspaceAdvancedOpen

@@ -368,7 +368,7 @@ function FrontmatterCard({
                       type="button"
                       className={cn(
                         "inline-flex items-center rounded-md border border-border bg-background px-2 py-0.5 text-xs",
-                        key === "skills" && onSkillClick && "cursor-pointer hover:bg-accent/50 hover:border-foreground/30 transition-colors",
+                        key === "skills" && onSkillClick && "cursor-pointer hover:opacity-80 hover:border-foreground/30",
                       )}
                       onClick={() => key === "skills" && onSkillClick?.(item)}
                     >
@@ -1001,7 +1001,7 @@ export function CompanyExport() {
                 <button
                   type="button"
                   onClick={() => setTaskLimit((prev) => prev + TASKS_PAGE_SIZE)}
-                  className="w-full rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent/30 hover:text-foreground transition-colors"
+                  className="w-full rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground hover:opacity-80 hover:text-foreground"
                 >
                   Show more issues ({visibleTaskChildren} of {totalTaskChildren})
                 </button>

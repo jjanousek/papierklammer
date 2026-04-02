@@ -160,7 +160,7 @@ export function NewAgentDialog() {
             <>
               {/* Recommendation */}
               <div className="text-center space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center bg-accent">
                   <Sparkles className="h-6 w-6 text-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -178,7 +178,7 @@ export function NewAgentDialog() {
               {/* Advanced link */}
               <div className="text-center">
                 <button
-                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
                   onClick={handleAdvancedConfig}
                 >
                   I want advanced configuration myself
@@ -189,7 +189,7 @@ export function NewAgentDialog() {
             <>
               <div className="space-y-2">
                 <button
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => setShowAdvancedCards(false)}
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
@@ -205,12 +205,12 @@ export function NewAgentDialog() {
                   <button
                     key={opt.value}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs transition-colors hover:bg-accent/50 relative"
+                      "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs hover:opacity-80 relative"
                     )}
                     onClick={() => handleAdvancedAdapterPick(opt.value)}
                   >
                     {opt.recommended && (
-                      <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
+                      <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 leading-none">
                         Recommended
                       </span>
                     )}

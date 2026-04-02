@@ -45,7 +45,7 @@ export function BudgetIncidentCard({
               Spending reached {formatCents(incident.amountObserved)} against a limit of {formatCents(incident.amountLimit)}.
             </CardDescription>
           </div>
-          <div className="rounded-full border border-red-400/30 bg-red-500/10 p-2 text-red-200">
+          <div className="border border-red-400/30 bg-red-500/10 p-2 text-red-200">
             <AlertOctagon className="h-4 w-4" />
           </div>
         </div>

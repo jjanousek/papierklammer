@@ -99,7 +99,7 @@ export function ExecutionWorkspaceCloseDialog({
 
         {readinessQuery.isLoading ? (
           <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
             Checking whether this workspace is safe to close...
           </div>
         ) : readinessQuery.error ? (
@@ -304,7 +304,7 @@ export function ExecutionWorkspaceCloseDialog({
             onClick={() => closeWorkspace.mutate()}
             disabled={confirmDisabled}
           >
-            {closeWorkspace.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {closeWorkspace.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
             {actionLabel}
           </Button>
         </DialogFooter>

@@ -150,7 +150,7 @@ function renderImportFileExtra(node: FileTreeNode, checked: boolean, renameMap: 
   const renamedTo = node.kind === "dir" ? renameMap.get(node.path) : undefined;
   const actionBadge = node.action ? (
     <span className={cn(
-      "shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide",
+      "shrink-0 border px-2 py-0.5 text-[10px] uppercase tracking-wide",
       ACTION_COLORS[node.action] ?? ACTION_COLORS.skip,
     )}>
       {checked ? node.action : "skip"}
@@ -228,7 +228,7 @@ function ImportPreviewPane({
           </div>
           {action && (
             <span className={cn(
-              "shrink-0 rounded-full border px-2 py-0.5 text-xs uppercase tracking-wide",
+              "shrink-0 border px-2 py-0.5 text-xs uppercase tracking-wide",
               actionColor,
             )}>
               {action}
@@ -434,10 +434,10 @@ function ConflictResolutionList({
                 <button
                   type="button"
                   className={cn(
-                    "shrink-0 rounded-md border px-2.5 py-1 text-xs transition-colors",
+                    "shrink-0 rounded-md border px-2.5 py-1 text-xs",
                     isSkipped
                       ? "border-foreground bg-accent text-foreground"
-                      : "border-border text-muted-foreground hover:bg-accent/50",
+                      : "border-border text-muted-foreground hover:opacity-80",
                   )}
                   onClick={() => onToggleSkip(item.slug, item.filePath)}
                 >
@@ -445,7 +445,7 @@ function ConflictResolutionList({
                 </button>
 
                 <span className={cn(
-                  "shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide",
+                  "shrink-0 border px-2 py-0.5 text-[10px] uppercase tracking-wide",
                   isSkipped
                     ? "text-muted-foreground border-border"
                     : isConfirmed
@@ -484,10 +484,10 @@ function ConflictResolutionList({
                   <button
                     type="button"
                     className={cn(
-                      "ml-auto shrink-0 rounded-md border px-2.5 py-1 text-xs transition-colors inline-flex items-center gap-1.5",
+                      "ml-auto shrink-0 rounded-md border px-2.5 py-1 text-xs inline-flex items-center gap-1.5",
                       isConfirmed
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                        : "border-border text-muted-foreground hover:bg-accent/50",
+                        : "border-border text-muted-foreground hover:opacity-80",
                     )}
                     onClick={() => onToggleConfirm(item.slug)}
                   >
@@ -563,7 +563,7 @@ function AdapterPickerList({
               <div key={agent.slug}>
                 <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
                   <span className={cn(
-                    "shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide",
+                    "shrink-0 border px-2 py-0.5 text-[10px] uppercase tracking-wide",
                     "text-blue-500 border-blue-500/30",
                   )}>
                     agent
@@ -586,10 +586,10 @@ function AdapterPickerList({
                   <button
                     type="button"
                     className={cn(
-                      "ml-auto shrink-0 rounded-md border px-2.5 py-1 text-xs transition-colors inline-flex items-center gap-1.5",
+                      "ml-auto shrink-0 rounded-md border px-2.5 py-1 text-xs inline-flex items-center gap-1.5",
                       isExpanded
                         ? "border-foreground bg-accent text-foreground"
-                        : "border-border text-muted-foreground hover:bg-accent/50",
+                        : "border-border text-muted-foreground hover:opacity-80",
                     )}
                     onClick={() => onToggleExpand(agent.slug)}
                   >
@@ -1110,10 +1110,10 @@ export function CompanyImport() {
               key={key}
               type="button"
               className={cn(
-                "rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                "rounded-md border px-3 py-2 text-left text-sm",
                 sourceMode === key
                   ? "border-foreground bg-accent"
-                  : "border-border hover:bg-accent/50",
+                  : "border-border hover:opacity-80",
               )}
               onClick={() => {
                 setSourceMode(key);

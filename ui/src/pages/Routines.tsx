@@ -231,7 +231,7 @@ export function Routines() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
             Routines
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Beta</span>
+            <span className="bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Beta</span>
           </h1>
           <p className="text-sm text-muted-foreground">
             Recurring work definitions that materialize into auditable execution issues.
@@ -531,7 +531,7 @@ export function Routines() {
                   return (
                     <tr
                       key={routine.id}
-                      className="align-middle border-b border-border transition-colors hover:bg-accent/50 last:border-b-0 cursor-pointer"
+                      className="align-middle border-b border-border hover:opacity-80 last:border-b-0 cursor-pointer"
                       onClick={() => navigate(`/routines/${routine.id}`)}
                     >
                       <td className="px-3 py-2.5">
@@ -589,7 +589,7 @@ export function Routines() {
                             aria-checked={enabled}
                             aria-label={enabled ? `Disable ${routine.title}` : `Enable ${routine.title}`}
                             disabled={isStatusPending || isArchived}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            className={`relative inline-flex h-6 w-11 items-center ${
                               enabled ? "bg-foreground" : "bg-muted"
                             } ${isStatusPending || isArchived ? "cursor-not-allowed opacity-50" : ""}`}
                             onClick={() =>
@@ -600,7 +600,7 @@ export function Routines() {
                             }
                           >
                             <span
-                              className={`inline-block h-5 w-5 rounded-full bg-background shadow-sm transition-transform ${
+                              className={`inline-block h-5 w-5 bg-background shadow-sm transition-transform ${
                                 enabled ? "translate-x-5" : "translate-x-0.5"
                               }`}
                             />

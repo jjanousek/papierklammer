@@ -250,7 +250,7 @@ export function PluginManager() {
                         {installedPlugin ? (
                           <Badge
                             variant={installedPlugin.status === "ready" ? "default" : "secondary"}
-                            className={installedPlugin.status === "ready" ? "bg-green-600 hover:bg-green-700" : ""}
+                            className={installedPlugin.status === "ready" ? "bg-green-600 hover:opacity-80" : ""}
                           >
                             {installedPlugin.status}
                           </Badge>
@@ -363,7 +363,7 @@ export function PluginManager() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-red-500/30 bg-background/60 text-red-700 hover:bg-red-500/10 hover:text-red-800 dark:text-red-200 dark:hover:text-red-100"
+                            className="border-red-500/30 bg-background/60 text-red-700 hover:opacity-80 hover:text-red-800 dark:text-red-200 dark:hover:text-red-100"
                             onClick={() => setErrorDetailsPlugin(plugin)}
                           >
                             View full error
@@ -385,7 +385,7 @@ export function PluginManager() {
                           }
                           className={cn(
                             "shrink-0",
-                            plugin.status === "ready" ? "bg-green-600 hover:bg-green-700" : ""
+                            plugin.status === "ready" ? "bg-green-600 hover:opacity-80" : ""
                           )}
                         >
                           {plugin.status}

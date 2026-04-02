@@ -356,7 +356,7 @@ export function ProjectWorkspaceDetail() {
             Back to workspaces
           </Link>
         </Button>
-        <div className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">
+        <div className="inline-flex items-center border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">
           {workspace.isPrimary ? "Primary workspace" : "Secondary workspace"}
         </div>
       </div>
@@ -384,7 +384,7 @@ export function ProjectWorkspaceDetail() {
                   onClick={() => setPrimaryWorkspace.mutate()}
                 >
                   {setPrimaryWorkspace.isPending
-                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                     : <Check className="mr-2 h-4 w-4" />}
                   Make primary
                 </Button>
@@ -540,7 +540,7 @@ export function ProjectWorkspaceDetail() {
 
             <div className="mt-5 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Button className="w-full sm:w-auto" disabled={!isDirty || updateWorkspace.isPending} onClick={saveChanges}>
-                {updateWorkspace.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {updateWorkspace.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
                 Save changes
               </Button>
               <Button
@@ -608,7 +608,7 @@ export function ProjectWorkspaceDetail() {
                   disabled={controlRuntimeServices.isPending || !workspace.runtimeConfig?.workspaceRuntime || !workspace.cwd}
                   onClick={() => controlRuntimeServices.mutate("start")}
                 >
-                  {controlRuntimeServices.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                  {controlRuntimeServices.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
                   Start
                 </Button>
                 <Button

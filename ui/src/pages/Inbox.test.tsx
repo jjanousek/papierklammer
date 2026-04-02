@@ -127,8 +127,8 @@ describe("FailedRunInboxRow", () => {
 
     const link = container.querySelector("a");
     expect(link).not.toBeNull();
-    expect(link?.className).toContain("hover:bg-transparent");
-    expect(link?.className).not.toContain("hover:bg-accent/50");
+    expect(link?.className).toContain("hover:opacity-80");
+    expect(link?.className).not.toContain("hover:opacity-80");
 
     act(() => {
       root.unmount();

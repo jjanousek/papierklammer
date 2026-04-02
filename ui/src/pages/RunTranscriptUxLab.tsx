@@ -111,14 +111,14 @@ function LiveWidgetPreview({
           <div className="min-w-0">
             <Identity name={runTranscriptFixtureMeta.agentName} size="sm" />
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full border border-border/70 bg-background/70 px-2 py-1 font-mono">
+              <span className="border border-border/70 bg-background/70 px-2 py-1 font-mono">
                 {runTranscriptFixtureMeta.sourceRunId.slice(0, 8)}
               </span>
               <StatusBadge status={streaming ? "running" : "succeeded"} />
               <span>{formatDateTime(runTranscriptFixtureMeta.startedAt)}</span>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] text-muted-foreground">
             Open run
             <ExternalLink className="h-3 w-3" />
           </span>
@@ -159,7 +159,7 @@ function DashboardPreview({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "inline-flex h-2.5 w-2.5 rounded-full",
+                  "inline-flex h-1.5 w-1.5",
                   streaming ? "bg-cyan-500 shadow-[0_0_0_6px_rgba(34,211,238,0.12)]" : "bg-muted-foreground/35",
                 )} />
                 <Identity name={runTranscriptFixtureMeta.agentName} size="sm" />
@@ -168,7 +168,7 @@ function DashboardPreview({
                 {streaming ? "Live now" : "Finished 2m ago"}
               </div>
             </div>
-            <span className="rounded-full border border-border/70 bg-background/70 px-2 py-1 text-[10px] text-muted-foreground">
+            <span className="border border-border/70 bg-background/70 px-2 py-1 text-[10px] text-muted-foreground">
               <ExternalLink className="h-2.5 w-2.5" />
             </span>
           </div>
@@ -204,7 +204,7 @@ export function RunTranscriptUxLab() {
         <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="border-b border-border/60 bg-background/75 p-5 lg:border-b-0 lg:border-r">
             <div className="mb-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/[0.08] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-700 dark:text-cyan-300">
+              <div className="inline-flex items-center gap-2 border border-cyan-500/25 bg-cyan-500/[0.08] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-700 dark:text-cyan-300">
                 <FlaskConical className="h-3.5 w-3.5" />
                 UX Lab
               </div>
@@ -226,7 +226,7 @@ export function RunTranscriptUxLab() {
                       "w-full rounded-xl border px-4 py-3 text-left transition-all",
                       selectedSurface === option.id
                         ? "border-cyan-500/35 bg-cyan-500/[0.10] shadow-[0_12px_24px_rgba(6,182,212,0.12)]"
-                        : "border-border/70 bg-background/70 hover:border-cyan-500/20 hover:bg-cyan-500/[0.04]",
+                        : "border-border/70 bg-background/70 hover:border-cyan-500/20 hover:opacity-80",
                     )}
                   >
                     <div className="flex items-start gap-3">
@@ -262,10 +262,10 @@ export function RunTranscriptUxLab() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.18em]">
+                <Badge variant="outline" className="px-3 py-1 text-[10px] uppercase tracking-[0.18em]">
                   Source run {runTranscriptFixtureMeta.sourceRunId.slice(0, 8)}
                 </Badge>
-                <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.18em]">
+                <Badge variant="outline" className="px-3 py-1 text-[10px] uppercase tracking-[0.18em]">
                   {runTranscriptFixtureMeta.issueIdentifier}
                 </Badge>
               </div>
@@ -275,13 +275,13 @@ export function RunTranscriptUxLab() {
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Controls
               </span>
-              <div className="inline-flex rounded-full border border-border/70 bg-background/80 p-1">
+              <div className="inline-flex border border-border/70 bg-background/80 p-1">
                 {(["nice", "raw"] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors",
+                      "px-3 py-1 text-xs font-medium capitalize",
                       detailMode === mode ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}
                     onClick={() => setDetailMode(mode)}
@@ -290,13 +290,13 @@ export function RunTranscriptUxLab() {
                   </button>
                 ))}
               </div>
-              <div className="inline-flex rounded-full border border-border/70 bg-background/80 p-1">
+              <div className="inline-flex border border-border/70 bg-background/80 p-1">
                 {(["comfortable", "compact"] as const).map((nextDensity) => (
                   <button
                     key={nextDensity}
                     type="button"
                     className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors",
+                      "px-3 py-1 text-xs font-medium capitalize",
                       density === nextDensity ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}
                     onClick={() => setDensity(nextDensity)}
@@ -308,7 +308,7 @@ export function RunTranscriptUxLab() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-full"
+                className=""
                 onClick={() => setStreaming((value) => !value)}
               >
                 {streaming ? "Show settled state" : "Show streaming state"}

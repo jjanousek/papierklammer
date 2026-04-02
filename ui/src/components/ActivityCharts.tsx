@@ -36,7 +36,7 @@ function ChartLegend({ items }: { items: { color: string; label: string }[] }) {
     <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-2">
       {items.map(item => (
         <span key={item.label} className="flex items-center gap-1 text-[9px] text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+          <span className="h-1.5 w-1.5 shrink-0" style={{ backgroundColor: item.color }} />
           {item.label}
         </span>
       ))}

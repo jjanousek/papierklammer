@@ -53,8 +53,8 @@ export function IssueRow({
       state={issueLinkState}
       data-inbox-issue-link
       className={cn(
-        "group flex items-start gap-2 border-b border-border py-2.5 pl-2 pr-3 text-sm no-underline text-inherit transition-colors last:border-b-0 sm:items-center sm:py-2 sm:pl-1",
-        selected ? "hover:bg-transparent" : "hover:bg-accent/50",
+        "group flex items-start gap-2 border-b border-border py-2.5 pl-2 pr-3 text-sm no-underline text-inherit last:border-b-0 sm:items-center sm:py-2 sm:pl-1",
+        selected ? "hover:opacity-80" : "hover:opacity-80",
         className,
       )}
     >
@@ -115,14 +115,14 @@ export function IssueRow({
                 }
               }}
               className={cn(
-                "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
-                selected ? "hover:bg-muted/80" : "hover:bg-blue-500/20",
+                "inline-flex h-4 w-4 items-center justify-center",
+                selected ? "hover:opacity-80" : "hover:opacity-80",
               )}
               aria-label="Mark as read"
             >
               <span
                 className={cn(
-                  "block h-2 w-2 rounded-full transition-opacity duration-300",
+                  "block h-1.5 w-1.5 transition-opacity duration-300",
                   selected ? "bg-muted-foreground/70" : "bg-blue-600 dark:bg-blue-400",
                   unreadState === "fading" ? "opacity-0" : "opacity-100",
                 )}

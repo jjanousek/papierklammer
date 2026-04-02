@@ -80,7 +80,7 @@ function PropertyPicker({
   children: React.ReactNode;
 }) {
   const btnCn = cn(
-    "inline-flex items-center gap-1.5 cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1 py-0.5 transition-colors",
+    "inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 rounded px-1 -mx-1 py-0.5",
     triggerClassName,
   );
 
@@ -227,7 +227,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       {(issue.labels ?? []).slice(0, 3).map((label) => (
         <span
           key={label.id}
-          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border"
+          className="inline-flex items-center px-2 py-0.5 text-xs font-medium border"
           style={{
             borderColor: label.color,
             backgroundColor: `${label.color}22`,
@@ -269,12 +269,12 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
               <div key={label.id} className="flex items-center gap-1">
                 <button
                   className={cn(
-                    "flex items-center gap-2 flex-1 px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-left",
+                    "flex items-center gap-2 flex-1 px-2 py-1.5 text-xs rounded hover:opacity-80 text-left",
                     selected && "bg-accent"
                   )}
                   onClick={() => toggleLabel(label.id)}
                 >
-                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+                  <span className="h-1.5 w-1.5 shrink-0" style={{ backgroundColor: label.color }} />
                   <span className="truncate">{label.name}</span>
                 </button>
                 <button
@@ -305,7 +305,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           />
         </div>
         <button
-          className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs rounded border border-border hover:bg-accent/50 disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs rounded border border-border hover:opacity-80 disabled:opacity-50"
           disabled={!newLabelName.trim() || createLabel.isPending}
           onClick={() =>
             createLabel.mutate({
@@ -347,7 +347,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       <div className="max-h-48 overflow-y-auto overscroll-contain">
         <button
           className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
             !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent"
           )}
           onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: null }); setAssigneeOpen(false); }}
@@ -357,7 +357,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         {currentUserId && (
           <button
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
               issue.assigneeUserId === currentUserId && "bg-accent",
             )}
             onClick={() => {
@@ -372,7 +372,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         {issue.createdByUserId && issue.createdByUserId !== currentUserId && (
           <button
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
               issue.assigneeUserId === issue.createdByUserId && "bg-accent",
             )}
             onClick={() => {
@@ -394,7 +394,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           <button
             key={a.id}
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
               a.id === issue.assigneeAgentId && "bg-accent"
             )}
             onClick={() => { trackRecentAssignee(a.id); onUpdate({ assigneeAgentId: a.id, assigneeUserId: null }); setAssigneeOpen(false); }}
@@ -434,7 +434,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       <div className="max-h-48 overflow-y-auto overscroll-contain">
         <button
           className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 whitespace-nowrap",
+            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 whitespace-nowrap",
             !issue.projectId && "bg-accent"
           )}
           onClick={() => {
@@ -460,7 +460,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           <button
             key={p.id}
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 whitespace-nowrap",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 whitespace-nowrap",
               p.id === issue.projectId && "bg-accent"
             )}
             onClick={() => {
@@ -529,7 +529,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           extra={issue.assigneeAgentId ? (
             <Link
               to={`/agents/${issue.assigneeAgentId}`}
-              className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center justify-center h-5 w-5 rounded hover:opacity-80 text-muted-foreground hover:text-foreground"
               onClick={(e) => e.stopPropagation()}
             >
               <ArrowUpRight className="h-3 w-3" />
@@ -550,7 +550,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           extra={issue.projectId ? (
             <Link
               to={projectLink(issue.projectId)!}
-              className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center justify-center h-5 w-5 rounded hover:opacity-80 text-muted-foreground hover:text-foreground"
               onClick={(e) => e.stopPropagation()}
             >
               <ArrowUpRight className="h-3 w-3" />

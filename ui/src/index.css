@@ -477,7 +477,7 @@ a.papierklammer-mention-chip[data-mention-kind="agent"]::before {
 }
 
 .papierklammer-mdxeditor-content code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font);
   font-size: 1em;
 }
 
@@ -580,7 +580,7 @@ a.papierklammer-mention-chip[data-mention-kind="agent"]::before {
 }
 
 .papierklammer-markdown code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font);
   font-size: 1em;
 }
 

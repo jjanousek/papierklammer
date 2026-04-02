@@ -651,13 +651,13 @@ export function RoutineDetail() {
             aria-checked={automationEnabled}
             aria-label={automationEnabled ? "Pause automatic triggers" : "Enable automatic triggers"}
             disabled={automationToggleDisabled}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            className={`relative inline-flex h-6 w-11 items-center ${
               automationEnabled ? "bg-emerald-500" : "bg-muted"
             } ${automationToggleDisabled ? "cursor-not-allowed opacity-50" : ""}`}
             onClick={() => updateRoutineStatus.mutate(automationEnabled ? "paused" : "active")}
           >
             <span
-              className={`inline-block h-5 w-5 rounded-full bg-background shadow-sm transition-transform ${
+              className={`inline-block h-5 w-5 bg-background shadow-sm transition-transform ${
                 automationEnabled ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
@@ -872,7 +872,7 @@ export function RoutineDetail() {
           <TabsTrigger value="runs" className="gap-1.5">
             <Play className="h-3.5 w-3.5" />
             Runs
-            {hasLiveRun && <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />}
+            {hasLiveRun && <span className="h-1.5 w-1.5 bg-blue-500" />}
           </TabsTrigger>
 <TabsTrigger value="activity" className="gap-1.5">
             <ActivityIcon className="h-3.5 w-3.5" />

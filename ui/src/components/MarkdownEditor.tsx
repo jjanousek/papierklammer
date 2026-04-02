@@ -574,7 +574,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               <button
                 key={option.id}
                 className={cn(
-                  "flex items-center gap-2 w-full px-3 py-1.5 text-sm text-left hover:bg-accent/50 transition-colors",
+                  "flex items-center gap-2 w-full px-3 py-1.5 text-sm text-left hover:opacity-80",
                   i === mentionIndex && "bg-accent",
                 )}
                 onMouseDown={(e) => {
@@ -585,7 +585,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               >
                 {option.kind === "project" && option.projectId ? (
                   <span
-                    className="inline-flex h-2 w-2 rounded-full border border-border/50"
+                    className="inline-flex h-1.5 w-1.5 border border-border/50"
                     style={{ backgroundColor: option.projectColor ?? "#64748b" }}
                   />
                 ) : (

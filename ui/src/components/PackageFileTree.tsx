@@ -208,8 +208,8 @@ export function PackageFileTree({
               <div
                 className={cn(
                   showCheckboxes
-                    ? "group grid w-full grid-cols-[auto_minmax(0,1fr)_2.25rem] items-center gap-x-1 pr-3 text-left text-sm text-muted-foreground hover:bg-accent/30 hover:text-foreground"
-                    : "group grid w-full grid-cols-[minmax(0,1fr)_2.25rem] items-center gap-x-1 pr-3 text-left text-sm text-muted-foreground hover:bg-accent/30 hover:text-foreground",
+                    ? "group grid w-full grid-cols-[auto_minmax(0,1fr)_2.25rem] items-center gap-x-1 pr-3 text-left text-sm text-muted-foreground hover:opacity-80 hover:text-foreground"
+                    : "group grid w-full grid-cols-[minmax(0,1fr)_2.25rem] items-center gap-x-1 pr-3 text-left text-sm text-muted-foreground hover:opacity-80 hover:text-foreground",
                   TREE_ROW_HEIGHT_CLASS,
                 )}
                 style={{
@@ -243,7 +243,7 @@ export function PackageFileTree({
                 </button>
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center self-center rounded-sm text-muted-foreground opacity-70 transition-[background-color,color,opacity] hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                  className="flex h-9 w-9 items-center justify-center self-center rounded-sm text-muted-foreground opacity-70 transition-[background-color,color,opacity] hover:opacity-80 hover:text-foreground group-hover:opacity-100"
                   onClick={() => onToggleDir(node.path)}
                 >
                   {expanded ? (
@@ -279,7 +279,7 @@ export function PackageFileTree({
           <div
             key={node.path}
             className={cn(
-              "flex w-full items-center gap-1 pr-3 text-left text-sm text-muted-foreground hover:bg-accent/30 hover:text-foreground cursor-pointer",
+              "flex w-full items-center gap-1 pr-3 text-left text-sm text-muted-foreground hover:opacity-80 hover:text-foreground cursor-pointer",
               TREE_ROW_HEIGHT_CLASS,
               node.path === selectedFile && "text-foreground bg-accent/20",
               extraClassName,

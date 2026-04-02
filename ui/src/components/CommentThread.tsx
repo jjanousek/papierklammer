@@ -108,7 +108,7 @@ function CopyMarkdownButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className="text-muted-foreground hover:text-foreground transition-colors"
+      className="text-muted-foreground hover:text-foreground"
       title="Copy as markdown"
       onClick={() => {
         navigator.clipboard.writeText(text).then(() => {
@@ -145,7 +145,7 @@ function CommentCard({
     <div
       key={comment.id}
       id={`comment-${comment.id}`}
-      className={`border p-3 overflow-hidden min-w-0 rounded-sm transition-colors duration-1000 ${
+      className={`border p-3 overflow-hidden min-w-0 rounded-sm duration-1000 ${
         isQueued
           ? "border-amber-300/70 bg-amber-50/70 dark:border-amber-500/40 dark:bg-amber-500/10"
           : isHighlighted
@@ -166,7 +166,7 @@ function CommentCard({
         )}
         <span className="flex items-center gap-1.5">
           {isQueued ? (
-            <span className="inline-flex items-center rounded-full border border-amber-400/60 bg-amber-100/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-200">
+            <span className="inline-flex items-center border border-amber-400/60 bg-amber-100/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-amber-800 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-200">
               Queued
             </span>
           ) : null}
@@ -191,7 +191,7 @@ function CommentCard({
           ) : (
             <a
               href={`#comment-${comment.id}`}
-              className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
             >
               {formatDateTime(comment.createdAt)}
             </a>
@@ -223,7 +223,7 @@ function CommentCard({
           {comment.runAgentId ? (
             <Link
               to={`/agents/${comment.runAgentId}/runs/${comment.runId}`}
-              className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+              className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:opacity-80"
             >
               run {comment.runId.slice(0, 8)}
             </Link>
@@ -281,7 +281,7 @@ const TimelineList = memo(function TimelineList({
                 <span className="text-muted-foreground">Run</span>
                 <Link
                   to={`/agents/${run.agentId}/runs/${run.runId}`}
-                  className="inline-flex items-center rounded-md border border-border bg-accent/40 px-2 py-1 font-mono text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+                  className="inline-flex items-center rounded-md border border-border bg-accent/40 px-2 py-1 font-mono text-muted-foreground hover:text-foreground hover:opacity-80"
                 >
                   {run.runId.slice(0, 8)}
                 </Link>
@@ -491,7 +491,7 @@ export function CommentThread({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
+                className="border-red-300 text-red-700 hover:opacity-80 hover:text-red-800 dark:border-red-500/40 dark:text-red-300 dark:hover:opacity-80"
                 disabled={interruptingQueuedRunId === queuedComments[0].queueTargetRunId}
                 onClick={() => void onInterruptQueued(queuedComments[0]!.queueTargetRunId!)}
               >

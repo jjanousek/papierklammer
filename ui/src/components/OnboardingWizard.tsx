@@ -632,7 +632,7 @@ export function OnboardingWizard() {
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground"
           >
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
@@ -661,7 +661,7 @@ export function OnboardingWizard() {
                     type="button"
                     onClick={() => setStep(s)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors cursor-pointer",
+                      "flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px cursor-pointer",
                       s === step
                         ? "border-foreground text-foreground"
                         : "border-transparent text-muted-foreground hover:text-foreground/70 hover:border-border"
@@ -690,7 +690,7 @@ export function OnboardingWizard() {
                   <div className="mt-3 group">
                     <label
                       className={cn(
-                        "text-xs mb-1 block transition-colors",
+                        "text-xs mb-1 block",
                         companyName.trim()
                           ? "text-foreground"
                           : "text-muted-foreground group-focus-within:text-foreground"
@@ -709,7 +709,7 @@ export function OnboardingWizard() {
                   <div className="group">
                     <label
                       className={cn(
-                        "text-xs mb-1 block transition-colors",
+                        "text-xs mb-1 block",
                         companyGoal.trim()
                           ? "text-foreground"
                           : "text-muted-foreground group-focus-within:text-foreground"
@@ -778,10 +778,10 @@ export function OnboardingWizard() {
                         <button
                           key={opt.value}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
+                            "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs relative",
                             adapterType === opt.value
                               ? "border-foreground bg-accent"
-                              : "border-border hover:bg-accent/50"
+                              : "border-border hover:opacity-80"
                           )}
                           onClick={() => {
                             const nextType = opt.value as AdapterType;
@@ -795,7 +795,7 @@ export function OnboardingWizard() {
                           }}
                         >
                           {opt.recommended && (
-                            <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
+                            <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 leading-none">
                               Recommended
                             </span>
                           )}
@@ -809,7 +809,7 @@ export function OnboardingWizard() {
                     </div>
 
                     <button
-                      className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => setShowMoreAdapters((v) => !v)}
                     >
                       <ChevronDown
@@ -867,12 +867,12 @@ export function OnboardingWizard() {
                             key={opt.value}
                             disabled={!!opt.comingSoon}
                             className={cn(
-                              "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
+                              "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs relative",
                               opt.comingSoon
                                 ? "border-border opacity-40 cursor-not-allowed"
                                 : adapterType === opt.value
                                 ? "border-foreground bg-accent"
-                                : "border-border hover:bg-accent/50"
+                                : "border-border hover:opacity-80"
                             )}
                             onClick={() => {
                               if (opt.comingSoon) return;
@@ -930,7 +930,7 @@ export function OnboardingWizard() {
                           }}
                         >
                           <PopoverTrigger asChild>
-                            <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+                            <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:opacity-80 w-full justify-between">
                               <span
                                 className={cn(
                                   !model && "text-muted-foreground"
@@ -960,7 +960,7 @@ export function OnboardingWizard() {
                             {adapterType !== "opencode_local" && (
                               <button
                                 className={cn(
-                                  "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
+                                  "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:opacity-80",
                                   !model && "bg-accent"
                                 )}
                                 onClick={() => {
@@ -986,7 +986,7 @@ export function OnboardingWizard() {
                                     <button
                                       key={m.id}
                                       className={cn(
-                                        "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
+                                        "flex items-center w-full px-2 py-1.5 text-sm rounded hover:opacity-80",
                                         m.id === model && "bg-accent"
                                       )}
                                       onClick={() => {
@@ -1281,7 +1281,7 @@ export function OnboardingWizard() {
                       onClick={handleStep1Next}
                     >
                       {loading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
@@ -1297,7 +1297,7 @@ export function OnboardingWizard() {
                       onClick={handleStep2Next}
                     >
                       {loading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
@@ -1311,7 +1311,7 @@ export function OnboardingWizard() {
                       onClick={handleStep3Next}
                     >
                       {loading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
@@ -1321,7 +1321,7 @@ export function OnboardingWizard() {
                   {step === 4 && (
                     <Button size="sm" disabled={loading} onClick={handleLaunch}>
                       {loading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}

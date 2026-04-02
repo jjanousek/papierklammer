@@ -42,7 +42,7 @@ export function ReportsToPicker({
         <button
           type="button"
           className={cn(
-            "inline-flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors",
+            "inline-flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-md border border-border px-2 py-1 text-xs hover:opacity-80",
             terminatedManager && "border-amber-600/45 bg-amber-500/5",
             disabled && "opacity-60 cursor-not-allowed",
           )}
@@ -79,7 +79,7 @@ export function ReportsToPicker({
         <button
           type="button"
           className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80",
             value === null && "bg-accent",
           )}
           onClick={() => {
@@ -107,7 +107,7 @@ export function ReportsToPicker({
             type="button"
             key={a.id}
             className={cn(
-              "flex items-center gap-2 w-full min-w-0 px-2 py-1.5 text-xs rounded hover:bg-accent/50 overflow-hidden",
+              "flex items-center gap-2 w-full min-w-0 px-2 py-1.5 text-xs rounded hover:opacity-80 overflow-hidden",
               a.id === value && "bg-accent",
             )}
             onClick={() => {

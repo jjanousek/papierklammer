@@ -181,7 +181,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 function StatusPill({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground", className)}>
+    <div className={cn("inline-flex items-center border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground", className)}>
       {children}
     </div>
   );
@@ -560,7 +560,7 @@ export function ExecutionWorkspaceDetail() {
 
               <div className="mt-5 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Button className="w-full sm:w-auto" disabled={!isDirty || updateWorkspace.isPending} onClick={saveChanges}>
-                  {updateWorkspace.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {updateWorkspace.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
                   Save changes
                 </Button>
                 <Button
@@ -693,7 +693,7 @@ export function ExecutionWorkspaceDetail() {
                     disabled={controlRuntimeServices.isPending || !effectiveRuntimeConfig || !workspace.cwd}
                     onClick={() => controlRuntimeServices.mutate("start")}
                   >
-                    {controlRuntimeServices.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                    {controlRuntimeServices.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
                     Start
                   </Button>
                   <Button
@@ -820,7 +820,7 @@ export function ExecutionWorkspaceDetail() {
                 <Link
                   key={issue.id}
                   to={issueUrl(issue)}
-                  className="min-w-72 rounded-xl border border-border/80 bg-background px-4 py-3 transition-colors hover:bg-accent/20"
+                  className="min-w-72 rounded-xl border border-border/80 bg-background px-4 py-3 hover:opacity-80"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 space-y-1">

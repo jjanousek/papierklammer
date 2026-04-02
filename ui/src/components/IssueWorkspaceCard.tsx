@@ -78,7 +78,7 @@ function CopyableInline({ value, label, mono }: { value: string; label?: string;
       </span>
       <button
         type="button"
-        className="shrink-0 p-0.5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/copy:opacity-100 focus:opacity-100"
+        className="shrink-0 p-0.5 rounded hover:opacity-80 text-muted-foreground hover:text-foreground opacity-0 group-hover/copy:opacity-100 focus:opacity-100"
         onClick={handleCopy}
         title={copied ? "Copied!" : "Copy"}
       >
@@ -145,7 +145,7 @@ function statusBadge(status: string) {
     archived: "bg-muted text-muted-foreground",
   };
   return (
-    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium", colors[status] ?? colors.idle)}>
+    <span className={cn("text-[10px] px-1.5 py-0.5 font-medium", colors[status] ?? colors.idle)}>
       {status.replace(/_/g, " ")}
     </span>
   );

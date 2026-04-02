@@ -178,7 +178,7 @@ export function ApprovalDetail() {
             <div className="flex items-start gap-2">
               <div className="relative mt-0.5">
                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-300" />
-                <Sparkles className="h-3 w-3 text-green-500 dark:text-green-200 absolute -right-2 -top-1 animate-pulse" />
+                <Sparkles className="h-3 w-3 text-green-500 dark:text-green-200 absolute -right-2 -top-1" />
               </div>
               <div>
                 <p className="text-sm text-green-800 dark:text-green-100 font-medium">Approval confirmed</p>
@@ -190,7 +190,7 @@ export function ApprovalDetail() {
             <Button
               size="sm"
               variant="outline"
-              className="border-green-400 dark:border-green-600/50 text-green-800 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-900/30"
+              className="border-green-400 dark:border-green-600/50 text-green-800 dark:text-green-100 hover:opacity-80 dark:hover:opacity-80"
               onClick={() => navigate(resolvedCta.to)}
             >
               {resolvedCta.label}
@@ -222,7 +222,7 @@ export function ApprovalDetail() {
           <ApprovalPayloadRenderer type={approval.type} payload={payload} />
           <button
             type="button"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-2"
             onClick={() => setShowRawPayload((v) => !v)}
           >
             <ChevronRight className={`h-3 w-3 transition-transform ${showRawPayload ? "rotate-90" : ""}`} />
@@ -246,7 +246,7 @@ export function ApprovalDetail() {
                 <Link
                   key={issue.id}
                   to={`/issues/${issue.identifier ?? issue.id}`}
-                  className="block text-xs rounded border border-border/70 px-2 py-1.5 hover:bg-accent/20"
+                  className="block text-xs rounded border border-border/70 px-2 py-1.5 hover:opacity-80"
                 >
                   <span className="font-mono text-muted-foreground mr-2">
                     {issue.identifier ?? issue.id.slice(0, 8)}
@@ -265,7 +265,7 @@ export function ApprovalDetail() {
             <>
               <Button
                 size="sm"
-                className="bg-green-700 hover:bg-green-600 text-white"
+                className="bg-green-700 hover:opacity-80 text-white"
                 onClick={() => approveMutation.mutate()}
                 disabled={approveMutation.isPending}
               >

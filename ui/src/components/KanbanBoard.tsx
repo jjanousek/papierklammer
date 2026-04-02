@@ -76,7 +76,7 @@ function KanbanColumn({
       </div>
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-[120px] rounded-md p-1 space-y-1 transition-colors ${
+        className={`flex-1 min-h-[120px] rounded-md p-1 space-y-1 ${
           isOver ? "bg-accent/40" : "bg-muted/20"
         }`}
       >
@@ -154,8 +154,7 @@ function KanbanCard({
           </span>
           {isLive && (
             <span className="relative flex h-2 w-2 shrink-0 mt-0.5">
-              <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+              <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
             </span>
           )}
         </div>

@@ -103,7 +103,7 @@ type NonIssueUnreadState = "visible" | "fading" | "hidden" | null;
 const selectedInboxAccentClass = "!text-muted-foreground !border-muted-foreground";
 
 function getSelectedUnreadButtonClass(selected: boolean): string {
-  return selected ? "hover:bg-muted/80" : "hover:bg-blue-500/20";
+  return selected ? "hover:opacity-80" : "hover:opacity-80";
 }
 
 function getSelectedUnreadDotClass(selected: boolean): string {
@@ -133,17 +133,14 @@ export function InboxIssueMetaLeading({
       {isLive && (
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 sm:gap-1.5 sm:px-2",
+            "inline-flex items-center gap-1 px-1.5 py-0.5 sm:gap-1.5 sm:px-2",
             selected ? "bg-muted" : "bg-blue-500/10",
           )}
         >
-          <span className="relative flex h-2 w-2">
-            {!selected ? (
-              <span className="absolute inline-flex h-full w-full animate-pulse rounded-full bg-blue-400 opacity-75" />
-            ) : null}
+          <span className="relative flex h-1.5 w-1.5">
             <span
               className={cn(
-                "relative inline-flex h-2 w-2 rounded-full",
+                "relative inline-flex h-1.5 w-1.5",
                 selected ? "bg-muted-foreground/70" : "bg-blue-500",
               )}
             />
@@ -210,13 +207,13 @@ export function FailedRunInboxRow({
                 type="button"
                 onClick={onMarkRead}
                 className={cn(
-                  "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
+                  "inline-flex h-4 w-4 items-center justify-center",
                   getSelectedUnreadButtonClass(selected),
                 )}
                 aria-label="Mark as read"
               >
                 <span className={cn(
-                  "block h-2 w-2 rounded-full transition-opacity duration-300",
+                  "block h-1.5 w-1.5 transition-opacity duration-300",
                   getSelectedUnreadDotClass(selected),
                   unreadState === "fading" ? "opacity-0" : "opacity-100",
                 )} />
@@ -239,8 +236,8 @@ export function FailedRunInboxRow({
         <Link
           to={`/agents/${run.agentId}/runs/${run.id}`}
           className={cn(
-            "flex min-w-0 flex-1 items-start gap-2 no-underline text-inherit transition-colors",
-            selected ? "hover:bg-transparent" : "hover:bg-accent/50",
+            "flex min-w-0 flex-1 items-start gap-2 no-underline text-inherit",
+            selected ? "hover:opacity-80" : "hover:opacity-80",
           )}
         >
           {!showUnreadSlot && <span className="hidden h-2 w-2 shrink-0 sm:inline-flex" aria-hidden="true" />}
@@ -285,7 +282,7 @@ export function FailedRunInboxRow({
             <button
               type="button"
               onClick={onDismiss}
-              className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+              className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:opacity-80 hover:text-foreground group-hover:opacity-100"
               aria-label="Dismiss"
             >
               <X className="h-4 w-4" />
@@ -309,7 +306,7 @@ export function FailedRunInboxRow({
           <button
             type="button"
             onClick={onDismiss}
-            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground hover:opacity-80 hover:text-foreground"
             aria-label="Dismiss"
           >
             <X className="h-4 w-4" />
@@ -366,13 +363,13 @@ function ApprovalInboxRow({
                 type="button"
                 onClick={onMarkRead}
                 className={cn(
-                  "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
+                  "inline-flex h-4 w-4 items-center justify-center",
                   getSelectedUnreadButtonClass(selected),
                 )}
                 aria-label="Mark as read"
               >
                 <span className={cn(
-                  "block h-2 w-2 rounded-full transition-opacity duration-300",
+                  "block h-1.5 w-1.5 transition-opacity duration-300",
                   getSelectedUnreadDotClass(selected),
                   unreadState === "fading" ? "opacity-0" : "opacity-100",
                 )} />
@@ -395,8 +392,8 @@ function ApprovalInboxRow({
         <Link
           to={`/approvals/${approval.id}`}
           className={cn(
-            "flex min-w-0 flex-1 items-start gap-2 no-underline text-inherit transition-colors",
-            selected ? "hover:bg-transparent" : "hover:bg-accent/50",
+            "flex min-w-0 flex-1 items-start gap-2 no-underline text-inherit",
+            selected ? "hover:opacity-80" : "hover:opacity-80",
           )}
         >
           {!showUnreadSlot && <span className="hidden h-2 w-2 shrink-0 sm:inline-flex" aria-hidden="true" />}
@@ -419,7 +416,7 @@ function ApprovalInboxRow({
           <div className="hidden shrink-0 items-center gap-2 sm:flex">
             <Button
               size="sm"
-              className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+              className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
               onClick={onApprove}
               disabled={isPending}
             >
@@ -441,7 +438,7 @@ function ApprovalInboxRow({
         <div className="mt-3 flex gap-2 sm:hidden">
           <Button
             size="sm"
-            className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+            className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
             onClick={onApprove}
             disabled={isPending}
           >
@@ -505,13 +502,13 @@ function JoinRequestInboxRow({
                 type="button"
                 onClick={onMarkRead}
                 className={cn(
-                  "inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors",
+                  "inline-flex h-4 w-4 items-center justify-center",
                   getSelectedUnreadButtonClass(selected),
                 )}
                 aria-label="Mark as read"
               >
                 <span className={cn(
-                  "block h-2 w-2 rounded-full transition-opacity duration-300",
+                  "block h-1.5 w-1.5 transition-opacity duration-300",
                   getSelectedUnreadDotClass(selected),
                   unreadState === "fading" ? "opacity-0" : "opacity-100",
                 )} />
@@ -550,7 +547,7 @@ function JoinRequestInboxRow({
         <div className="hidden shrink-0 items-center gap-2 sm:flex">
           <Button
             size="sm"
-            className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+            className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
             onClick={onApprove}
             disabled={isPending}
           >
@@ -570,7 +567,7 @@ function JoinRequestInboxRow({
       <div className="mt-3 flex gap-2 sm:hidden">
         <Button
           size="sm"
-          className="h-8 bg-green-700 px-3 text-white hover:bg-green-600"
+          className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
           onClick={onApprove}
           disabled={isPending}
         >
@@ -1525,7 +1522,7 @@ export function Inbox() {
             </h3>
             <div className="divide-y divide-border border border-border">
               {showAggregateAgentError && (
-                <div className="group/alert relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50">
+                <div className="group/alert relative flex items-center gap-3 px-4 py-3 hover:opacity-80">
                   <Link
                     to="/agents"
                     className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
@@ -1539,7 +1536,7 @@ export function Inbox() {
                   <button
                     type="button"
                     onClick={() => dismiss("alert:agent-errors")}
-                    className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover/alert:opacity-100"
+                    className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:opacity-80 hover:text-foreground group-hover/alert:opacity-100"
                     aria-label="Dismiss"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -1547,7 +1544,7 @@ export function Inbox() {
                 </div>
               )}
               {showBudgetAlert && (
-                <div className="group/alert relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50">
+                <div className="group/alert relative flex items-center gap-3 px-4 py-3 hover:opacity-80">
                   <Link
                     to="/costs"
                     className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
@@ -1562,7 +1559,7 @@ export function Inbox() {
                   <button
                     type="button"
                     onClick={() => dismiss("alert:budget")}
-                    className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover/alert:opacity-100"
+                    className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:opacity-80 hover:text-foreground group-hover/alert:opacity-100"
                     aria-label="Dismiss"
                   >
                     <X className="h-3.5 w-3.5" />

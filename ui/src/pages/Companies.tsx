@@ -128,7 +128,7 @@ export function Companies() {
                   setSelectedCompanyId(company.id);
                 }
               }}
-              className={`group text-left bg-card border rounded-lg p-5 transition-colors cursor-pointer ${
+              className={`group text-left bg-card border rounded-lg p-5 cursor-pointer ${
                 selected
                   ? "border-primary ring-1 ring-primary"
                   : "border-border hover:border-muted-foreground/30"
@@ -168,7 +168,7 @@ export function Companies() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-base">{company.name}</h3>
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium ${
                           company.status === "active"
                             ? "bg-green-500/10 text-green-600 dark:text-green-400"
                             : company.status === "paused"

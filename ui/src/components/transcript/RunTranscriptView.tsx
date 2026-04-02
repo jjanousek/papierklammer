@@ -608,8 +608,7 @@ function TranscriptMessageBlock({
       {block.streaming && (
         <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium italic text-muted-foreground">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-70" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+            <span className="relative inline-flex h-1.5 w-1.5 bg-current" />
           </span>
           Streaming
         </div>
@@ -705,7 +704,7 @@ function TranscriptToolCard({
         </div>
         <button
           type="button"
-          className="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground hover:text-foreground"
           onClick={() => setOpen((value) => !value)}
           aria-label={open ? "Collapse tool details" : "Expand tool details"}
         >
@@ -796,12 +795,12 @@ function TranscriptCommandGroup({
             <span
               key={index}
               className={cn(
-                "inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm",
+                "inline-flex h-6 w-6 items-center justify-center border shadow-sm",
                 index > 0 && "-ml-1.5",
                 isRunning
                   ? "border-cyan-500/25 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300"
                   : "border-border/70 bg-background text-foreground/55",
-                isRunning && "animate-pulse",
+
               )}
             >
               <TerminalSquare className="h-3.5 w-3.5" />
@@ -826,7 +825,7 @@ function TranscriptCommandGroup({
         <button
           type="button"
           className={cn(
-            "inline-flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground",
+            "inline-flex h-5 w-5 items-center justify-center text-muted-foreground hover:text-foreground",
             subtitle && "mt-0.5",
           )}
           onClick={(event) => {
@@ -844,7 +843,7 @@ function TranscriptCommandGroup({
             <div key={`${item.ts}-${index}`} className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                  "inline-flex h-5 w-5 shrink-0 items-center justify-center border",
                   item.status === "error"
                     ? "border-red-500/25 bg-red-500/[0.08] text-red-600 dark:text-red-300"
                     : item.status === "running"
@@ -919,14 +918,14 @@ function TranscriptToolGroup({
               <span
                 key={`${item.ts}-${index}`}
                 className={cn(
-                  "inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm",
+                  "inline-flex h-6 w-6 items-center justify-center border shadow-sm",
                   index > 0 && "-ml-1.5",
                   isItemRunning
                     ? "border-cyan-500/25 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300"
                     : isItemError
                       ? "border-red-500/25 bg-red-500/[0.08] text-red-600 dark:text-red-300"
                       : "border-border/70 bg-background text-foreground/55",
-                  isItemRunning && "animate-pulse",
+
                 )}
               >
                 <Wrench className="h-3.5 w-3.5" />
@@ -946,7 +945,7 @@ function TranscriptToolGroup({
         </div>
         <button
           type="button"
-          className={cn("inline-flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground", subtitle && "mt-0.5")}
+          className={cn("inline-flex h-5 w-5 items-center justify-center text-muted-foreground hover:text-foreground", subtitle && "mt-0.5")}
           onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
           aria-label={open ? "Collapse tool details" : "Expand tool details"}
         >
@@ -959,7 +958,7 @@ function TranscriptToolGroup({
             <div key={`${item.ts}-${index}`} className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                  "inline-flex h-5 w-5 shrink-0 items-center justify-center border",
                   item.status === "error"
                     ? "border-red-500/25 bg-red-500/[0.08] text-red-600 dark:text-red-300"
                     : item.status === "running"
@@ -1019,8 +1018,7 @@ function TranscriptActivityRow({
         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-300" />
       ) : (
         <span className="relative mt-1 flex h-2.5 w-2.5 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-70" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
+          <span className="relative inline-flex h-2.5 w-2.5 bg-cyan-500" />
         </span>
       )}
       <div className={cn(
@@ -1058,7 +1056,7 @@ function TranscriptEventRow({
         ) : block.tone === "warn" ? (
           <TerminalSquare className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         ) : (
-          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-current/50" />
+          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 bg-current/50" />
         )}
         <div className="min-w-0 flex-1">
           {block.label === "result" && block.tone !== "error" ? (
@@ -1140,7 +1138,7 @@ function TranscriptStdoutRow({
         </span>
         <button
           type="button"
-          className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground hover:text-foreground"
           onClick={() => setOpen((value) => !value)}
           aria-label={open ? "Collapse stdout" : "Expand stdout"}
         >

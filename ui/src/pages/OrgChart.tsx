@@ -297,7 +297,7 @@ export function OrgChart() {
       {/* Zoom controls */}
       <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
         <button
-          className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-sm hover:bg-accent transition-colors"
+          className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-sm hover:opacity-80"
           onClick={() => {
             const newZoom = Math.min(zoom * 1.2, 2);
             const container = containerRef.current;
@@ -314,7 +314,7 @@ export function OrgChart() {
           +
         </button>
         <button
-          className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-sm hover:bg-accent transition-colors"
+          className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-sm hover:opacity-80"
           onClick={() => {
             const newZoom = Math.max(zoom * 0.8, 0.2);
             const container = containerRef.current;
@@ -331,7 +331,7 @@ export function OrgChart() {
           &minus;
         </button>
         <button
-          className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-[10px] hover:bg-accent transition-colors"
+          className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-[10px] hover:opacity-80"
           onClick={() => {
             if (!containerRef.current) return;
             const cW = containerRef.current.clientWidth;
@@ -408,11 +408,11 @@ export function OrgChart() {
               <div className="flex items-center px-4 py-3 gap-3">
                 {/* Agent icon + status dot */}
                 <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                  <div className="w-9 h-9 bg-muted flex items-center justify-center">
                     <AgentIcon icon={agent?.icon} className="h-4.5 w-4.5 text-foreground/70" />
                   </div>
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card"
+                    className="absolute -bottom-0.5 -right-0.5 h-3 w-3 border-2 border-card"
                     style={{ backgroundColor: dotColor }}
                   />
                 </div>

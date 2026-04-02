@@ -143,8 +143,8 @@ export function InlineEditor({
       <div
         className={cn(
           markdownPad,
-          "rounded transition-colors",
-          multilineFocused ? "bg-transparent" : "hover:bg-accent/20",
+          "rounded",
+          multilineFocused ? "bg-transparent" : "hover:opacity-80",
         )}
         onFocusCapture={() => setMultilineFocused(true)}
         onBlurCapture={(event) => {
@@ -235,7 +235,7 @@ export function InlineEditor({
   return (
     <DisplayTag
       className={cn(
-        "cursor-pointer rounded hover:bg-accent/50 transition-colors overflow-hidden",
+        "cursor-pointer rounded hover:opacity-80 overflow-hidden",
         pad,
         !value && "text-muted-foreground italic",
         className,

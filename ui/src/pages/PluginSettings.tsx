@@ -660,7 +660,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
         Loading configuration...
       </div>
     );
@@ -710,7 +710,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
         >
           {saveMutation.isPending ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
               Saving...
             </>
           ) : (
@@ -726,7 +726,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
           >
             {testMutation.isPending ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
                 Testing...
               </>
             ) : (
@@ -803,13 +803,13 @@ function JobStatusDot({ status }: { status: string }) {
       : status === "failed"
         ? "bg-red-500"
         : status === "running"
-          ? "bg-blue-500 animate-pulse"
+          ? "bg-blue-500"
           : status === "cancelled"
             ? "bg-gray-400"
             : "bg-amber-500"; // queued, pending
   return (
     <span
-      className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`}
+      className={`inline-block h-1.5 w-1.5 shrink-0 ${colorClass}`}
       title={status}
     />
   );
@@ -829,7 +829,7 @@ function DeliveryStatusDot({ status }: { status: string }) {
           : "bg-amber-500"; // pending
   return (
     <span
-      className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`}
+      className={`inline-block h-1.5 w-1.5 shrink-0 ${colorClass}`}
       title={status}
     />
   );

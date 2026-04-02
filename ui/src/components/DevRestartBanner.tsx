@@ -40,7 +40,7 @@ export function DevRestartBanner({ devServer }: { devServer?: DevServerHealthSta
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             <span>Restart Required</span>
             {devServer.autoRestartEnabled ? (
-              <span className="rounded-full bg-amber-900/10 px-2 py-0.5 text-[10px] tracking-[0.14em] dark:bg-amber-100/10">
+              <span className="bg-amber-900/10 px-2 py-0.5 text-[10px] tracking-[0.14em] dark:bg-amber-100/10">
                 Auto-Restart On
               </span>
             ) : null}
@@ -67,17 +67,17 @@ export function DevRestartBanner({ devServer }: { devServer?: DevServerHealthSta
 
         <div className="flex shrink-0 items-center gap-2 text-xs font-medium">
           {devServer.waitingForIdle ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-900/10 px-3 py-1.5 dark:bg-amber-100/10">
+            <div className="inline-flex items-center gap-2 bg-amber-900/10 px-3 py-1.5 dark:bg-amber-100/10">
               <TimerReset className="h-3.5 w-3.5" />
               <span>Waiting for {devServer.activeRunCount} live run{devServer.activeRunCount === 1 ? "" : "s"} to finish</span>
             </div>
           ) : devServer.autoRestartEnabled ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-900/10 px-3 py-1.5 dark:bg-amber-100/10">
+            <div className="inline-flex items-center gap-2 bg-amber-900/10 px-3 py-1.5 dark:bg-amber-100/10">
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Auto-restart will trigger when the instance is idle</span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-900/10 px-3 py-1.5 dark:bg-amber-100/10">
+            <div className="inline-flex items-center gap-2 bg-amber-900/10 px-3 py-1.5 dark:bg-amber-100/10">
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Restart <code>pnpm dev:once</code> after the active work is safe to interrupt</span>
             </div>

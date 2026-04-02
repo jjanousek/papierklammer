@@ -34,7 +34,7 @@ export function CopyText({ text, children, className, copiedLabel = "Copied!" }:
         ref={triggerRef}
         type="button"
         className={cn(
-          "cursor-copy hover:text-foreground transition-colors",
+          "cursor-copy hover:text-foreground",
           className,
         )}
         onClick={handleClick}

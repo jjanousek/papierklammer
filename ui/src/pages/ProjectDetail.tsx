@@ -282,11 +282,11 @@ function ProjectWorkspacesContent({
                 <GitBranch className="h-3.5 w-3.5" />
                 <span className="font-mono">{summary.branchName ?? "No branch info"}</span>
               </span>
-              <span className="rounded-full border border-border px-2 py-0.5 text-[11px]">
+              <span className="border border-border px-2 py-0.5 text-[11px]">
                 {summary.runningServiceCount}/{summary.serviceCount} services running
               </span>
               {summary.executionWorkspaceStatus ? (
-                <span className="rounded-full border border-border px-2 py-0.5 text-[11px]">
+                <span className="border border-border px-2 py-0.5 text-[11px]">
                   {summary.executionWorkspaceStatus}
                 </span>
               ) : null}
@@ -323,7 +323,7 @@ function ProjectWorkspacesContent({
                 <Link
                   key={issue.id}
                   to={`/issues/${issue.identifier ?? issue.id}`}
-                  className="inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left text-xs leading-none transition-colors hover:bg-accent"
+                  className="inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left text-xs leading-none hover:opacity-80"
                 >
                   <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                     {issue.identifier ?? issue.id.slice(0, 8)}
@@ -364,7 +364,7 @@ function ProjectWorkspacesContent({
                   })
                 }
               >
-                {runtimeActionKey === `${summary.key}:start` ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                {runtimeActionKey === `${summary.key}:start` ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
                 Start
               </Button>
               <Button
@@ -814,8 +814,8 @@ export function ProjectDetail() {
             className="text-xl font-bold"
           />
           {project.pauseReason === "budget" ? (
-            <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-red-200">
-              <span className="h-2 w-2 rounded-full bg-red-400" />
+            <div className="inline-flex items-center gap-2 border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-red-200">
+              <span className="h-1.5 w-1.5 bg-red-400" />
               Paused by budget hard stop
             </div>
           ) : null}

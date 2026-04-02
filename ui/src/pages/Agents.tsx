@@ -153,8 +153,8 @@ export function Agents() {
           <div className="relative">
             <button
               className={cn(
-                "flex items-center gap-1.5 px-2 py-1.5 text-xs transition-colors border border-border",
-                filtersOpen || showTerminated ? "text-foreground bg-accent" : "text-muted-foreground hover:bg-accent/50"
+                "flex items-center gap-1.5 px-2 py-1.5 text-xs border border-border",
+                filtersOpen || showTerminated ? "text-foreground bg-accent" : "text-muted-foreground hover:opacity-80"
               )}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
@@ -165,7 +165,7 @@ export function Agents() {
             {filtersOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 w-48 border border-border bg-popover shadow-md p-1">
                 <button
-                  className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:bg-accent/50 transition-colors"
+                  className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:opacity-80"
                   onClick={() => setShowTerminated(!showTerminated)}
                 >
                   <span className={cn(
@@ -184,8 +184,8 @@ export function Agents() {
             <div className="flex items-center border border-border">
               <button
                 className={cn(
-                  "p-1.5 transition-colors",
-                  effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
+                  "p-1.5",
+                  effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:opacity-80"
                 )}
                 onClick={() => setView("list")}
               >
@@ -193,8 +193,8 @@ export function Agents() {
               </button>
               <button
                 className={cn(
-                  "p-1.5 transition-colors",
-                  effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
+                  "p-1.5",
+                  effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:opacity-80"
                 )}
                 onClick={() => setView("org")}
               >
@@ -235,9 +235,9 @@ export function Agents() {
                 subtitle={`${roleLabels[agent.role] ?? agent.role}${agent.title ? ` - ${agent.title}` : ""}`}
                 to={agentUrl(agent)}
                 leading={
-                  <span className="relative flex h-2.5 w-2.5">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span
-                      className={`absolute inline-flex h-full w-full rounded-full ${agentStatusDot[agent.status] ?? agentStatusDotDefault}`}
+                      className={`absolute inline-flex h-full w-full ${agentStatusDot[agent.status] ?? agentStatusDotDefault}`}
                     />
                   </span>
                 }
@@ -329,10 +329,10 @@ function OrgTreeNode({
     <div style={{ paddingLeft: depth * 24 }}>
       <Link
         to={agent ? agentUrl(agent) : `/agents/${node.id}`}
-        className="flex items-center gap-3 px-3 py-2 hover:bg-accent/30 transition-colors w-full text-left no-underline text-inherit"
+        className="flex items-center gap-3 px-3 py-2 hover:opacity-80 w-full text-left no-underline text-inherit"
       >
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          <span className={`absolute inline-flex h-full w-full rounded-full ${statusColor}`} />
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className={`absolute inline-flex h-full w-full ${statusColor}`} />
         </span>
         <div className="flex-1 min-w-0">
           <span className="text-sm font-medium">{node.name}</span>
@@ -400,12 +400,11 @@ function LiveRunIndicator({
   return (
     <Link
       to={`/agents/${agentRef}/runs/${runId}`}
-      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors no-underline"
+      className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 hover:opacity-80 no-underline"
       onClick={(e) => e.stopPropagation()}
     >
-      <span className="relative flex h-2 w-2">
-        <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
       </span>
       <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
         Live{liveCount > 1 ? ` (${liveCount})` : ""}

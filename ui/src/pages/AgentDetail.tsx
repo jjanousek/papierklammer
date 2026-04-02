@@ -339,7 +339,7 @@ function WorkspaceOperationStatusBadge({ status }: { status: WorkspaceOperation[
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium capitalize",
+        "inline-flex items-center border px-2 py-0.5 text-[11px] font-medium capitalize",
         workspaceOperationStatusTone(status),
       )}
     >
@@ -812,7 +812,7 @@ export function AgentDetail() {
             value={agent.icon}
             onChange={(icon) => updateIcon.mutate(icon)}
           >
-            <button className="shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-accent hover:bg-accent/80 transition-colors">
+            <button className="shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-accent hover:opacity-80">
               <AgentIcon icon={agent.icon} className="h-6 w-6" />
             </button>
           </AgentIconPicker>
@@ -848,11 +848,10 @@ export function AgentDetail() {
           {mobileLiveRun && (
             <Link
               to={`/agents/${canonicalAgentRef}/runs/${mobileLiveRun.id}`}
-              className="sm:hidden flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors no-underline"
+              className="sm:hidden flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 hover:opacity-80 no-underline"
             >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="relative inline-flex h-1.5 w-1.5 bg-blue-500" />
               </span>
               <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">Live</span>
             </Link>
@@ -867,7 +866,7 @@ export function AgentDetail() {
             </PopoverTrigger>
             <PopoverContent className="w-44 p-1" align="end">
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80"
                 onClick={() => {
                   navigator.clipboard.writeText(agent.id);
                   setMoreOpen(false);
@@ -877,7 +876,7 @@ export function AgentDetail() {
                 Copy Agent ID
               </button>
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80"
                 onClick={() => {
                   resetTaskSession.mutate(null);
                   setMoreOpen(false);
@@ -887,7 +886,7 @@ export function AgentDetail() {
                 Reset Sessions
               </button>
               <button
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:opacity-80 text-destructive"
                 onClick={() => {
                   agentAction.mutate("terminate");
                   setMoreOpen(false);
@@ -1102,16 +1101,15 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
       <div className="flex w-full items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-medium">
           {isLive && (
-            <span className="relative flex h-2 w-2">
-              <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="relative inline-flex h-1.5 w-1.5 bg-cyan-400" />
             </span>
           )}
           {isLive ? "Live Run" : "Latest Run"}
         </h3>
         <Link
           to={`/agents/${agentId}/runs/${run.id}`}
-          className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors no-underline"
+          className="shrink-0 text-xs text-muted-foreground hover:text-foreground no-underline"
         >
           View details &rarr;
         </Link>
@@ -1120,16 +1118,16 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
       <Link
         to={`/agents/${agentId}/runs/${run.id}`}
         className={cn(
-          "block border rounded-lg p-4 space-y-2 w-full no-underline transition-colors hover:bg-muted/50 cursor-pointer",
+          "block border rounded-lg p-4 space-y-2 w-full no-underline hover:opacity-80 cursor-pointer",
           isLive ? "border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]" : "border-border"
         )}
       >
         <div className="flex items-center gap-2">
-          <StatusIcon className={cn("h-3.5 w-3.5", statusInfo.color, run.status === "running" && "animate-spin")} />
+          <StatusIcon className={cn("h-3.5 w-3.5", statusInfo.color, run.status === "running")} />
           <StatusBadge status={run.status} />
           <span className="font-mono text-xs text-muted-foreground">{run.id.slice(0, 8)}</span>
           <span className={cn(
-            "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+            "inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium",
             run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
               : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
               : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
@@ -1194,7 +1192,7 @@ function AgentOverview({
           <h3 className="text-sm font-medium">Recent Issues</h3>
           <Link
             to={`/issues?participantAgentId=${agentId}`}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground"
           >
             See All &rarr;
           </Link>
@@ -1367,7 +1365,7 @@ function AgentConfigurePage({
       {/* Configuration Revisions — collapsible at the bottom */}
       <div>
         <button
-          className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-sm font-medium hover:text-foreground"
           onClick={() => setRevisionsOpen((v) => !v)}
         >
           {revisionsOpen
@@ -1536,7 +1534,7 @@ function ConfigurationTab({
               data-slot="toggle"
               aria-checked={canCreateAgents}
               className={cn(
-                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 disabled:cursor-not-allowed disabled:opacity-50",
+                "relative inline-flex h-5 w-9 items-center shrink-0 disabled:cursor-not-allowed disabled:opacity-50",
                 canCreateAgents ? "bg-green-600" : "bg-muted",
               )}
               onClick={() =>
@@ -1549,7 +1547,7 @@ function ConfigurationTab({
             >
               <span
                 className={cn(
-                  "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                  "inline-block h-3.5 w-3.5 bg-white transition-transform",
                   canCreateAgents ? "translate-x-4.5" : "translate-x-0.5",
                 )}
               />
@@ -1568,7 +1566,7 @@ function ConfigurationTab({
               data-slot="toggle"
               aria-checked={canAssignTasks}
               className={cn(
-                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 disabled:cursor-not-allowed disabled:opacity-50",
+                "relative inline-flex h-5 w-9 items-center shrink-0 disabled:cursor-not-allowed disabled:opacity-50",
                 canAssignTasks ? "bg-green-600" : "bg-muted",
               )}
               onClick={() =>
@@ -1581,7 +1579,7 @@ function ConfigurationTab({
             >
               <span
                 className={cn(
-                  "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                  "inline-block h-3.5 w-3.5 bg-white transition-transform",
                   canAssignTasks ? "translate-x-4.5" : "translate-x-0.5",
                 )}
               />
@@ -1929,7 +1927,7 @@ function PromptsTab({
       )}
 
       <Collapsible defaultOpen={currentMode === "external"}>
-        <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+        <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground group">
           <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
           Advanced
         </CollapsibleTrigger>
@@ -2210,7 +2208,7 @@ function PromptsTab({
         {/* Draggable separator */}
         {!isMobile && (
           <div
-            className="w-1 shrink-0 cursor-col-resize hover:bg-border active:bg-primary/50 rounded transition-colors mx-1"
+            className="w-1 shrink-0 cursor-col-resize hover:opacity-80 active:bg-primary/50 rounded mx-1"
             onMouseDown={handleSeparatorDrag}
           />
         )}
@@ -2546,13 +2544,13 @@ function AgentSkillsTab({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/skills"
-          className="text-sm font-medium text-foreground underline-offset-4 no-underline transition-colors hover:text-foreground/70 hover:underline"
+          className="text-sm font-medium text-foreground underline-offset-4 no-underline hover:text-foreground/70 hover:underline"
         >
           View company skills library
         </Link>
         {saveStatusLabel ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {syncSkills.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+            {syncSkills.isPending ? <span className="text-[10px] text-[var(--fg-dim)]">loading...</span> : null}
             <span>{saveStatusLabel}</span>
           </div>
         ) : null}
@@ -2582,7 +2580,7 @@ function AgentSkillsTab({
               const required = Boolean(adapterEntry?.required);
               const rowClassName = cn(
                 "flex items-start gap-3 border-b border-border px-3 py-3 text-sm last:border-b-0",
-                skill.readOnly ? "bg-muted/20" : "hover:bg-accent/20",
+                skill.readOnly ? "bg-muted/20" : "hover:opacity-80",
               );
               const body = (
                 <div className="min-w-0 flex-1">
@@ -2619,7 +2617,7 @@ function AgentSkillsTab({
               if (skill.readOnly) {
                 return (
                   <div key={skill.id} className={rowClassName}>
-                    <span className="mt-1 h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    <span className="mt-1 h-2 w-2 bg-muted-foreground/40" />
                     {body}
                   </div>
                 );
@@ -2769,17 +2767,17 @@ function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelect
     <Link
       to={isSelected ? `/agents/${agentId}/runs` : `/agents/${agentId}/runs/${run.id}`}
       className={cn(
-        "flex flex-col gap-1 w-full px-3 py-2.5 text-left border-b border-border last:border-b-0 transition-colors no-underline text-inherit",
-        isSelected ? "bg-accent/40" : "hover:bg-accent/20",
+        "flex flex-col gap-1 w-full px-3 py-2.5 text-left border-b border-border last:border-b-0 no-underline text-inherit",
+        isSelected ? "bg-accent/40" : "hover:opacity-80",
       )}
     >
       <div className="flex items-center gap-2">
-        <StatusIcon className={cn("h-3.5 w-3.5 shrink-0", statusInfo.color, run.status === "running" && "animate-spin")} />
+        <StatusIcon className={cn("h-3.5 w-3.5 shrink-0", statusInfo.color, run.status === "running")} />
         <span className="font-mono text-xs text-muted-foreground">
           {run.id.slice(0, 8)}
         </span>
         <span className={cn(
-          "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0",
+          "inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium shrink-0",
           run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
             : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
             : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
@@ -2843,7 +2841,7 @@ function RunsTab({
         <div className="space-y-3 min-w-0 overflow-x-hidden">
           <Link
             to={`/agents/${agentRouteId}/runs`}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors no-underline"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground no-underline"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to runs
@@ -3198,7 +3196,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
         {hasSession && (
           <div className="border-t border-border">
             <button
-              className="flex items-center gap-1.5 w-full px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 w-full px-4 py-2 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setSessionOpen((v) => !v)}
             >
               <ChevronRight className={cn("h-3 w-3 transition-transform", sessionOpen && "rotate-90")} />
@@ -3262,7 +3260,7 @@ function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: Heartb
               <Link
                 key={issue.issueId}
                 to={`/issues/${issue.identifier ?? issue.issueId}`}
-                className="flex items-center justify-between w-full px-3 py-2 text-xs hover:bg-accent/20 transition-colors text-left no-underline text-inherit"
+                className="flex items-center justify-between w-full px-3 py-2 text-xs hover:opacity-80 text-left no-underline text-inherit"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <StatusBadge status={issue.status} />
@@ -3782,7 +3780,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
                 key={mode}
                 type="button"
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-colors",
+                  "rounded-md px-2.5 py-1 text-[11px] font-medium capitalize",
                   transcriptMode === mode
                     ? "bg-accent text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -3810,9 +3808,8 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           )}
           {isLive && (
             <span className="flex items-center gap-1 text-xs text-cyan-400">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="relative inline-flex h-1.5 w-1.5 bg-cyan-400" />
               </span>
               Live
             </span>

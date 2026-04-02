@@ -34,10 +34,10 @@ export function InstanceSidebar() {
                   to={`/instance/settings/plugins/${plugin.id}`}
                   className={({ isActive }) =>
                     [
-                      "rounded-md px-2 py-1.5 text-xs transition-colors",
+                      "rounded-md px-2 py-1.5 text-xs",
                       isActive
                         ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                        : "text-muted-foreground hover:opacity-80 hover:text-foreground",
                     ].join(" ")
                   }
                 >
