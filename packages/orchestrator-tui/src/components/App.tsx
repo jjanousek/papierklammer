@@ -1,10 +1,11 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Box, useApp, useInput } from "ink";
 import { HeaderBar } from "./HeaderBar.js";
 import { AgentSidebar } from "./AgentSidebar.js";
 import { ChatPanel } from "./ChatPanel.js";
 import { InputBar } from "./InputBar.js";
 import { StatusBar } from "./StatusBar.js";
+import { HelpOverlay } from "./HelpOverlay.js";
 import type { CodexState } from "./StatusBar.js";
 import { useOrchestratorStatus } from "../hooks/useOrchestratorStatus.js";
 import { useChat } from "../hooks/useChat.js";
@@ -47,6 +48,8 @@ export function App({
   enableCodex = false,
 }: AppProps): React.ReactElement {
   const { exit } = useApp();
+  const [helpVisible, setHelpVisible] = useState(false);
+  const inputFocusedRef = useRef(false);
 
   // Enter alternate screen buffer on mount, restore on unmount
   useEffect(() => {
@@ -56,10 +59,15 @@ export function App({
     };
   }, []);
 
-  // Handle Ctrl+C for clean exit
+  // Handle Ctrl+C for clean exit and '?' for help overlay
   useInput((_input, key) => {
     if (key.ctrl && _input === "c") {
       exit();
+    }
+    // Toggle help overlay with '?' when input bar is not focused
+    // Only open (not close) from here — closing is handled by HelpOverlay itself
+    if (_input === "?" && !inputFocusedRef.current && !helpVisible) {
+      setHelpVisible(true);
     }
   });
 
@@ -144,23 +152,38 @@ export function App({
     [chat.sendMessage, enableCodex, codex.sendMessage],
   );
 
+  const handleDismissHelp = useCallback(() => {
+    setHelpVisible(false);
+  }, []);
+
+  const handleInputFocusChange = useCallback((focused: boolean) => {
+    inputFocusedRef.current = focused;
+  }, []);
+
   return (
     <Box flexDirection="column" width="100%" height="100%">
       <HeaderBar
         connected={status.connected}
         totalAgents={status.totalAgents}
         totalActiveRuns={status.totalActiveRuns}
+        error={status.error}
       />
       <Box flexDirection="row" flexGrow={1}>
-        <AgentSidebar agents={status.agents} />
-        <ChatPanel
-          messages={chat.messages}
-          streamingText={chat.streamingText}
-          isThinking={chat.isThinking}
-          pendingCommandItems={chat.pendingCommandItems}
-        />
+        <AgentSidebar agents={status.agents} connected={status.connected} error={status.error} />
+        {helpVisible ? (
+          <Box flexGrow={1} justifyContent="center" alignItems="center">
+            <HelpOverlay visible={helpVisible} onDismiss={handleDismissHelp} />
+          </Box>
+        ) : (
+          <ChatPanel
+            messages={chat.messages}
+            streamingText={chat.streamingText}
+            isThinking={chat.isThinking}
+            pendingCommandItems={chat.pendingCommandItems}
+          />
+        )}
       </Box>
-      <InputBar onSubmit={handleSubmit} disabled={inputDisabled} />
+      <InputBar onSubmit={handleSubmit} disabled={inputDisabled} onFocusChange={handleInputFocusChange} />
       <StatusBar
         codexState={effectiveCodexState}
         threadId={effectiveThreadId}

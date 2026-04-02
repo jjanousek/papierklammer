@@ -5,12 +5,14 @@ export interface HeaderBarProps {
   connected: boolean;
   totalAgents: number;
   totalActiveRuns: number;
+  error?: string | null;
 }
 
 export function HeaderBar({
   connected,
   totalAgents,
   totalActiveRuns,
+  error = null,
 }: HeaderBarProps): React.ReactElement {
   return (
     <Box
@@ -30,9 +32,13 @@ export function HeaderBar({
         <Text color={connected ? "green" : "red"}>
           {connected ? "Connected" : "Disconnected"}
         </Text>
-        <Text dimColor>
-          {" "}| {totalAgents} agent{totalAgents !== 1 ? "s" : ""} | {totalActiveRuns} active run{totalActiveRuns !== 1 ? "s" : ""}
-        </Text>
+        {connected ? (
+          <Text dimColor>
+            {" "}| {totalAgents} agent{totalAgents !== 1 ? "s" : ""} | {totalActiveRuns} active run{totalActiveRuns !== 1 ? "s" : ""}
+          </Text>
+        ) : error ? (
+          <Text dimColor> | {error}</Text>
+        ) : null}
       </Box>
     </Box>
   );

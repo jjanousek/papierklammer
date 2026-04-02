@@ -20,11 +20,17 @@ export interface AgentSidebarProps {
   agents: AgentOverview[];
   /** Override max visible agents for testing */
   maxVisible?: number;
+  /** Whether the sidebar is connected to the orchestrator API */
+  connected?: boolean;
+  /** Error message from the last failed poll */
+  error?: string | null;
 }
 
 export function AgentSidebar({
   agents,
   maxVisible = DEFAULT_MAX_VISIBLE,
+  connected = true,
+  error = null,
 }: AgentSidebarProps): React.ReactElement {
   const { isFocused } = useFocus({ id: "sidebar" });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -74,7 +80,12 @@ export function AgentSidebar({
       <Text bold underline>
         Agents
       </Text>
-      {agents.length === 0 ? (
+      {!connected ? (
+        <>
+          <Text color="red">Disconnected</Text>
+          {error ? <Text dimColor>{error}</Text> : null}
+        </>
+      ) : agents.length === 0 ? (
         <Text dimColor>No agents connected</Text>
       ) : (
         <>
