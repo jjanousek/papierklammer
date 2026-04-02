@@ -1,115 +1,76 @@
-# Architecture: Papierklammer
+# Architecture — Papierklammer TUI + GUI
 
-## System Overview
+## TUI Architecture (packages/orchestrator-tui/)
 
-Papierklammer is a TypeScript monorepo for autonomous AI agent orchestration. It manages a "company" of AI agents that work on issues, organized by projects and goals.
-
-## Monorepo Structure
-
+### Component Tree
 ```
-packages/db/          — Drizzle ORM schema + migrations (PostgreSQL)
-packages/shared/      — Shared types, constants, validators (Zod)
-packages/adapter-utils/ — Adapter interface + shared utilities
-packages/adapters/    — 7+ agent adapters (claude, codex, cursor, gemini, etc.)
-packages/plugins/     — Plugin SDK + examples
-packages/orchestrator-console/ — [NEW] Orchestrator CLI tool
-server/               — Express 5 API server + services
-ui/                   — React 19 + Vite frontend
-cli/                  — CLI tool (commander.js)
-```
-
-## Data Flow: Intent → Execution
-
-### Before (legacy heartbeat model)
-```
-Timer/Event → enqueueWakeup() → heartbeat_runs(queued) → executeRun() → adapter.execute()
-```
-Everything happens in heartbeat.ts (~4000 lines). Fire-and-forget dispatch. No admission control. Workspace resolved inline. No leases.
-
-### After (Papierklammer control plane)
-```
-Event → Intent Queue (dispatch_intents) → Scheduler (admission) → Lease Manager (execution_leases)
-→ Dispatcher (execution_envelopes) → heartbeat_runs(running) → adapter.execute()
-→ Event Log (control_plane_events) → Projections → Board State
+index.tsx (CLI entry, renders <App>)
+└── ErrorBoundary
+    └── App (shell: wires hooks together, routes to CompanyPicker or main layout)
+        ├── CompanyPicker (shown when no companyId)
+        └── MainLayout
+            ├── HeaderBar (connection status, agent/run counts)
+            ├── Box[row]
+            │   ├── AgentSidebar (left 25%, polls API, scrollable agent list)
+            │   └── ChatPanel
+            │       └── MessageList (messages + streaming + command blocks)
+            ├── InputBar (text input, disabled when thinking)
+            ├── HelpOverlay (? key toggle, keyboard shortcuts)
+            └── StatusBar (Codex state, threadId, model)
 ```
 
-## Key Components
+### Hook Architecture
+- `useCodex`: Manages CodexClient lifecycle (create/destroy), exposes sendMessage, isThinking, streamingText, connectionState
+- `useChat`: Message history, streaming text accumulation, command item tracking, onDelta/onTurnCompleted/onCommandExecution callbacks
+- `useOrchestratorStatus`: Polls GET /api/orchestrator/status, exposes agents, connected, error state
+- `useFocusManager`: Tab cycling between sidebar and input, tracks active panel
 
-### Intent Queue (`server/src/services/intent-queue.ts`)
-- Replaces direct `enqueueWakeup()` calls
-- Durable queue backed by `dispatch_intents` table
-- Deduplication by `dedupeKey`
-- State machine: queued → admitted/rejected/superseded/deferred → consumed
+### Data Flow
+1. User types → InputBar.onSubmit → App.handleSubmit → chat.sendMessage() + codex.sendMessage()
+2. Codex subprocess receives turn/start → streams deltas → chat.onDelta() accumulates text
+3. turn/completed → chat.onTurnCompleted() moves streaming text to message history
+4. Background: useOrchestratorStatus polls API → updates sidebar without affecting chat
 
-### Scheduler (`server/src/services/scheduler.ts`)
-- Consumes intents from the queue
-- Admission checks: issue open, assignee match, workspace exists, no active lease, agent capacity, budget
-- Outputs: admitted/rejected/deferred/superseded
-- Replaces ad-hoc logic scattered in heartbeat.ts
+### Codex Client
+- Spawns `codex app-server` as child process
+- JSON-RPC over stdin/stdout (JSONL, no "jsonrpc" field)
+- Request/response matching by incrementing IDs
+- Callbacks for streaming events (delta, item started/completed, turn completed, command output)
+- Auto-reconnect on crash (3s delay)
 
-### Lease Manager (`server/src/services/lease-manager.ts`)
-- Execution leases for issues and agents
-- Backed by `execution_leases` table
-- Checkout TTL enforcement (60s default)
-- Lease renewal on agent activity
-- Auto-cancel on expiry
+## GUI Architecture (ui/src/)
 
-### Dispatcher (`server/src/services/dispatcher.ts`)
-- Creates immutable execution envelopes
-- Resolves workspace at dispatch time
-- Rejects if workspace unavailable (no fallback for project work)
-- Passes envelope to adapter via AdapterExecutionContext
+### Tech Stack
+- React 19, Vite 6, Tailwind CSS v4, shadcn/ui (new-york style)
+- TanStack React Query for data fetching
+- react-router-dom 7 with company-prefix routing
+- All colors defined as CSS custom properties in index.css
 
-### Event Log (`server/src/services/event-log.ts`)
-- Append-only `control_plane_events` table
-- All lifecycle transitions emit events
-- Source of truth for projections
+### Design System (papierklammer-design-system.md)
+- Brutalist, TUI-aesthetic, monospace-only (JetBrains Mono)
+- Pink/rose palette (#C4878E base)
+- Zero border-radius globally
+- 1px borders as primary spatial dividers
+- No shadows, gradients, spinners, hover bg changes
+- Status: 6x6 square indicators (not circles)
+- Text hierarchy: white at 100%, 68%, 40% opacity
 
-### Projection Service (`server/src/services/projections.ts`)
-- Derives issue status from events/run/lease state
-- Issue with active run+checkout → in_progress
-- Cancelled run → stays at raw status
+### Layout Structure
+```
+CompanyRail (72px, leftmost) | Sidebar (w-60) | Main Content
+                                               ├── TopBar (34-36px, logo + tabs)
+                                               ├── MetricsStrip (horizontal cells)
+                                               ├── TierColumns (Executive | Leads | Workers)
+                                               └── CommandBar (36-38px, bottom-docked)
+```
 
-### Reconciler (`server/src/services/reconciler.ts`)
-- Periodic job: close orphaned runs, invalidate stale intents, fix ghost projections
-- Emits reconciliation events
+### Dashboard Tier Columns
+- Agents grouped by hierarchy level into horizontal columns
+- Within columns: active first (by elapsed), then waiting, then idle
+- Active agents expanded (header + meta + stream), idle collapsed (single line)
+- Stream content color coded: reasoning=--fg-muted, tools=--warn, results=--fg-dim, errors=--dead
 
-### Stale Run Reaper (extension of existing `reapOrphanedRuns`)
-- Adds lease-based reaping
-- Cancels runs with expired leases
-- Increments pickup failure count
-
-### Warm Workspace Pool (`server/src/services/warm-workspace-pool.ts`)
-- In-memory pool of resolved workspace paths
-- TTL-based eviction, LRU when at capacity
-- Sticky routing: prefer warm workspace for same project
-
-### Orchestrator Console (`packages/orchestrator-console/`)
-- Standalone CLI tool (commander.js)
-- Admin-level API endpoints under `/api/orchestrator/`
-- No LLM integration — pure API + REPL
-
-## Database Schema (key tables)
-
-### New tables
-- `dispatch_intents` — Work intent queue
-- `execution_leases` — Lease tracking
-- `execution_envelopes` — Immutable run context
-- `control_plane_events` — Append-only event log
-- `issue_dependencies` — Issue dependency graph
-
-### Modified tables
-- `heartbeat_runs` — Added: intentId, envelopeId
-- `issues` — Added: executionLeaseId, pickupFailCount, lastPickupFailureAt, lastReconciledAt
-
-## Integration Points
-
-The new control plane intercepts the existing heartbeat system at these points:
-1. `enqueueWakeup()` → replaced by intent creation
-2. `startNextQueuedRunForAgent()` → replaced by scheduler
-3. Issue execution lock → replaced by leases
-4. `executeRun()` → decomposed: envelope construction + dispatch + execution
-5. `tickTimers()` → creates timer_hint intents instead of direct wakeups
-6. `releaseIssueExecutionAndPromote()` → lease release + event emission
-
-The adapter interface is preserved. Adapters receive additional envelope context but existing AdapterExecutionContext fields remain.
+### API Surface (consumed by GUI)
+- 24 API client modules in ui/src/api/ calling /api/* endpoints
+- Key endpoints: companies, agents, issues, projects, heartbeats, dashboard, activity, orchestrator
+- TanStack Query for caching and refetching

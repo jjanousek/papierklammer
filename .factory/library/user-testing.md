@@ -2,40 +2,56 @@
 
 ## Validation Surface
 
-All validation is through automated Vitest tests. No browser UI testing.
+Two validation surfaces for this mission:
 
-### Surfaces
-1. **Server API** — Tested via supertest with Express app instances
-2. **Services** — Tested via direct service function calls with embedded Postgres
-3. **CLI commands** — Tested via commander.js command execution with mocked HTTP client
+### Surface 1: Vitest (TUI)
+- All TUI validation through Vitest + ink-testing-library
+- Tests in `packages/orchestrator-tui/src/__tests__/`
+- Mock child_process.spawn for Codex, mock fetch for API
+- Use `pnpm exec vitest run <target-file>` for deterministic file-scoped runs
+
+### Surface 2: Agent-Browser (GUI)
+- Visual verification of GUI design system compliance
+- Dev server on port 3100 (`pnpm dev`)
+- Key verification flows: load dashboard, check font/colors/borders, navigate between pages
+- DOM inspection scripts for computed style verification (fontFamily, borderRadius, boxShadow, backgroundColor)
+- Invoke `agent-browser` skill for browser automation
 
 ### Required Tools
-- Vitest (already installed)
-- Embedded Postgres test helper (`server/src/__tests__/helpers/embedded-postgres.ts`)
-- supertest (already installed as server dev dependency)
+- Vitest (installed)
+- ink-testing-library (installed in orchestrator-tui)
+- agent-browser (available, Chromium 1217 installed)
+- Dev server starts with `pnpm dev` on port 3100
 
 ## Validation Concurrency
 
-- **Max concurrent validators:** 5
-- **Rationale:** All tests are Vitest-based. Each test process uses ~200-300MB. Machine has 16GB RAM, 10 CPU cores. 5 concurrent Vitest processes = ~1.5GB, well within budget.
-- No browser instances needed, no dev server needed for validation.
+### Vitest surface (TUI)
+- **Max concurrent validators:** 3
+- **Rationale:** Each Vitest process ~200-300MB. Machine has 16GB RAM. Well within budget.
 
-## Flow Validator Guidance: vitest
+### Agent-browser surface (GUI)
+- **Max concurrent validators:** 2
+- **Rationale:** Each agent-browser ~300MB + shared dev server ~200MB = ~800MB total for 2 instances. Machine has 16GB RAM with ~8GB headroom. Conservative limit due to Chromium memory usage.
 
-- Use only Vitest/command-line validation for this mission surface; no browser tooling is needed.
-- Stay inside repository root: `/Users/aischool/work/papierklammer_droid`.
-- Do not modify product code during validation. You may write only:
-  - flow report JSON under `.factory/validation/<milestone>/user-testing/flows/`
-  - evidence artifacts under the assigned mission evidence directory.
-- Keep commands deterministic and scoped to assigned assertions.
-- For expensive global validators (`pnpm test:run`, `pnpm -r typecheck`, `pnpm build`), run in isolated validation batches (serialize with other heavy validators) to avoid shared-workspace contention.
+## Flow Validator Guidance
+
+### vitest flows
+- Stay inside repository root: `/Users/aischool/work/papierklammer_droid`
+- Use `pnpm exec vitest run <target-file>` for deterministic file-scoped runs
+- Do not modify product code during validation
+- Pre-existing server test flakiness is expected — only TUI/GUI test failures matter
+
+### agent-browser flows
+- Start dev server: `cd /Users/aischool/work/papierklammer_droid && PORT=3100 pnpm dev` (background, wait for healthcheck)
+- Healthcheck: `curl -sf http://localhost:3100/api/health`
+- Invoke `agent-browser` skill before browser operations
+- Navigate to pages, take screenshots, run DOM inspection scripts
+- Stop dev server after validation: `lsof -ti :3100 | xargs kill 2>/dev/null || true`
+- For DOM style assertions: use `page.evaluate()` with JavaScript that checks `getComputedStyle()` values
 
 ## Observed Validation Notes
 
-- `fork-setup` user-testing round observed nondeterministic failures in full-suite `pnpm test:run`:
-  - `server/src/__tests__/agent-permissions-routes.test.ts` failed once in full run (`setPrincipalPermission` spy not called) but passed when run alone.
-  - `server/src/__tests__/costs-service.test.ts` failed in a subsequent full run (`invalid 'to' date` test expected 400, got 200).
-- Treat `VAL-FORK-014` as failed until full-suite stability is restored.
-- `tui-foundation` validation found that `pnpm test:run -- <file>` can still invoke broader suite paths; use `pnpm exec vitest run <target-file>` for deterministic file-scoped assertion checks.
-- `tui-panels` validation observed that `vitest -t` outputs many skipped non-matching tests even for file-scoped runs; use explicit test-name references from verbose output as evidence, and treat skipped noise as expected.
-- `tui-polish` validation observed intermittent `user-testing-flow-validator` subagent permission-gate exits (`insufficient permission ... --skip-permissions-unsafe`) for one assertion group; when this occurs, run the same deterministic file-scoped Vitest commands directly in the validator session and still capture evidence/flow JSON in the standard paths.
+- Pre-existing server route tests have intermittent failures due to shared mock state — ignore these
+- `pnpm exec vitest run <file>` is more reliable than `pnpm test:run -- <file>` for scoped runs
+- Agent-browser Chromium 1217 installed via Playwright CLI (not built-in agent-browser install)
+- Dev server takes ~12 seconds to start with embedded PGlite
