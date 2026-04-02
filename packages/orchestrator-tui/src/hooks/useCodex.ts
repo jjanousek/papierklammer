@@ -15,6 +15,8 @@ export interface UseCodexOptions extends CodexClientOptions {
   onItemCompleted?: (params: ItemCompletedParams) => void;
   /** Called when command output arrives. */
   onCommandOutput?: (params: CommandOutputDeltaParams) => void;
+  /** Called when a request or connection action fails. */
+  onError?: (error: Error) => void;
 }
 
 export interface UseCodexResult {
@@ -91,19 +93,28 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     const client = clientRef.current;
     if (!client) return;
 
-    let tid = threadId;
+    try {
+      let tid = threadId;
 
-    // Create thread on first message
-    if (!tid) {
-      tid = await client.startThread({
-        ...(baseInstructions ? { baseInstructions } : {}),
-      });
-      setThreadId(tid);
+      // Create thread on first message
+      if (!tid) {
+        tid = await client.startThread({
+          ...(baseInstructions ? { baseInstructions } : {}),
+        });
+        setThreadId(tid);
+      }
+
+      setConnectionState("thinking");
+      const result = await client.startTurn(tid, text);
+      turnIdRef.current = result.turn.id;
+    } catch (error) {
+      turnIdRef.current = null;
+      setConnectionState(client.isConnected ? "connected" : "disconnected");
+      optsRef.current.onError?.(
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      throw error;
     }
-
-    setConnectionState("thinking");
-    const result = await client.startTurn(tid, text);
-    turnIdRef.current = result.turn.id;
   }, [threadId]);
 
   const interruptTurn = useCallback(async (): Promise<void> => {

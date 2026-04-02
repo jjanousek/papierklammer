@@ -230,7 +230,7 @@ describe("CodexClient", () => {
     expect(req.method).toBe("thread/start");
     expect(req.params.baseInstructions).toBe("You are the Papierklammer orchestrator assistant.");
     expect(req.params.approvalPolicy).toBe("never");
-    expect(req.params.sandbox).toBe("workspaceWrite");
+    expect(req.params.sandbox).toBe("workspace-write");
   });
 
   // ── Turn start and delta streaming ───────────────────────────────

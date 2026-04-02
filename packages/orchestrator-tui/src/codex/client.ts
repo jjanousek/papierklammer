@@ -228,7 +228,7 @@ export class CodexClient {
   async startThread(opts: ThreadStartParams = {}): Promise<string> {
     const response = await this.sendRequest("thread/start", {
       approvalPolicy: "never",
-      sandbox: "workspaceWrite",
+      sandbox: "workspace-write",
       ...opts,
     });
 
