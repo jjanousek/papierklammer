@@ -36,3 +36,4 @@ All validation is through automated Vitest tests. No browser UI testing.
   - `server/src/__tests__/agent-permissions-routes.test.ts` failed once in full run (`setPrincipalPermission` spy not called) but passed when run alone.
   - `server/src/__tests__/costs-service.test.ts` failed in a subsequent full run (`invalid 'to' date` test expected 400, got 200).
 - Treat `VAL-FORK-014` as failed until full-suite stability is restored.
+- `tui-foundation` validation found that `pnpm test:run -- <file>` can still invoke broader suite paths; use `pnpm exec vitest run <target-file>` for deterministic file-scoped assertion checks.

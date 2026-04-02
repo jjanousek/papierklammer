@@ -1,0 +1,88 @@
+{
+  "milestone": "tui-foundation",
+  "groupId": "foundation-core",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T00:22:36Z",
+  "assertions": [
+    {
+      "id": "VAL-TUI-001",
+      "status": "pass",
+      "reason": "Package build and monorepo typecheck both exited 0.",
+      "evidence": [
+        "tui-foundation/foundation-core/VAL-TUI-001-package-build.txt",
+        "tui-foundation/foundation-core/VAL-TUI-001-monorepo-typecheck.txt"
+      ]
+    },
+    {
+      "id": "VAL-TUI-002",
+      "status": "pass",
+      "reason": "Targeted layout vitest file passed (6/6 tests), including all 5 regions assertion.",
+      "evidence": [
+        "tui-foundation/foundation-core/VAL-TUI-002-layout-vitest-targeted.txt"
+      ]
+    },
+    {
+      "id": "VAL-TUI-003",
+      "status": "pass",
+      "reason": "Targeted CLI vitest file passed (11/11 tests), including --url and --api-key help coverage.",
+      "evidence": [
+        "tui-foundation/foundation-core/VAL-TUI-003-cli-vitest-targeted.txt"
+      ]
+    },
+    {
+      "id": "VAL-TUI-004",
+      "status": "pass",
+      "reason": "Targeted Ctrl+C exit vitest file passed (2/2 tests) with terminal restore assertion.",
+      "evidence": [
+        "tui-foundation/foundation-core/VAL-TUI-004-exit-vitest-targeted.txt"
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "vitest",
+    "pnpm"
+  ],
+  "commands": [
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid --filter @papierklammer/orchestrator-tui build",
+      "exitCode": 0,
+      "observation": "orchestrator-tui build completed with tsc."
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid -r typecheck",
+      "exitCode": 0,
+      "observation": "Workspace typecheck completed successfully."
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid test:run -- packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+      "exitCode": 1,
+      "observation": "Argument forwarding invoked broader suite and failed on unrelated server test; command replaced with direct vitest target run."
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+      "exitCode": 0,
+      "observation": "Targeted layout test file passed (1 file, 6 tests)."
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/cli.test.ts",
+      "exitCode": 0,
+      "observation": "Targeted CLI test file passed (1 file, 11 tests)."
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/exit.test.tsx",
+      "exitCode": 0,
+      "observation": "Targeted exit test file passed (1 file, 2 tests)."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Using pnpm test:run with '--' forwarded arguments unexpectedly ran wider tests instead of only the target file.",
+      "resolved": true,
+      "resolution": "Switched to 'pnpm exec vitest run <target-file>' for deterministic scoped execution.",
+      "affectedAssertions": [
+        "VAL-TUI-002"
+      ]
+    }
+  ],
+  "blockers": []
+}
