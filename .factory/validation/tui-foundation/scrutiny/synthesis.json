@@ -1,6 +1,6 @@
 {
   "milestone": "tui-foundation",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -24,36 +24,30 @@
     "passed": 0,
     "failed": 1,
     "failedFeatures": [
-      "tui-package-setup-layout"
+      "fix-tui-test-assertions"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "tui-package-setup-layout",
+      "featureId": "fix-tui-test-assertions",
       "severity": "blocking",
-      "description": "VAL-TUI-003 is not adequately validated: cli.test.ts checks package metadata but does not verify `papierklammer-tui --help` output includes required `--url` and `--api-key` options."
-    },
-    {
-      "featureId": "tui-package-setup-layout",
-      "severity": "blocking",
-      "description": "VAL-TUI-004 is not adequately validated: exit.test.tsx writes Ctrl+C then manually unmounts without asserting graceful exit and terminal restoration behavior, so regressions could pass undetected."
+      "description": "VAL-TUI-004 remains unproven: `packages/orchestrator-tui/src/__tests__/exit.test.tsx` still calls `unmount()` before asserting terminal restore output, so the assertion can pass from manual cleanup even if Ctrl+C-triggered graceful exit regresses."
     }
   ],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
-      "target": "AGENTS.md",
-      "suggestion": "Clarify mission-level scope rules to permit strictly necessary cross-cutting repo updates (for example root test registration and lockfile churn) when implementing new workspace packages.",
-      "evidence": "Feature tui-package-setup-layout required updates outside `packages/orchestrator-tui/` (`vitest.config.ts`, `pnpm-lock.yaml`) while mission guidance appeared to disallow it.",
-      "isSystemic": false
-    },
-    {
       "target": ".factory/skills/tui-worker/SKILL.md",
-      "suggestion": "Either enforce or relax the \"write tests first\" requirement, and align handoff skill-compliance reporting with observed transcript order.",
-      "evidence": "In tui-package-setup-layout, implementation files were created before tests while handoff still reported `followedProcedure: true`.",
-      "isSystemic": false
+      "suggestion": "Align procedure compliance expectations with actual transcript auditing: if the skill says tests must be written first, handoff should not report `followedProcedure: true` when implementation edits clearly precede test edits.",
+      "evidence": "The same ordering mismatch appears in both `tui-package-setup-layout` and `fix-tui-test-assertions` transcripts, indicating a recurring skill-compliance reporting gap.",
+      "isSystemic": true
     }
   ],
-  "rejectedObservations": [],
-  "previousRound": null
+  "rejectedObservations": [
+    {
+      "observation": "Mission AGENTS scope strictness around root-file edits for new workspace packages.",
+      "reason": "already-documented in round 1 synthesis with no new evidence in this re-run."
+    }
+  ],
+  "previousRound": ".factory/validation/tui-foundation/scrutiny/synthesis.round1.json"
 }

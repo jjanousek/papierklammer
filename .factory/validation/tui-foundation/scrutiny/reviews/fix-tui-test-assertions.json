@@ -1,0 +1,28 @@
+{
+  "featureId": "fix-tui-test-assertions",
+  "reviewedAt": "2026-04-02T00:09:34Z",
+  "commitId": "f6e7690d",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The fix fully closes the CLI help assertion gap (VAL-TUI-003), but the Ctrl+C graceful-exit proof remains incomplete because the new assertion can still pass from manual unmount cleanup rather than from Ctrl+C-triggered exit behavior.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/exit.test.tsx",
+        "line": 51,
+        "severity": "blocking",
+        "description": "The test still calls `unmount()` before asserting `\\x1b[?1049l`, so the restore-sequence evidence can come from manual unmount cleanup even if Ctrl+C exit handling regresses. This does not prove VAL-TUI-004's requirement that Ctrl+C itself triggers graceful exit/terminal restoration."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `tui-worker` skill says to write tests first (red), but this fix transcript shows implementation refactor before test edits while `skillFeedback.followedProcedure` is still marked true.",
+      "evidence": "worker-transcripts.jsonl entry for session f0972efe-59a2-49a9-8d49-c69fde1f3f1a: sequence is Create src/cli.ts -> Edit src/index.tsx -> then Edit src/__tests__/cli.test.ts and src/__tests__/exit.test.tsx."
+    }
+  ],
+  "addressesFailureFrom": ".factory/validation/tui-foundation/scrutiny/reviews/tui-package-setup-layout.json",
+  "summary": "Fail: CLI help assertions were fixed, but the Ctrl+C graceful-exit assertion remains non-causal because terminal-restore verification still happens after explicit manual unmount."
+}

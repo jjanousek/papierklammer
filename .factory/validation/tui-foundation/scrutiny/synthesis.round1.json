@@ -1,0 +1,59 @@
+{
+  "milestone": "tui-foundation",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run --max-workers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "failedFeatures": [
+      "tui-package-setup-layout"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "tui-package-setup-layout",
+      "severity": "blocking",
+      "description": "VAL-TUI-003 is not adequately validated: cli.test.ts checks package metadata but does not verify `papierklammer-tui --help` output includes required `--url` and `--api-key` options."
+    },
+    {
+      "featureId": "tui-package-setup-layout",
+      "severity": "blocking",
+      "description": "VAL-TUI-004 is not adequately validated: exit.test.tsx writes Ctrl+C then manually unmounts without asserting graceful exit and terminal restoration behavior, so regressions could pass undetected."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Clarify mission-level scope rules to permit strictly necessary cross-cutting repo updates (for example root test registration and lockfile churn) when implementing new workspace packages.",
+      "evidence": "Feature tui-package-setup-layout required updates outside `packages/orchestrator-tui/` (`vitest.config.ts`, `pnpm-lock.yaml`) while mission guidance appeared to disallow it.",
+      "isSystemic": false
+    },
+    {
+      "target": ".factory/skills/tui-worker/SKILL.md",
+      "suggestion": "Either enforce or relax the \"write tests first\" requirement, and align handoff skill-compliance reporting with observed transcript order.",
+      "evidence": "In tui-package-setup-layout, implementation files were created before tests while handoff still reported `followedProcedure: true`.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}
