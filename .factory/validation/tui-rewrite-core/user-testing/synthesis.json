@@ -1,60 +1,19 @@
 {
   "milestone": "tui-rewrite-core",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "assertionsSummary": {
-    "total": 27,
-    "passed": 26,
+    "total": 1,
+    "passed": 1,
     "failed": 0,
-    "blocked": 1
+    "blocked": 0
   },
   "passedAssertions": [
-    "VAL-TUI-AGENT-001",
-    "VAL-TUI-AGENT-002",
-    "VAL-TUI-AGENT-003",
-    "VAL-TUI-CHAT-001",
-    "VAL-TUI-CHAT-002",
-    "VAL-TUI-CHAT-003",
-    "VAL-TUI-CHAT-004",
-    "VAL-TUI-CHAT-005",
-    "VAL-TUI-CHAT-006",
-    "VAL-TUI-CHAT-007",
-    "VAL-TUI-CODEX-001",
-    "VAL-TUI-CODEX-002",
-    "VAL-TUI-CODEX-003",
-    "VAL-TUI-CODEX-004",
-    "VAL-TUI-CODEX-005",
-    "VAL-TUI-CODEX-006",
-    "VAL-TUI-CODEX-007",
-    "VAL-TUI-CODEX-008",
-    "VAL-TUI-CODEX-009",
-    "VAL-TUI-CODEX-010",
-    "VAL-TUI-CODEX-011",
-    "VAL-TUI-CORE-001",
-    "VAL-TUI-CORE-002",
-    "VAL-TUI-CORE-004",
-    "VAL-TUI-CORE-005",
-    "VAL-TUI-UX-004"
+    "VAL-TUI-CORE-003"
   ],
   "failedAssertions": [],
-  "blockedAssertions": [
-    {
-      "id": "VAL-TUI-CORE-003",
-      "blockedBy": "Scoped vitest coverage verifies --help/-h, --url, --api-key, and default URL, but no test in cli.test.ts asserts --company-id parsing."
-    }
-  ],
-  "appliedUpdates": [
-    {
-      "target": "user-testing.md",
-      "description": "Added `Flow Validator Guidance: vitest` section with isolation and execution boundaries for concurrent flow validators.",
-      "source": "setup"
-    },
-    {
-      "target": "user-testing.md",
-      "description": "Recorded validation friction that `VAL-TUI-CORE-003` currently lacks explicit `--company-id` parse coverage in `cli.test.ts`.",
-      "source": "flow-report"
-    }
-  ],
-  "previousRound": null,
-  "generatedAt": "2026-04-02T17:25:54.111497+00:00"
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/tui-rewrite-core/user-testing/synthesis.round1.json",
+  "generatedAt": "2026-04-02T17:35:13.075461+00:00"
 }

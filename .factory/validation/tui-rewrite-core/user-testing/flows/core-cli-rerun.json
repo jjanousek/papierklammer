@@ -1,0 +1,79 @@
+{
+  "milestone": "tui-rewrite-core",
+  "groupId": "core-cli-rerun",
+  "surface": "vitest",
+  "testedAt": "2026-04-02T17:33:26Z",
+  "isolation": {
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "boundary": "repository-only operations under /Users/aischool/work/papierklammer_droid",
+    "constraints": [
+      "no product code changes",
+      "no mission contract file changes",
+      "deterministic file-scoped vitest execution"
+    ]
+  },
+  "toolsUsed": [
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-CORE-003",
+      "title": "CLI flag parsing",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect packages/orchestrator-tui/src/__tests__/cli.test.ts",
+          "expected": "Dedicated coverage exists for --url, --api-key, --company-id, --help/-h, and default URL",
+          "observed": "Found explicit test cases: parses --url flag correctly, parses --api-key flag correctly, parses --company-id flag correctly, sets showHelp to true when --help is passed, sets showHelp to true when -h is passed, uses default url when --url is not provided"
+        },
+        {
+          "action": "Run scoped vitest for cli.test.ts",
+          "expected": "All relevant parseArgs tests pass in deterministic file-scoped run",
+          "observed": "cli.test.ts passed: 1 file, 12 tests, exit code 0"
+        }
+      ],
+      "evidence": {
+        "testFile": "packages/orchestrator-tui/src/__tests__/cli.test.ts",
+        "testNames": [
+          "parses --url flag correctly",
+          "parses --api-key flag correctly",
+          "parses --company-id flag correctly",
+          "sets showHelp to true when --help is passed",
+          "sets showHelp to true when -h is passed",
+          "uses default url when --url is not provided"
+        ],
+        "terminalSnapshots": [
+          "tui-rewrite-core/core-cli-rerun/vitest-cli.test.log",
+          "tui-rewrite-core/core-cli-rerun/vitest-cli-verbose.log"
+        ],
+        "assertionMapping": "tui-rewrite-core/core-cli-rerun/VAL-TUI-CORE-003-mapping.json",
+        "consoleErrors": "not-applicable (vitest surface)",
+        "network": "not-applicable (vitest surface)"
+      },
+      "issues": null
+    }
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/cli.test.ts",
+      "exitCode": 0,
+      "observation": "1 file passed, 12 tests passed.",
+      "log": "tui-rewrite-core/core-cli-rerun/vitest-cli.test.log"
+    },
+    {
+      "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run packages/orchestrator-tui/src/__tests__/cli.test.ts --reporter=verbose",
+      "exitCode": 0,
+      "observation": "Verbose output confirms each mapped parseArgs assertion, including --company-id, passed.",
+      "log": "tui-rewrite-core/core-cli-rerun/vitest-cli-verbose.log"
+    }
+  ],
+  "evidenceFiles": [
+    "tui-rewrite-core/core-cli-rerun/vitest-cli.test.log",
+    "tui-rewrite-core/core-cli-rerun/vitest-cli-verbose.log",
+    "tui-rewrite-core/core-cli-rerun/VAL-TUI-CORE-003-mapping.json"
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "VAL-TUI-CORE-003 passed: scoped cli.test.ts coverage now explicitly includes --company-id parsing, and all mapped parseArgs behaviors passed in deterministic vitest runs."
+}
