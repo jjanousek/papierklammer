@@ -1,0 +1,29 @@
+{
+  "milestone": "gui-bug-fixes",
+  "round": 2,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-DASHFIX-001",
+    "VAL-GUI-DASHFIX-002",
+    "VAL-GUI-DASHFIX-003",
+    "VAL-GUI-DASHFIX-004",
+    "VAL-GUI-DASHFIX-005",
+    "VAL-GUI-DASHFIX-006"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added guidance that dashboard stream checks may require expanding an agent card before more/less controls appear.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": ".factory/validation/gui-bug-fixes/user-testing/synthesis.round1.json"
+}

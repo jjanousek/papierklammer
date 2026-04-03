@@ -1,0 +1,52 @@
+{
+  "groupId": "gui-vitest",
+  "testedAt": "2026-04-03T19:58:31.067556Z",
+  "isolation": {
+    "mode": "read-only validation",
+    "milestone": "gui-bug-fixes",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "assertions": [
+      "VAL-GUI-DASHFIX-005"
+    ]
+  },
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "commandsRun": [
+    {
+      "command": "mkdir -p \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest\"; pnpm exec vitest run \"/Users/aischool/work/papierklammer_droid/ui/src/pages/__tests__/Dashboard.test.tsx\" -t \"has MAX_STREAM_ENTRIES_PER_AGENT >= 20\" --reporter=verbose > \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest/VAL-GUI-DASHFIX-005-vitest.log\" 2>&1; code=$?; echo \"VITEST_EXIT_CODE=$code\"; cat \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest/VAL-GUI-DASHFIX-005-vitest.log\"; exit $code",
+      "exitCode": 0,
+      "observations": "Vitest targeted run succeeded. Dashboard test case 'has MAX_STREAM_ENTRIES_PER_AGENT >= 20' passed (1 passed, 10 skipped).",
+      "evidenceLog": "gui-bug-fixes/gui-vitest/VAL-GUI-DASHFIX-005-vitest.log"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASHFIX-005",
+      "title": "Stream entry limit increased",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run assertion-focused Vitest command for Dashboard test case",
+          "expected": "Target test verifies MAX_STREAM_ENTRIES_PER_AGENT is >= 20",
+          "observed": "Test case 'has MAX_STREAM_ENTRIES_PER_AGENT >= 20' passed"
+        }
+      ],
+      "evidence": {
+        "testedFiles": [
+          "ui/src/pages/__tests__/Dashboard.test.tsx"
+        ],
+        "testedCases": [
+          "Dashboard tier-column layout > has MAX_STREAM_ENTRIES_PER_AGENT >= 20"
+        ],
+        "commandLog": "gui-bug-fixes/gui-vitest/VAL-GUI-DASHFIX-005-vitest.log"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion (VAL-GUI-DASHFIX-005): passed via targeted Vitest execution with exit code 0."
+}

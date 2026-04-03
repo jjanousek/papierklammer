@@ -1,0 +1,214 @@
+{
+  "groupId": "gui-browser",
+  "testedAt": "2026-04-03T20:04:11Z",
+  "isolation": {
+    "milestone": "gui-bug-fixes",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "appUrl": "http://localhost:3100",
+    "scope": "VAL-GUI-DASHFIX-001, VAL-GUI-DASHFIX-002, VAL-GUI-DASHFIX-003, VAL-GUI-DASHFIX-004, VAL-GUI-DASHFIX-006",
+    "constraints": [
+      "Used only local server at http://localhost:3100",
+      "No app code or DB changes",
+      "Single browser session reused across assertions"
+    ]
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASHFIX-001",
+      "title": "No dead tabs in Dashboard TopBar",
+      "status": "pass",
+      "reason": "Dashboard top area showed only pipeline view; no history/config tabs were present.",
+      "steps": [
+        {
+          "action": "Open dashboard at /WEA/dashboard",
+          "expected": "Dashboard loads with top bar",
+          "observed": "Dashboard loaded successfully"
+        },
+        {
+          "action": "Inspect interactive elements and DOM text for history/config tabs",
+          "expected": "No history/config tab elements",
+          "observed": "DOM check returned count=0 matches for history/config"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser/VAL-GUI-DASHFIX-001-dashboard-topbar.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Dashboard polling requests observed (e.g., GET /api/companies/:id/live-runs, GET /api/heartbeat-runs/:id/log)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-002",
+      "title": "Agent name click navigates to agent detail",
+      "status": "pass",
+      "reason": "Clicking agent name from dashboard navigated to /agents/:agentId/dashboard and rendered AgentDetail tabs.",
+      "steps": [
+        {
+          "action": "Capture dashboard state before clicking an agent name",
+          "expected": "Agent links visible in Dashboard AgentBlock",
+          "observed": "Agent links visible (e.g., Active Executive, CEO)"
+        },
+        {
+          "action": "Click agent name link in Dashboard AgentBlock",
+          "expected": "Navigate to /agents/:agentId",
+          "observed": "URL changed to /WEA/agents/active-executive/dashboard"
+        },
+        {
+          "action": "Verify page content",
+          "expected": "AgentDetail page renders",
+          "observed": "Agent detail tabs rendered (Dashboard/Instructions/Skills/Configuration/Runs/Budget)"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser/VAL-GUI-DASHFIX-002-before-click-agent.png",
+          "gui-bug-fixes/gui-browser/VAL-GUI-DASHFIX-002-after-click-agent-detail.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Agent detail fetches observed (e.g., GET /api/agents/active-executive, GET /api/companies/:id/agents)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-003",
+      "title": "Stream content shows tool call arguments",
+      "status": "pass",
+      "reason": "Expanded CEO stream entries showed tool call labels with argument payloads (e.g., '$ command_execution {\"id\":...,\"command\":\"/bin/zsh -lc ...\"}').",
+      "steps": [
+        {
+          "action": "Expand CEO agent block on Dashboard",
+          "expected": "Stream entries become visible",
+          "observed": "Expanded block displayed REASONING + ACTIONS stream"
+        },
+        {
+          "action": "Inspect stream text for tool calls",
+          "expected": "Tool name plus arguments visible",
+          "observed": "Tool call lines included command_execution and command argument content"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser/VAL-GUI-DASHFIX-003-tool-call-arguments.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Live run and heartbeat log polling endpoints continuously fetched stream data"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-004",
+      "title": "Stream reasoning text is expandable",
+      "status": "pass",
+      "reason": "Reasoning entries were truncated with a 'more' control, and clicking it expanded the text (button changed to 'less').",
+      "steps": [
+        {
+          "action": "Inspect truncated reasoning entries in expanded stream",
+          "expected": "Either full text or explicit expand mechanism",
+          "observed": "Entries showed truncation with 'more' buttons"
+        },
+        {
+          "action": "Click 'more' on a reasoning entry",
+          "expected": "Full reasoning text becomes visible",
+          "observed": "Entry expanded (length increased from ~125 to 233 chars), control changed to 'less'"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser/VAL-GUI-DASHFIX-004-reasoning-expanded.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Dashboard stream polling continued while expansion interaction occurred"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-006",
+      "title": "Stream entries have visual grouping",
+      "status": "pass",
+      "reason": "Stream entries in expanded dashboard block were visually separated; computed styles showed spacing and top borders between grouped rows.",
+      "steps": [
+        {
+          "action": "Inspect expanded stream in dashboard",
+          "expected": "Different entry types visually separated",
+          "observed": "Entry rows displayed grouped layout with separators"
+        },
+        {
+          "action": "Check computed styles on sampled stream rows",
+          "expected": "Spacing and/or subtle borders present",
+          "observed": "Sampled rows had margin-top: 6px and border-top: 1px solid"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser/VAL-GUI-DASHFIX-006-stream-visual-grouping.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Same dashboard stream polling endpoints provided grouped entry content"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Cursor-interactive refs for agent rows were ambiguous (single ref resolved to multiple nodes).",
+      "resolved": true,
+      "resolution": "Used DOM-targeted eval click on the CEO row, then re-snapshotted to continue assertions.",
+      "affectedAssertions": [
+        "VAL-GUI-DASHFIX-003",
+        "VAL-GUI-DASHFIX-004",
+        "VAL-GUI-DASHFIX-006"
+      ]
+    }
+  ],
+  "blockers": [],
+  "commandsRun": [
+    "curl -sf http://localhost:3100/api/health",
+    "agent-browser open http://localhost:3100",
+    "agent-browser snapshot -i -C",
+    "agent-browser screenshot .../VAL-GUI-DASHFIX-001-dashboard-topbar.png --annotate",
+    "agent-browser click @e31",
+    "agent-browser screenshot .../VAL-GUI-DASHFIX-002-after-click-agent-detail.png --annotate",
+    "agent-browser eval (expand CEO row)",
+    "agent-browser screenshot .../VAL-GUI-DASHFIX-003-tool-call-arguments.png --annotate",
+    "agent-browser click @e33 (more)",
+    "agent-browser screenshot .../VAL-GUI-DASHFIX-004-reasoning-expanded.png --annotate",
+    "agent-browser screenshot .../VAL-GUI-DASHFIX-006-stream-visual-grouping.png --annotate",
+    "agent-browser errors",
+    "agent-browser network requests",
+    "agent-browser close"
+  ],
+  "interactiveChecks": [
+    {
+      "assertionId": "VAL-GUI-DASHFIX-001",
+      "check": "DOM search for history/config labels in clickable/tab elements",
+      "observed": "count=0"
+    },
+    {
+      "assertionId": "VAL-GUI-DASHFIX-002",
+      "check": "URL transition after clicking dashboard agent name",
+      "observed": "http://localhost:3100/WEA/agents/active-executive/dashboard"
+    },
+    {
+      "assertionId": "VAL-GUI-DASHFIX-003",
+      "check": "Expanded stream text contains tool name + argument payload",
+      "observed": "Detected '$ command_execution {\"id\":...,\"command\":\"/bin/zsh -lc ...\"}'"
+    },
+    {
+      "assertionId": "VAL-GUI-DASHFIX-004",
+      "check": "Reasoning expansion control and text length",
+      "observed": "Collapsed entries showed 'more'; after click button became 'less' and sample text length was 233"
+    },
+    {
+      "assertionId": "VAL-GUI-DASHFIX-006",
+      "check": "Computed styles of sampled stream rows",
+      "observed": "Sample rows showed margin-top: 6px and border-top: 1px solid"
+    }
+  ],
+  "summary": "Tested 5 assertions for gui-browser: 5 passed, 0 failed, 0 blocked. Dashboard stream data was available for all stream-dependent checks."
+}

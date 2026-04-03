@@ -1,0 +1,29 @@
+{
+  "milestone": "gui-bug-fixes",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-DASHFIX-001",
+    "VAL-GUI-DASHFIX-002",
+    "VAL-GUI-DASHFIX-003",
+    "VAL-GUI-DASHFIX-004",
+    "VAL-GUI-DASHFIX-005",
+    "VAL-GUI-DASHFIX-006"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added GUI-specific flow validator guidance for agent-browser and vitest surfaces, including isolation boundaries and evidence/report paths for gui-bug-fixes.",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null
+}

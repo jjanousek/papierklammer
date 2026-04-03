@@ -1,0 +1,53 @@
+{
+  "groupId": "gui-vitest-r2",
+  "testedAt": "2026-04-03T20:10:14.213163Z",
+  "isolation": {
+    "mode": "read-only validation",
+    "milestone": "gui-bug-fixes",
+    "flowValidatorGuidance": "Flow Validator Guidance: GUI (vitest)",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "assertions": [
+      "VAL-GUI-DASHFIX-005"
+    ]
+  },
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "commandsRun": [
+    {
+      "command": "mkdir -p \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest-r2\" && pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run \"/Users/aischool/work/papierklammer_droid/ui/src/pages/__tests__/Dashboard.test.tsx\" -t \"has MAX_STREAM_ENTRIES_PER_AGENT >= 20\" --reporter=verbose > \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest-r2/VAL-GUI-DASHFIX-005-vitest.log\" 2>&1; code=$?; echo \"VITEST_EXIT_CODE=$code\" >> \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest-r2/VAL-GUI-DASHFIX-005-vitest.log\"; cat \"/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-vitest-r2/VAL-GUI-DASHFIX-005-vitest.log\"; exit $code",
+      "exitCode": 0,
+      "observedOutput": "Dashboard tier-column layout > has MAX_STREAM_ENTRIES_PER_AGENT >= 20 passed; Test Files 1 passed; Tests 1 passed | 10 skipped; VITEST_EXIT_CODE=0",
+      "evidenceLog": "gui-bug-fixes/gui-vitest-r2/VAL-GUI-DASHFIX-005-vitest.log"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASHFIX-005",
+      "title": "Stream entry limit increased",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run focused Vitest case for dashboard stream entry limit",
+          "expected": "MAX_STREAM_ENTRIES_PER_AGENT constant is >= 20",
+          "observed": "Case 'has MAX_STREAM_ENTRIES_PER_AGENT >= 20' passed"
+        }
+      ],
+      "evidence": {
+        "testedFiles": [
+          "ui/src/pages/__tests__/Dashboard.test.tsx"
+        ],
+        "testedCases": [
+          "Dashboard tier-column layout > has MAX_STREAM_ENTRIES_PER_AGENT >= 20"
+        ],
+        "commandLog": "gui-bug-fixes/gui-vitest-r2/VAL-GUI-DASHFIX-005-vitest.log"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assigned assertion (VAL-GUI-DASHFIX-005): pass via focused Vitest run with exit code 0."
+}

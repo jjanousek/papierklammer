@@ -1,0 +1,157 @@
+{
+  "groupId": "gui-browser-r2",
+  "testedAt": "2026-04-03T20:13:25Z",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "evidenceDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/gui-browser-r2",
+    "surface": "GUI (agent-browser)",
+    "singleBrowserRun": true
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASHFIX-001",
+      "title": "No dead tabs in Dashboard TopBar",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and inspect Dashboard TopBar",
+          "expected": "No history/config tabs; only pipeline view",
+          "observed": "TopBar showed pipeline view only; no history/config tabs visible"
+        },
+        {
+          "action": "Run DOM query over tab/button/link elements for history/config labels",
+          "expected": "No matching elements",
+          "observed": "Query returned []"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-001-topbar-annotated.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/health; GET /api/companies/{companyId}/live-runs?minCount=8"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-002",
+      "title": "Agent name click navigates to agent detail",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "On dashboard, click an agent name in AgentBlock (Active Executive)",
+          "expected": "Navigate to /agents/:agentId detail page",
+          "observed": "Navigated to http://localhost:3100/WEA/agents/active-executive/dashboard"
+        },
+        {
+          "action": "Verify destination UI",
+          "expected": "Agent detail page renders",
+          "observed": "Agent detail page rendered with agent tabs (Dashboard/Instructions/Skills/Configuration/Runs/Budget)"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-002-before-click.png",
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-002-after-click-agent-detail.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/agents/active-executive?companyId=...; GET /api/companies/{companyId}/agents"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-003",
+      "title": "Stream content shows tool call arguments",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Return to dashboard and expand CEO agent block stream",
+          "expected": "Tool call entries include tool name and arguments",
+          "observed": "Entries rendered as '$ command_execution {\"id\":...,\"command\":\"/bin/zsh -lc ...\"}' including command args"
+        },
+        {
+          "action": "Inspect stream text samples",
+          "expected": "Tool-call arguments are visible, not just tool name",
+          "observed": "Multiple samples contained command_execution plus full command argument payload"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-003-004-006-after-expand-attempt.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/live-runs; GET /api/heartbeat-runs/{runId}/log"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-004",
+      "title": "Stream reasoning text is expandable",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "In expanded CEO stream, click a 'more' control on long reasoning text",
+          "expected": "Full reasoning becomes visible via expand behavior",
+          "observed": "Control toggled to 'less' and expanded text content became visible"
+        },
+        {
+          "action": "Re-inspect stream controls after click",
+          "expected": "Expanded state is explicit",
+          "observed": "Expanded entry displayed a 'less' button"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-004-expanded-reasoning.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/live-runs; GET /api/heartbeat-runs/{runId}/log"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASHFIX-006",
+      "title": "Stream entries have visual grouping",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect expanded stream entries visually",
+          "expected": "Different entry types are visually separated",
+          "observed": "Tool/reasoning/result blocks were separated in the stream list"
+        },
+        {
+          "action": "Inspect computed styles of command_execution rows",
+          "expected": "Spacing and/or borders provide grouping",
+          "observed": "Subsequent rows showed border-top: 1px solid plus margin-top/padding-top spacing (6px)"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-003-004-006-after-expand-attempt.png",
+          "gui-bug-fixes/gui-browser-r2/VAL-GUI-DASHFIX-004-expanded-reasoning.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/live-runs; GET /api/heartbeat-runs/{runId}/log"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Dashboard agent stream expansion target is a broad clickable card region (e.g., 'CEOidle') rather than an explicit labeled expand button, so expansion required an exploratory click before 'more/less' controls appeared.",
+      "resolved": true,
+      "resolution": "Clicked the CEO card region to expose stream entries, then used visible more/less controls.",
+      "affectedAssertions": [
+        "VAL-GUI-DASHFIX-003",
+        "VAL-GUI-DASHFIX-004",
+        "VAL-GUI-DASHFIX-006"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 5 assertions: 5 passed, 0 failed, 0 blocked."
+}
