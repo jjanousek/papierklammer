@@ -17,6 +17,7 @@ import type {
   TurnCompletedParams,
   CommandOutputDeltaParams,
   WireMessage,
+  ReasoningEffort,
 } from "./types.js";
 import { isResponse, isNotification } from "./types.js";
 
@@ -244,10 +245,11 @@ export class CodexClient {
    * Start a turn in an existing thread (send user message).
    * Returns the turn info from the response.
    */
-  async startTurn(threadId: string, text: string): Promise<TurnStartResult> {
+  async startTurn(threadId: string, text: string, overrides?: { modelReasoningEffort?: ReasoningEffort }): Promise<TurnStartResult> {
     const params: TurnStartParams = {
       threadId,
       input: [{ type: "text", text }],
+      ...(overrides?.modelReasoningEffort ? { modelReasoningEffort: overrides.modelReasoningEffort } : {}),
     };
 
     const response = await this.sendRequest("turn/start", params);

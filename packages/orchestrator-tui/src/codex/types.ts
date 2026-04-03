@@ -49,6 +49,10 @@ export interface InitializeResult {
   platformOs: string;
 }
 
+// ── Reasoning effort ─────────────────────────────────────────────────
+
+export type ReasoningEffort = "low" | "medium" | "high";
+
 // ── Thread ───────────────────────────────────────────────────────────
 
 export interface ThreadStartParams {
@@ -58,6 +62,7 @@ export interface ThreadStartParams {
   sandbox?: string;
   baseInstructions?: string;
   personality?: string;
+  modelReasoningEffort?: ReasoningEffort;
 }
 
 export interface ThreadInfo {
@@ -82,6 +87,7 @@ export interface UserInput {
 export interface TurnStartParams {
   threadId: string;
   input: UserInput[];
+  modelReasoningEffort?: ReasoningEffort;
 }
 
 export interface TurnInterruptParams {

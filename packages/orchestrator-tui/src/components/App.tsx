@@ -19,8 +19,16 @@ import type {
   TurnCompletedParams,
   ItemCompletedParams,
   CommandOutputDeltaParams,
+  ReasoningEffort,
 } from "../codex/types.js";
 import { ORCHESTRATOR_INSTRUCTIONS } from "../codex/base-instructions.js";
+
+const REASONING_CYCLE: ReasoningEffort[] = ["low", "medium", "high"];
+
+function cycleReasoningEffort(current: ReasoningEffort): ReasoningEffort {
+  const idx = REASONING_CYCLE.indexOf(current);
+  return REASONING_CYCLE[(idx + 1) % REASONING_CYCLE.length]!;
+}
 
 export interface AppProps {
   url: string;
@@ -56,6 +64,7 @@ export function App({
   const [helpVisible, setHelpVisible] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState(companyId);
   const [focusTarget, setFocusTarget] = useState<"sidebar" | "input">("input");
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("high");
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(!companyId);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
@@ -82,6 +91,10 @@ export function App({
     // Only open (not close) from here — closing is handled by HelpOverlay itself
     if (input === "?" && !inputFocusedRef.current && !helpVisible) {
       setHelpVisible(true);
+    }
+    // Cycle reasoning effort with 'r' when input is not focused
+    if (input === "r" && !inputFocusedRef.current && !helpVisible) {
+      setReasoningEffort((current) => cycleReasoningEffort(current));
     }
   });
 
@@ -221,12 +234,16 @@ export function App({
   const isThinkingRef = useRef(chat.isThinking);
   isThinkingRef.current = chat.isThinking;
 
+  // Use a ref for reasoningEffort so the async callback always reads the latest value
+  const reasoningEffortRef = useRef(reasoningEffort);
+  reasoningEffortRef.current = reasoningEffort;
+
   // Handle message submission
   const handleSubmit = useCallback(
     (text: string) => {
       chat.sendMessage(text);
       if (codexEnabled) {
-        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS).catch((error: unknown) => {
+        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS, reasoningEffortRef.current).catch((error: unknown) => {
           // useCodex already reports the failure via onError callback which
           // calls chat.onError (resets isThinking, shows error message).
           // This catch prevents unhandled rejection but is a safety net —
@@ -282,6 +299,7 @@ export function App({
             codexState={effectiveCodexState}
             threadId={undefined}
             model={model}
+            reasoningEffort={reasoningEffort}
           />
         </Box>
       </ErrorBoundary>
@@ -328,6 +346,7 @@ export function App({
           codexState={effectiveCodexState}
           threadId={effectiveThreadId}
           model={model}
+          reasoningEffort={reasoningEffort}
         />
       </Box>
     </ErrorBoundary>

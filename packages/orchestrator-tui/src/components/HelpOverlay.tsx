@@ -11,6 +11,7 @@ export interface HelpOverlayProps {
 const SHORTCUTS: Array<{ key: string; description: string }> = [
   { key: "Tab", description: "Switch panels (sidebar ↔ input)" },
   { key: "Enter", description: "Send message" },
+  { key: "r", description: "Cycle reasoning effort (low→med→high)" },
   { key: "Ctrl+C", description: "Exit" },
   { key: "↑ / ↓", description: "Scroll agents (when sidebar focused)" },
   { key: "?", description: "Toggle this help overlay" },

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CodexClient, type CodexClientOptions } from "../codex/client.js";
-import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams } from "../codex/types.js";
+import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningEffort } from "../codex/types.js";
 
 export type ConnectionState = "disconnected" | "connected" | "thinking";
 
@@ -29,7 +29,7 @@ export interface UseCodexResult {
   /** Current thread ID (null if no thread started). */
   threadId: string | null;
   /** Send a message. Creates a thread on first call. */
-  sendMessage: (text: string, baseInstructions?: string) => Promise<void>;
+  sendMessage: (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort) => Promise<void>;
   /** Interrupt the current turn. */
   interruptTurn: () => Promise<void>;
 }
@@ -90,7 +90,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sendMessage = useCallback(async (text: string, baseInstructions?: string): Promise<void> => {
+  const sendMessage = useCallback(async (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort): Promise<void> => {
     const client = clientRef.current;
     if (!client) {
       const err = new Error("Codex client is not available");
@@ -105,13 +105,14 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       if (!tid) {
         tid = await client.startThread({
           ...(baseInstructions ? { baseInstructions } : {}),
+          ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
         });
         threadIdRef.current = tid;
         setThreadId(tid);
       }
 
       setConnectionState("thinking");
-      const result = await client.startTurn(tid, text);
+      const result = await client.startTurn(tid, text, modelReasoningEffort ? { modelReasoningEffort } : undefined);
       turnIdRef.current = result.turn.id;
     } catch (error) {
       turnIdRef.current = null;
