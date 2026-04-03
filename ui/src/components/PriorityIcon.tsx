@@ -40,12 +40,12 @@ export function PriorityIcon({ priority, onChange, className, showLabel }: Prior
     />
   );
 
-  if (!onChange) return showLabel ? <span className="inline-flex items-center gap-1.5">{icon}<span className="text-[11px] font-mono text-[var(--fg-muted)]">{config.label}</span></span> : icon;
+  if (!onChange) return showLabel ? <span className="inline-flex items-center gap-1.5">{icon}<span className="text-[10px] font-mono text-[var(--fg-muted)]">{config.label}</span></span> : icon;
 
   const trigger = showLabel ? (
-    <button className="inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 px-1 -mx-1 py-0.5">
+    <button className="inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 px-1 -mx-1 py-0.5 text-[10px]">
       {icon}
-      <span className="text-[11px] font-mono text-[var(--fg-muted)]">{config.label}</span>
+      <span className="text-[10px] font-mono text-[var(--fg-muted)]">{config.label}</span>
     </button>
   ) : icon;
 

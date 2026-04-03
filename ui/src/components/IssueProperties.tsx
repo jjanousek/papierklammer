@@ -80,7 +80,7 @@ function PropertyPicker({
   children: React.ReactNode;
 }) {
   const btnCn = cn(
-    "inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 px-1 -mx-1 py-0.5",
+    "inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 px-1 -mx-1 py-0.5 text-[10px]",
     triggerClassName,
   );
 

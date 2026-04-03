@@ -629,10 +629,11 @@ function TranscriptThinkingBlock({
   return (
     <MarkdownBody
       className={cn(
-        "italic text-[var(--fg-muted)] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "italic [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         density === "compact" ? "text-[11px] leading-5" : "text-sm leading-6",
         className,
       )}
+      style={{ color: "var(--fg-muted)" }}
     >
       {block.text}
     </MarkdownBody>
