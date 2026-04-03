@@ -35,14 +35,13 @@ const adapterLabels: Record<string, string> = {
 
 const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;
 
-type FilterTab = "all" | "active" | "paused" | "error";
+type FilterTab = "all" | "active" | "idle";
 
 function matchesFilter(status: string, tab: FilterTab, showTerminated: boolean): boolean {
   if (status === "terminated") return showTerminated;
   if (tab === "all") return true;
-  if (tab === "active") return status === "active" || status === "running" || status === "idle";
-  if (tab === "paused") return status === "paused";
-  if (tab === "error") return status === "error";
+  if (tab === "active") return status === "active" || status === "running";
+  if (tab === "idle") return status === "idle" || status === "paused" || status === "error";
   return true;
 }
 
@@ -109,7 +108,7 @@ export function Agents() {
   const location = useLocation();
   const { isMobile } = useSidebar();
   const pathSegment = location.pathname.split("/").pop() ?? "all";
-  const tab: FilterTab = (pathSegment === "all" || pathSegment === "active" || pathSegment === "paused" || pathSegment === "error") ? pathSegment : "all";
+  const tab: FilterTab = (pathSegment === "all" || pathSegment === "active" || pathSegment === "idle") ? pathSegment : "all";
   const [view, setView] = useState<"list" | "org">("org");
   const forceListView = isMobile;
   const effectiveView: "list" | "org" = forceListView ? "list" : view;
@@ -263,8 +262,7 @@ export function Agents() {
             items={[
               { value: "all", label: "All" },
               { value: "active", label: "Active" },
-              { value: "paused", label: "Paused" },
-              { value: "error", label: "Error" },
+              { value: "idle", label: "Idle" },
             ]}
             value={tab}
             onValueChange={(v) => navigate(`/agents/${v}`)}

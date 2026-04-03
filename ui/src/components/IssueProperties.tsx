@@ -244,7 +244,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   ) : (
     <>
       <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">No labels</span>
+      <span className="text-[10px] text-muted-foreground">No labels</span>
     </>
   );
 
@@ -326,12 +326,12 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   ) : assigneeUserLabel ? (
     <>
       <User className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm">{assigneeUserLabel}</span>
+      <span className="text-[10px]">{assigneeUserLabel}</span>
     </>
   ) : (
     <>
       <User className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">Unassigned</span>
+      <span className="text-[10px] text-muted-foreground">Unassigned</span>
     </>
   );
 
@@ -413,12 +413,12 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         className="shrink-0 h-3 w-3"
         style={{ backgroundColor: orderedProjects.find((p) => p.id === issue.projectId)?.color ?? "#6366f1" }}
       />
-      <span className="text-sm truncate">{projectName(issue.projectId)}</span>
+      <span className="text-[10px] truncate">{projectName(issue.projectId)}</span>
     </>
   ) : (
     <>
       <Hexagon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">No project</span>
+      <span className="text-[10px] text-muted-foreground">No project</span>
     </>
   );
 
@@ -564,7 +564,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           <PropertyRow label="Parent">
             <Link
               to={`/issues/${issue.ancestors?.[0]?.identifier ?? issue.parentId}`}
-              className="text-sm hover:underline"
+              className="text-[10px] hover:underline"
             >
               {issue.ancestors?.[0]?.title ?? issue.parentId.slice(0, 8)}
             </Link>
@@ -573,7 +573,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
 
         {issue.requestDepth > 0 && (
           <PropertyRow label="Depth">
-            <span className="text-sm font-mono">{issue.requestDepth}</span>
+            <span className="text-[10px] font-mono">{issue.requestDepth}</span>
           </PropertyRow>
         )}
       </div>
@@ -593,26 +593,26 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
             ) : (
               <>
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-sm">{creatorUserLabel ?? "User"}</span>
+                <span className="text-[10px]">{creatorUserLabel ?? "User"}</span>
               </>
             )}
           </PropertyRow>
         )}
         {issue.startedAt && (
           <PropertyRow label="Started">
-            <span className="text-sm">{formatDate(issue.startedAt)}</span>
+            <span className="text-[10px]">{formatDate(issue.startedAt)}</span>
           </PropertyRow>
         )}
         {issue.completedAt && (
           <PropertyRow label="Completed">
-            <span className="text-sm">{formatDate(issue.completedAt)}</span>
+            <span className="text-[10px]">{formatDate(issue.completedAt)}</span>
           </PropertyRow>
         )}
         <PropertyRow label="Created">
-          <span className="text-sm">{formatDate(issue.createdAt)}</span>
+          <span className="text-[10px]">{formatDate(issue.createdAt)}</span>
         </PropertyRow>
         <PropertyRow label="Updated">
-          <span className="text-sm">{timeAgo(issue.updatedAt)}</span>
+          <span className="text-[10px]">{timeAgo(issue.updatedAt)}</span>
         </PropertyRow>
       </div>
     </div>

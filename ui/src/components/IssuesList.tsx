@@ -402,7 +402,7 @@ export function IssuesList({
           {/* Filter */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className={`text-[11px] font-mono ${activeFilterCount > 0 ? "text-[var(--alive)]" : ""}`}>
+              <Button variant="ghost" size="sm" className={`text-[11px] font-mono border border-[var(--border)] ${activeFilterCount > 0 ? "text-[var(--alive)]" : ""}`}>
                 <Filter className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
                 <span className="hidden sm:inline">{activeFilterCount > 0 ? `Filters: ${activeFilterCount}` : "Filter"}</span>
                 {activeFilterCount > 0 && (
@@ -576,7 +576,7 @@ export function IssuesList({
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-[11px] font-mono">
+                <Button variant="ghost" size="sm" className="text-[11px] font-mono border border-[var(--border)]">
                   <ArrowUpDown className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Sort</span>
                 </Button>
@@ -622,7 +622,7 @@ export function IssuesList({
           {viewState.viewMode === "list" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-[11px] font-mono">
+                <Button variant="ghost" size="sm" className="text-[11px] font-mono border border-[var(--border)]">
                   <Layers className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Group</span>
                 </Button>
