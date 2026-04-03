@@ -72,12 +72,12 @@ export function StatusIcon({ status, onChange, className, showLabel }: StatusIco
     />
   );
 
-  if (!onChange) return showLabel ? <span className="inline-flex items-center gap-1.5">{square}<span className="text-[10px] text-[var(--fg-muted)]">{statusLabel(status)}</span></span> : square;
+  if (!onChange) return showLabel ? <span className="inline-flex items-center gap-1.5">{square}<span className="text-[10px] text-[var(--fg)]">{statusLabel(status)}</span></span> : square;
 
   const trigger = showLabel ? (
     <Button variant="ghost" className="inline-flex items-center gap-1.5 cursor-pointer px-1 -mx-1 py-0.5 h-auto text-[10px]">
       {square}
-      <span className="text-[10px] text-[var(--fg-muted)]">{statusLabel(status)}</span>
+      <span className="text-[10px] text-[var(--fg)]">{statusLabel(status)}</span>
     </Button>
   ) : square;
 
