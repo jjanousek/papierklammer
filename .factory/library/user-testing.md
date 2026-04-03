@@ -44,6 +44,7 @@
 ## Flow Validator Guidance: GUI (agent-browser)
 - Use only the local URL `http://localhost:3100`.
 - Use `agent-browser` for interactive GUI assertions and `vitest` for code-level GUI assertions when the contract explicitly requires it.
+- In this environment, prefer `agent-browser --session "<id>" eval "<js>"` for scripted navigation/actions (for example, set `window.location.href = "http://localhost:3100/..."`); subcommands like `navigate --url` were observed to fail.
 - Stay in read/validation mode: do not edit application code, routes, or schema.
 - Keep assertions that depend on the same dashboard stream state in one browser validator to avoid cross-run state interference.
 - If no live stream entries are available in the Dashboard UI, record assertions that require stream content as `blocked` with clear evidence.
