@@ -129,14 +129,14 @@ const adapterLabels: Record<string, string> = {
 };
 
 const statusDotColor: Record<string, string> = {
-  running: "#22d3ee",
-  active: "#4ade80",
-  paused: "#facc15",
-  idle: "#facc15",
-  error: "#f87171",
-  terminated: "#a3a3a3",
+  running: "var(--alive)",
+  active: "var(--alive)",
+  paused: "var(--warn)",
+  idle: "var(--warn)",
+  error: "var(--dead)",
+  terminated: "var(--fg-dim)",
 };
-const defaultDotColor = "#a3a3a3";
+const defaultDotColor = "var(--fg-dim)";
 
 // ── Main component ──────────────────────────────────────────────────────
 
@@ -396,7 +396,7 @@ export function OrgChart() {
             <div
               key={node.id}
               data-org-card
-              className="absolute bg-card border border-border rounded-lg shadow-sm hover:shadow-md hover:border-foreground/20 transition-[box-shadow,border-color] duration-150 cursor-pointer select-none"
+              className="absolute bg-card border border-border hover:border-foreground/20 transition-[border-color] duration-150 cursor-pointer select-none"
               style={{
                 left: node.x,
                 top: node.y,

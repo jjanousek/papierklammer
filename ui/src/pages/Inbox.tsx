@@ -242,8 +242,8 @@ export function FailedRunInboxRow({
         >
           {!showUnreadSlot && <span className="hidden h-2 w-2 shrink-0 sm:inline-flex" aria-hidden="true" />}
           <span className="hidden h-3.5 w-3.5 shrink-0 sm:inline-flex" aria-hidden="true" />
-          <span className="mt-0.5 shrink-0 rounded-md bg-red-500/20 p-1.5 sm:mt-0">
-            <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+          <span className="mt-0.5 shrink-0 rounded-md bg-[var(--dead)]/20 p-1.5 sm:mt-0">
+            <XCircle className="h-4 w-4 text-[var(--dead)]" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="line-clamp-2 text-sm font-medium sm:truncate sm:line-clamp-none">
@@ -416,7 +416,7 @@ function ApprovalInboxRow({
           <div className="hidden shrink-0 items-center gap-2 sm:flex">
             <Button
               size="sm"
-              className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
+              className="h-8 bg-[var(--alive)] px-3 text-white hover:opacity-80"
               onClick={onApprove}
               disabled={isPending}
             >
@@ -438,7 +438,7 @@ function ApprovalInboxRow({
         <div className="mt-3 flex gap-2 sm:hidden">
           <Button
             size="sm"
-            className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
+            className="h-8 bg-[var(--alive)] px-3 text-white hover:opacity-80"
             onClick={onApprove}
             disabled={isPending}
           >
@@ -547,7 +547,7 @@ function JoinRequestInboxRow({
         <div className="hidden shrink-0 items-center gap-2 sm:flex">
           <Button
             size="sm"
-            className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
+            className="h-8 bg-[var(--alive)] px-3 text-white hover:opacity-80"
             onClick={onApprove}
             disabled={isPending}
           >
@@ -567,7 +567,7 @@ function JoinRequestInboxRow({
       <div className="mt-3 flex gap-2 sm:hidden">
         <Button
           size="sm"
-          className="h-8 bg-green-700 px-3 text-white hover:opacity-80"
+          className="h-8 bg-[var(--alive)] px-3 text-white hover:opacity-80"
           onClick={onApprove}
           disabled={isPending}
         >
@@ -1311,7 +1311,7 @@ export function Inbox() {
         <>
           {showSeparatorBefore("work_items") && <Separator />}
           <div>
-            <div ref={listRef} className="overflow-hidden rounded-xl border border-border bg-card">
+            <div ref={listRef} className="overflow-hidden border border-border bg-card">
               {workItemsToRender.flatMap((item, index) => {
                 const wrapItem = (key: string, isSelected: boolean, child: ReactNode) => (
                   <div
@@ -1527,7 +1527,7 @@ export function Inbox() {
                     to="/agents"
                     className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
                   >
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--dead)]" />
                     <span className="text-sm">
                       <span className="font-medium">{dashboard!.agents.error}</span>{" "}
                       {dashboard!.agents.error === 1 ? "agent has" : "agents have"} errors
@@ -1549,7 +1549,7 @@ export function Inbox() {
                     to="/costs"
                     className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
                   >
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-400" />
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--warn)]" />
                     <span className="text-sm">
                       Budget at{" "}
                       <span className="font-medium">{dashboard!.costs.monthUtilizationPercent}%</span>{" "}
