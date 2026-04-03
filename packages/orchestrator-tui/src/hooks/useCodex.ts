@@ -29,7 +29,7 @@ export interface UseCodexResult {
   /** Current thread ID (null if no thread started). */
   threadId: string | null;
   /** Send a message. Creates a thread on first call. */
-  sendMessage: (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort) => Promise<void>;
+  sendMessage: (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort, serviceTier?: string) => Promise<void>;
   /** Interrupt the current turn. */
   interruptTurn: () => Promise<void>;
 }
@@ -90,7 +90,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sendMessage = useCallback(async (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort): Promise<void> => {
+  const sendMessage = useCallback(async (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort, serviceTier?: string): Promise<void> => {
     const client = clientRef.current;
     if (!client) {
       const err = new Error("Codex client is not available");
@@ -106,13 +106,17 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
         tid = await client.startThread({
           ...(baseInstructions ? { baseInstructions } : {}),
           ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
+          ...(serviceTier ? { serviceTier } : {}),
         });
         threadIdRef.current = tid;
         setThreadId(tid);
       }
 
       setConnectionState("thinking");
-      const result = await client.startTurn(tid, text, modelReasoningEffort ? { modelReasoningEffort } : undefined);
+      const overrides: { modelReasoningEffort?: ReasoningEffort; serviceTier?: string } = {};
+      if (modelReasoningEffort) overrides.modelReasoningEffort = modelReasoningEffort;
+      if (serviceTier) overrides.serviceTier = serviceTier;
+      const result = await client.startTurn(tid, text, Object.keys(overrides).length > 0 ? overrides : undefined);
       turnIdRef.current = result.turn.id;
     } catch (error) {
       turnIdRef.current = null;

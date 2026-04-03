@@ -9,6 +9,7 @@ export interface StatusBarProps {
   threadId?: string;
   model?: string;
   reasoningEffort?: ReasoningEffort;
+  fastMode?: boolean;
 }
 
 const STATE_COLORS: Record<CodexState, string> = {
@@ -28,6 +29,7 @@ export function StatusBar({
   threadId,
   model,
   reasoningEffort,
+  fastMode,
 }: StatusBarProps): React.ReactElement {
   return (
     <Box paddingX={1} gap={1} flexShrink={0} height={1}>
@@ -35,6 +37,12 @@ export function StatusBar({
       {threadId ? <Text dimColor>| Thread: {threadId}</Text> : null}
       {model ? <Text dimColor>| Model: {model}</Text> : null}
       {reasoningEffort ? <Text dimColor>| reasoning: {reasoningEffort}</Text> : null}
+      <Text dimColor>|</Text>
+      {fastMode ? (
+        <Text color="yellow" bold>fast: ON (2×)</Text>
+      ) : (
+        <Text dimColor>fast: OFF</Text>
+      )}
     </Box>
   );
 }

@@ -63,6 +63,7 @@ export interface ThreadStartParams {
   baseInstructions?: string;
   personality?: string;
   modelReasoningEffort?: ReasoningEffort;
+  serviceTier?: string;
 }
 
 export interface ThreadInfo {
@@ -88,6 +89,7 @@ export interface TurnStartParams {
   threadId: string;
   input: UserInput[];
   modelReasoningEffort?: ReasoningEffort;
+  serviceTier?: string;
 }
 
 export interface TurnInterruptParams {

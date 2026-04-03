@@ -65,6 +65,7 @@ export function App({
   const [selectedCompanyId, setSelectedCompanyId] = useState(companyId);
   const [focusTarget, setFocusTarget] = useState<"sidebar" | "input">("input");
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("high");
+  const [fastMode, setFastMode] = useState(false);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(!companyId);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
@@ -95,6 +96,10 @@ export function App({
     // Cycle reasoning effort with 'r' when input is not focused
     if (input === "r" && !inputFocusedRef.current && !helpVisible) {
       setReasoningEffort((current) => cycleReasoningEffort(current));
+    }
+    // Toggle fast mode with 'f' when input is not focused
+    if (input === "f" && !inputFocusedRef.current && !helpVisible) {
+      setFastMode((current) => !current);
     }
   });
 
@@ -238,12 +243,17 @@ export function App({
   const reasoningEffortRef = useRef(reasoningEffort);
   reasoningEffortRef.current = reasoningEffort;
 
+  // Use a ref for fastMode so the async callback always reads the latest value
+  const fastModeRef = useRef(fastMode);
+  fastModeRef.current = fastMode;
+
   // Handle message submission
   const handleSubmit = useCallback(
     (text: string) => {
       chat.sendMessage(text);
       if (codexEnabled) {
-        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS, reasoningEffortRef.current).catch((error: unknown) => {
+        const serviceTier = fastModeRef.current ? "fast" : undefined;
+        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS, reasoningEffortRef.current, serviceTier).catch((error: unknown) => {
           // useCodex already reports the failure via onError callback which
           // calls chat.onError (resets isThinking, shows error message).
           // This catch prevents unhandled rejection but is a safety net —
@@ -300,6 +310,7 @@ export function App({
             threadId={undefined}
             model={model}
             reasoningEffort={reasoningEffort}
+            fastMode={fastMode}
           />
         </Box>
       </ErrorBoundary>
@@ -347,6 +358,7 @@ export function App({
           threadId={effectiveThreadId}
           model={model}
           reasoningEffort={reasoningEffort}
+          fastMode={fastMode}
         />
       </Box>
     </ErrorBoundary>

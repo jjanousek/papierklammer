@@ -245,11 +245,12 @@ export class CodexClient {
    * Start a turn in an existing thread (send user message).
    * Returns the turn info from the response.
    */
-  async startTurn(threadId: string, text: string, overrides?: { modelReasoningEffort?: ReasoningEffort }): Promise<TurnStartResult> {
+  async startTurn(threadId: string, text: string, overrides?: { modelReasoningEffort?: ReasoningEffort; serviceTier?: string }): Promise<TurnStartResult> {
     const params: TurnStartParams = {
       threadId,
       input: [{ type: "text", text }],
       ...(overrides?.modelReasoningEffort ? { modelReasoningEffort: overrides.modelReasoningEffort } : {}),
+      ...(overrides?.serviceTier ? { serviceTier: overrides.serviceTier } : {}),
     };
 
     const response = await this.sendRequest("turn/start", params);
