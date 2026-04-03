@@ -24,6 +24,7 @@ export function HeaderBar({
       borderLeft={false}
       borderRight={false}
       paddingX={1}
+      height={2}
       flexShrink={0}
     >
       <Text bold color="cyan">

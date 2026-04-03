@@ -206,11 +206,7 @@ describe("VAL-TUI-ANIM-003: Thinking spinner stops when response completes", () 
     unmount();
   });
 
-  it("full App flow: spinner shows during thinking, stops on completion", async () => {
-    // Create mock for Codex-like behavior
-    let onDelta: ((text: string) => void) | null = null;
-    let onTurnCompleted: (() => void) | null = null;
-
+  it("App renders initial state without spinner (no thinking in progress)", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -221,7 +217,7 @@ describe("VAL-TUI-ANIM-003: Thinking spinner stops when response completes", () 
       }),
     });
 
-    const { stdin, lastFrame, unmount } = render(
+    const { lastFrame, unmount } = render(
       <App
         url="http://localhost:3100"
         apiKey=""
@@ -234,7 +230,7 @@ describe("VAL-TUI-ANIM-003: Thinking spinner stops when response completes", () 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify initial state has no spinner
-    let frame = lastFrame()!;
+    const frame = lastFrame()!;
     expect(frame).not.toContain("SPINNER");
     expect(frame).not.toContain("thinking...");
 

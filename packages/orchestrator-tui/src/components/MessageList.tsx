@@ -147,13 +147,14 @@ export function MessageList({
     setUserScrolled(false);
   }, [messages.length]);
 
-  // Reset scroll offset when terminal is resized (windowSize changes)
+  // Reset scroll offset to show latest messages when terminal is resized (windowSize changes)
   useEffect(() => {
-    setScrollOffset((prev) => {
-      const maxOffset = Math.max(0, totalItems - windowSize);
-      return Math.min(prev, maxOffset);
-    });
-  }, [windowSize, totalItems]);
+    setScrollOffset(Math.max(0, totalItems - windowSize));
+    setUserScrolled(false);
+    // Only trigger on windowSize change — totalItems is read but not a dependency,
+    // because we only want to reset on resize, not on every new message.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowSize]);
 
   const handleScroll = useCallback(
     (direction: "up" | "down") => {

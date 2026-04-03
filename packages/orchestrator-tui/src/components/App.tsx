@@ -217,6 +217,10 @@ export function App({
   // Determine if input should be disabled
   const inputDisabled = chat.isThinking || (codexEnabled && codex.isThinking);
 
+  // Ref for isThinking — used in async catch path to avoid stale closure reads
+  const isThinkingRef = useRef(chat.isThinking);
+  isThinkingRef.current = chat.isThinking;
+
   // Handle message submission
   const handleSubmit = useCallback(
     (text: string) => {
@@ -227,7 +231,7 @@ export function App({
           // calls chat.onError (resets isThinking, shows error message).
           // This catch prevents unhandled rejection but is a safety net —
           // if onError somehow wasn't called, reset isThinking here too.
-          if (chat.isThinking) {
+          if (isThinkingRef.current) {
             chat.onError(
               error instanceof Error ? error.message : "Send failed",
             );
@@ -235,7 +239,7 @@ export function App({
         });
       }
     },
-    [chat.sendMessage, chat.onError, chat.isThinking, codexEnabled, codex.sendMessage],
+    [chat.sendMessage, chat.onError, codexEnabled, codex.sendMessage],
   );
 
   const handleDismissHelp = useCallback(() => {
