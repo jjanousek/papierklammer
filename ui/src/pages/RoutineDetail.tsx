@@ -605,7 +605,7 @@ export function RoutineDetail() {
   const automationLabelClassName = routine.status === "archived"
     ? "text-muted-foreground"
     : automationEnabled
-      ? "text-emerald-400"
+      ? "text-[var(--alive)]"
       : "text-muted-foreground";
 
   return (
@@ -652,12 +652,12 @@ export function RoutineDetail() {
             aria-label={automationEnabled ? "Pause automatic triggers" : "Enable automatic triggers"}
             disabled={automationToggleDisabled}
             className={`relative inline-flex h-6 w-11 items-center ${
-              automationEnabled ? "bg-emerald-500" : "bg-muted"
+              automationEnabled ? "bg-[var(--alive)]" : "bg-muted"
             } ${automationToggleDisabled ? "cursor-not-allowed opacity-50" : ""}`}
             onClick={() => updateRoutineStatus.mutate(automationEnabled ? "paused" : "active")}
           >
             <span
-              className={`inline-block h-5 w-5 bg-background shadow-sm transition-transform ${
+              className={`inline-block h-5 w-5 bg-background transition-transform ${
                 automationEnabled ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
@@ -670,7 +670,7 @@ export function RoutineDetail() {
 
       {/* Secret message banner */}
       {secretMessage && (
-        <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3 text-sm">
+        <div className="rounded-lg border border-[var(--border)]/30 bg-[var(--border)]/5 p-4 space-y-3 text-sm">
           <div>
             <p className="font-medium">{secretMessage.title}</p>
             <p className="text-xs text-muted-foreground">Save this now. Paperclip will not show the secret value again.</p>
@@ -847,7 +847,7 @@ export function RoutineDetail() {
       {/* Save bar */}
       <div className="flex items-center justify-between">
         {isEditDirty ? (
-          <span className="text-xs text-amber-600">Unsaved changes</span>
+          <span className="text-xs text-[var(--warn)]">Unsaved changes</span>
         ) : (
           <span />
         )}
