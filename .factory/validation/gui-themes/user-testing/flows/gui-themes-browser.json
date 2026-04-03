@@ -1,0 +1,105 @@
+{
+  "groupId": "gui-themes-browser",
+  "testedAt": "2026-04-03T21:57:26Z",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "e3525ad891d5__u1",
+    "boundary": "localhost:3100 only; single browser validator for theme/localStorage state"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-THEME-003",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-003-dashboard-papierklammer.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-003-dashboard-violet-indigo.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-003-data-theme-switch-vars.json",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-003-baseline-vars.json",
+        "gui-themes/gui-themes-browser/console-errors.txt",
+        "gui-themes/gui-themes-browser/network-summary.txt",
+        "gui-themes/gui-themes-browser/network-status-curl.txt"
+      ],
+      "reason": null
+    },
+    {
+      "id": "VAL-GUI-THEME-004",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-004-instance-settings-violet.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-004-instance-settings-earth.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-004-shadcn-violet.json",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-004-shadcn-earth.json",
+        "gui-themes/gui-themes-browser/console-errors.txt",
+        "gui-themes/gui-themes-browser/network-summary.txt",
+        "gui-themes/gui-themes-browser/network-status-curl.txt"
+      ],
+      "reason": null
+    },
+    {
+      "id": "VAL-GUI-THEME-UI-001",
+      "status": "fail",
+      "evidence": [
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-001-sidebar-theme-controls.png",
+        "gui-themes/gui-themes-browser/console-errors.txt",
+        "gui-themes/gui-themes-browser/network-summary.txt"
+      ],
+      "reason": "Sidebar footer exposes all 3 theme buttons at once; no single current-theme selector with click-to-reveal behavior was observed. Clicking 'Switch to PAPIERKLAMMER theme' did not reveal additional options/state changes in the control layout."
+    },
+    {
+      "id": "VAL-GUI-THEME-UI-002",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-002-instance-settings-theme-section.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-002-theme-button-state.json",
+        "gui-themes/gui-themes-browser/console-errors.txt",
+        "gui-themes/gui-themes-browser/network-summary.txt"
+      ],
+      "reason": null
+    },
+    {
+      "id": "VAL-GUI-THEME-UI-003",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-003-before-reload.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-003-after-reload.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-003-state-before-reload.json",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-003-state-after-reload.json",
+        "gui-themes/gui-themes-browser/console-errors.txt",
+        "gui-themes/gui-themes-browser/network-summary.txt"
+      ],
+      "reason": null
+    },
+    {
+      "id": "VAL-GUI-THEME-UI-004",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-004-dashboard-violet.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-004-issues-violet.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-004-agentdetail-violet.png",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-004-dashboard-theme.json",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-004-issues-theme.json",
+        "gui-themes/gui-themes-browser/VAL-GUI-THEME-UI-004-agentdetail-theme.json",
+        "gui-themes/gui-themes-browser/console-errors.txt",
+        "gui-themes/gui-themes-browser/network-summary.txt"
+      ],
+      "reason": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Duplicate accessible names for theme buttons (sidebar + settings section) caused strict locator ambiguity when targeting 'Switch to VIOLET-INDIGO theme'.",
+      "resolved": true,
+      "resolution": "Used a scoped selector/eval click on the second matching button in the settings section.",
+      "affectedAssertions": [
+        "VAL-GUI-THEME-UI-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 6 assigned GUI theme assertions: 5 passed, 1 failed (VAL-GUI-THEME-UI-001), 0 blocked. Theme variable switching, shadcn bridge mapping, reload persistence, and cross-page persistence were validated in-browser with screenshots and state captures."
+}

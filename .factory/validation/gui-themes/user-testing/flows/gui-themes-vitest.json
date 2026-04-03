@@ -1,0 +1,39 @@
+{
+  "groupId": "gui-themes-vitest",
+  "testedAt": "2026-04-03T21:30:27Z",
+  "isolation": {
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "mode": "vitest-only"
+  },
+  "toolsUsed": ["vitest"],
+  "commandSummary": {
+    "focused": [
+      "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/ui/src/styles/__tests__/theme-css-variables.test.ts --max-workers=3"
+    ],
+    "result": "passed",
+    "testFiles": "1 passed",
+    "tests": "36 passed"
+  },
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-THEME-001",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-vitest/focused-vitest-theme-css-variables.log",
+        "ui/src/styles/__tests__/theme-css-variables.test.ts :: [data-theme='violet-indigo'] has correct violet-indigo background values (expects --bg=#3A28B0)"
+      ]
+    },
+    {
+      "id": "VAL-GUI-THEME-002",
+      "status": "pass",
+      "evidence": [
+        "gui-themes/gui-themes-vitest/focused-vitest-theme-css-variables.log",
+        "ui/src/styles/__tests__/theme-css-variables.test.ts :: [data-theme='earth'] has correct earth background values (expects --bg=#2D1610) and foreground (expects --fg=#E8E0D0)"
+      ]
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Focused GUI theme vitest coverage exists and passed for both assigned assertions using ui/src/styles/__tests__/theme-css-variables.test.ts."
+}

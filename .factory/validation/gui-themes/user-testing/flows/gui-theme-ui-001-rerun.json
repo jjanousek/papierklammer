@@ -1,0 +1,59 @@
+{
+  "groupId": "gui-theme-ui-001-rerun",
+  "testedAt": "2026-04-03T22:46:22Z",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "assertionIds": [
+      "VAL-GUI-THEME-UI-001"
+    ],
+    "boundary": "Single GUI validator, localhost:3100 only, no code/schema changes"
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertionResults": [
+    {
+      "id": "VAL-GUI-THEME-UI-001",
+      "title": "Theme selector in sidebar footer",
+      "status": "pass",
+      "observed": {
+        "sidebarLabels": [
+          "PAPIERKLAMMER",
+          "VIOLET-INDIGO",
+          "EARTH"
+        ],
+        "activeMarker": "The active theme is prefixed with '>' in the sidebar list (e.g., '> PAPIERKLAMMER', '> VIOLET-INDIGO', '> EARTH').",
+        "clickActions": [
+          {
+            "action": "Clicked 'Switch to VIOLET-INDIGO theme'",
+            "result": "Theme changed immediately to data-theme='violet-indigo'; marker moved to '> VIOLET-INDIGO'; URL remained /WEA/dashboard."
+          },
+          {
+            "action": "Clicked 'Switch to EARTH theme'",
+            "result": "Theme changed immediately to data-theme='earth'; marker moved to '> EARTH'; URL remained /WEA/dashboard."
+          },
+          {
+            "action": "Clicked 'Switch to PAPIERKLAMMER theme'",
+            "result": "Theme changed immediately to data-theme='papierklammer'; marker moved back to '> PAPIERKLAMMER'; URL remained /WEA/dashboard."
+          }
+        ]
+      },
+      "evidence": [
+        "gui-themes/gui-theme-ui-001-rerun/VAL-GUI-THEME-UI-001-sidebar-initial-annotated.png",
+        "gui-themes/gui-theme-ui-001-rerun/VAL-GUI-THEME-UI-001-after-click-violet-indigo-annotated.png",
+        "gui-themes/gui-theme-ui-001-rerun/VAL-GUI-THEME-UI-001-after-click-earth-annotated.png",
+        "gui-themes/gui-theme-ui-001-rerun/VAL-GUI-THEME-UI-001-after-click-papierklammer-annotated.png",
+        "gui-themes/gui-theme-ui-001-rerun/VAL-GUI-THEME-UI-001-observations.json",
+        "gui-themes/gui-theme-ui-001-rerun/console-errors.txt",
+        "gui-themes/gui-theme-ui-001-rerun/network-summary.txt"
+      ],
+      "consoleErrors": "none",
+      "network": "No requests captured during session; switching occurred via immediate DOM/CSS variable updates.",
+      "reason": "Pass: sidebar footer directly shows all three required theme options, visibly marks current theme with '>' indicator, and clicking each option switched theme instantly as required by the updated contract language."
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Revalidated VAL-GUI-THEME-UI-001 as PASS against updated contract: sidebar footer lists Papierklammer, Violet-Indigo, and Earth directly, active theme marker moves correctly, and theme switches instantly on click."
+}

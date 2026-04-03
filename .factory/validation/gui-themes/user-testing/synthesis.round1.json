@@ -1,0 +1,35 @@
+{
+  "milestone": "gui-themes",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 8,
+    "passed": 7,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-THEME-001",
+    "VAL-GUI-THEME-002",
+    "VAL-GUI-THEME-003",
+    "VAL-GUI-THEME-004",
+    "VAL-GUI-THEME-UI-002",
+    "VAL-GUI-THEME-UI-003",
+    "VAL-GUI-THEME-UI-004"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-THEME-UI-001",
+      "reason": "Sidebar footer theme control shows all options directly and did not exhibit the contract's click-to-reveal selector behavior."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Generalized GUI flow-report/evidence path templates to <milestone> and added guidance for scoped selectors when duplicate theme controls create locator ambiguity.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}
