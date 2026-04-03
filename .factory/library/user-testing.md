@@ -30,3 +30,11 @@
 - No live agent data in dev environment (agents are seeded but not actively running)
 - Dashboard stream content requires live WebSocket transcript data from running agents
 - Some assertions about stream content may need fixture seeding via API calls
+
+## Flow Validator Guidance: TUI (vitest)
+- Stay within repository path: `/Users/aischool/work/papierklammer_droid`.
+- Use only `vitest`-based validation for TUI assertions; do not use browser automation.
+- Run assertion-focused tests first, then broader TUI suite only if needed to confirm regressions.
+- Do not modify production code during flow validation; only record observed pass/fail/blocked outcomes.
+- Save the flow report to `.factory/validation/tui-stability/user-testing/flows/<group-id>.json`.
+- Save any supporting logs or command output snippets under mission evidence path for the assigned group.

@@ -1,0 +1,123 @@
+{
+  "groupId": "anim-cross",
+  "testedAt": "2026-04-03T17:55:35Z",
+  "isolation": {
+    "surface": "vitest CLI only",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": ["pnpm", "vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-ANIM-001",
+      "title": "Animated thinking spinner during response",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to test suite",
+          "expected": "Assertion is covered by a dedicated Vitest describe block",
+          "observed": "Mapped to describe(\"VAL-TUI-ANIM-001: Animated thinking spinner during response\") in packages/orchestrator-tui/src/__tests__/animations.test.tsx"
+        },
+        {
+          "action": "Run scoped Vitest command",
+          "expected": "All tests for VAL-TUI-ANIM-001 pass",
+          "observed": "Scoped run passed with 4 tests passed and 7 skipped in animations.test.tsx"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-stability/anim-cross/VAL-TUI-ANIM-001-vitest.txt",
+        "keyLines": [
+          "src/__tests__/animations.test.tsx (11 tests | 7 skipped)",
+          "Tests 4 passed | 7 skipped (11)"
+        ],
+        "network": "not applicable (local vitest run)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-ANIM-002",
+      "title": "Agent running animation in sidebar",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to test suite",
+          "expected": "Assertion is covered by a dedicated Vitest describe block",
+          "observed": "Mapped to describe(\"VAL-TUI-ANIM-002: Agent running animation in sidebar\") in packages/orchestrator-tui/src/__tests__/animations.test.tsx"
+        },
+        {
+          "action": "Run scoped Vitest command",
+          "expected": "All tests for VAL-TUI-ANIM-002 pass",
+          "observed": "Scoped run passed with 4 tests passed and 7 skipped in animations.test.tsx"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-stability/anim-cross/VAL-TUI-ANIM-002-vitest.txt",
+        "keyLines": [
+          "src/__tests__/animations.test.tsx (11 tests | 7 skipped)",
+          "Tests 4 passed | 7 skipped (11)"
+        ],
+        "network": "not applicable (local vitest run)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-ANIM-003",
+      "title": "Thinking spinner stops when response completes",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to test suite",
+          "expected": "Assertion is covered by a dedicated Vitest describe block",
+          "observed": "Mapped to describe(\"VAL-TUI-ANIM-003: Thinking spinner stops when response completes\") in packages/orchestrator-tui/src/__tests__/animations.test.tsx"
+        },
+        {
+          "action": "Run scoped Vitest command",
+          "expected": "All tests for VAL-TUI-ANIM-003 pass",
+          "observed": "Scoped run passed with 3 tests passed and 8 skipped in animations.test.tsx"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-stability/anim-cross/VAL-TUI-ANIM-003-vitest.txt",
+        "keyLines": [
+          "src/__tests__/animations.test.tsx (11 tests | 8 skipped)",
+          "Tests 3 passed | 8 skipped (11)"
+        ],
+        "network": "not applicable (local vitest run)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-CROSS-001",
+      "title": "Resize during thinking doesn't break layout",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Map assertion to test suite",
+          "expected": "Assertion is covered by a dedicated Vitest describe block",
+          "observed": "Mapped to describe(\"VAL-TUI-CROSS-001: Resize during thinking doesn't break layout\") in packages/orchestrator-tui/src/__tests__/cross-stability.test.tsx"
+        },
+        {
+          "action": "Run scoped Vitest command",
+          "expected": "All tests for VAL-TUI-CROSS-001 pass",
+          "observed": "Scoped run passed with 5 tests passed in cross-stability.test.tsx"
+        }
+      ],
+      "evidence": {
+        "commandOutput": "tui-stability/anim-cross/VAL-TUI-CROSS-001-vitest.txt",
+        "keyLines": [
+          "VAL-TUI-CROSS-001: Resize during thinking doesn't break layout > resize while isThinking=true recalculates layout and spinner continues",
+          "VAL-TUI-CROSS-001: Resize during thinking doesn't break layout > response completes normally after resize during thinking",
+          "VAL-TUI-CROSS-001: Resize during thinking doesn't break layout > full flow: send → resize mid-stream → complete → send another",
+          "VAL-TUI-CROSS-001: Resize during thinking doesn't break layout > multiple resizes during thinking do not corrupt layout",
+          "VAL-TUI-CROSS-001: Resize during thinking doesn't break layout > resize to very small terminal during thinking still renders without crash",
+          "Tests 5 passed (5)"
+        ],
+        "network": "not applicable (local vitest run)"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 4 assigned assertions via focused file-scoped Vitest runs: 4 passed, 0 failed, 0 blocked."
+}

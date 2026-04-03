@@ -1,0 +1,99 @@
+{
+  "groupId": "core-stability",
+  "testedAt": "2026-04-03T17:52:39Z",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "tool": "vitest"
+  },
+  "toolsUsed": ["vitest"],
+  "assertions": [
+    {
+      "id": "VAL-TUI-STAB-001",
+      "title": "Layout uses explicit terminal dimensions",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx :: describe('VAL-TUI-STAB-001: Layout uses explicit terminal dimensions')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx -t VAL-TUI-STAB-001 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-001.log",
+        "observed": "4 tests passed: root frame constrained to terminal rows; HeaderBar/InputBar/StatusBar constrained rendering checks all passed."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-STAB-002",
+      "title": "Layout stable after sending a message",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx :: describe('VAL-TUI-STAB-002: Layout stable after sending a message')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx -t VAL-TUI-STAB-002 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-002.log",
+        "observed": "1 test passed: after send and completion, frame line count stayed within initial bounds and both user/assistant messages rendered."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-STAB-003",
+      "title": "Layout handles terminal resize",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx :: describe('VAL-TUI-STAB-003: Layout handles terminal resize')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx -t VAL-TUI-STAB-003 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-003.log",
+        "observed": "1 test passed: resize event with updated rows triggered re-render and preserved expected regions without corruption."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-STAB-004",
+      "title": "Multiple messages don't break layout",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/message-flow.test.tsx :: describe('VAL-TUI-STAB-004: Multiple messages don't break layout')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/message-flow.test.tsx -t VAL-TUI-STAB-004 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-004.log",
+        "observed": "1 test passed: 3 sequential messages completed, no stuck thinking indicator, 1 thread/start and 3 turn/start calls on the same threadId."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-STAB-005",
+      "title": "Second message works without getting stuck",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/message-flow.test.tsx :: describe('VAL-TUI-STAB-005: Second message works without getting stuck')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/message-flow.test.tsx -t VAL-TUI-STAB-005 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-005.log",
+        "observed": "2 tests passed: second turn reused existing threadId and isThinking toggled/reset correctly between turns."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-STAB-006",
+      "title": "Error during send resets thinking state",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/message-flow.test.tsx :: describe('VAL-TUI-STAB-006: Error during send resets thinking state')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/message-flow.test.tsx -t VAL-TUI-STAB-006 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-006.log",
+        "observed": "4 tests passed: thread/start and turn/start failures clear thinking state, input becomes usable again, and subsequent recovery send succeeds."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-TUI-STAB-007",
+      "title": "Message scroll windowing works",
+      "status": "pass",
+      "evidence": {
+        "mappedTest": "packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx :: describe('VAL-TUI-STAB-007: Message scroll windowing works')",
+        "command": "pnpm --dir /Users/aischool/work/papierklammer_droid exec vitest run /Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx -t VAL-TUI-STAB-007 --max-workers=3 --reporter=verbose",
+        "log": "tui-stability/core-stability/VAL-TUI-STAB-007.log",
+        "observed": "4 tests passed: visible-range windowing, full render when space permits, and Shift+Up/Shift+Down scrolling behavior verified."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Validated 7 assigned core TUI stability assertions via focused Vitest runs; all 7 passed with assertion-specific command logs saved under mission evidence."
+}
