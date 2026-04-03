@@ -9,16 +9,13 @@ Standalone Ink 6 TUI application for the Papierklammer orchestrator console.
 ```
 <App url={url} apiKey={apiKey}>
   <FullScreen>
-    <Box flexDirection="column" height="100%">
-      <HeaderBar />                          {/* 1 row */}
-      <Box flexDirection="row" flexGrow={1}>
+    <Box flexDirection="column" height={rows}>
+      <HeaderBar />                          {/* 2 rows: content + border */}
+      <Box flexDirection="row" height={contentHeight}>
         <AgentSidebar width="25%" />         {/* Left panel */}
-        <ChatPanel flexGrow={1}>             {/* Right panel */}
-          <MessageList />                    {/* Scrollable history */}
-          <StreamingMessage />               {/* Current response */}
-        </ChatPanel>
+        {helpVisible ? <HelpOverlay /> : settingsVisible ? <SettingsOverlay /> : <ChatPanel />}
       </Box>
-      <InputBar />                           {/* 1-2 rows */}
+      <InputBar />                           {/* 2 rows: border + content */}
       <StatusBar />                          {/* 1 row */}
     </Box>
   </FullScreen>
@@ -34,9 +31,10 @@ Standalone Ink 6 TUI application for the Papierklammer orchestrator console.
 ## Codex Client (src/codex/)
 
 - `CodexClient` class wrapping child_process.spawn + readline for JSONL parsing
-- Methods: `initialize()`, `startThread(opts)`, `startTurn(threadId, input)`, `interrupt(threadId, turnId)`
+- Methods: `initialize()`, `startThread(opts)`, `startTurn(threadId, input, overrides?)`, `interrupt(threadId, turnId)`
 - Events: `onDelta(text)`, `onItemStarted(item)`, `onItemCompleted(item)`, `onTurnCompleted(turn)`
 - Auto-reconnect on subprocess crash
+- Protocol naming: JSON-RPC uses `serviceTier` for fast mode on `thread/start` and `turn/start`; config files use `service_tier`
 
 ## File Structure
 
@@ -56,6 +54,7 @@ packages/orchestrator-tui/
 │   │   ├── InputBar.tsx       # Text input
 │   │   ├── StatusBar.tsx      # Codex state + thread info
 │   │   ├── HelpOverlay.tsx    # Keyboard shortcuts overlay
+│   │   ├── SettingsOverlay.tsx # Model/reasoning/fast-mode overlay
 │   │   └── CommandBlock.tsx   # Rendered command execution
 │   ├── hooks/
 │   │   ├── useCodex.ts        # Codex subprocess management

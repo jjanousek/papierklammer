@@ -1,0 +1,33 @@
+{
+  "featureId": "tui-reasoning-effort",
+  "reviewedAt": "2026-04-03T19:10:15Z",
+  "commitId": "2fc0172f334bc13aa2dc3b4c14fad10a5cf9ca6b",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Implementation matches the feature contract end-to-end: reasoning effort is typed in protocol params, wired into thread/start and turn/start, surfaced in StatusBar, and controlled via the 'r' shortcut with cross-turn persistence.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/components/HelpOverlay.tsx",
+        "line": 14,
+        "severity": "non_blocking",
+        "description": "Shortcut copy says \"low→med→high\" while the feature and UI use \"medium\" elsewhere; wording mismatch is minor but can confuse users and test readers."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The skill mandates test-first (TDD), but the transcript shows implementation edits before creating the new reasoning-effort tests; handoff still reports followedProcedure=true.",
+      "evidence": ".factory/skills/tui-worker/SKILL.md:34 requires \"Write tests FIRST (TDD)\"; transcript skeleton sequence shows multiple Edit calls for App/useCodex/client/types before \"Now let me write the tests.\""
+    },
+    {
+      "area": "knowledge",
+      "observation": "TUI architecture library doc is stale for Codex method signatures and StatusBar scope after this feature, which may mislead future workers.",
+      "evidence": ".factory/library/tui-architecture.md:37 lists startTurn(threadId, input) without overrides; line 57 describes StatusBar as only codex state + thread info (no model controls shown)."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed transcript and commit 2fc0172f for tui-reasoning-effort. Feature behavior is correctly implemented and validated; one minor non-blocking shortcut-label wording inconsistency was noted, plus shared-state observations for skill-procedure drift and stale architecture notes."
+}

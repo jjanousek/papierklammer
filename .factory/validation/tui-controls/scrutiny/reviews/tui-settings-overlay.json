@@ -1,0 +1,26 @@
+{
+  "featureId": "tui-settings-overlay",
+  "reviewedAt": "2026-04-03T18:57:52Z",
+  "commitId": "bac455a0",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Implementation covers the required settings overlay behavior (open/close keys, displayed model/reasoning/fast mode, stream continuity, and persistence across messages). No blocking or non-blocking defects were found in the reviewed diff.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `tui-worker` skill procedure and observed execution are misaligned: the skill requires tests-first and running both TUI and UI suites, but the transcript shows implementation edits before tests and verification omitted UI tests while handoff still marks `followedProcedure=true`.",
+      "evidence": "Transcript skeleton for session `ac23f1ba-115b-4d74-b4bb-4aa2c596d1fc` shows Create/Edit calls for `SettingsOverlay.tsx` and `App.tsx` before creating `settings-overlay.test.tsx`; handoff verification includes only `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3` and `pnpm -r typecheck`. Skill requirements are in `.factory/skills/tui-worker/SKILL.md` step 3 and step 5."
+    },
+    {
+      "area": "knowledge",
+      "observation": "Shared architecture knowledge is stale for the TUI component tree after this feature.",
+      "evidence": "`.factory/library/architecture.md` lists `HelpOverlay` in the TUI tree but not `SettingsOverlay`, while commit `bac455a0` adds `packages/orchestrator-tui/src/components/SettingsOverlay.tsx` and integrates it in `packages/orchestrator-tui/src/components/App.tsx`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review result: pass. The feature implementation matches the described/expected behavior and includes tests for VAL-TUI-CTRL-006, VAL-TUI-CTRL-007, and VAL-TUI-CROSS-002. No code issues were found; shared-state observations were recorded for skill-procedure drift and architecture knowledge drift."
+}

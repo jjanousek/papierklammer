@@ -1,0 +1,66 @@
+{
+  "milestone": "tui-controls",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm exec vitest run ui/src/ packages/orchestrator-tui/ --max-workers=3",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Updated .factory/library/tui-architecture.md to document SettingsOverlay, current App layout dimensions, and Codex protocol naming (`serviceTier` JSON-RPC vs `service_tier` config).",
+      "sourceFeature": "tui-settings-overlay"
+    },
+    {
+      "target": "library",
+      "description": "Updated .factory/library/architecture.md TUI section to include settings overlay and StatusBar model controls, plus the fast-mode protocol naming detail.",
+      "sourceFeature": "tui-fast-mode"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "skill",
+      "suggestion": "Adjust .factory/skills/tui-worker/SKILL.md to either enforce strict tests-first sequencing (with explicit audit criteria) or explicitly allow justified exceptions, and align validator expectations for TUI-only features so handoff `followedProcedure` is evaluated consistently.",
+      "evidence": "Reviews for tui-reasoning-effort and tui-settings-overlay both observed implementation edits before tests and handoffs marking followedProcedure=true despite procedure mismatch.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Clarify Codex fast-mode naming in mission/operator guidance: use `serviceTier` for JSON-RPC thread/turn params and `service_tier` for config file fields.",
+      "evidence": "tui-fast-mode review flagged ambiguity where guidance referenced `service_tier` as a thread param, while protocol schemas and client calls use `serviceTier`.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Duplicate report of TUI skill procedure drift from multiple feature reviews.",
+      "reason": "duplicate"
+    },
+    {
+      "observation": "Duplicate report that TUI architecture knowledge was stale across multiple feature reviews.",
+      "reason": "duplicate"
+    }
+  ],
+  "previousRound": null
+}

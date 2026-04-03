@@ -12,8 +12,9 @@ App (shell, alternate screen buffer, Ctrl+C handling)
 ├── AgentSidebar (25% width, agent list with status indicators)
 ├── ChatPanel → MessageList (messages, streaming, thinking)
 ├── InputBar (text input, disabled during thinking)
-├── StatusBar (Codex state, thread ID, model)
-└── HelpOverlay (keyboard shortcuts, toggled with ?)
+├── StatusBar (Codex state, thread ID, model, reasoning effort, fast mode)
+├── HelpOverlay (keyboard shortcuts, toggled with ?)
+└── SettingsOverlay (current model/reasoning/fast mode, toggled with s)
 ```
 
 ### Hooks
@@ -26,6 +27,7 @@ App (shell, alternate screen buffer, Ctrl+C handling)
 - `codex/client.ts` — spawns `codex app-server`, JSON-RPC over stdio JSONL
 - `codex/types.ts` — TypeScript types for JSON-RPC protocol
 - `codex/base-instructions.ts` — system prompt describing orchestrator API operations
+- Protocol naming detail: JSON-RPC thread/turn params use `serviceTier` (camelCase), while Codex config uses `service_tier` (snake_case)
 
 ### Known Issues Being Fixed
 - No explicit terminal dimension management (causes layout breaks)

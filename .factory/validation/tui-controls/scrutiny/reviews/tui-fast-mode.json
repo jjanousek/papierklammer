@@ -1,0 +1,21 @@
+{
+  "featureId": "tui-fast-mode",
+  "reviewedAt": "2026-04-03T19:02:21Z",
+  "commitId": "c6589f2a",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Reviewed commit c6589f2a against the feature description and expected behavior. The implementation adds fast-mode toggle handling, status display, Codex propagation, and matching tests; no blocking or non-blocking code issues were found in this feature diff.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "Mission guidance currently conflates Codex config naming with JSON-RPC thread/turn parameter naming for fast mode. This can mislead future workers during protocol integration.",
+      "evidence": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/AGENTS.md:61 documents `service_tier` for fast mode as a thread param, while generated app-server schemas show `serviceTier` in /tmp/codex-schema-review/v2/ThreadStartParams.json and /tmp/codex-schema-review/v2/TurnStartParams.json; `service_tier` appears in config shape at /tmp/codex-schema-review/v2/ConfigReadResponse.json:389."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Transcript skeleton, handoff, skill, and commit diff were reviewed for tui-fast-mode. Implementation coverage matches required behavior and no feature-level defects were identified; one shared-state documentation ambiguity was recorded."
+}
