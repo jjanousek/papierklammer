@@ -196,7 +196,7 @@ function CommentCard({
           <CopyMarkdownButton text={comment.body} />
         </span>
       </div>
-      <MarkdownBody className="text-sm text-[var(--fg-muted)]">{comment.body}</MarkdownBody>
+      <MarkdownBody className="text-sm text-[var(--fg-muted)] [&_*]:text-[var(--fg-muted)]">{comment.body}</MarkdownBody>
       {companyId && !isPending ? (
         <div className="mt-2 space-y-2">
           <PluginSlotOutlet

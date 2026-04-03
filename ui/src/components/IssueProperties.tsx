@@ -227,7 +227,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       {(issue.labels ?? []).slice(0, 3).map((label) => (
         <span
           key={label.id}
-          className="inline-flex items-center px-2 py-0.5 text-xs font-medium border"
+          className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium border"
           style={{
             borderColor: label.color,
             backgroundColor: `${label.color}22`,
@@ -238,7 +238,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         </span>
       ))}
       {(issue.labels ?? []).length > 3 && (
-        <span className="text-xs text-muted-foreground">+{(issue.labels ?? []).length - 3}</span>
+        <span className="text-[10px] text-muted-foreground">+{(issue.labels ?? []).length - 3}</span>
       )}
     </div>
   ) : (

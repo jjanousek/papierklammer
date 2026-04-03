@@ -20,21 +20,28 @@ function isActiveRun(run?: LiveRunForIssue | null): boolean {
   return run?.status === "running" || run?.status === "queued";
 }
 
+function isActiveAgent(agent: Agent): boolean {
+  return agent.status === "active" || agent.status === "running";
+}
+
 export function AgentBlock({ agent, run, elapsed, result, streamEntries }: AgentBlockProps) {
-  const active = isActiveRun(run);
-  const [expanded, setExpanded] = useState(active);
+  const activeRun = isActiveRun(run);
+  const activeAgent = isActiveAgent(agent);
+  // Default to expanded if the agent has an active run OR an active/running status
+  const defaultExpanded = activeRun || activeAgent;
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   const handleClick = () => {
-    if (!active) {
+    if (!defaultExpanded) {
       setExpanded((prev) => !prev);
     }
   };
 
   // Force active agents to always be expanded
-  const isExpanded = active || expanded;
+  const isExpanded = defaultExpanded || expanded;
 
   // Status color for the 6x6 square
-  const statusStyle = getStatusStyle(agent.status, active);
+  const statusStyle = getStatusStyle(agent.status, activeRun);
 
   if (!isExpanded) {
     // Collapsed (idle) - single line ~28px
@@ -80,8 +87,8 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
   return (
     <div
       className="border-b border-[var(--border)]"
-      onClick={!active ? handleClick : undefined}
-      style={{ cursor: active ? "default" : "pointer" }}
+      onClick={!defaultExpanded ? handleClick : undefined}
+      style={{ cursor: defaultExpanded ? "default" : "pointer" }}
       data-testid="agent-block-expanded"
     >
       {/* Header: name + status square */}
