@@ -3,8 +3,9 @@ set -e
 
 cd /Users/aischool/work/papierklammer_droid
 
-# Install dependencies (idempotent)
-pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+  pnpm install
+fi
 
-# Build all packages (needed for cross-workspace imports)
-pnpm build
+echo "Init complete"

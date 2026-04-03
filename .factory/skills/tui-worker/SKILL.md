@@ -9,57 +9,83 @@ NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the W
 
 ## When to Use This Skill
 
-Features that involve creating or modifying files in `packages/orchestrator-tui/` — components, hooks, Codex client, CLI, tests.
+Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
+- Component fixes and new components (React Ink)
+- Hook modifications (useCodex, useChat, useOrchestratorStatus)
+- Codex client protocol changes
+- Terminal layout and resize handling
+- Keyboard interaction and overlays
 
 ## Required Skills
 
-None.
+None. TUI is tested via Vitest only (no agent-browser needed).
 
 ## Work Procedure
 
-1. **Read the feature description carefully.** Understand what components, hooks, and tests need to be created/modified.
+1. **Read the feature description carefully.** Understand what assertions this feature fulfills (check `fulfills` field). Read the validation contract for those assertion IDs to understand exact pass/fail criteria.
 
-2. **Read existing code first.** Before writing anything, read the current state of files you'll modify. Check `packages/orchestrator-tui/src/` for existing patterns, imports, and conventions.
+2. **Read existing code.** Before modifying any file, read it first to understand current patterns. Key files:
+   - `packages/orchestrator-tui/src/components/App.tsx` — root component
+   - `packages/orchestrator-tui/src/hooks/useCodex.ts` — Codex integration
+   - `packages/orchestrator-tui/src/hooks/useChat.ts` — chat state
+   - `packages/orchestrator-tui/src/codex/client.ts` — Codex JSON-RPC client
+   - `packages/orchestrator-tui/src/codex/types.ts` — protocol types
 
-3. **Write tests first (red).** Create test files in `packages/orchestrator-tui/src/__tests__/` using Vitest + ink-testing-library. For components, use `render()` from ink-testing-library and assert on `lastFrame()`. For hooks, create test harness components. For the Codex client, mock `child_process.spawn`. For API calls, use injectable `fetchFn`. Tests must fail before implementation.
+3. **Write tests FIRST (TDD).** Create or update test files in `packages/orchestrator-tui/src/__tests__/`. Tests should:
+   - Import from `ink-testing-library` for component testing
+   - Mock Codex client for async behavior tests
+   - Cover the specific scenarios from the validation contract assertions
+   - Run with: `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3`
 
-4. **Implement to make tests pass (green).** Write the minimum code to make tests pass. Follow these patterns:
-   - Components: functional React components with hooks, one per file in `src/components/`
-   - Hooks: custom hooks in `src/hooks/`, each managing one concern
-   - Codex client: class-based client in `src/codex/client.ts` with types in `src/codex/types.ts`
-   - CLI: argument parsing in `src/cli.ts`, entry point in `src/index.tsx`
+4. **Implement the feature.** Make tests pass. Follow existing patterns:
+   - Use React hooks for state management
+   - Use `useStdout()` from Ink for terminal dimensions
+   - Use refs for values accessed in async callbacks (avoid stale closures)
+   - Use `ink-spinner` for animations (already installed)
 
 5. **Run verification:**
-   ```sh
-   cd packages/orchestrator-tui && npx vitest run  # TUI tests
-   pnpm -r typecheck                                # Full typecheck
-   pnpm build                                       # Full build
-   ```
+   - `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3` — all TUI tests pass
+   - `pnpm exec vitest run ui/src/ --max-workers=3` — UI tests still pass (no regressions)
+   - `pnpm -r typecheck` — no type errors
 
-6. **Manual smoke check:** Review the rendered output in test frames. Verify all expected text markers appear.
-
-7. **Commit and hand off.**
+6. **Commit** with a descriptive message.
 
 ## Example Handoff
 
 ```json
 {
-  "salientSummary": "Implemented useChat hook with message history, streaming text accumulation, and command block tracking. Created ChatPanel, MessageList, CommandBlock, and InputBar components. 27 tests cover all chat functionality including message display, streaming deltas, command blocks, thinking state, and input submission.",
-  "whatWasImplemented": "Created src/hooks/useChat.ts (message state management with sendMessage, onDelta, onTurnCompleted, onCommandExecution). Created src/components/ChatPanel.tsx (message list container), src/components/MessageList.tsx (scrollable message rendering with user/assistant prefixes, streaming cursor, thinking indicator), src/components/CommandBlock.tsx (bordered command display with $ prefix), updated src/components/InputBar.tsx (ink-text-input with submit/disabled states). 27 new tests in __tests__/chat.test.tsx.",
+  "salientSummary": "Fixed TUI layout stability by using useStdout() for explicit terminal dimensions. HeaderBar/InputBar/StatusBar have flexShrink={0}. Middle content area uses calculated height. Added resize listener that recalculates dimensions. 6 new tests covering layout, resize, and multi-message flows.",
+  "whatWasImplemented": "Added useTerminalSize hook wrapping useStdout() with resize detection. App.tsx now sets explicit height on root Box based on terminal rows. Fixed bars have flexShrink={0} and fixed heights (1 row each). Middle content area height = rows - 3. MessageList implements scroll windowing. Added resize useEffect that resets scroll offset.",
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
-      {"command": "cd packages/orchestrator-tui && npx vitest run", "exitCode": 0, "observation": "7 test files, 96 tests passed"},
-      {"command": "pnpm -r typecheck", "exitCode": 0, "observation": "All 21 packages typecheck"},
-      {"command": "pnpm build", "exitCode": 0, "observation": "All packages build"}
+      {
+        "command": "pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3",
+        "exitCode": 0,
+        "observation": "9 test files, 143 tests all passing including 6 new layout tests"
+      },
+      {
+        "command": "pnpm exec vitest run ui/src/ --max-workers=3",
+        "exitCode": 0,
+        "observation": "30 test files, 132 tests all passing, no regressions"
+      },
+      {
+        "command": "pnpm -r typecheck",
+        "exitCode": 0,
+        "observation": "All packages typecheck successfully"
+      }
     ]
   },
   "tests": {
     "added": [
-      {"file": "packages/orchestrator-tui/src/__tests__/chat.test.tsx", "cases": [
-        {"name": "renders user messages with You: prefix", "verifies": "VAL-TUI-CHAT-001"},
-        {"name": "renders assistant messages with Orchestrator: prefix", "verifies": "VAL-TUI-CHAT-002"}
-      ]}
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+        "cases": [
+          { "name": "root Box uses explicit height from terminal rows", "verifies": "VAL-TUI-STAB-001" },
+          { "name": "layout stable after sending message", "verifies": "VAL-TUI-STAB-002" },
+          { "name": "layout recalculates on terminal resize", "verifies": "VAL-TUI-STAB-003" }
+        ]
+      }
     ]
   },
   "discoveredIssues": []
@@ -68,6 +94,6 @@ None.
 
 ## When to Return to Orchestrator
 
-- Codex app-server protocol documentation is insufficient for implementing a feature
-- A dependency (ink, ink-text-input, ink-testing-library) has an incompatible version
-- Feature requires modifying server routes or API endpoints (out of scope)
+- Ink's `useStdout()` doesn't work as expected for resize detection
+- CodexClient protocol changes needed that aren't documented
+- Test infrastructure issues (ink-testing-library limitations)

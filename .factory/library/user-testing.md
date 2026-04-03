@@ -2,76 +2,31 @@
 
 ## Validation Surface
 
-Two validation surfaces for this mission:
+### GUI Surface
+- Tool: agent-browser
+- URL: http://localhost:3100
+- Service: `PORT=3100 pnpm dev:once` (background)
+- Health check: `curl -sf http://localhost:3100/api/health`
+- Capabilities: Screenshot, DOM inspection, computed styles, click navigation, form interaction
+- Default company: "Weather Corp" (auto-seeded by PGlite dev mode)
 
-### Surface 1: Vitest (TUI)
-- All TUI validation through Vitest + ink-testing-library
-- Tests in `packages/orchestrator-tui/src/__tests__/`
-- Mock child_process.spawn for Codex, mock fetch for API
-- Use `pnpm exec vitest run <target-file>` for deterministic file-scoped runs
-
-### Surface 2: Agent-Browser (GUI)
-- Visual verification of GUI design system compliance
-- Dev server on port 3100 (`pnpm dev`)
-- Key verification flows: load dashboard, check font/colors/borders, navigate between pages
-- DOM inspection scripts for computed style verification (fontFamily, borderRadius, boxShadow, backgroundColor)
-- Invoke `agent-browser` skill for browser automation
-
-### Required Tools
-- Vitest (installed)
-- ink-testing-library (installed in orchestrator-tui)
-- agent-browser (available, Chromium 1217 installed)
-- Dev server starts with `pnpm dev` on port 3100
+### TUI Surface
+- Tool: vitest (unit/integration tests only)
+- The TUI renders via React Ink to a terminal — agent-browser cannot interact with it
+- All TUI validation is done through Vitest tests with ink-testing-library
+- Test command: `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3`
 
 ## Validation Concurrency
 
-### Vitest surface (TUI)
-- **Max concurrent validators:** 3
-- **Rationale:** Each Vitest process ~200-300MB. Machine has 16GB RAM. Well within budget.
+### GUI (agent-browser)
+- Max concurrent validators: 3
+- Rationale: 16GB RAM, ~6GB baseline usage. Dev server ~200MB, each agent-browser ~300MB. 3 validators = 900MB + 200MB = 1.1GB. Budget: (16-6)*0.7 = 7GB. Well within budget.
 
-### Agent-browser surface (GUI)
-- **Max concurrent validators:** 2
-- **Rationale:** Each agent-browser ~300MB + shared dev server ~200MB = ~800MB total for 2 instances. Machine has 16GB RAM with ~8GB headroom. Conservative limit due to Chromium memory usage.
+### TUI (vitest)
+- Max concurrent validators: 1 (tests run as single vitest process)
+- Rationale: Vitest manages its own parallelism internally
 
-## Flow Validator Guidance
-
-### vitest flows
-- Stay inside repository root: `/Users/aischool/work/papierklammer_droid`
-- Use `pnpm exec vitest run <target-file>` for deterministic file-scoped runs
-- Do not modify product code during validation
-- Pre-existing server test flakiness is expected — only TUI/GUI test failures matter
-
-### agent-browser flows
-- Start dev server: `cd /Users/aischool/work/papierklammer_droid && PORT=3100 pnpm dev` (background, wait for healthcheck)
-- Healthcheck: `curl -sf http://localhost:3100/api/health`
-- Invoke `agent-browser` skill before browser operations
-- Navigate to pages, take screenshots, run DOM inspection scripts
-- Stop dev server after validation: `lsof -ti :3100 | xargs kill 2>/dev/null || true`
-- For DOM style assertions: use `page.evaluate()` with JavaScript that checks `getComputedStyle()` values
-
-## Observed Validation Notes
-
-- Pre-existing server route tests have intermittent failures due to shared mock state — ignore these
-- `pnpm exec vitest run <file>` is more reliable than `pnpm test:run -- <file>` for scoped runs
-- Agent-browser Chromium 1217 installed via Playwright CLI (not built-in agent-browser install)
-- Dev server takes ~12 seconds to start with embedded PGlite
-- Current `cli.test.ts` coverage does not include a dedicated `--company-id` parse assertion; treat `VAL-TUI-CORE-003` as blocked until explicit test coverage is added.
-- In `integration.test.tsx`, one describe label references `VAL-TUI-CROSS-002` while its contained tests map to `VAL-TUI-CROSS-003`/`VAL-TUI-CROSS-004`; map assertions using exact test-case behavior, not describe label text.
-- For GUI loading-state checks, browser offline reload can fail with `net::ERR_FAILED`; API-route interception is a more reliable way to force/loading states for evidence capture.
-- In some agent-browser runs, `get html @ref` can fail to resolve reference tokens; use `agent-browser eval` to extract `outerHTML`/computed styles when needed.
-- In some sessions, `agent-browser network requests` may return no entries; rely on screenshots + computed-style audits as primary evidence for style assertions.
-
-## Flow Validator Guidance: vitest
-
-- Isolation boundary: repository-only operations under `/Users/aischool/work/papierklammer_droid`.
-- Do not modify product code or mission contract files from flow validators.
-- Only execute deterministic file-scoped tests in `packages/orchestrator-tui/src/__tests__/`.
-- Store evidence as command logs and assertion-to-test mapping notes for each flow report.
-
-## Flow Validator Guidance: agent-browser
-
-- Isolation boundary: local GUI validation only against `http://localhost:3100` for this mission.
-- Use distinct browser sessions per validator and keep checks read-only (navigation, inspection, hover).
-- Do not mutate persisted business state; avoid create/edit/delete actions in the app.
-- Capture screenshots and DOM/computed-style audit outputs for every assigned assertion.
-- Write only the assigned flow report JSON and evidence artifacts under the provided output paths.
+## Known Limitations
+- No live agent data in dev environment (agents are seeded but not actively running)
+- Dashboard stream content requires live WebSocket transcript data from running agents
+- Some assertions about stream content may need fixture seeding via API calls
