@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SlidersHorizontal } from "lucide-react";
 import { instanceSettingsApi } from "@/api/instanceSettings";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useTheme, THEMES, THEME_LABELS, type Theme } from "../context/ThemeContext";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 
 export function InstanceGeneralSettings() {
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -97,6 +99,32 @@ export function InstanceGeneralSettings() {
               )}
             />
           </button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5" data-testid="theme-settings-section">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <h2 className="text-sm font-semibold">Theme</h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Choose a color theme for the interface. Changes apply immediately across all pages.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            {THEMES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTheme(t)}
+                className="text-[9px] uppercase tracking-wider font-mono cursor-pointer bg-transparent border-none p-1 text-left"
+                style={{ color: t === theme ? "var(--fg)" : "var(--fg-dim)" }}
+                aria-label={`Switch to ${THEME_LABELS[t]} theme`}
+                aria-current={t === theme ? "true" : undefined}
+              >
+                {t === theme ? `> ${THEME_LABELS[t]}` : `  ${THEME_LABELS[t]}`}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
     </div>

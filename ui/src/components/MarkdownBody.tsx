@@ -2,7 +2,6 @@ import { isValidElement, useEffect, useId, useState, type ReactNode } from "reac
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "../lib/utils";
-import { useTheme } from "../context/ThemeContext";
 import { mentionChipInlineStyle, parseMentionChipHref } from "../lib/mention-chips";
 
 interface MarkdownBodyProps {
@@ -93,12 +92,12 @@ function MermaidDiagramBlock({ source, darkMode }: { source: string; darkMode: b
 }
 
 export function MarkdownBody({ children, className, style, resolveImageSrc }: MarkdownBodyProps) {
-  const { theme } = useTheme();
   const components: Components = {
     pre: ({ node: _node, children: preChildren, ...preProps }) => {
       const mermaidSource = extractMermaidSource(preChildren);
       if (mermaidSource) {
-        return <MermaidDiagramBlock source={mermaidSource} darkMode={theme === "dark"} />;
+        // All papierklammer themes use dark color scheme
+        return <MermaidDiagramBlock source={mermaidSource} darkMode={true} />;
       }
       return <pre {...preProps}>{preChildren}</pre>;
     },
@@ -141,7 +140,7 @@ export function MarkdownBody({ children, className, style, resolveImageSrc }: Ma
     <div
       className={cn(
         "papierklammer-markdown prose prose-sm max-w-none break-words overflow-hidden",
-        theme === "dark" && "prose-invert",
+        "prose-invert",
         className,
       )}
       style={style}

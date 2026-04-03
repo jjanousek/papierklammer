@@ -8,45 +8,50 @@ import {
   type ReactNode,
 } from "react";
 
-type Theme = "light" | "dark";
+export type Theme = "papierklammer" | "violet-indigo" | "earth";
+
+export const THEMES: readonly Theme[] = ["papierklammer", "violet-indigo", "earth"] as const;
+
+export const THEME_LABELS: Record<Theme, string> = {
+  papierklammer: "PAPIERKLAMMER",
+  "violet-indigo": "VIOLET-INDIGO",
+  earth: "EARTH",
+};
 
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
 }
 
-const THEME_STORAGE_KEY = "paperclip.theme";
-const DARK_THEME_COLOR = "#18181b";
-const LIGHT_THEME_COLOR = "#ffffff";
+const THEME_STORAGE_KEY = "papierklammer-theme";
+const DEFAULT_THEME: Theme = "papierklammer";
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-function resolveThemeFromDocument(): Theme {
-  if (typeof document === "undefined") return "dark";
-  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+function isValidTheme(value: unknown): value is Theme {
+  return typeof value === "string" && THEMES.includes(value as Theme);
+}
+
+function readStoredTheme(): Theme {
+  if (typeof window === "undefined") return DEFAULT_THEME;
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return isValidTheme(stored) ? stored : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
 }
 
 function applyTheme(theme: Theme) {
   if (typeof document === "undefined") return;
-  const isDark = theme === "dark";
-  const root = document.documentElement;
-  root.classList.toggle("dark", isDark);
-  root.style.colorScheme = isDark ? "dark" : "light";
-  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-  if (themeColorMeta instanceof HTMLMetaElement) {
-    themeColorMeta.setAttribute("content", isDark ? DARK_THEME_COLOR : LIGHT_THEME_COLOR);
-  }
+  document.documentElement.setAttribute("data-theme", theme);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => resolveThemeFromDocument());
+  const [theme, setThemeState] = useState<Theme>(() => readStoredTheme());
 
   const setTheme = useCallback((nextTheme: Theme) => {
+    if (!isValidTheme(nextTheme)) return;
     setThemeState(nextTheme);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setThemeState((current) => (current === "dark" ? "light" : "dark"));
   }, []);
 
   useEffect(() => {
@@ -62,9 +67,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     () => ({
       theme,
       setTheme,
-      toggleTheme,
     }),
-    [theme, setTheme, toggleTheme],
+    [theme, setTheme],
   );
 
   return (
