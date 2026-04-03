@@ -128,7 +128,7 @@ export function InviteLandingPage() {
   if (inviteQuery.error || !invite) {
     return (
       <div className="mx-auto max-w-xl py-10">
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div className="border border-border bg-card p-6">
           <h1 className="text-lg font-semibold">Invite not available</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             This invite may be expired, revoked, or already used.
@@ -141,7 +141,7 @@ export function InviteLandingPage() {
   if (result?.kind === "bootstrap") {
     return (
       <div className="mx-auto max-w-xl py-10">
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div className="border border-border bg-card p-6">
           <h1 className="text-lg font-semibold">Bootstrap complete</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             The first instance admin is now configured. You can continue to the board.
@@ -176,23 +176,23 @@ export function InviteLandingPage() {
     const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics : [];
     return (
       <div className="mx-auto max-w-xl py-10">
-        <div className="rounded-lg border border-border bg-card p-6">
+        <div className="border border-border bg-card p-6">
           <h1 className="text-lg font-semibold">Join request submitted</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Your request is pending admin approval. You will not have access until approved.
           </p>
-          <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+          <div className="mt-4 border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
             Request ID: <span className="font-mono">{payload.id}</span>
           </div>
           {claimSecret && claimApiKeyPath && (
-            <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div className="mt-3 space-y-1 border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">One-time claim secret (save now)</p>
               <p className="font-mono break-all">{claimSecret}</p>
               <p className="font-mono break-all">POST {claimApiKeyPath}</p>
             </div>
           )}
           {(onboardingSkillUrl || onboardingSkillPath || onboardingInstallPath) && (
-            <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div className="mt-3 space-y-1 border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Papierklammer skill bootstrap</p>
               {onboardingSkillUrl && <p className="font-mono break-all">GET {onboardingSkillUrl}</p>}
               {!onboardingSkillUrl && onboardingSkillPath && <p className="font-mono break-all">GET {onboardingSkillPath}</p>}
@@ -200,18 +200,18 @@ export function InviteLandingPage() {
             </div>
           )}
           {(onboardingTextUrl || onboardingTextPath) && (
-            <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div className="mt-3 space-y-1 border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Agent-readable onboarding text</p>
               {onboardingTextUrl && <p className="font-mono break-all">GET {onboardingTextUrl}</p>}
               {!onboardingTextUrl && onboardingTextPath && <p className="font-mono break-all">GET {onboardingTextPath}</p>}
             </div>
           )}
           {diagnostics.length > 0 && (
-            <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <div className="mt-3 space-y-1 border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Connectivity diagnostics</p>
               {diagnostics.map((diag, idx) => (
                 <div key={`${diag.code}:${idx}`} className="space-y-0.5">
-                  <p className={diag.level === "warn" ? "text-amber-600 dark:text-amber-400" : undefined}>
+                  <p className={diag.level === "warn" ? "text-[var(--warn)]" : undefined}>
                     [{diag.level}] {diag.message}
                   </p>
                   {diag.hint && <p className="font-mono break-all">{diag.hint}</p>}
@@ -226,7 +226,7 @@ export function InviteLandingPage() {
 
   return (
     <div className="mx-auto max-w-xl py-10">
-      <div className="rounded-lg border border-border bg-card p-6">
+      <div className="border border-border bg-card p-6">
         <h1 className="text-xl font-semibold">
           {invite.inviteType === "bootstrap_ceo"
             ? "Bootstrap your Papierklammer instance"
@@ -248,7 +248,7 @@ export function InviteLandingPage() {
                 key={type}
                 type="button"
                 onClick={() => setJoinType(type)}
-                className={`rounded-md border px-3 py-1.5 text-sm ${
+                className={`border px-3 py-1.5 text-sm ${
                   joinType === type
                     ? "border-foreground bg-foreground text-background"
                     : "border-border bg-background text-foreground"
@@ -265,7 +265,7 @@ export function InviteLandingPage() {
             <label className="block text-sm">
               <span className="mb-1 block text-muted-foreground">Agent name</span>
               <input
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full border border-border bg-background px-3 py-2 text-sm"
                 value={agentName}
                 onChange={(event) => setAgentName(event.target.value)}
               />
@@ -273,7 +273,7 @@ export function InviteLandingPage() {
             <label className="block text-sm">
               <span className="mb-1 block text-muted-foreground">Adapter type</span>
               <select
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full border border-border bg-background px-3 py-2 text-sm"
                 value={adapterType}
                 onChange={(event) => setAdapterType(event.target.value as AgentAdapterType)}
               >
@@ -287,7 +287,7 @@ export function InviteLandingPage() {
             <label className="block text-sm">
               <span className="mb-1 block text-muted-foreground">Capabilities (optional)</span>
               <textarea
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="w-full border border-border bg-background px-3 py-2 text-sm"
                 rows={4}
                 value={capabilities}
                 onChange={(event) => setCapabilities(event.target.value)}
@@ -297,7 +297,7 @@ export function InviteLandingPage() {
         )}
 
         {requiresAuthForHuman && (
-          <div className="mt-4 rounded-md border border-border bg-muted/30 p-3 text-sm">
+          <div className="mt-4 border border-border bg-muted/30 p-3 text-sm">
             Sign in or create an account before submitting a human join request.
             <div className="mt-2">
               <Button asChild size="sm" variant="outline">
