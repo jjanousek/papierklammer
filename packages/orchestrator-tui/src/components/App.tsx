@@ -7,6 +7,7 @@ import { ChatPanel } from "./ChatPanel.js";
 import { InputBar } from "./InputBar.js";
 import { StatusBar } from "./StatusBar.js";
 import { HelpOverlay } from "./HelpOverlay.js";
+import { SettingsOverlay } from "./SettingsOverlay.js";
 import { CompanyPicker, type CompanyOption } from "./CompanyPicker.js";
 import type { CodexState } from "./StatusBar.js";
 import { useOrchestratorStatus } from "../hooks/useOrchestratorStatus.js";
@@ -62,6 +63,7 @@ export function App({
   const { exit } = useApp();
   const { rows } = useTerminalSize();
   const [helpVisible, setHelpVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState(companyId);
   const [focusTarget, setFocusTarget] = useState<"sidebar" | "input">("input");
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("high");
@@ -90,14 +92,21 @@ export function App({
     }
     // Toggle help overlay with '?' when input bar is not focused
     // Only open (not close) from here — closing is handled by HelpOverlay itself
-    if (input === "?" && !inputFocusedRef.current && !helpVisible) {
+    if (input === "?" && !inputFocusedRef.current && !helpVisible && !settingsVisible) {
       setHelpVisible(true);
     }
+    // Toggle settings overlay with 's' when input is not focused
+    // Only open (not close) from here — closing is handled by SettingsOverlay itself
+    if (input === "s" && !inputFocusedRef.current && !helpVisible && !settingsVisible) {
+      setSettingsVisible(true);
+    }
     // Cycle reasoning effort with 'r' when input is not focused
+    // Allow 'r' even when settings overlay is open (for live adjustment)
     if (input === "r" && !inputFocusedRef.current && !helpVisible) {
       setReasoningEffort((current) => cycleReasoningEffort(current));
     }
     // Toggle fast mode with 'f' when input is not focused
+    // Allow 'f' even when settings overlay is open (for live adjustment)
     if (input === "f" && !inputFocusedRef.current && !helpVisible) {
       setFastMode((current) => !current);
     }
@@ -273,6 +282,10 @@ export function App({
     setHelpVisible(false);
   }, []);
 
+  const handleDismissSettings = useCallback(() => {
+    setSettingsVisible(false);
+  }, []);
+
   const handleInputFocusChange = useCallback((focused: boolean) => {
     inputFocusedRef.current = focused;
   }, []);
@@ -336,6 +349,16 @@ export function App({
           {helpVisible ? (
             <Box flexGrow={1} justifyContent="center" alignItems="center">
               <HelpOverlay visible={helpVisible} onDismiss={handleDismissHelp} />
+            </Box>
+          ) : settingsVisible ? (
+            <Box flexGrow={1} justifyContent="center" alignItems="center">
+              <SettingsOverlay
+                visible={settingsVisible}
+                onDismiss={handleDismissSettings}
+                model={model}
+                reasoningEffort={reasoningEffort}
+                fastMode={fastMode}
+              />
             </Box>
           ) : (
             <ChatPanel

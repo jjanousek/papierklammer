@@ -13,6 +13,7 @@ const SHORTCUTS: Array<{ key: string; description: string }> = [
   { key: "Enter", description: "Send message" },
   { key: "r", description: "Cycle reasoning effort (low→med→high)" },
   { key: "f", description: "Toggle fast mode (2× cost)" },
+  { key: "s", description: "Open settings overlay" },
   { key: "Ctrl+C", description: "Exit" },
   { key: "↑ / ↓", description: "Scroll agents (when sidebar focused)" },
   { key: "?", description: "Toggle this help overlay" },
