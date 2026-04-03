@@ -1,0 +1,119 @@
+{
+  "groupId": "round-3-group-a",
+  "testedAt": "2026-04-03T01:25:37Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "companyName": "Weather Corp",
+    "companyIssuePrefix": "WEA",
+    "browserSession": "round3-group-a",
+    "readOnly": true
+  },
+  "toolsUsed": ["agent-browser", "curl"],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASH-006",
+      "title": "Active agents expanded, idle agents collapsed",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and inspect executive tier cards",
+          "expected": "Expanded active card and collapsed idle card are both visible",
+          "observed": "Dashboard showed an expanded \"Active Executive\" block (header + metadata) and a collapsed \"Idle Executive\" single-line row."
+        },
+        {
+          "action": "Capture baseline screenshot before interaction",
+          "expected": "Evidence of expanded vs collapsed states",
+          "observed": "Saved screenshot with active expanded and idle collapsed states."
+        },
+        {
+          "action": "Expand the collapsed idle card",
+          "expected": "Clicking collapsed idle card expands it",
+          "observed": "Idle Executive row expanded into a full metadata block (collapsed row no longer present)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3-group-a/VAL-GUI-DASH-006-before-click.png",
+          "gui-detail-polish/round-3-group-a/VAL-GUI-DASH-006-after-idle-expand.png"
+        ],
+        "consoleErrors": "none observed during this flow",
+        "network": "Precheck API calls succeeded via curl: GET /api/health -> 200, GET /api/companies -> 200. agent-browser network capture returned no entries."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASH-007",
+      "title": "Stream content color coding",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Expand dashboard agent cards (CEO, Idle Executive, Error Executive) and inspect card content",
+          "expected": "Expanded cards include stream rows for reasoning/tool calls/tool output/errors",
+          "observed": "Expanded cards only showed header + metadata rows (role/adapter); no stream lines were rendered."
+        },
+        {
+          "action": "Run DOM audit for stream-like rows in executive tier cards",
+          "expected": "Rows with $-prefixed tool calls and colored reasoning/output/error lines are present for style verification",
+          "observed": "No stream-like rows were found in any expanded card, so required color checks could not be executed."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3-group-a/VAL-GUI-DASH-007-expanded-cards-no-stream.png"
+        ],
+        "consoleErrors": "none observed during this flow",
+        "network": "No stream-related API/network evidence was available from agent-browser request history."
+      },
+      "issues": "Blocked by missing dashboard stream content in expanded cards; required reasoning/tool/output/error color assertions were not testable."
+    },
+    {
+      "id": "VAL-GUI-LAYOUT-001",
+      "title": "Sidebar monospace nav items",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect computed style for active and inactive sidebar nav items",
+          "expected": "Nav items use JetBrains Mono 12px; active uses --fg and weight 500; inactive uses --fg-muted",
+          "observed": "Dashboard(active): JetBrains Mono, 12px, weight 500, rgb(255,255,255). Issues(inactive): JetBrains Mono, 12px, weight 400, rgba(255,255,255,0.68)."
+        },
+        {
+          "action": "Inspect section header styling in sidebar",
+          "expected": "Headers are uppercase with letter-spacing",
+          "observed": "Work/Projects/Agents/Company headers used text-transform: uppercase with letter-spacing: 1px and dim color."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3-group-a/VAL-GUI-LAYOUT-001-sidebar-nav.png"
+        ],
+        "consoleErrors": "none observed during this flow",
+        "network": "Precheck API calls succeeded via curl: GET /api/health -> 200, GET /api/companies -> 200. agent-browser network capture returned no entries."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser ref click (`click @e39`) returned a multi-match error for the dashboard idle row.",
+      "resolved": true,
+      "resolution": "Used a scoped `agent-browser eval` DOM click targeting the executive-tier card text and geometry.",
+      "affectedAssertions": ["VAL-GUI-DASH-006"]
+    },
+    {
+      "description": "agent-browser `network requests` returned no entries even after page interactions.",
+      "resolved": true,
+      "resolution": "Recorded API availability via curl prechecks and used screenshots + DOM audits as primary evidence.",
+      "affectedAssertions": ["VAL-GUI-DASH-006", "VAL-GUI-DASH-007", "VAL-GUI-LAYOUT-001"]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Local app became unreachable during post-assertion checks (`net::ERR_FAILED` in agent-browser and failing `curl http://localhost:3100/api/health`).",
+      "affectedAssertions": ["VAL-GUI-DASH-007"],
+      "quickFixAttempted": "Retried healthcheck 3 times over ~30 seconds; service remained unavailable."
+    }
+  ],
+  "summary": "Tested 3 assertions: 2 passed (VAL-GUI-DASH-006, VAL-GUI-LAYOUT-001), 1 blocked (VAL-GUI-DASH-007 due to missing stream content required for color-coding verification)."
+}

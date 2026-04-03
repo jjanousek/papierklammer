@@ -1,0 +1,82 @@
+{
+  "groupId": "round5-dashboard-stream",
+  "testedAt": "2026-04-03T03:23:28Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://127.0.0.1:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "round5-dashboard-stream",
+    "mode": "read-only validation (navigation/inspection/screenshots/computed-style checks)"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASH-007",
+      "title": "Stream content color coding",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and inspect expanded dashboard agent blocks",
+          "expected": "Expanded blocks include stream rows for reasoning, tool calls ($-prefixed), tool results (indented), and errors for style verification",
+          "observed": "Dashboard loaded and two expanded blocks were present (Active Executive, Error Executive), but each block only contained header + metadata rows (role/adapter) with no stream transcript rows."
+        },
+        {
+          "action": "Switch dashboard stream tabs and re-check content in expanded blocks",
+          "expected": "Pipeline/history views expose stream entries with all required content types",
+          "observed": "After selecting history and expanding Error Executive, body text still contained only metrics/agent metadata and no transcript lines (no reasoning/tool-call/tool-result rows)."
+        },
+        {
+          "action": "Run computed-style audit on expanded dashboard blocks",
+          "expected": "Reasoning uses --fg-muted, tool calls use --warn with $ prefix, tool results use --fg-dim with indentation, errors use --dead",
+          "observed": "Audit found expandedBlockCount=2 with toolCallLines=0, toolResultLines=0, reasoningLines=0 in both blocks. The only $-prefixed text on page was metric value '$0.00', not a tool-call row."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-dashboard-initial-annotated.png",
+          "gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-dashboard-history-annotated.png",
+          "gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-dashboard-error-expanded-annotated.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-expanded-block-audit.json",
+          "gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-console-errors.txt is empty)",
+        "network": "Captured polling + health requests in gui-detail-polish/round5-dashboard-stream/VAL-GUI-DASH-007-network.txt (e.g., GET /api/companies/{companyId}/live-runs, GET /api/heartbeat-runs/*/log, GET /api/health)."
+      },
+      "issues": "Blocked: dashboard expanded agent blocks currently do not render stream transcript content needed to verify the color-coding contract for reasoning/tool-call/tool-result/error lines."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Initial network export returned no entries for this session.",
+      "resolved": true,
+      "resolution": "Triggered explicit in-page fetch('/api/health') and re-exported network requests; capture then included dashboard polling endpoints.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-007"
+      ]
+    },
+    {
+      "description": "Agent-browser interactive refs for agent names primarily map to sidebar navigation links, not dashboard row expanders.",
+      "resolved": true,
+      "resolution": "Used scoped DOM click via eval on the dashboard 'Error Executive' row container to expand the target block for inspection.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-007"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "No dashboard stream transcript rows are rendered in expanded agent blocks, so required line-type color checks are untestable on the real dashboard surface.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-007"
+      ],
+      "quickFixAttempted": "Tried pipeline/history tab switch, expanded multiple rows, and ran DOM audits; stream row count remained zero."
+    }
+  ],
+  "summary": "Tested 1 assertion: 0 passed, 0 failed, 1 blocked (VAL-GUI-DASH-007) due missing stream transcript content in expanded dashboard blocks."
+}

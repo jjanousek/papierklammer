@@ -1,0 +1,226 @@
+{
+  "groupId": "group-b",
+  "testedAt": "2026-04-02T23:44:56Z",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "browserSession": "3a10381160bb__u2",
+    "mode": "read-only validation"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-GUI-ISSUES-001",
+      "title": "Issue rows with monospace and square indicators",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /issues and inspect issue row typography and indicator geometry",
+          "expected": "Issue title uses JetBrains Mono, status indicator is 6x6 square, and row divider is visible",
+          "observed": "Title is JetBrains Mono 11px and 6x6 square indicator candidates were found; only one issue row exists and the only row is styled as last-row with no visible divider."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSUES-001-issues-page-full.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSUES-001-002-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issues-flow-console-errors.txt)",
+        "network": "No requests captured in issues flow capture (gui-detail-polish/group-b/issues-flow-network-requests.txt)"
+      },
+      "issues": "Cannot conclusively validate non-last-row divider with current fixture (single issue row only)."
+    },
+    {
+      "id": "VAL-GUI-ISSUES-002",
+      "title": "Search/filter brutalist styling",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect search input and filter controls on /issues",
+          "expected": "Search and filter controls all have transparent background, 1px visible border, no radius, monospace",
+          "observed": "Search input matches (transparent, 1px border, no radius, JetBrains Mono 11px), but Filter/Sort/Group buttons resolve to 1px transparent borders rather than visible brutalist borders."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSUES-002-search-filter-controls.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSUES-001-002-style-audit.json",
+          "gui-detail-polish/group-b/VAL-GUI-ISSUES-002-search-style.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issues-flow-console-errors.txt)",
+        "network": "No requests captured in issues flow capture (gui-detail-polish/group-b/issues-flow-network-requests.txt)"
+      },
+      "issues": "Filter controls do not match expected visible 1px border treatment."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-001",
+      "title": "Monospace inline editors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open issue detail page and capture display mode and focused edit mode",
+          "expected": "Inline editor uses JetBrains Mono, transparent background, no radius, with 1px border on focus",
+          "observed": "Inline editor content is JetBrains Mono with transparent background and 0px radius; focused ancestry includes a 1px border container."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-001-display-mode.png",
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-001-edit-mode-focused.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-001-focus-chain.json",
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-layout-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail API calls captured in gui-detail-polish/group-b/issue-detail-flow-network-requests.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-ISSDET-002",
+      "title": "Terminal-style comment thread",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Inspect Comments tab styling and comment entries",
+          "expected": "Thread entries show author (fg, 500), timestamp (fg-dim), content (fg-muted) with 1px separators",
+          "observed": "Comments header renders, but 'Comments & Runs (0)' has no thread entries available to validate author/timestamp/content row styling."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-002-003-issue-detail-overview.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-002-003-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail API calls captured in gui-detail-polish/group-b/issue-detail-flow-network-requests.txt"
+      },
+      "issues": "No comment-thread entries in fixture data (count = 0), so required thread style checks are not testable."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "title": "Brutalist properties panel",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect issue properties panel key/value typography and radii",
+          "expected": "Keys are dim 10px monospace, values are fg 10px monospace, no rounded controls",
+          "observed": "Keys are 10px dim monospace and radii are 0px, but values render at mixed sizes (11px/12px/14px), not 10px consistently."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-002-003-issue-detail-overview.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-002-003-audit.json",
+          "gui-detail-polish/group-b/VAL-GUI-ISSDET-layout-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail API calls captured in gui-detail-polish/group-b/issue-detail-flow-network-requests.txt"
+      },
+      "issues": "Property values are not consistently 10px as required."
+    },
+    {
+      "id": "VAL-GUI-LAYOUT-001",
+      "title": "Sidebar monospace nav items",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect sidebar nav item typography and section header casing/spacing",
+          "expected": "Nav items are JetBrains Mono 12px with active/inactive color+weight differences; section headers are uppercase with letter-spacing",
+          "observed": "Nav item styling matches (active/inactive colors and weights), but section labels ('Projects', 'Agents') are not uppercase and have normal letter-spacing."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-LAYOUT-001-002-003-sidebar-rail-breadcrumbs.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-LAYOUT-001-002-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail API calls captured in gui-detail-polish/group-b/issue-detail-flow-network-requests.txt"
+      },
+      "issues": "Section-header uppercase/letter-spacing requirement not met."
+    },
+    {
+      "id": "VAL-GUI-LAYOUT-002",
+      "title": "CompanyRail square icons",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect company rail icon shape and radius",
+          "expected": "Company icons are square with border-radius 0px and active treatment has sharp corners",
+          "observed": "Company rail icon renders as a square (44x44) with border-radius 0px and no rounded corners."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-LAYOUT-001-002-003-sidebar-rail-breadcrumbs.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-LAYOUT-001-002-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail API calls captured in gui-detail-polish/group-b/issue-detail-flow-network-requests.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-LAYOUT-003",
+      "title": "Breadcrumbs monospace with ASCII separators",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect breadcrumb typography, separator token, and active vs inactive crumb colors",
+          "expected": "Breadcrumbs use JetBrains Mono, include ASCII separator (/|>|->), last item in fg and prior items in fg-muted",
+          "observed": "Breadcrumb shows 'Issues / Hire your first engineer...' with JetBrains Mono; separator '/' present; first crumb muted and last crumb foreground with higher weight."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-b/VAL-GUI-LAYOUT-001-002-003-sidebar-rail-breadcrumbs.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-b/VAL-GUI-LAYOUT-003-breadcrumb-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail API calls captured in gui-detail-polish/group-b/issue-detail-flow-network-requests.txt"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`agent-browser network requests --filter api` returned no entries on the issues page flow even though the page loaded successfully.",
+      "resolved": true,
+      "resolution": "Collected API network evidence from the issue-detail flow where requests were captured consistently.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSUES-001",
+        "VAL-GUI-ISSUES-002"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Only one issue row is present in fixture data; the row is treated as last-row, so visible row-divider validation is inconclusive.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSUES-001"],
+      "quickFixAttempted": "Inspected computed style and ancestor chain on the row; divider remains non-visible due single-row last-item state."
+    },
+    {
+      "description": "Issue detail Comments tab contains no thread entries (`Comments & Runs (0)`), so author/timestamp/content row styling cannot be validated.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSDET-002"],
+      "quickFixAttempted": "Checked comments pane and style audit output; no entries available without mutating data."
+    }
+  ],
+  "summary": "Tested 8 assertions: 3 passed, 3 failed, 2 blocked."
+}

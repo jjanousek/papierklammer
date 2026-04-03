@@ -1,0 +1,53 @@
+{
+  "milestone": "gui-detail-polish",
+  "round": 2,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 11,
+    "passed": 5,
+    "failed": 6,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-AGENTS-002",
+    "VAL-GUI-DASH-005",
+    "VAL-GUI-FOUND-004",
+    "VAL-GUI-ISSUES-001",
+    "VAL-GUI-ISSUES-002"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-DASH-006",
+      "reason": "Assertion requires active agents to be expanded by default; current dashboard default renders active agents collapsed."
+    },
+    {
+      "id": "VAL-GUI-DASH-007",
+      "reason": "Required stream transcript content types were absent in expanded dashboard agent block."
+    },
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "reason": "Transcript formatting does not satisfy the contract requirement for $-prefixed warn-colored tool calls, and error-body text is not consistently dead-colored."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-002",
+      "reason": "Comment body text does not resolve to muted foreground; computed paragraph color is rgb(255,255,255)."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "reason": "Properties panel values render at 11px rather than the required 10px."
+    },
+    {
+      "id": "VAL-GUI-LAYOUT-001",
+      "reason": "Sidebar section headers are not uppercase and do not apply the required letter-spacing treatment."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Recorded gui-detail-polish fixture-seeding pattern (extra issues/comments + seeded agent statuses) to avoid blocked assertions in reruns.",
+      "source": "setup"
+    }
+  ],
+  "previousRound": ".factory/validation/gui-detail-polish/user-testing/synthesis.round-1.json"
+}

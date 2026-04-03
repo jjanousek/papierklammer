@@ -1,0 +1,110 @@
+{
+  "groupId": "round-3-group-b",
+  "testedAt": "2026-04-03T01:22:17Z",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "round-3-group-b",
+    "mode": "read-only validation (navigation and inspection only)"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "title": "Run transcript terminal style",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Retry healthcheck for http://localhost:3100/api/health (3 attempts)",
+          "expected": "Health endpoint responds so Agent Detail Runs page can be loaded",
+          "observed": "All 3 attempts failed."
+        },
+        {
+          "action": "Open /WEA/agents/ceo/runs in dedicated agent-browser session",
+          "expected": "Agent detail runs transcript page loads for style validation",
+          "observed": "Navigation failed with net::ERR_CONNECTION_REFUSED."
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "logs": [
+          "gui-detail-polish/round-3-group-b/infrastructure-healthcheck.txt",
+          "gui-detail-polish/round-3-group-b/agent-browser-open-error.txt"
+        ],
+        "consoleErrors": "No page-level console output available because the app never loaded (gui-detail-polish/round-3-group-b/browser-errors.txt).",
+        "network": "No browser network requests captured because navigation failed before page load (gui-detail-polish/round-3-group-b/network-requests.txt)."
+      },
+      "issues": "Blocked by local infrastructure outage: localhost:3100 refused connections."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-002",
+      "title": "Terminal-style comment thread",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /WEA/issues/WEA-1 in dedicated agent-browser session",
+          "expected": "Issue detail page loads to validate comment thread typography and separators",
+          "observed": "Navigation failed with net::ERR_CONNECTION_REFUSED."
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "logs": [
+          "gui-detail-polish/round-3-group-b/agent-browser-issue-detail-open-error.txt"
+        ],
+        "consoleErrors": "No page-level console output available because the app never loaded (gui-detail-polish/round-3-group-b/browser-errors.txt).",
+        "network": "No browser network requests captured because navigation failed before page load (gui-detail-polish/round-3-group-b/network-requests.txt)."
+      },
+      "issues": "Blocked by local infrastructure outage: localhost:3100 refused connections."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "title": "Brutalist properties panel",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Reuse issue detail navigation attempt at /WEA/issues/WEA-1",
+          "expected": "Issue detail properties panel loads for key/value style validation",
+          "observed": "Same net::ERR_CONNECTION_REFUSED failure prevented access."
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "logs": [
+          "gui-detail-polish/round-3-group-b/agent-browser-issue-detail-open-error.txt"
+        ],
+        "consoleErrors": "No page-level console output available because the app never loaded (gui-detail-polish/round-3-group-b/browser-errors.txt).",
+        "network": "No browser network requests captured because navigation failed before page load (gui-detail-polish/round-3-group-b/network-requests.txt)."
+      },
+      "issues": "Blocked by local infrastructure outage: localhost:3100 refused connections."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "App became unavailable on localhost:3100 after initial setup checks in this session.",
+      "resolved": false,
+      "resolution": "Retried health checks and page loads only (non-disruptive), as required.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003",
+        "VAL-GUI-ISSDET-002",
+        "VAL-GUI-ISSDET-003"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Local GUI/API surface at http://localhost:3100 was unreachable (connection refused), preventing all assigned detail-page validations.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003",
+        "VAL-GUI-ISSDET-002",
+        "VAL-GUI-ISSDET-003"
+      ],
+      "quickFixAttempted": "Retried /api/health multiple times and retried direct page navigation for both assigned routes; all attempts remained connection-refused."
+    }
+  ],
+  "summary": "Tested 3 assigned assertions: 0 passed, 0 failed, 3 blocked due local GUI/API unavailability."
+}

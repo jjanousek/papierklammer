@@ -1,0 +1,107 @@
+{
+  "groupId": "round5-detail",
+  "testedAt": "2026-04-03T03:30:49Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://127.0.0.1:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "mode": "read-only validation (navigation/inspection/screenshots/computed-style checks)",
+    "assignedAssertions": [
+      "VAL-GUI-AGDET-003",
+      "VAL-GUI-ISSDET-003"
+    ]
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "title": "Run transcript terminal style",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Navigate Dashboard -> Agents -> CEO -> Runs and select run ecffa649",
+          "expected": "Agent detail run transcript displays mixed line types (reasoning, tool calls, errors)",
+          "observed": "Transcript displayed mixed content including reasoning text, $-prefixed tool-call lines, and stderr error lines."
+        },
+        {
+          "action": "Capture transcript evidence screenshot",
+          "expected": "Visual evidence of mixed transcript content",
+          "observed": "Screenshot captured at gui-detail-polish/round5-detail/VAL-GUI-AGDET-003-transcript.png."
+        },
+        {
+          "action": "Run computed-style audit for reasoning/tool/error samples",
+          "expected": "reasoning=--fg-muted, tool calls=--warn with '$' prefix, errors=--dead",
+          "observed": "Tool call lines used warn color rgb(232,213,96) with '$' prefix and error lines used dead color rgb(255,96,96), but reasoning sample rendered rgb(255,255,255) instead of muted token rgba(255,255,255,0.68)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round5-detail/VAL-GUI-AGDET-003-transcript.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round5-detail/VAL-GUI-AGDET-003-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round5-detail/VAL-GUI-AGDET-003-console-errors.txt is empty)",
+        "network": "Captured request log in gui-detail-polish/round5-detail/VAL-GUI-AGDET-003-network.txt including GET /api/companies/{companyId}/sidebar-badges, GET /api/companies/{companyId}/live-runs, and GET /api/health."
+      },
+      "issues": "Fail: reasoning transcript text is not muted; computed color is rgb(255,255,255) instead of --fg-muted."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "title": "Brutalist properties panel",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Navigate to Issues -> WEA-1 issue detail and inspect Properties panel",
+          "expected": "Properties panel shows key/value metadata with brutalist styling",
+          "observed": "Properties panel was visible with key/value rows and dropdown controls (Status, Priority, Labels, Assignee, Project)."
+        },
+        {
+          "action": "Capture properties panel screenshot",
+          "expected": "Visual evidence of key/value panel and controls",
+          "observed": "Screenshot captured at gui-detail-polish/round5-detail/VAL-GUI-ISSDET-003-properties-panel.png."
+        },
+        {
+          "action": "Run computed-style audit for keys, values, and dropdown border radius",
+          "expected": "Key text uses --fg-dim at 10px; value text uses --fg at 10px; dropdowns have 0px border radius",
+          "observed": "Keys are 10px and dim (rgba(255,255,255,0.4)); dropdowns are 0px radius; but value text for Todo/Medium/No labels renders rgba(255,255,255,0.68) instead of --fg (#FFFFFF)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round5-detail/VAL-GUI-ISSDET-003-properties-panel.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round5-detail/VAL-GUI-ISSDET-003-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round5-detail/VAL-GUI-ISSDET-003-console-errors.txt is empty)",
+        "network": "Captured issue-detail request log in gui-detail-polish/round5-detail/VAL-GUI-ISSDET-003-network.txt including GET /api/issues/WEA-1, GET /api/issues/WEA-1/comments, GET /api/issues/WEA-1/runs, and GET /api/health."
+      },
+      "issues": "Fail: interactive property values (Todo/Medium/No labels) are not full --fg color; they render muted (rgba(255,255,255,0.68))."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The 'Show properties' button click was intercepted by an overlapping header container in agent-browser pointer-based clicks.",
+      "resolved": true,
+      "resolution": "Used a DOM-triggered click via agent-browser eval to toggle/confirm properties panel visibility for inspection.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSDET-003"
+      ]
+    },
+    {
+      "description": "Initial AGDET network export returned no entries in this session.",
+      "resolved": true,
+      "resolution": "Triggered explicit in-page fetch('/api/health') and re-exported network requests.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 2 assertions: 0 passed, 2 failed (VAL-GUI-AGDET-003, VAL-GUI-ISSDET-003)."
+}

@@ -1,0 +1,229 @@
+{
+  "groupId": "group-c",
+  "testedAt": "2026-04-02T23:57:48Z",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "browserSession": "3a10381160bb__u3",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "readOnlyValidation": true
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-AGDET-001",
+      "title": "Agent header brutalist styling",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/agents/ceo/dashboard and capture header screenshot",
+          "expected": "Agent header shows monospace name, square indicator, key-value metadata with brutalist styling",
+          "observed": "Header displayed CEO name, square 6x6 indicator, and role/adapter/status key-value metadata"
+        },
+        {
+          "action": "Run computed-style extraction for header/name/indicator/metadata",
+          "expected": "Name 11-12px weight 500 monospace, no radius, 1px divider borders",
+          "observed": "Name 12px/500 JetBrains Mono; borderBottom 1px solid; borderRadius 0px; metadata key/value 10px monospace"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-c/VAL-GUI-AGDET-001-agent-header.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-c/VAL-GUI-AGDET-001-header-styles.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-c/browser-errors.txt is empty)",
+        "network": "No requests captured by agent-browser (gui-detail-polish/group-c/network-requests.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-AGDET-002",
+      "title": "Tab bar per design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect agent detail tab bar and capture screenshot",
+          "expected": "Tabs follow design-system styling",
+          "observed": "Tab bar rendered with Dashboard/Instructions/Skills/Configuration/Runs/Budget tabs"
+        },
+        {
+          "action": "Run computed-style extraction on all role=tab elements",
+          "expected": "Monospace 11px tabs, no radius, active vs inactive treatment",
+          "observed": "All tabs are JetBrains Mono 11px with borderRadius 0px; active tab text is white and inactive tabs use muted white"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-c/VAL-GUI-AGDET-002-tab-bar.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-c/VAL-GUI-AGDET-002-tab-styles.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-c/browser-errors.txt is empty)",
+        "network": "No requests captured by agent-browser (gui-detail-polish/group-c/network-requests.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "title": "Run transcript terminal style",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open agent detail Runs tab and capture screenshot",
+          "expected": "Transcript with mixed reasoning/tool/error content is visible",
+          "observed": "Runs tab shows \"No runs yet.\""
+        },
+        {
+          "action": "Audit runs tab for tool-call ($), error, and muted reasoning rows",
+          "expected": "Mixed transcript content with terminal-style color coding",
+          "observed": "No transcript rows found (toolLikeCount=0, errorLikeCount=0); only empty-state text present"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-c/VAL-GUI-AGDET-003-runs-tab.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-c/VAL-GUI-AGDET-003-transcript-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-c/browser-errors.txt is empty)",
+        "network": "No requests captured by agent-browser (gui-detail-polish/group-c/network-requests.txt)"
+      },
+      "issues": "Blocked by fixture data: agent has no runs/transcript entries, so terminal-style mixed content cannot be validated."
+    },
+    {
+      "id": "VAL-GUI-CROSS-001",
+      "title": "Dashboard to Agent Detail preserves design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/dashboard and capture baseline screenshot",
+          "expected": "Dashboard renders with rose palette and design-system styling",
+          "observed": "Dashboard loaded with rose background and brutalist UI"
+        },
+        {
+          "action": "Navigate from dashboard to agent detail (sidebar CEO link) and capture end screenshot",
+          "expected": "Agent detail keeps JetBrains Mono, zero radius, square indicator, rose palette",
+          "observed": "Agent detail retained rose palette; sampled fonts are JetBrains Mono; radius violations=0; square indicator 6x6 with 0px radius"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-001-dashboard-start.png",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-001-agent-detail-end.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-001-agent-detail-spotcheck.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-c/browser-errors.txt is empty)",
+        "network": "No requests captured by agent-browser (gui-detail-polish/group-c/network-requests.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-CROSS-002",
+      "title": "Issues to Issue Detail preserves design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/issues and capture baseline screenshot",
+          "expected": "Issues page uses design-system styles",
+          "observed": "Issues list page rendered with rose palette and monospace typography"
+        },
+        {
+          "action": "Open issue WEA-1 detail from Issues list and capture screenshot + style spot-check",
+          "expected": "Issue detail keeps design-system rules",
+          "observed": "Issue detail preserved JetBrains Mono (220/220 sampled), rose background, zero radius, no box shadow, and 1px border separators"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-002-issues-start.png",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-002-issue-detail-end.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-002-issue-detail-spotcheck.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-c/browser-errors.txt is empty)",
+        "network": "No requests captured by agent-browser (gui-detail-polish/group-c/network-requests.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-CROSS-003",
+      "title": "Consistent treatment across all pages",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Capture screenshots for Dashboard, Agents, Issues, Agent Detail, and Issue Detail",
+          "expected": "All pages visually follow shared design system",
+          "observed": "All five page screenshots captured across the required route set"
+        },
+        {
+          "action": "Run per-page style audits and summarize checks",
+          "expected": "Each page has rose background, JetBrains Mono, zero radius, no shadow, and 1px borders",
+          "observed": "Per-page summary reports all checks passing on dashboard/agents/issues/agentDetail/issueDetail"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-dashboard.png",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-agents.png",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-issues.png",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-agent-detail.png",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-issue-detail.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-dashboard-style-audit.json",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-agents-style-audit.json",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-issues-style-audit.json",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-agent-detail-style-audit.json",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-issue-detail-style-audit.json",
+          "gui-detail-polish/group-c/VAL-GUI-CROSS-003-per-page-summary.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/group-c/browser-errors.txt is empty)",
+        "network": "No requests captured by agent-browser (gui-detail-polish/group-c/network-requests.txt)"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser network capture returned no request entries during this session.",
+      "resolved": true,
+      "resolution": "Used screenshots + computed-style audits as primary evidence and recorded network capture output file.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-001",
+        "VAL-GUI-AGDET-002",
+        "VAL-GUI-AGDET-003",
+        "VAL-GUI-CROSS-001",
+        "VAL-GUI-CROSS-002",
+        "VAL-GUI-CROSS-003"
+      ]
+    },
+    {
+      "description": "Clickable agent cards on list/dashboard were not deterministic for navigation in this dataset.",
+      "resolved": true,
+      "resolution": "Used stable sidebar agent link (CEO) and issue row link (WEA-1) for read-only navigation.",
+      "affectedAssertions": [
+        "VAL-GUI-CROSS-001",
+        "VAL-GUI-CROSS-002"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "No run transcript data exists for the validated agent (Runs tab shows \"No runs yet.\").",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003"
+      ],
+      "quickFixAttempted": "Checked agent detail Runs tab and audited DOM for transcript/tool/error rows; none present."
+    }
+  ],
+  "summary": "Tested 6 assertions: 5 passed, 0 failed, 1 blocked (VAL-GUI-AGDET-003 blocked by missing run transcript data)."
+}

@@ -1,0 +1,100 @@
+{
+  "groupId": "round-4-group-b",
+  "testedAt": "2026-04-03T02:43:28Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "companyIssuePrefix": "WEA",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "round-4-group-b",
+    "mode": "read-only validation (navigation + inspection + screenshots + computed-style audits)"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "title": "Run transcript terminal style",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Open /WEA/agents/ceo/runs and capture transcript screenshots",
+          "expected": "Runs transcript is visible with mixed reasoning/tool-call/error lines for style checks",
+          "observed": "Transcript loaded with mixed content lines (reasoning paragraphs, $-prefixed tool-call entries, and error text sample)."
+        },
+        {
+          "action": "Probe computed style for one reasoning sample, one $ tool-call sample, and one error sample and map to tokens",
+          "expected": "Reasoning maps to --fg-muted, tool-call maps to --warn, error maps to --dead",
+          "observed": "Root tokens: --fg-muted=rgba(255, 255, 255, 0.68), --warn=#E8D560 (rgb(232, 213, 96)), --dead=#FF6060 (rgb(255, 96, 96)). Probes: reasoning sample \"Paperclip workflow docs are loaded...\" color=rgb(255, 255, 255), font-size=16px; tool-call sample \"$ Executed 3 commands\" color=rgb(255, 255, 255), font-size=16px; error sample \"Cannot assign work to pending approval agents\" color=rgb(255, 255, 255), font-size=15px. None matched expected tokens."
+        },
+        {
+          "action": "Check console and network evidence",
+          "expected": "No blocking console errors and API network activity captured",
+          "observed": "Console export contained no entries; network capture includes API traffic (e.g., /api/health, /api/agents/ceo, /api/heartbeat-runs/*, /api/companies/{companyId}/live-runs, /api/companies/{companyId}/sidebar-badges)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-4-group-b/VAL-GUI-AGDET-003-runs.png",
+          "gui-detail-polish/round-4-group-b/VAL-GUI-AGDET-003-runs-annotated.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-4-group-b/VAL-GUI-AGDET-003-color-probes.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-4-group-b/VAL-GUI-AGDET-003-console-errors.txt is empty)",
+        "network": "Captured API requests in gui-detail-polish/round-4-group-b/VAL-GUI-AGDET-003-network.txt"
+      },
+      "issues": "Transcript sample line colors still resolve to plain white instead of required muted/warn/dead token mapping."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "title": "Brutalist properties panel",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Open /WEA/issues/WEA-1 and capture properties-panel screenshots",
+          "expected": "Issue detail page loads with properties panel visible for key/value style audit",
+          "observed": "Issue detail loaded and properties panel controls were visible (Status, Priority, Labels, Assignee, Project)."
+        },
+        {
+          "action": "Probe key/value computed styles in properties panel, including interactive value controls",
+          "expected": "Keys: --fg-dim at 10px; values: --fg at 10px; no rounded dropdown controls",
+          "observed": "Keys for Status/Priority/Labels/Assignee/Project are all 10px and map to --fg-dim (rgba(255, 255, 255, 0.4)); controls map to --fg (rgb(255, 255, 255)) with border-radius 0px, but each interactive value control is 11px: Blocked=11px, Medium=11px, No labels=11px, CECEO=11px, Onboarding=11px."
+        },
+        {
+          "action": "Check console and network evidence",
+          "expected": "No blocking console errors and issue-detail network requests captured",
+          "observed": "Console export contained no entries; network capture includes issue-detail API requests (/api/issues/WEA-1, /api/issues/WEA-1/comments, /api/issues/WEA-1/activity, /api/issues/WEA-1/runs, /api/issues/WEA-1/live-runs, /api/issues/WEA-1/active-run)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-4-group-b/VAL-GUI-ISSDET-003-issue-detail.png",
+          "gui-detail-polish/round-4-group-b/VAL-GUI-ISSDET-003-issue-detail-annotated.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-4-group-b/VAL-GUI-ISSDET-003-properties-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-4-group-b/VAL-GUI-ISSDET-003-console-errors.txt is empty)",
+        "network": "Captured requests in gui-detail-polish/round-4-group-b/VAL-GUI-ISSDET-003-network.txt"
+      },
+      "issues": "Interactive value controls remain 11px instead of required 10px."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser errors export writes an empty file when there are no console errors.",
+      "resolved": true,
+      "resolution": "Recorded as explicit \"none\" and kept the empty exported files as evidence.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003",
+        "VAL-GUI-ISSDET-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 2 assertions: 0 passed, 2 failed (VAL-GUI-AGDET-003 and VAL-GUI-ISSDET-003)."
+}

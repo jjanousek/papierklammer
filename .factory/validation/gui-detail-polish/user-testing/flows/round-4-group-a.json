@@ -1,0 +1,83 @@
+{
+  "groupId": "round-4-group-a",
+  "testedAt": "2026-04-03T02:28:45Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "companyIssuePrefix": "WEA",
+    "browserSession": "dash007-r4a",
+    "readOnly": true,
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASH-007",
+      "title": "Stream content color coding",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and inspect expanded executive cards",
+          "expected": "Expanded card includes stream rows where reasoning/tool call/tool result/error text can be color-audited",
+          "observed": "Expanded cards were present (Active Executive and Error Executive) but contained only header + metadata rows (role/adapter); no stream transcript rows were rendered."
+        },
+        {
+          "action": "Run DOM/computed-style audit for stream content types (reasoning, tool calls, tool results, errors)",
+          "expected": "Reasoning text uses --fg-muted, tool calls use --warn and are $-prefixed, tool results use --fg-dim with indentation, and error text uses --dead",
+          "observed": "Audit returned zero matching elements for reasoning/tool/result/error/stream selectors in dashboard cards. Only one $-prefixed text node existed ($0.00 cost metric), not a tool-call row."
+        },
+        {
+          "action": "Capture screenshots and inspect JS-computed design tokens",
+          "expected": "Visual evidence plus computed color values for transcript line types",
+          "observed": "Screenshots captured successfully; root token values resolved as --fg-muted=rgba(255,255,255,0.68), --warn=#E8D560, --fg-dim=rgba(255,255,255,0.40), --dead=#FF6060, but no dashboard stream elements consumed these tokens."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-4-group-a/VAL-GUI-DASH-007-dashboard-initial-annotated.png",
+          "gui-detail-polish/round-4-group-a/VAL-GUI-DASH-007-dashboard-history-tab-annotated.png",
+          "gui-detail-polish/round-4-group-a/VAL-GUI-DASH-007-dashboard-after-error-click-annotated.png"
+        ],
+        "consoleErrors": "none (agent-browser errors returned no entries)",
+        "network": "agent-browser network requests --filter /api/ returned no captured requests",
+        "computedStyleAudit": {
+          "reasoningMatches": 0,
+          "toolCallMatches": 0,
+          "toolResultMatches": 0,
+          "errorMatches": 0,
+          "streamContainerMatches": 0,
+          "dollarPrefixedNodes": [
+            {
+              "text": "$0.00",
+              "location": "dashboard metrics strip"
+            }
+          ],
+          "rootTokens": {
+            "--fg-muted": "rgba(255, 255, 255, 0.68)",
+            "--warn": "#E8D560",
+            "--fg-dim": "rgba(255, 255, 255, 0.40)",
+            "--dead": "#FF6060"
+          }
+        }
+      },
+      "issues": "Blocked by missing stream transcript content in expanded dashboard agent blocks; required reasoning/tool/result/error color checks were not executable on the real UI surface."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "agent-browser ref click on dashboard row (`@e40`) produced a multi-match selector error.",
+      "resolved": true,
+      "resolution": "Used a scoped in-page eval click on the main-dashboard row containing \"Error Executive\" to expand the card for inspection.",
+      "affectedAssertions": ["VAL-GUI-DASH-007"]
+    },
+    {
+      "description": "agent-browser network history returned no request entries during this flow.",
+      "resolved": true,
+      "resolution": "Used screenshots plus DOM/computed-style audits as primary evidence, per flow guidance preference.",
+      "affectedAssertions": ["VAL-GUI-DASH-007"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 1 assertion: 0 passed, 0 failed, 1 blocked (VAL-GUI-DASH-007) because expanded dashboard agent blocks did not render stream transcript elements needed for color-coding verification."
+}

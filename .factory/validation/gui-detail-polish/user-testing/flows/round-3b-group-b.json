@@ -1,0 +1,131 @@
+{
+  "groupId": "round-3b-group-b",
+  "testedAt": "2026-04-03T01:42:08Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "round-3b-group-b",
+    "mode": "read-only validation"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "title": "Run transcript terminal style",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Open /WEA/agents/ceo/runs and capture transcript evidence",
+          "expected": "Transcript renders terminal-style color coding with reasoning=--fg-muted, tool calls=--warn with $, errors=--dead",
+          "observed": "Page loaded and transcript was visible in both nice and raw modes."
+        },
+        {
+          "action": "Probe visible transcript lines in nice mode",
+          "expected": "Reasoning text uses --fg-muted; tool-call lines with $ use --warn; error lines use --dead",
+          "observed": "Reasoning line \"I found AGENT_HOME...\" resolved to rgb(255,255,255) at 16px; transcript line \"$ Executed command\" resolved to rgb(255,255,255) at 16px; error line \"Cannot assign work to pending approval agents\" resolved to rgb(255,255,255) at 15px. These do not match --fg-muted rgba(255,255,255,0.68), --warn rgb(232,213,96), --dead rgb(255,96,96)."
+        },
+        {
+          "action": "Toggle raw mode and re-probe transcript styling",
+          "expected": "Raw transcript still preserves required muted/warn/dead mapping",
+          "observed": "Raw transcript reasoning sample resolved to oklab(.../0.8) (not --fg-muted), no $-prefixed warn-colored tool sample was present, and error-like sample did not resolve to --dead."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-runs.png",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-runs-annotated.png",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-runs-raw.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-line-probes.json",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-targeted-styles.json",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-raw-probes.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-console-errors.txt)",
+        "network": "Captured repeated GET fetches including /api/health, /api/companies/{companyId}/live-runs, /api/companies/{companyId}/sidebar-badges (gui-detail-polish/round-3b-group-b/VAL-GUI-AGDET-003-network.txt)."
+      },
+      "issues": "Transcript color mapping still does not satisfy the contract for reasoning/tool-call/error styling."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-002",
+      "title": "Terminal-style comment thread",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/issues/WEA-1 on Comments tab and capture screenshot",
+          "expected": "Comment thread renders with monospace typography and design-system hierarchy",
+          "observed": "Issue detail comments loaded with fixture comments and metadata rows."
+        },
+        {
+          "action": "Audit computed styles for author, timestamp, content, and separator",
+          "expected": "Author=--fg weight 500, timestamp=--fg-dim, content=--fg-muted, and 1px border separators",
+          "observed": "Author \"You\" = rgb(255,255,255), 12px, weight 500; timestamp \"Apr 3, 2026, 8:29 AM\" = rgba(255,255,255,0.4); comment body \"Validation fixture comment 1...\" = rgba(255,255,255,0.68); separator host has border-bottom 1px solid rgba(255,255,255,0.18). All sampled elements used JetBrains Mono."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-002-issue-detail.png",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-002-issue-detail-annotated.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-002-computed.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-002-console-errors.txt)",
+        "network": "Captured GET document/script/fetch traffic including /WEA/issues/WEA-1, /api/health, /api/companies/{companyId}/live-runs, /api/companies/{companyId}/sidebar-badges (gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-002-network.txt)."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "title": "Brutalist properties panel",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect properties panel key/value rows on /WEA/issues/WEA-1",
+          "expected": "Keys are --fg-dim 10px monospace and values are --fg 10px monospace",
+          "observed": "Lower key/value rows match spec (e.g., \"Created by\" = 10px fg-dim; \"Me\" and date values = 10px fg)."
+        },
+        {
+          "action": "Inspect interactive properties values (Status/Priority/Labels/Assignee/Project)",
+          "expected": "Values also comply with 10px value typography requirement",
+          "observed": "Buttons \"BLOCKED\", \"Medium\", \"No labels\", \"CE CEO\", and \"Onboarding\" resolved to 11px JetBrains Mono (not 10px)."
+        },
+        {
+          "action": "Check for rounded controls",
+          "expected": "No rounded dropdowns/controls",
+          "observed": "Sampled property controls resolved to borderRadius 0px."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-003-properties-panel.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-003-text-probes.json",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-003-control-styles.txt",
+          "gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-003-radius-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-003-console-errors.txt)",
+        "network": "Captured GET document/script/fetch traffic including /WEA/issues/WEA-1 and recurring /api/health + company live-run/sidebar polling (gui-detail-polish/round-3b-group-b/VAL-GUI-ISSDET-003-network.txt)."
+      },
+      "issues": "Properties panel value typography is still 11px for interactive fields, so the 10px value requirement is not fully met."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Initial AGDET network export returned \"No requests captured\" despite successful page render.",
+      "resolved": true,
+      "resolution": "Reopened /WEA/agents/ceo/runs in the same dedicated session and recaptured network logs successfully.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assertions: 1 passed (VAL-GUI-ISSDET-002), 2 failed (VAL-GUI-AGDET-003, VAL-GUI-ISSDET-003)."
+}

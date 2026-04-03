@@ -1,0 +1,163 @@
+{
+  "groupId": "round-2-group-a",
+  "testedAt": "2026-04-03T00:49:22.465392+00:00",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "browserSession": "round2a",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "mode": "read-only validation (navigation, inspection, hover, screenshots, computed-style/DOM audits)"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "title": "Status indicators are 6x6 squares",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and inspect indicator styles for Active Executive, Idle Executive, and Error Executive rows",
+          "expected": "Indicators render at 6x6 with border-radius 0; alive/error/idle semantics mapped to design tokens",
+          "observed": "Active indicators rendered 6px x 6px with rgb(130,232,138), error indicator rendered 6px x 6px with rgb(255,96,96), idle indicator rendered 6px x 6px transparent with 1px muted border; all had borderRadius 0px"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-FOUND-004-status-indicators-dashboard.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-FOUND-004-status-indicators.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/dashboard -> 200; GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/live-runs -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASH-005",
+      "title": "Agent sorting within tier columns",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect DOM order in Executive/Leads/Workers tier columns on /WEA/dashboard",
+          "expected": "Within each tier: active/running first, then waiting, then idle/completed",
+          "observed": "Executive tier order was Active Executive(active) then CEO(idle) then Idle Executive(idle) then Error Executive(error); Leads tier contained CTO(pending_approval/waiting) only; Workers was empty"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-005-dashboard-order.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-005-tier-order.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/dashboard -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASH-006",
+      "title": "Active agents expanded, idle agents collapsed",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Load /WEA/dashboard and capture default block state",
+          "expected": "Active agents expanded by default and idle agents collapsed",
+          "observed": "Default state showed all cards collapsed (Active Executive, CEO, Idle Executive, Error Executive, CTO); no active card was expanded"
+        },
+        {
+          "action": "Click collapsed Idle Executive card",
+          "expected": "Idle card expands on click",
+          "observed": "Idle Executive expanded after click while remaining cards stayed collapsed"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-006-default-collapsed.png",
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-006-after-click.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-006-state-audit.json",
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-006-state-after-click.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/dashboard -> 200"
+      },
+      "issues": "Assertion requires active agents to be expanded by default; current dashboard default renders active agents collapsed."
+    },
+    {
+      "id": "VAL-GUI-DASH-007",
+      "title": "Stream content color coding",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Expand Active Executive card on /WEA/dashboard and audit stream lines",
+          "expected": "Expanded block contains reasoning (--fg-muted), tool calls (--warn with $), indented tool results (--fg-dim), and errors (--dead)",
+          "observed": "Expanded Active Executive block contained only metadata (role/adapter) and no transcript stream lines; no $-prefixed tool calls, no reasoning, and no error/result lines were present"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-007-after-expand.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-DASH-007-stream-color-audit.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/dashboard -> 200; GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/live-runs -> 200"
+      },
+      "issues": "Required stream transcript content types were absent in expanded dashboard agent block."
+    },
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "title": "Run transcript terminal style",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/agents/ceo/runs, expand command-detail items, and audit transcript typography/color tokens",
+          "expected": "Run transcript uses JetBrains Mono with reasoning in --fg-muted, tool calls in --warn with $ prefix, and errors in --dead",
+          "observed": "Transcript rendered in JetBrains Mono and included warn/dead token usage on tags, but no $-prefixed tool-call lines were found (count=0) and error narrative text was not consistently rendered in --dead"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-AGDET-003-runs-transcript-expanded.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-a/VAL-GUI-AGDET-003-transcript-style-audit.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/heartbeat-runs -> 200; GET /api/heartbeat-runs/b72e44bc-62a2-4feb-ab21-3f2061eb2141 -> 200; GET /api/heartbeat-runs/b72e44bc-62a2-4feb-ab21-3f2061eb2141/events?afterSeq=0&limit=200 -> 200"
+      },
+      "issues": "Transcript formatting does not satisfy the contract requirement for $-prefixed warn-colored tool calls, and error-body text is not consistently dead-colored."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`agent-browser network requests --json` returned an empty request list for this session.",
+      "resolved": true,
+      "resolution": "Captured network evidence with read-only curl checks against relevant /api endpoints and recorded status codes in network-curl-status.txt.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004",
+        "VAL-GUI-DASH-005",
+        "VAL-GUI-DASH-006",
+        "VAL-GUI-DASH-007",
+        "VAL-GUI-AGDET-003"
+      ]
+    },
+    {
+      "description": "Initial run-endpoint probes using shorthand IDs/path guesses returned 404/500 responses.",
+      "resolved": true,
+      "resolution": "Extracted full run UUID from UI link href and re-ran checks against /api/heartbeat-runs/{runId} and /events, both returning 200.",
+      "affectedAssertions": [
+        "VAL-GUI-AGDET-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 5 assertions: 2 passed (VAL-GUI-FOUND-004, VAL-GUI-DASH-005) and 3 failed (VAL-GUI-DASH-006, VAL-GUI-DASH-007, VAL-GUI-AGDET-003)."
+}

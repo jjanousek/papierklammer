@@ -1,0 +1,223 @@
+{
+  "groupId": "group-a",
+  "testedAt": "2026-04-02T23:49:32.384017+00:00",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "browserSession": "3a10381160bb__u1",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "mode": "read-only validation (navigation, inspection, hover, screenshots only)"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-FOUND-004",
+      "title": "Status indicators are 6x6 squares",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /WEA/agents/all and inspect agent status indicator",
+          "expected": "Observe 6x6 square indicators for alive/error/idle statuses",
+          "observed": "Observed idle indicator only; width 6px, height 6px, border-radius 0px, transparent background with 1px border"
+        },
+        {
+          "action": "Audit computed styles and design tokens",
+          "expected": "Verify alive/error/idle indicator instances and colors",
+          "observed": "Alive/dead CSS vars exist (#82E88A/#FF6060), but no alive/error indicator instances rendered in seeded data"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-FOUND-004-status-indicator-idle.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-FOUND-004-computed-styles.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies -> 200; GET /api/companies/{companyId}/live-runs -> 200; GET /api/companies/{companyId}/sidebar-badges -> 200"
+      },
+      "issues": "Blocked by fixture coverage: no alive/error indicator instances available to validate full semantic-color requirement."
+    },
+    {
+      "id": "VAL-GUI-PRIM-001",
+      "title": "Buttons transparent with 1px border",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect Import company, Export company (/WEA/org), and New Agent (/WEA/agents/all) buttons",
+          "expected": "Transparent bg, 1px border, JetBrains Mono 11px uppercase, no radius",
+          "observed": "All three buttons use transparent background, 1px solid rgba(255,255,255,0.32) border, JetBrains Mono 11px, uppercase, and 0px radius"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-PRIM-001-org-buttons.png",
+          "gui-detail-polish/group-a/VAL-GUI-PRIM-001-buttons-dashboard.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-PRIM-001-computed-styles.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/org -> 200; GET /api/companies/{companyId}/agents -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-DASH-005",
+      "title": "Agent sorting within tier columns",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and inspect Executive/Leads/Workers columns",
+          "expected": "Order should be active/running first, then waiting, then idle/completed",
+          "observed": "Only one idle agent (CEO) present; Leads/Workers empty"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-DASH-005-006-dashboard-before.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-DASH-005-order-audit.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/dashboard (observed in browser request log); GET /api/companies/{companyId}/live-runs -> 200"
+      },
+      "issues": "Blocked by data shape: no active/running or waiting agents to validate ordering precedence."
+    },
+    {
+      "id": "VAL-GUI-DASH-006",
+      "title": "Active agents expanded, idle agents collapsed",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Capture initial dashboard state and inspect block testids",
+          "expected": "Idle agent appears collapsed by default",
+          "observed": "Observed data-testid agent-block-collapsed"
+        },
+        {
+          "action": "Click collapsed idle block and re-check state",
+          "expected": "Idle block expands on click",
+          "observed": "State changed to data-testid agent-block-expanded; metadata rendered (role/adapter)"
+        },
+        {
+          "action": "Verify active agent expanded rendering with stream section",
+          "expected": "Active agent block with header + metadata + stream section",
+          "observed": "No active agents present in fixture"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-DASH-006-collapsed-idle.png",
+          "gui-detail-polish/group-a/VAL-GUI-DASH-006-expanded-idle.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-DASH-006-expand-audit.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/dashboard (observed in browser request log)"
+      },
+      "issues": "Partially validated idle collapse/expand; blocked on missing active-agent fixture for full assertion."
+    },
+    {
+      "id": "VAL-GUI-DASH-007",
+      "title": "Stream content color coding",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Expand dashboard agent block and inspect transcript area",
+          "expected": "Reasoning/tool call/tool result/error lines with specified colors",
+          "observed": "Expanded block contains only metadata text (CEO role ceo adapter codex_local); no stream lines present"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-DASH-007-expanded-no-stream.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-DASH-007-stream-audit.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/live-runs -> 200; GET /api/companies/{companyId}/heartbeat-runs -> 200"
+      },
+      "issues": "Blocked by absence of transcript stream content in dashboard for current seeded data."
+    },
+    {
+      "id": "VAL-GUI-AGENTS-001",
+      "title": "Agent list with monospace and square indicators",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/agents/all and inspect tier agent card",
+          "expected": "JetBrains Mono agent name (11-12px) and 6x6 square status indicator",
+          "observed": "Agent name CEO rendered in JetBrains Mono 11px; indicator rendered at 6x6 with border-radius 0 and idle border style"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-AGENTS-001-002-agents-page.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-AGENTS-001-computed-styles.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/agents -> 200; GET /api/companies/{companyId}/org -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-AGENTS-002",
+      "title": "Filter tabs per design system",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect tab labels and styles on /WEA/agents/all",
+          "expected": "All/Active/Idle tabs with design-system styling",
+          "observed": "Tabs are All/Active/Paused/Error; styling mostly matches (JetBrains Mono 11px, muted inactive, radius 0), but Idle tab is absent and replaced by Paused/Error"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/group-a/VAL-GUI-AGENTS-001-002-agents-page.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/group-a/VAL-GUI-AGENTS-002-tabs-styles.json"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/{companyId}/agents -> 200"
+      },
+      "issues": "Contract expects All/Active/Idle tab set; implementation exposes All/Active/Paused/Error."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`agent-browser network requests` initially returned no entries during early checks.",
+      "resolved": true,
+      "resolution": "Triggered explicit read-only fetches and re-ran `network requests`, then corroborated key endpoint statuses with curl.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004",
+        "VAL-GUI-PRIM-001",
+        "VAL-GUI-DASH-005",
+        "VAL-GUI-DASH-006",
+        "VAL-GUI-DASH-007",
+        "VAL-GUI-AGENTS-001",
+        "VAL-GUI-AGENTS-002"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Seeded UI data contained only one idle agent and no active/waiting/error dashboard transcript activity.",
+      "affectedAssertions": [
+        "VAL-GUI-FOUND-004",
+        "VAL-GUI-DASH-005",
+        "VAL-GUI-DASH-006",
+        "VAL-GUI-DASH-007"
+      ],
+      "quickFixAttempted": "Reloaded dashboard/agents routes and toggled idle expansion; prerequisite data still absent."
+    }
+  ],
+  "summary": "Tested 7 assertions: 2 passed (VAL-GUI-PRIM-001, VAL-GUI-AGENTS-001), 1 failed (VAL-GUI-AGENTS-002), 4 blocked by missing fixture coverage (VAL-GUI-FOUND-004, VAL-GUI-DASH-005/006/007)."
+}

@@ -1,0 +1,30 @@
+{
+  "milestone": "gui-detail-polish",
+  "round": 4,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 3,
+    "passed": 0,
+    "failed": 2,
+    "blocked": 1
+  },
+  "passedAssertions": [],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-AGDET-003",
+      "reason": "Transcript sample line colors still resolve to plain white instead of required muted/warn/dead token mapping."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "reason": "Interactive value controls remain 11px instead of required 10px."
+    }
+  ],
+  "blockedAssertions": [
+    {
+      "id": "VAL-GUI-DASH-007",
+      "blockedBy": "Blocked by missing stream transcript content in expanded dashboard agent blocks; required reasoning/tool/result/error color checks were not executable on the real UI surface."
+    }
+  ],
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/gui-detail-polish/user-testing/synthesis.round-3.json"
+}

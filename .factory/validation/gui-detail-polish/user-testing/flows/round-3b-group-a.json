@@ -1,0 +1,79 @@
+{
+  "groupId": "round-3b-group-a",
+  "testedAt": "2026-04-03T01:39:25Z",
+  "isolation": {
+    "surface": "agent-browser",
+    "appUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "browserSession": "round-3b-group-a",
+    "readOnly": true
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-DASH-007",
+      "title": "Stream content color coding",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard in a dedicated browser session and inspect expanded agent cards",
+          "expected": "Expanded cards show stream rows for reasoning, tool calls ($-prefixed), tool results (indented), and errors for color verification",
+          "observed": "Expanded cards showed header + metadata only (e.g., role/adapter) with no stream rows rendered."
+        },
+        {
+          "action": "Expand additional collapsed card (Error Executive) and re-audit expanded blocks",
+          "expected": "Expanded card includes stream content types that can be style-audited",
+          "observed": "After expansion, two cards were expanded but both still lacked stream header and stream line patterns ($ prefix, reasoning lines, indented tool results)."
+        },
+        {
+          "action": "Collect API evidence for dashboard/live-run data availability",
+          "expected": "Data surface provides stream-bearing content to validate dashboard stream color coding",
+          "observed": "GET /api/companies/{companyId}/live-runs?minCount=8 returned succeeded run metadata only (no stream payload), and dashboard remained without stream content during inspection."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-dashboard-initial-annotated.png",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-after-error-expand-annotated.png"
+        ],
+        "artifacts": [
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-snapshot.txt",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-dom-agent-blocks.json",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-dom-agent-blocks-after-expand.json",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-dom-stream-audit.json",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-api-live-runs.json",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-api-dashboard-summary.json",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-api-statuses.txt",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-network-requests.txt",
+          "gui-detail-polish/round-3b-group-a/VAL-GUI-DASH-007-console-errors.txt"
+        ],
+        "consoleErrors": "none observed (see VAL-GUI-DASH-007-console-errors.txt)",
+        "network": "Browser network captured repeated GET polling for /api/companies/{companyId}/live-runs?minCount=8 and /api/health; curl status checks confirmed 200 for /api/health, /api/companies/{companyId}/live-runs?minCount=8, and /api/companies/{companyId}/dashboard."
+      },
+      "issues": "Blocked: stream content required for color-coding validation is absent in expanded dashboard cards under current read-only fixture state; therefore reasoning/tool call/tool result/error color assertions cannot be executed."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Dashboard network polling generated large request logs, requiring focused DOM/API audits to isolate assertion-specific evidence.",
+      "resolved": true,
+      "resolution": "Used targeted DOM audits and explicit API captures for live-runs and dashboard summary alongside screenshots.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-007"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Expanded dashboard cards did not expose any stream transcript lines, so contract-required color types (reasoning/tool_call/tool_result/error) were unavailable for style verification.",
+      "affectedAssertions": [
+        "VAL-GUI-DASH-007"
+      ],
+      "quickFixAttempted": "Expanded additional collapsed card (Error Executive), repeated DOM stream audits, and captured live-runs/dashboard API data; stream content remained absent."
+    }
+  ],
+  "summary": "Tested 1 assertion: 0 passed, 0 failed, 1 blocked (VAL-GUI-DASH-007 blocked because no stream content was available in expanded dashboard cards to validate required color coding)."
+}

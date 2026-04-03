@@ -1,0 +1,188 @@
+{
+  "groupId": "round-2-group-b",
+  "testedAt": "2026-04-03T00:47:42Z",
+  "isolation": {
+    "baseUrl": "http://localhost:3100",
+    "companyId": "fe22e791-2c82-4f79-9e78-f2a908e8e272",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "round-2-group-b",
+    "mode": "read-only validation (navigation, inspection, hover, screenshots, computed-style/DOM audits)"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-AGENTS-002",
+      "title": "Filter tabs per design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/agents/all and inspect filter tabs",
+          "expected": "All/Active/Idle tabs present and styled per design system",
+          "observed": "Tabs rendered as All/Active/Idle with JetBrains Mono 11px, border-radius 0px, active foreground white and inactive muted white"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-AGENTS-002-agents-filters.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-AGENTS-002-tabs-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-2-group-b/agents-flow-console-errors.txt)",
+        "network": "No requests captured in this flow (gui-detail-polish/round-2-group-b/agents-flow-network-summary.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-ISSUES-001",
+      "title": "Issue rows with monospace and square indicators",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/issues and audit issue-row typography/indicator/divider styles",
+          "expected": "Issue titles monospace, 6x6 square indicators, and 1px row dividers",
+          "observed": "Two issue rows rendered; title font is JetBrains Mono 11px; indicators are 6x6 with 0px radius; first row has 1px solid bottom divider"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSUES-001-issues-rows.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSUES-001-002-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-2-group-b/issues-flow-console-errors.txt)",
+        "network": "Issue list/data requests observed, including GET /api/companies/{companyId}/issues and related endpoints (gui-detail-polish/round-2-group-b/issues-flow-network-summary.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-ISSUES-002",
+      "title": "Search/filter brutalist styling",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect search input plus Filter/Sort/Group controls on /WEA/issues",
+          "expected": "Transparent background, visible 1px border, no radius, monospace styling",
+          "observed": "Search input and Filter/Sort/Group controls are transparent, 1px solid bordered, JetBrains Mono 11px, and border-radius 0px"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSUES-002-search-filter-controls.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSUES-001-002-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-2-group-b/issues-flow-console-errors.txt)",
+        "network": "Issue list/data requests observed, including GET /api/companies/{companyId}/issues and labels endpoints (gui-detail-polish/round-2-group-b/issues-flow-network-summary.txt)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-ISSDET-002",
+      "title": "Terminal-style comment thread",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Open /WEA/issues/WEA-1 and inspect comment thread metadata/content styles",
+          "expected": "Author uses fg + 500 weight, timestamp uses fg-dim, content uses fg-muted, with 1px separators",
+          "observed": "Authors are JetBrains Mono 12px/500 with fg color and timestamps are JetBrains Mono 12px with fg-dim; comment containers have 1px bottom borders; comment content paragraphs resolve to rgb(255,255,255) instead of muted foreground"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSDET-002-comment-thread.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSDET-002-comment-thread-audit.json",
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSDET-002-comment-content-paragraph-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-2-group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail/comment endpoints observed, including GET /api/issues/WEA-1/comments (gui-detail-polish/round-2-group-b/issue-detail-flow-network-summary.txt)"
+      },
+      "issues": "Comment body text does not resolve to muted foreground; computed paragraph color is rgb(255,255,255)."
+    },
+    {
+      "id": "VAL-GUI-ISSDET-003",
+      "title": "Brutalist properties panel",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect key/value typography in the issue properties panel",
+          "expected": "Keys are dim 10px monospace and values are fg 10px monospace with no rounded controls",
+          "observed": "Keys are 10px dim monospace and controls are unrounded, but property values (Blocked/Medium/No labels/Onboarding) render at 11px, not 10px"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSDET-003-properties-panel.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSDET-002-ISSDET-003-LAYOUT-001-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-2-group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Issue detail/properties endpoints observed (gui-detail-polish/round-2-group-b/issue-detail-flow-network-summary.txt)"
+      },
+      "issues": "Properties panel values render at 11px rather than the required 10px."
+    },
+    {
+      "id": "VAL-GUI-LAYOUT-001",
+      "title": "Sidebar monospace nav items",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect sidebar nav items and section headers on issue detail layout",
+          "expected": "Nav items are JetBrains Mono 12px with active/inactive treatment; section headers uppercase with letter-spacing",
+          "observed": "Nav items satisfy JetBrains Mono 12px with active 500/fg and inactive muted; section headers ('Projects', 'Agents') are not uppercase and letter-spacing remains normal"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-LAYOUT-001-sidebar-nav.png"
+        ],
+        "computedStyles": [
+          "gui-detail-polish/round-2-group-b/VAL-GUI-ISSDET-002-ISSDET-003-LAYOUT-001-style-audit.json"
+        ],
+        "consoleErrors": "none (gui-detail-polish/round-2-group-b/issue-detail-flow-console-errors.txt)",
+        "network": "Sidebar/layout data requests observed (gui-detail-polish/round-2-group-b/issue-detail-flow-network-summary.txt)"
+      },
+      "issues": "Sidebar section headers are not uppercase and do not apply the required letter-spacing treatment."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`agent-browser network requests` returned no entries during the Agents page flow while other flows captured requests normally.",
+      "resolved": true,
+      "resolution": "Recorded the empty-capture artifact and relied on screenshot/computed-style evidence for the Agents assertion.",
+      "affectedAssertions": [
+        "VAL-GUI-AGENTS-002"
+      ]
+    },
+    {
+      "description": "Issue-detail network capture is noisy due frequent polling/live-run requests, making raw logs very large.",
+      "resolved": true,
+      "resolution": "Generated deduplicated summary files alongside raw captures for concise endpoint evidence.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSDET-002",
+        "VAL-GUI-ISSDET-003",
+        "VAL-GUI-LAYOUT-001"
+      ]
+    },
+    {
+      "description": "Navigating to issue detail automatically triggered POST /api/issues/{id}/read.",
+      "resolved": true,
+      "resolution": "No manual create/edit/delete actions were performed; only passive navigation/inspection was used.",
+      "affectedAssertions": [
+        "VAL-GUI-ISSDET-002",
+        "VAL-GUI-ISSDET-003",
+        "VAL-GUI-LAYOUT-001"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 6 assertions: 3 passed (VAL-GUI-AGENTS-002, VAL-GUI-ISSUES-001, VAL-GUI-ISSUES-002) and 3 failed (VAL-GUI-ISSDET-002, VAL-GUI-ISSDET-003, VAL-GUI-LAYOUT-001)."
+}
