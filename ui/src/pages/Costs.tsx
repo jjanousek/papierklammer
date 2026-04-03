@@ -688,10 +688,10 @@ export function Costs() {
                             className={cn(
                               "h-full transition-[width,background-color] duration-150",
                               spendData.summary.utilizationPercent > 90
-                                ? "bg-red-400"
+                                ? "bg-[var(--dead)]"
                                 : spendData.summary.utilizationPercent > 70
-                                  ? "bg-yellow-400"
-                                  : "bg-emerald-400",
+                                  ? "bg-[var(--warn)]"
+                                  : "bg-[var(--alive)]",
                             )}
                             style={{ width: `${Math.min(100, spendData.summary.utilizationPercent)}%` }}
                           />

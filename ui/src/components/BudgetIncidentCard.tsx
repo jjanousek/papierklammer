@@ -33,25 +33,25 @@ export function BudgetIncidentCard({
   const parsed = parseDollarInput(draftAmount);
 
   return (
-    <Card className="overflow-hidden border-red-500/20 bg-[linear-gradient(180deg,rgba(255,70,70,0.10),rgba(255,255,255,0.02))]">
+    <Card className="overflow-hidden border-[var(--dead)]/20 bg-[var(--dead)]/5">
       <CardHeader className="px-5 pt-5 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.22em] text-red-200/80">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[var(--dead)]/80">
               {incident.scopeType} hard stop
             </div>
-            <CardTitle className="mt-1 text-base text-red-50">{incident.scopeName}</CardTitle>
-            <CardDescription className="mt-1 text-red-100/70">
+            <CardTitle className="mt-1 text-base">{incident.scopeName}</CardTitle>
+            <CardDescription className="mt-1 text-[var(--dead)]/70">
               Spending reached {formatCents(incident.amountObserved)} against a limit of {formatCents(incident.amountLimit)}.
             </CardDescription>
           </div>
-          <div className="border border-red-400/30 bg-red-500/10 p-2 text-red-200">
+          <div className="border border-[var(--dead)]/30 bg-[var(--dead)]/10 p-2 text-[var(--dead)]">
             <AlertOctagon className="h-4 w-4" />
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4 px-5 pb-5 pt-0">
-        <div className="flex items-start gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm text-red-50/90">
+        <div className="flex items-start gap-2 rounded-xl border border-[var(--dead)]/20 bg-[var(--dead)]/10 px-3 py-2 text-sm text-[var(--dead)]/90">
           <PauseCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             {incident.scopeType === "project"
@@ -83,7 +83,7 @@ export function BudgetIncidentCard({
             </Button>
           </div>
           {parsed !== null && parsed <= incident.amountObserved ? (
-            <p className="mt-2 text-xs text-red-200/80">
+            <p className="mt-2 text-xs text-[var(--dead)]/80">
               The new budget must exceed current observed spend.
             </p>
           ) : null}

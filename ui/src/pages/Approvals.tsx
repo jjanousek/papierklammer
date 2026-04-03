@@ -90,7 +90,7 @@ export function Approvals() {
             { value: "pending", label: <>Pending{pendingCount > 0 && (
               <span className={cn(
                 "ml-1.5 px-1.5 py-0.5 text-[10px] font-medium",
-                "bg-yellow-500/20 text-yellow-500"
+                "bg-[var(--warn)]/20 text-[var(--warn)]"
               )}>
                 {pendingCount}
               </span>
