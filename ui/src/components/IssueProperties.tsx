@@ -251,7 +251,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   const labelsContent = (
     <>
       <input
-        className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+        className="w-full px-2 py-1.5 text-[10px] bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
         placeholder="Search labels..."
         value={labelSearch}
         onChange={(e) => setLabelSearch(e.target.value)}
@@ -269,7 +269,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
               <div key={label.id} className="flex items-center gap-1">
                 <button
                   className={cn(
-                    "flex items-center gap-2 flex-1 px-2 py-1.5 text-xs hover:opacity-80 text-left",
+                    "flex items-center gap-2 flex-1 px-2 py-1.5 text-[10px] hover:opacity-80 text-left",
                     selected && "bg-accent"
                   )}
                   onClick={() => toggleLabel(label.id)}
@@ -298,14 +298,14 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
             onChange={(e) => setNewLabelColor(e.target.value)}
           />
           <input
-            className="flex-1 px-2 py-1.5 text-xs bg-transparent outline-none placeholder:text-muted-foreground/50"
+            className="flex-1 px-2 py-1.5 text-[10px] bg-transparent outline-none placeholder:text-muted-foreground/50"
             placeholder="New label"
             value={newLabelName}
             onChange={(e) => setNewLabelName(e.target.value)}
           />
         </div>
         <button
-          className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs border border-border hover:opacity-80 disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-[10px] border border-border hover:opacity-80 disabled:opacity-50"
           disabled={!newLabelName.trim() || createLabel.isPending}
           onClick={() =>
             createLabel.mutate({
@@ -338,7 +338,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   const assigneeContent = (
     <>
       <input
-        className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+        className="w-full px-2 py-1.5 text-[10px] bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
         placeholder="Search assignees..."
         value={assigneeSearch}
         onChange={(e) => setAssigneeSearch(e.target.value)}
@@ -347,7 +347,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       <div className="max-h-48 overflow-y-auto overscroll-contain">
         <button
           className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80",
+            "flex items-center gap-2 w-full px-2 py-1.5 text-[10px] hover:opacity-80",
             !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent"
           )}
           onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: null }); setAssigneeOpen(false); }}
@@ -357,7 +357,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         {currentUserId && (
           <button
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-[10px] hover:opacity-80",
               issue.assigneeUserId === currentUserId && "bg-accent",
             )}
             onClick={() => {
@@ -372,7 +372,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         {issue.createdByUserId && issue.createdByUserId !== currentUserId && (
           <button
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-[10px] hover:opacity-80",
               issue.assigneeUserId === issue.createdByUserId && "bg-accent",
             )}
             onClick={() => {
@@ -394,7 +394,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           <button
             key={a.id}
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-[10px] hover:opacity-80",
               a.id === issue.assigneeAgentId && "bg-accent"
             )}
             onClick={() => { trackRecentAssignee(a.id); onUpdate({ assigneeAgentId: a.id, assigneeUserId: null }); setAssigneeOpen(false); }}
@@ -425,7 +425,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   const projectContent = (
     <>
       <input
-        className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+        className="w-full px-2 py-1.5 text-[10px] bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
         placeholder="Search projects..."
         value={projectSearch}
         onChange={(e) => setProjectSearch(e.target.value)}
@@ -434,7 +434,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       <div className="max-h-48 overflow-y-auto overscroll-contain">
         <button
           className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80 whitespace-nowrap",
+            "flex items-center gap-2 w-full px-2 py-1.5 text-[10px] hover:opacity-80 whitespace-nowrap",
             !issue.projectId && "bg-accent"
           )}
           onClick={() => {
@@ -460,7 +460,7 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
           <button
             key={p.id}
             className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs hover:opacity-80 whitespace-nowrap",
+              "flex items-center gap-2 w-full px-2 py-1.5 text-[10px] hover:opacity-80 whitespace-nowrap",
               p.id === issue.projectId && "bg-accent"
             )}
             onClick={() => {
