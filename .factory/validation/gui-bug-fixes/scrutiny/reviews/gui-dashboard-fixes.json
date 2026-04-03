@@ -1,0 +1,28 @@
+{
+  "featureId": "gui-dashboard-fixes",
+  "reviewedAt": "2026-04-03T19:51:38Z",
+  "commitId": "e306fa89107453a415646ad9ee41d0bae546a26d",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Implementation covers all listed dashboard-fix behaviors (dead tabs removed, agent-name navigation, richer stream content, expandable reasoning, 20-entry stream window, and entry-type grouping) with no blocking defects found.",
+    "issues": [
+      {
+        "file": "ui/src/pages/__tests__/Dashboard.test.tsx",
+        "line": 168,
+        "severity": "suggestion",
+        "description": "Add automated assertions for tool-call argument rendering, reasoning expand/collapse interaction, and stream entry-type grouping; current tests primarily cover dead-tab removal, agent link presence, and stream-limit constant."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The gui-worker skill procedure appears broader than this mission's practical verification scope: it mandates TUI tests for GUI work, but this feature (and its contract) validated with UI tests + typecheck only.",
+      "evidence": ".factory/skills/gui-worker/SKILL.md:56-59 requires `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3`; handoff commands in mission handoff JSON lines 14-22 include only `pnpm exec vitest run ui/src/ --max-workers=3` and `pnpm -r typecheck`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "PASS \u2014 commit e306fa89 satisfies VAL-GUI-DASHFIX-001..006: TopBar dead tabs removed, agent names navigate to agent detail via Link/agentUrl, stream entries include tool arguments, reasoning is expandable, limit is 20, and entry-type transitions are visually separated."
+}

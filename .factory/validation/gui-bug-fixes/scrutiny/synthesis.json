@@ -1,0 +1,40 @@
+{
+  "milestone": "gui-bug-fixes",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run ui/src/ packages/orchestrator-tui/ --max-workers=3",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "skills",
+      "suggestion": "Scope gui-worker validation commands to the touched surface area so GUI-only features can require UI tests + typecheck without requiring orchestrator-tui tests.",
+      "evidence": "Review report gui-dashboard-fixes notes gui-worker currently mandates `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3` even though the feature and contract are GUI-only.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}
