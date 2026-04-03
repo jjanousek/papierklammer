@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { Agent } from "@papierklammer/shared";
 import type { LiveRunForIssue } from "../api/heartbeats";
+import { Link } from "../lib/router";
+import { agentUrl } from "../lib/utils";
 
 /** Stream entry in an agent's output. */
 export interface StreamEntry {
@@ -52,9 +54,15 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
         onClick={handleClick}
         data-testid="agent-block-collapsed"
       >
-        <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--fg)" }}>
+        <Link
+          to={agentUrl(agent)}
+          onClick={(e) => e.stopPropagation()}
+          className="hover:underline"
+          style={{ fontSize: "11px", fontWeight: 500, color: "var(--fg)" }}
+          data-testid="agent-name-link"
+        >
           {agent.name}
-        </span>
+        </Link>
         <span className="flex-1" />
         <span
           className="inline-block shrink-0"
@@ -96,9 +104,15 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
         className="flex items-center px-3 border-b border-[var(--border)]"
         style={{ height: "34px", minHeight: "34px" }}
       >
-        <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--fg)" }}>
+        <Link
+          to={agentUrl(agent)}
+          onClick={(e) => e.stopPropagation()}
+          className="hover:underline"
+          style={{ fontSize: "11px", fontWeight: 500, color: "var(--fg)" }}
+          data-testid="agent-name-link"
+        >
           {agent.name}
-        </span>
+        </Link>
         <span className="flex-1" />
         <span
           className="inline-block shrink-0"
@@ -133,9 +147,13 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
           >
             REASONING + ACTIONS
           </span>
-          {streamEntries.map((entry, i) => (
-            <StreamLine key={i} entry={entry} />
-          ))}
+          {streamEntries.map((entry, i) => {
+            const prevType = i > 0 ? streamEntries[i - 1].type : null;
+            const showGroupBorder = prevType !== null && prevType !== entry.type;
+            return (
+              <StreamLine key={i} entry={entry} showGroupBorder={showGroupBorder} />
+            );
+          })}
         </div>
       )}
     </div>
@@ -152,7 +170,11 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StreamLine({ entry }: { entry: StreamEntry }) {
+const REASONING_COLLAPSE_THRESHOLD = 120;
+
+function StreamLine({ entry, showGroupBorder }: { entry: StreamEntry; showGroupBorder?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+
   const styleMap: Record<StreamEntry["type"], { color: string; prefix?: string; indent?: boolean }> = {
     reasoning: { color: "var(--fg-muted)" },
     tool_call: { color: "var(--warn)", prefix: "$ " },
@@ -163,6 +185,10 @@ function StreamLine({ entry }: { entry: StreamEntry }) {
   };
 
   const s = styleMap[entry.type];
+  const isLongReasoning = entry.type === "reasoning" && entry.text.length > REASONING_COLLAPSE_THRESHOLD;
+  const displayText = isLongReasoning && !expanded
+    ? entry.text.slice(0, REASONING_COLLAPSE_THRESHOLD) + "…"
+    : entry.text;
 
   return (
     <div
@@ -171,10 +197,34 @@ function StreamLine({ entry }: { entry: StreamEntry }) {
         color: s.color,
         paddingLeft: s.indent ? "12px" : "0",
         marginBottom: "2px",
+        ...(showGroupBorder
+          ? { marginTop: "6px", paddingTop: "6px", borderTop: "1px solid var(--border)" }
+          : {}),
       }}
     >
       {s.prefix && <span>{s.prefix}</span>}
-      {entry.text}
+      <span>{displayText}</span>
+      {isLongReasoning && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded((prev) => !prev);
+          }}
+          style={{
+            marginLeft: "4px",
+            color: "var(--fg-dim)",
+            fontSize: "9px",
+            cursor: "pointer",
+            background: "none",
+            border: "none",
+            padding: 0,
+            textDecoration: "underline",
+          }}
+          data-testid="stream-expand-btn"
+        >
+          {expanded ? "less" : "more"}
+        </button>
+      )}
     </div>
   );
 }

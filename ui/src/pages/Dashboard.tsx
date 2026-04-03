@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboard";
 import { agentsApi, type OrgNode } from "../api/agents";
@@ -10,7 +10,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { formatCents, formatTokens } from "../lib/utils";
 import { LayoutDashboard } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
-import { TopBar, type TopBarTab } from "../components/TopBar";
+import { TopBar } from "../components/TopBar";
 import { MetricsStrip } from "../components/MetricsStrip";
 import { TierColumn, type TierInfo } from "../components/TierColumn";
 import { useLiveRunTranscripts } from "../components/transcript/useLiveRunTranscripts";
@@ -20,7 +20,7 @@ import type { TranscriptEntry } from "../adapters";
 import type { Agent } from "@papierklammer/shared";
 
 const MIN_DASHBOARD_RUNS = 8;
-const MAX_STREAM_ENTRIES_PER_AGENT = 8;
+export const MAX_STREAM_ENTRIES_PER_AGENT = 20;
 
 /** Convert adapter transcript entries into lightweight StreamEntry items for AgentBlock. */
 function transcriptToStreamEntries(entries: TranscriptEntry[]): StreamEntry[] {
@@ -29,20 +29,29 @@ function transcriptToStreamEntries(entries: TranscriptEntry[]): StreamEntry[] {
     switch (entry.kind) {
       case "thinking":
       case "assistant":
-        result.push({ type: "reasoning", text: entry.text.slice(0, 120) });
+        result.push({ type: "reasoning", text: entry.text });
         break;
-      case "tool_call":
-        result.push({ type: "tool_call", text: entry.name });
+      case "tool_call": {
+        const argsStr = entry.input
+          ? typeof entry.input === "string"
+            ? entry.input.slice(0, 200)
+            : JSON.stringify(entry.input).slice(0, 200)
+          : "";
+        result.push({
+          type: "tool_call",
+          text: argsStr ? `${entry.name} ${argsStr}` : entry.name,
+        });
         break;
+      }
       case "tool_result":
-        result.push({ type: "tool_result", text: entry.content.slice(0, 120) });
+        result.push({ type: "tool_result", text: entry.content.slice(0, 200) });
         break;
       case "stderr":
-        result.push({ type: "error", text: entry.text.slice(0, 120) });
+        result.push({ type: "error", text: entry.text.slice(0, 200) });
         break;
       case "system":
         if (entry.text.toLowerCase().includes("delegat")) {
-          result.push({ type: "delegation", text: entry.text.slice(0, 120) });
+          result.push({ type: "delegation", text: entry.text.slice(0, 200) });
         }
         break;
       default:
@@ -113,7 +122,7 @@ export function Dashboard() {
   const { selectedCompanyId, companies } = useCompany();
   const { openOnboarding } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
-  const [activeTab, setActiveTab] = useState<TopBarTab>("pipeline");
+
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Dashboard" }]);
@@ -303,8 +312,6 @@ export function Dashboard() {
   return (
     <div className="flex flex-col h-full w-full" style={{ background: "var(--bg)" }}>
       <TopBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
         activeCount={activeCount}
         idleCount={idleCount}
       />

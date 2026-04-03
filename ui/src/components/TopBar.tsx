@@ -1,17 +1,9 @@
-import { cn } from "../lib/utils";
-
-export type TopBarTab = "pipeline" | "history" | "config";
-
 interface TopBarProps {
-  activeTab: TopBarTab;
-  onTabChange: (tab: TopBarTab) => void;
   activeCount: number;
   idleCount: number;
 }
 
-const tabs: TopBarTab[] = ["pipeline", "history", "config"];
-
-export function TopBar({ activeTab, onTabChange, activeCount, idleCount }: TopBarProps) {
+export function TopBar({ activeCount, idleCount }: TopBarProps) {
   return (
     <div
       className="flex items-center w-full border-b border-[var(--border)]"
@@ -35,26 +27,17 @@ export function TopBar({ activeTab, onTabChange, activeCount, idleCount }: TopBa
         </span>
       </div>
 
-      {/* Tab cells */}
-      {tabs.map((tab) => {
-        const isActive = tab === activeTab;
-        return (
-          <button
-            key={tab}
-            onClick={() => onTabChange(tab)}
-            className={cn(
-              "flex items-center px-3 h-full border-r border-[var(--border)] cursor-pointer",
-              "text-[11px] bg-transparent",
-            )}
-            style={{
-              color: isActive ? "var(--fg)" : "var(--fg-muted)",
-              background: isActive ? "var(--bg-dark)" : "transparent",
-            }}
-          >
-            {tab}
-          </button>
-        );
-      })}
+      {/* Pipeline label */}
+      <div
+        className="flex items-center px-3 h-full border-r border-[var(--border)]"
+        style={{
+          fontSize: "11px",
+          color: "var(--fg)",
+          background: "var(--bg-dark)",
+        }}
+      >
+        pipeline
+      </div>
 
       {/* Spacer */}
       <div className="flex-1" />

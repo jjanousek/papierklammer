@@ -9,8 +9,8 @@ import type { Agent } from "@papierklammer/shared";
 // ── Mocks ──
 
 vi.mock("@/lib/router", () => ({
-  Link: ({ children, className, ...props }: ComponentProps<"a">) => (
-    <a className={className} {...props}>{children}</a>
+  Link: ({ children, className, to, ...props }: ComponentProps<"a"> & { to?: string }) => (
+    <a className={className} href={typeof to === "string" ? to : undefined} {...props}>{children}</a>
   ),
   useLocation: () => ({ pathname: "/", search: "", hash: "" }),
   useNavigate: () => () => {},
@@ -94,7 +94,7 @@ vi.mock("@tanstack/react-query", () => ({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { Dashboard } from "../Dashboard";
+import { Dashboard, MAX_STREAM_ENTRIES_PER_AGENT } from "../Dashboard";
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -165,11 +165,11 @@ describe("Dashboard tier-column layout", () => {
     expect(container.textContent).toContain("PAPIERKLAMMER");
   });
 
-  it("renders TopBar with pipeline, history, config tabs", () => {
+  it("renders TopBar with pipeline label and no dead tabs", () => {
     renderDashboard();
     expect(container.textContent).toContain("pipeline");
-    expect(container.textContent).toContain("history");
-    expect(container.textContent).toContain("config");
+    expect(container.textContent).not.toContain("history");
+    expect(container.textContent).not.toContain("config");
   });
 
   it("renders MetricsStrip with metric labels", () => {
@@ -199,6 +199,19 @@ describe("Dashboard tier-column layout", () => {
   it("renders cost from dashboard summary", () => {
     renderDashboard();
     expect(container.textContent).toContain("$18.00");
+  });
+
+  it("renders agent names as links", () => {
+    renderDashboard();
+    const links = container.querySelectorAll('[data-testid="agent-name-link"]');
+    expect(links.length).toBeGreaterThan(0);
+    // Verify at least one link has an href containing /agents/
+    const hrefs = Array.from(links).map((l) => l.getAttribute("href") ?? "");
+    expect(hrefs.some((h) => h.includes("/agents/"))).toBe(true);
+  });
+
+  it("has MAX_STREAM_ENTRIES_PER_AGENT >= 20", () => {
+    expect(MAX_STREAM_ENTRIES_PER_AGENT).toBeGreaterThanOrEqual(20);
   });
 });
 
