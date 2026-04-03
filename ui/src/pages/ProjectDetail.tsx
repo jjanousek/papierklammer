@@ -129,7 +129,7 @@ function ColorPicker({
         aria-label="Change project color"
       />
       {open && (
-        <div className="absolute top-full left-0 mt-2 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 w-max">
+        <div className="absolute top-full left-0 mt-2 p-2 bg-popover border border-border z-50 w-max">
           <div className="grid grid-cols-5 gap-1.5">
             {PROJECT_COLORS.map((color) => (
               <button
@@ -409,7 +409,7 @@ function ProjectWorkspacesContent({
   return (
     <>
       <div className="space-y-4">
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-hidden border border-border bg-card">
           {activeSummaries.map(renderSummaryRow)}
         </div>
         {cleanupFailedSummaries.length > 0 ? (
@@ -417,7 +417,7 @@ function ProjectWorkspacesContent({
             <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
               Cleanup attention needed
             </div>
-            <div className="overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/5">
+            <div className="overflow-hidden border border-[var(--warn)]/20 bg-[var(--warn)]/5">
               {cleanupFailedSummaries.map(renderSummaryRow)}
             </div>
           </div>
@@ -814,8 +814,8 @@ export function ProjectDetail() {
             className="text-xl font-bold"
           />
           {project.pauseReason === "budget" ? (
-            <div className="inline-flex items-center gap-2 border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-red-200">
-              <span className="h-1.5 w-1.5 bg-red-400" />
+            <div className="inline-flex items-center gap-2 border border-[var(--dead)]/30 bg-[var(--dead)]/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--dead)]">
+              <span className="h-1.5 w-1.5 bg-[var(--dead)]" />
               Paused by budget hard stop
             </div>
           ) : null}

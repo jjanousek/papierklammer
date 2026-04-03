@@ -204,9 +204,9 @@ export function PluginManager() {
         </Dialog>
       </div>
 
-      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+      <div className="border border-[var(--warn)]/30 bg-[var(--warn)]/5 px-4 py-3">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--warn)]" />
           <div className="space-y-1 text-sm">
             <p className="font-medium text-foreground">Plugins are alpha.</p>
             <p className="text-muted-foreground">
@@ -250,7 +250,7 @@ export function PluginManager() {
                         {installedPlugin ? (
                           <Badge
                             variant={installedPlugin.status === "ready" ? "default" : "secondary"}
-                            className={installedPlugin.status === "ready" ? "bg-green-600 hover:opacity-80" : ""}
+                            className={installedPlugin.status === "ready" ? "bg-[var(--alive)] hover:opacity-80" : ""}
                           >
                             {installedPlugin.status}
                           </Badge>
@@ -346,15 +346,15 @@ export function PluginManager() {
                       {plugin.manifestJson.description || "No description provided."}
                     </p>
                     {plugin.status === "error" && (
-                      <div className="mt-3 rounded-md border border-red-500/25 bg-red-500/[0.06] px-3 py-2">
+                      <div className="mt-3 border border-[var(--dead)]/25 bg-[var(--dead)]/[0.06] px-3 py-2">
                         <div className="flex flex-wrap items-start gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 text-sm font-medium text-red-700 dark:text-red-300">
+                            <div className="flex items-center gap-2 text-sm font-medium text-[var(--dead)]">
                               <AlertTriangle className="h-4 w-4 shrink-0" />
                               <span>Plugin error</span>
                             </div>
                             <p
-                              className="mt-1 text-sm text-red-700/90 dark:text-red-200/90 break-words"
+                              className="mt-1 text-sm text-[var(--dead)]/90 break-words"
                               title={plugin.lastError ?? undefined}
                             >
                               {errorSummaryByPluginId.get(plugin.id)}
@@ -363,7 +363,7 @@ export function PluginManager() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="border-red-500/30 bg-background/60 text-red-700 hover:opacity-80 hover:text-red-800 dark:text-red-200 dark:hover:text-red-100"
+                            className="border-[var(--dead)]/30 bg-background/60 text-[var(--dead)] hover:opacity-80"
                             onClick={() => setErrorDetailsPlugin(plugin)}
                           >
                             View full error
@@ -385,7 +385,7 @@ export function PluginManager() {
                           }
                           className={cn(
                             "shrink-0",
-                            plugin.status === "ready" ? "bg-green-600 hover:opacity-80" : ""
+                            plugin.status === "ready" ? "bg-[var(--alive)] hover:opacity-80" : ""
                           )}
                         >
                           {plugin.status}
@@ -404,7 +404,7 @@ export function PluginManager() {
                           }}
                           disabled={enableMutation.isPending || disableMutation.isPending}
                         >
-                          <Power className={cn("h-4 w-4", plugin.status === "ready" ? "text-green-600" : "")} />
+                          <Power className={cn("h-4 w-4", plugin.status === "ready" ? "text-[var(--alive)]" : "")} />
                         </Button>
                         <Button
                           variant="outline"
@@ -477,14 +477,14 @@ export function PluginManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="rounded-md border border-red-500/25 bg-red-500/[0.06] px-4 py-3">
+            <div className="border border-[var(--dead)]/25 bg-[var(--dead)]/[0.06] px-4 py-3">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700 dark:text-red-300" />
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dead)]" />
                 <div className="space-y-1 text-sm">
-                  <p className="font-medium text-red-700 dark:text-red-300">
+                  <p className="font-medium text-[var(--dead)]">
                     What errored
                   </p>
-                  <p className="text-red-700/90 dark:text-red-200/90 break-words">
+                  <p className="text-[var(--dead)]/90 break-words">
                     {errorDetailsPlugin ? getPluginErrorSummary(errorDetailsPlugin) : "No error summary available."}
                   </p>
                 </div>

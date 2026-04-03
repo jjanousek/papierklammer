@@ -73,7 +73,7 @@ export function InstanceExperimentalSettings() {
         </div>
       )}
 
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
             <h2 className="text-sm font-semibold">Enable Isolated Workspaces</h2>
@@ -89,7 +89,7 @@ export function InstanceExperimentalSettings() {
             disabled={toggleMutation.isPending}
             className={cn(
               "relative inline-flex h-5 w-9 items-center disabled:cursor-not-allowed disabled:opacity-60",
-              enableIsolatedWorkspaces ? "bg-green-600" : "bg-muted",
+              enableIsolatedWorkspaces ? "bg-[var(--alive)]" : "bg-muted",
             )}
             onClick={() => toggleMutation.mutate({ enableIsolatedWorkspaces: !enableIsolatedWorkspaces })}
           >
@@ -103,7 +103,7 @@ export function InstanceExperimentalSettings() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-5">
+      <section className="border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1.5">
             <h2 className="text-sm font-semibold">Auto-Restart Dev Server When Idle</h2>
@@ -119,7 +119,7 @@ export function InstanceExperimentalSettings() {
             disabled={toggleMutation.isPending}
             className={cn(
               "relative inline-flex h-5 w-9 items-center disabled:cursor-not-allowed disabled:opacity-60",
-              autoRestartDevServerWhenIdle ? "bg-green-600" : "bg-muted",
+              autoRestartDevServerWhenIdle ? "bg-[var(--alive)]" : "bg-muted",
             )}
             onClick={() =>
               toggleMutation.mutate({ autoRestartDevServerWhenIdle: !autoRestartDevServerWhenIdle })

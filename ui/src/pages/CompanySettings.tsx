@@ -431,7 +431,7 @@ export function CompanySettings() {
                 {snippetCopied && (
                   <span
                     key={snippetCopyDelightId}
-                    className="flex items-center gap-1 text-xs text-green-600"
+                    className="flex items-center gap-1 text-xs text-[var(--alive)]"
                   >
                     <Check className="h-3 w-3" />
                     Copied

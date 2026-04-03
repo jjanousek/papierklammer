@@ -289,7 +289,7 @@ export function PluginSettings() {
                               <>
                                 <div className="flex justify-between col-span-2">
                                   <span className="text-muted-foreground flex items-center gap-1">
-                                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                    <AlertTriangle className="h-3 w-3 text-[var(--warn)]" />
                                     Crashes
                                   </span>
                                   <span className="text-xs">
@@ -408,7 +408,7 @@ export function PluginSettings() {
                             entry.level === "error"
                               ? "text-destructive"
                               : entry.level === "warn"
-                                ? "text-yellow-600 dark:text-yellow-400"
+                                ? "text-[var(--warn)]"
                                 : entry.level === "debug"
                                   ? "text-muted-foreground/60"
                                   : "text-muted-foreground"
@@ -453,7 +453,7 @@ export function PluginSettings() {
                                 {check.name}
                               </span>
                               {check.passed ? (
-                                <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+                                <CheckCircle className="h-4 w-4 shrink-0 text-[var(--alive)]" />
                               ) : (
                                 <XCircle className="h-4 w-4 shrink-0 text-destructive" />
                               )}
@@ -679,9 +679,9 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
       {/* Status messages */}
       {saveMessage && (
         <div
-          className={`text-sm p-2 rounded border ${
+          className={`text-sm p-2 border ${
             saveMessage.type === "success"
-              ? "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-900"
+              ? "text-[var(--alive)] bg-[var(--alive)]/10 border-[var(--alive)]/20"
               : "text-destructive bg-destructive/10 border-destructive/20"
           }`}
         >
@@ -691,9 +691,9 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
 
       {testResult && (
         <div
-          className={`text-sm p-2 rounded border ${
+          className={`text-sm p-2 border ${
             testResult.type === "success"
-              ? "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-900"
+              ? "text-[var(--alive)] bg-[var(--alive)]/10 border-[var(--alive)]/20"
               : "text-destructive bg-destructive/10 border-destructive/20"
           }`}
         >
@@ -799,14 +799,14 @@ function formatTimestamp(epochMs: number): string {
 function JobStatusDot({ status }: { status: string }) {
   const colorClass =
     status === "success" || status === "succeeded"
-      ? "bg-green-500"
+      ? "bg-[var(--alive)]"
       : status === "failed"
-        ? "bg-red-500"
+        ? "bg-[var(--dead)]"
         : status === "running"
-          ? "bg-blue-500"
+          ? "bg-[var(--border-strong)]"
           : status === "cancelled"
-            ? "bg-gray-400"
-            : "bg-amber-500"; // queued, pending
+            ? "bg-[var(--fg-dim)]"
+            : "bg-[var(--warn)]"; // queued, pending
   return (
     <span
       className={`inline-block h-1.5 w-1.5 shrink-0 ${colorClass}`}
@@ -821,12 +821,12 @@ function JobStatusDot({ status }: { status: string }) {
 function DeliveryStatusDot({ status }: { status: string }) {
   const colorClass =
     status === "processed" || status === "success"
-      ? "bg-green-500"
+      ? "bg-[var(--alive)]"
       : status === "failed"
-        ? "bg-red-500"
+        ? "bg-[var(--dead)]"
         : status === "received"
-          ? "bg-blue-500"
-          : "bg-amber-500"; // pending
+          ? "bg-[var(--border-strong)]"
+          : "bg-[var(--warn)]"; // pending
   return (
     <span
       className={`inline-block h-1.5 w-1.5 shrink-0 ${colorClass}`}
