@@ -1,7 +1,7 @@
 {
   "milestone": "tui-stability",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
@@ -20,56 +20,21 @@
     }
   },
   "reviewsSummary": {
-    "total": 4,
-    "passed": 3,
-    "failed": 1,
-    "failedFeatures": [
-      "tui-layout-stability"
-    ]
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
   },
-  "blockingIssues": [
-    {
-      "featureId": "tui-layout-stability",
-      "severity": "blocking",
-      "description": "App.tsx computes middle content with `rows - 5` (`fixedBarHeight = 5`) instead of the contracted `rows - 3`."
-    },
-    {
-      "featureId": "tui-layout-stability",
-      "severity": "blocking",
-      "description": "HeaderBar does not have an explicit fixed height despite VAL-TUI-STAB-001 requiring fixed heights for header/input/status bars."
-    },
-    {
-      "featureId": "tui-layout-stability",
-      "severity": "blocking",
-      "description": "MessageList resize behavior clamps scroll offset instead of resetting scroll offset as specified by the feature contract."
-    }
-  ],
-  "appliedUpdates": [
-    {
-      "target": "library",
-      "description": "Added Ink testing-library note to .factory/library/testing.md covering missing `stdout.rows` defaults, explicit rows getter setup, and resize event pattern for TUI layout tests.",
-      "sourceFeature": "tui-layout-stability"
-    }
-  ],
+  "blockingIssues": [],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "skills",
-      "suggestion": "Clarify and enforce the `tui-worker` 'Write tests FIRST' rule with objective adherence criteria (or relax wording if intended) and require accurate `skillFeedback.followedProcedure` when edits precede tests.",
-      "evidence": "Both tui-layout-stability and tui-message-flow-fix review transcripts show code edits before new tests, while one handoff still reported followedProcedure=true.",
+      "suggestion": "Clarify and enforce the `tui-worker` tests-first procedure and align `skillFeedback.followedProcedure` expectations with observable transcript order and validator scope.",
+      "evidence": "Rerun review for fix-tui-scrutiny-findings again observed mismatch between SKILL.md procedure and reported adherence in handoff.",
       "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Clarify TUI layout contracts involving terminal rows versus Ink border overhead so requirements like '1-row fixed bars' and middle-area formulas are unambiguous and testable.",
-      "evidence": "tui-layout-stability review found contract divergence (`rows - 3` required vs implementation accounting for border rows), indicating ambiguity between design intent and Ink rendering semantics.",
-      "isSystemic": false
     }
   ],
-  "rejectedObservations": [
-    {
-      "observation": "Duplicate skill-adherence observation for tui-worker TDD order from multiple reviewers.",
-      "reason": "duplicate"
-    }
-  ],
-  "previousRound": null
+  "rejectedObservations": [],
+  "previousRound": ".factory/validation/tui-stability/scrutiny/synthesis.round1.json"
 }

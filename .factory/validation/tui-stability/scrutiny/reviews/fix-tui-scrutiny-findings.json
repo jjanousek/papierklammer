@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-tui-scrutiny-findings",
+  "reviewedAt": "2026-04-03T17:12:29Z",
+  "commitId": "52e21a3a43770b06bc21c65799e61aa73c7f4590",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The rerun fix addresses the original tui-layout-stability blockers and the two previously noted non-blocking items: HeaderBar now has an explicit fixed height, resize handling resets the message window to latest, the App catch path uses an isThinking ref instead of a stale closure value, and the animation test name now matches its assertions.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `tui-worker` skill procedure and adherence reporting are still misaligned for this session.",
+      "evidence": "SKILL.md requires tests-first ordering and also lists running UI tests for TUI work (`.factory/skills/tui-worker/SKILL.md`, steps 3 and 5), but this transcript shows implementation edits before test updates and verification only ran TUI tests + typecheck, while handoff still marks `skillFeedback.followedProcedure=true`."
+    }
+  ],
+  "addressesFailureFrom": "tui-layout-stability",
+  "summary": "Review result: PASS. The fix commit resolves the prior blocking scrutiny findings for tui-layout-stability and closes the non-blocking concerns that were called out in the prior review context."
+}
