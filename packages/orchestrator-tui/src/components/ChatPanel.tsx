@@ -14,6 +14,8 @@ export interface ChatPanelProps {
   pendingCommandItems?: CommandItem[];
   /** Whether the chat panel is focused (for scroll key handling). */
   isFocused?: boolean;
+  /** Available height in rows for the message list (for windowing). */
+  visibleHeight?: number;
 }
 
 /**
@@ -28,7 +30,12 @@ export function ChatPanel({
   isThinking = false,
   pendingCommandItems = [],
   isFocused = false,
+  visibleHeight,
 }: ChatPanelProps): React.ReactElement {
+  // Account for the "Chat" header line and panel border (top + bottom = 2) + paddingY
+  // The MessageList gets the remaining space inside the panel
+  const messageListHeight = visibleHeight != null ? Math.max(1, visibleHeight - 3) : undefined;
+
   return (
     <Box
       flexDirection="column"
@@ -45,6 +52,7 @@ export function ChatPanel({
         isThinking={isThinking}
         pendingCommandItems={pendingCommandItems}
         isFocused={isFocused}
+        visibleHeight={messageListHeight}
       />
     </Box>
   );

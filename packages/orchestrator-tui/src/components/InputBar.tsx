@@ -60,6 +60,7 @@ export function InputBar({
       borderRight={false}
       borderColor={borderColor}
       paddingX={1}
+      flexShrink={0}
     >
       {disabled ? (
         <Text dimColor>⠋ Waiting for response...</Text>

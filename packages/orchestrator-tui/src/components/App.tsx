@@ -12,6 +12,7 @@ import type { CodexState } from "./StatusBar.js";
 import { useOrchestratorStatus } from "../hooks/useOrchestratorStatus.js";
 import { useChat } from "../hooks/useChat.js";
 import { useCodex } from "../hooks/useCodex.js";
+import { useTerminalSize } from "../hooks/useTerminalSize.js";
 import type { spawn as spawnType } from "node:child_process";
 import type {
   DeltaParams,
@@ -51,6 +52,7 @@ export function App({
   enableCodex = spawnFn !== undefined,
 }: AppProps): React.ReactElement {
   const { exit } = useApp();
+  const { rows } = useTerminalSize();
   const [helpVisible, setHelpVisible] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState(companyId);
   const [focusTarget, setFocusTarget] = useState<"sidebar" | "input">("input");
@@ -241,17 +243,22 @@ export function App({
     setFocusTarget("input");
   }, []);
 
+  // Fixed bars: HeaderBar (2 rows: content + border), InputBar (2 rows: border + content),
+  // StatusBar (1 row). Middle content area gets the remaining height.
+  const fixedBarHeight = 5; // 2 + 2 + 1
+  const contentHeight = Math.max(1, rows - fixedBarHeight);
+
   if (!selectedCompanyId) {
     return (
       <ErrorBoundary>
-        <Box flexDirection="column" width="100%" height="100%">
+        <Box flexDirection="column" width="100%" height={rows}>
           <HeaderBar
             connected={false}
             totalAgents={0}
             totalActiveRuns={0}
             error={companiesError}
           />
-          <Box flexGrow={1}>
+          <Box flexGrow={1} height={contentHeight}>
             <CompanyPicker
               companies={companies}
               loading={companiesLoading}
@@ -271,14 +278,14 @@ export function App({
 
   return (
     <ErrorBoundary>
-      <Box flexDirection="column" width="100%" height="100%">
+      <Box flexDirection="column" width="100%" height={rows}>
         <HeaderBar
           connected={status.connected}
           totalAgents={status.totalAgents}
           totalActiveRuns={status.totalActiveRuns}
           error={status.error}
         />
-        <Box flexDirection="row" flexGrow={1}>
+        <Box flexDirection="row" height={contentHeight}>
           <AgentSidebar
             agents={status.agents}
             focused={focusTarget === "sidebar"}
@@ -295,6 +302,7 @@ export function App({
               streamingText={chat.streamingText}
               isThinking={chat.isThinking}
               pendingCommandItems={chat.pendingCommandItems}
+              visibleHeight={contentHeight}
             />
           )}
         </Box>

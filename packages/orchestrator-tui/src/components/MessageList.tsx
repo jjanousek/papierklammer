@@ -101,13 +101,20 @@ export interface MessageListProps {
   pendingCommandItems: CommandItem[];
   /** Whether this component's parent panel is focused. */
   isFocused?: boolean;
+  /** Available height in rows for the message list (for windowing). */
+  visibleHeight?: number;
 }
 
+/** Default visible window size when no explicit height is given. */
+const DEFAULT_VISIBLE_WINDOW = 20;
+
 /**
- * Scrollable list of chat messages.
+ * Scrollable list of chat messages with windowed rendering.
  *
- * Auto-scrolls to the bottom when new messages arrive,
- * unless the user has scrolled up.
+ * Only renders messages within the visible window based on scrollOffset
+ * and available height. Auto-scrolls to the bottom when new messages
+ * arrive, unless the user has scrolled up.
+ * Shift+Up/Down changes the visible window.
  */
 export function MessageList({
   messages,
@@ -115,24 +122,37 @@ export function MessageList({
   isThinking,
   pendingCommandItems,
   isFocused = false,
+  visibleHeight,
 }: MessageListProps): React.ReactElement {
   const [scrollOffset, setScrollOffset] = useState(0);
   const [userScrolled, setUserScrolled] = useState(false);
 
-  // Total number of renderable items (messages + streaming + thinking)
-  const totalItems = messages.length + (streamingText || isThinking || pendingCommandItems.length > 0 ? 1 : 0);
+  // Window size: use explicit height or fallback
+  const windowSize = visibleHeight ?? DEFAULT_VISIBLE_WINDOW;
+
+  // Total number of renderable items (messages + streaming/thinking indicator)
+  const hasStreamingItem = streamingText || isThinking || pendingCommandItems.length > 0;
+  const totalItems = messages.length + (hasStreamingItem ? 1 : 0);
 
   // Auto-scroll to bottom when new content arrives, unless user scrolled up
   useEffect(() => {
     if (!userScrolled) {
-      setScrollOffset(Math.max(0, totalItems - 1));
+      setScrollOffset(Math.max(0, totalItems - windowSize));
     }
-  }, [totalItems, userScrolled]);
+  }, [totalItems, userScrolled, windowSize]);
 
   // Reset userScrolled when a new message is finalized (turn completed)
   useEffect(() => {
     setUserScrolled(false);
   }, [messages.length]);
+
+  // Reset scroll offset when terminal is resized (windowSize changes)
+  useEffect(() => {
+    setScrollOffset((prev) => {
+      const maxOffset = Math.max(0, totalItems - windowSize);
+      return Math.min(prev, maxOffset);
+    });
+  }, [windowSize, totalItems]);
 
   const handleScroll = useCallback(
     (direction: "up" | "down") => {
@@ -141,18 +161,19 @@ export function MessageList({
         setScrollOffset((prev) => Math.max(0, prev - 1));
       } else {
         setScrollOffset((prev) => {
-          const next = Math.min(totalItems - 1, prev + 1);
-          if (next >= totalItems - 1) {
+          const maxOffset = Math.max(0, totalItems - windowSize);
+          const next = Math.min(maxOffset, prev + 1);
+          if (next >= maxOffset) {
             setUserScrolled(false);
           }
           return next;
         });
       }
     },
-    [totalItems],
+    [totalItems, windowSize],
   );
 
-  // Handle keyboard input for scrolling
+  // Handle keyboard input for scrolling (Shift+Up/Down and PageUp/PageDown)
   useInput(
     (_input, key) => {
       if (key.upArrow && key.shift) {
@@ -171,6 +192,14 @@ export function MessageList({
     { isActive: isFocused },
   );
 
+  // Calculate visible window of messages
+  const windowEnd = Math.min(messages.length, scrollOffset + windowSize);
+  const windowStart = Math.max(0, scrollOffset);
+  const visibleMessages = messages.slice(windowStart, windowEnd);
+
+  // Whether to show the streaming indicator (only if it fits in the window)
+  const showStreamingItem = hasStreamingItem && (scrollOffset + windowSize >= totalItems);
+
   return (
     <Box flexDirection="column" flexGrow={1} overflow="hidden">
       {messages.length === 0 && !streamingText && !isThinking && pendingCommandItems.length === 0 ? (
@@ -179,32 +208,38 @@ export function MessageList({
         </Text>
       ) : (
         <>
-          {messages.map((msg, idx) => (
-            <Box key={idx} flexDirection="column">
-              {msg.role === "user" ? (
-                <Text>
-                  <Text color="green" bold>
-                    You:{" "}
-                  </Text>
-                  <Text>{msg.text}</Text>
-                </Text>
-              ) : (
-                <Box flexDirection="column">
-                  <Box flexDirection="column">
-                    <Text color="cyan" bold>
-                      Orchestrator:
+          {scrollOffset > 0 && (
+            <Text dimColor>▲ {scrollOffset} more message{scrollOffset !== 1 ? "s" : ""} above</Text>
+          )}
+          {visibleMessages.map((msg, visIdx) => {
+            const idx = windowStart + visIdx;
+            return (
+              <Box key={idx} flexDirection="column">
+                {msg.role === "user" ? (
+                  <Text>
+                    <Text color="green" bold>
+                      You:{" "}
                     </Text>
-                    <RenderedText text={msg.text} />
+                    <Text>{msg.text}</Text>
+                  </Text>
+                ) : (
+                  <Box flexDirection="column">
+                    <Box flexDirection="column">
+                      <Text color="cyan" bold>
+                        Orchestrator:
+                      </Text>
+                      <RenderedText text={msg.text} />
+                    </Box>
+                    {msg.items?.map((item, cmdIdx) => (
+                      <CommandBlock key={cmdIdx} item={item} />
+                    ))}
                   </Box>
-                  {msg.items?.map((item, cmdIdx) => (
-                    <CommandBlock key={cmdIdx} item={item} />
-                  ))}
-                </Box>
-              )}
-            </Box>
-          ))}
-          {/* Streaming / thinking indicator */}
-          {(streamingText || isThinking || pendingCommandItems.length > 0) && (
+                )}
+              </Box>
+            );
+          })}
+          {/* Streaming / thinking indicator (only when scrolled to bottom) */}
+          {showStreamingItem && (
             <Box flexDirection="column">
               {isThinking && !streamingText ? (
                 <Text>

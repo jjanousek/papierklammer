@@ -27,7 +27,7 @@ export function StatusBar({
   model,
 }: StatusBarProps): React.ReactElement {
   return (
-    <Box paddingX={1} gap={1}>
+    <Box paddingX={1} gap={1} flexShrink={0} height={1}>
       <Text color={STATE_COLORS[codexState]}>{STATE_LABELS[codexState]}</Text>
       {threadId ? <Text dimColor>| Thread: {threadId}</Text> : null}
       {model ? <Text dimColor>| Model: {model}</Text> : null}
