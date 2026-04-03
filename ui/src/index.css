@@ -46,7 +46,10 @@
 }
 
 /* ── Papierklammer Design System ── */
-:root {
+
+/* Default theme (rose/papierklammer) applied at :root and via data-theme attribute */
+:root,
+[data-theme="papierklammer"] {
   color-scheme: dark;
   --radius: 0;
 
@@ -75,74 +78,201 @@
   /* Font */
   --font: 'JetBrains Mono', monospace;
 
-  /* Map to Tailwind CSS variable names for existing class compat */
-  --background: #C4878E;
-  --foreground: #FFFFFF;
-  --card: #B07078;
-  --card-foreground: #FFFFFF;
-  --popover: #B07078;
-  --popover-foreground: #FFFFFF;
-  --primary: #FFFFFF;
-  --primary-foreground: #8E5A64;
-  --secondary: #8E5A64;
-  --secondary-foreground: #FFFFFF;
-  --muted: #B07078;
-  --muted-foreground: rgba(255, 255, 255, 0.68);
-  --accent: #B07078;
-  --accent-foreground: #FFFFFF;
-  --destructive: #FF6060;
-  --destructive-foreground: #FFFFFF;
-  --input: rgba(255, 255, 255, 0.32);
-  --ring: rgba(255, 255, 255, 0.40);
-  --chart-1: #82E88A;
-  --chart-2: #E8D560;
-  --chart-3: #FF6060;
-  --chart-4: #D4A0A6;
-  --chart-5: #E2BCC0;
-  --sidebar: #B07078;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FFFFFF;
-  --sidebar-primary-foreground: #8E5A64;
-  --sidebar-accent: #8E5A64;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.18);
-  --sidebar-ring: rgba(255, 255, 255, 0.40);
+  /* Shadcn bridge — map to design system variables */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--bg-dark);
+  --card-foreground: var(--fg);
+  --popover: var(--bg-dark);
+  --popover-foreground: var(--fg);
+  --primary: var(--fg);
+  --primary-foreground: var(--bg-darker);
+  --secondary: var(--bg-darker);
+  --secondary-foreground: var(--fg);
+  --muted: var(--bg-dark);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--bg-dark);
+  --accent-foreground: var(--fg);
+  --destructive: var(--dead);
+  --destructive-foreground: var(--fg);
+  --input: var(--border-strong);
+  --ring: var(--fg-dim);
+  --chart-1: var(--alive);
+  --chart-2: var(--warn);
+  --chart-3: var(--dead);
+  --chart-4: var(--bg-light);
+  --chart-5: var(--bg-lighter);
+  --sidebar: var(--bg-dark);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--fg);
+  --sidebar-primary-foreground: var(--bg-darker);
+  --sidebar-accent: var(--bg-darker);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--fg-dim);
 }
 
-/* Override dark class to use same palette — single theme */
+/* ── Violet-Indigo Theme ── */
+[data-theme="violet-indigo"] {
+  color-scheme: dark;
+  --radius: 0;
+
+  /* Background ramp (deep violet-indigo) */
+  --bg: #3A28B0;
+  --bg-dark: #2C1E8A;
+  --bg-darker: #1F1566;
+  --bg-deep: #150E45;
+  --bg-light: #5040C8;
+  --bg-lighter: #6A5CD8;
+
+  /* Foreground (white with opacity for hierarchy) */
+  --fg: #FFFFFF;
+  --fg-muted: rgba(255, 255, 255, 0.70);
+  --fg-dim: rgba(255, 255, 255, 0.40);
+
+  /* Borders (white with opacity) */
+  --border: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.30);
+
+  /* Semantic status */
+  --alive: #5AE87A;
+  --warn: #E8D560;
+  --dead: #FF5555;
+
+  /* Font */
+  --font: 'JetBrains Mono', monospace;
+
+  /* Shadcn bridge — map to design system variables */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--bg-dark);
+  --card-foreground: var(--fg);
+  --popover: var(--bg-dark);
+  --popover-foreground: var(--fg);
+  --primary: var(--fg);
+  --primary-foreground: var(--bg-darker);
+  --secondary: var(--bg-darker);
+  --secondary-foreground: var(--fg);
+  --muted: var(--bg-dark);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--bg-dark);
+  --accent-foreground: var(--fg);
+  --destructive: var(--dead);
+  --destructive-foreground: var(--fg);
+  --input: var(--border-strong);
+  --ring: var(--fg-dim);
+  --chart-1: var(--alive);
+  --chart-2: var(--warn);
+  --chart-3: var(--dead);
+  --chart-4: var(--bg-light);
+  --chart-5: var(--bg-lighter);
+  --sidebar: var(--bg-dark);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--fg);
+  --sidebar-primary-foreground: var(--bg-darker);
+  --sidebar-accent: var(--bg-darker);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--fg-dim);
+}
+
+/* ── Earth Theme ── */
+[data-theme="earth"] {
+  color-scheme: dark;
+  --radius: 0;
+
+  /* Background ramp (mahogany/brown) */
+  --bg: #2D1610;
+  --bg-dark: #231210;
+  --bg-darker: #1A0D0A;
+  --bg-deep: #120806;
+  --bg-light: #4A3428;
+  --bg-lighter: #5E4438;
+
+  /* Foreground (bone ivory with opacity for hierarchy) */
+  --fg: #E8E0D0;
+  --fg-muted: rgba(232, 224, 208, 0.68);
+  --fg-dim: rgba(232, 224, 208, 0.40);
+
+  /* Borders (ivory with opacity) */
+  --border: rgba(232, 224, 208, 0.14);
+  --border-strong: rgba(232, 224, 208, 0.26);
+
+  /* Semantic status */
+  --alive: #6B7450;
+  --warn: #8B7435;
+  --dead: #B5634B;
+
+  /* Font */
+  --font: 'JetBrains Mono', monospace;
+
+  /* Shadcn bridge — map to design system variables */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--bg-dark);
+  --card-foreground: var(--fg);
+  --popover: var(--bg-dark);
+  --popover-foreground: var(--fg);
+  --primary: var(--fg);
+  --primary-foreground: var(--bg-darker);
+  --secondary: var(--bg-darker);
+  --secondary-foreground: var(--fg);
+  --muted: var(--bg-dark);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--bg-dark);
+  --accent-foreground: var(--fg);
+  --destructive: var(--dead);
+  --destructive-foreground: var(--fg);
+  --input: var(--border-strong);
+  --ring: var(--fg-dim);
+  --chart-1: var(--alive);
+  --chart-2: var(--warn);
+  --chart-3: var(--dead);
+  --chart-4: var(--bg-light);
+  --chart-5: var(--bg-lighter);
+  --sidebar: var(--bg-dark);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--fg);
+  --sidebar-primary-foreground: var(--bg-darker);
+  --sidebar-accent: var(--bg-darker);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--fg-dim);
+}
+
+/* Override dark class to use theme-aware palette (inherits --border from :root/data-theme) */
 .dark {
-  --background: #C4878E;
-  --foreground: #FFFFFF;
-  --card: #B07078;
-  --card-foreground: #FFFFFF;
-  --popover: #B07078;
-  --popover-foreground: #FFFFFF;
-  --primary: #FFFFFF;
-  --primary-foreground: #8E5A64;
-  --secondary: #8E5A64;
-  --secondary-foreground: #FFFFFF;
-  --muted: #B07078;
-  --muted-foreground: rgba(255, 255, 255, 0.68);
-  --accent: #B07078;
-  --accent-foreground: #FFFFFF;
-  --destructive: #FF6060;
-  --destructive-foreground: #FFFFFF;
-  --border: rgba(255, 255, 255, 0.18);
-  --input: rgba(255, 255, 255, 0.32);
-  --ring: rgba(255, 255, 255, 0.40);
-  --chart-1: #82E88A;
-  --chart-2: #E8D560;
-  --chart-3: #FF6060;
-  --chart-4: #D4A0A6;
-  --chart-5: #E2BCC0;
-  --sidebar: #B07078;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FFFFFF;
-  --sidebar-primary-foreground: #8E5A64;
-  --sidebar-accent: #8E5A64;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.18);
-  --sidebar-ring: rgba(255, 255, 255, 0.40);
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--bg-dark);
+  --card-foreground: var(--fg);
+  --popover: var(--bg-dark);
+  --popover-foreground: var(--fg);
+  --primary: var(--fg);
+  --primary-foreground: var(--bg-darker);
+  --secondary: var(--bg-darker);
+  --secondary-foreground: var(--fg);
+  --muted: var(--bg-dark);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--bg-dark);
+  --accent-foreground: var(--fg);
+  --destructive: var(--dead);
+  --destructive-foreground: var(--fg);
+  --input: var(--border-strong);
+  --ring: var(--fg-dim);
+  --chart-1: var(--alive);
+  --chart-2: var(--warn);
+  --chart-3: var(--dead);
+  --chart-4: var(--bg-light);
+  --chart-5: var(--bg-lighter);
+  --sidebar: var(--bg-dark);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--fg);
+  --sidebar-primary-foreground: var(--bg-darker);
+  --sidebar-accent: var(--bg-darker);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--fg-dim);
 }
 
 @layer base {
@@ -201,7 +331,7 @@
   }
 }
 
-/* Scrollbars — rose-tinted */
+/* Scrollbars — theme-aware */
 .dark {
   color-scheme: dark;
 }
@@ -216,11 +346,11 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--border-strong);
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.40);
+  background: var(--fg-dim);
 }
 
 /* Auto-hide scrollbar: always reserves space, thumb visible only on hover */
@@ -238,10 +368,10 @@
   background: var(--bg-dark) !important;
 }
 .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: var(--border-strong) !important;
 }
 .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.40) !important;
+  background: var(--fg-dim) !important;
 }
 
 /* Expandable dialog transition for max-width changes */
@@ -608,7 +738,7 @@ a.papierklammer-mention-chip[data-mention-kind="agent"]::before {
 }
 
 .dark .prose :not(pre) > code {
-  background-color: #ffffff0f;
+  background-color: color-mix(in oklab, var(--fg) 6%, transparent);
 }
 
 .papierklammer-markdown {
