@@ -1,0 +1,63 @@
+{
+  "milestone": "tui-controls",
+  "groupId": "tui-controls-vitest",
+  "surface": "tui",
+  "toolsUsed": [
+    "vitest"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-TUI-CTRL-001",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 7,11: reasoning-effort.test.tsx passed for ThreadStartParams modelReasoningEffort field and turn/start modelReasoningEffort wire param.",
+      "reason": "Protocol reasoning-effort coverage passed for type inclusion and Codex request payload propagation."
+    },
+    {
+      "id": "VAL-TUI-CTRL-002",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 15,16,19: reasoning-effort.test.tsx passed for 'r' cycling and StatusBar display behavior.",
+      "reason": "Keyboard toggle cycle and status display assertions passed under focused Vitest execution."
+    },
+    {
+      "id": "VAL-TUI-CTRL-003",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log line 23: reasoning-effort.test.tsx passed for updated modelReasoningEffort on subsequent turn/start call.",
+      "reason": "Test confirms changed reasoning effort is applied to the next turn request."
+    },
+    {
+      "id": "VAL-TUI-CTRL-004",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 5,6,9,12: fast-mode.test.tsx passed for fast-mode toggle/state behavior and status indication.",
+      "reason": "Fast mode key toggle behavior and visible status updates passed."
+    },
+    {
+      "id": "VAL-TUI-CTRL-005",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 18,22,24: fast-mode.test.tsx passed for serviceTier propagation to thread/start and turn/start when enabled, and omission when off.",
+      "reason": "Codex fast-mode parameter wiring passed for enabled/disabled states."
+    },
+    {
+      "id": "VAL-TUI-CTRL-006",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 4,8,10,13,14,17,20,21: settings-overlay.test.tsx passed for opening, displaying values, live adjustments, and closing behavior.",
+      "reason": "Settings overlay correctly renders current configuration and supports specified open/close interactions."
+    },
+    {
+      "id": "VAL-TUI-CTRL-007",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 25,26,27: settings-overlay/fast-mode/reasoning-effort persistence tests passed across multiple message exchanges.",
+      "reason": "Control settings persisted across sequential turns in-session as required."
+    },
+    {
+      "id": "VAL-TUI-CROSS-002",
+      "status": "pass",
+      "evidence": "evidence/tui-controls/tui-controls-vitest/vitest-controls.log lines 28,29: settings-overlay.test.tsx passed for opening overlay during streaming without interrupting stream and retaining model info visibility.",
+      "reason": "Cross-area streaming + settings-overlay interaction behaves as specified."
+    }
+  ],
+  "frictions": [
+    "No dedicated assertion runner exists; used a focused multi-file Vitest invocation to cover all assigned assertion IDs."
+  ],
+  "blockers": [],
+  "summary": "Ran a focused Vitest command over 3 TUI test files; all 8 assigned assertions passed with 26/26 tests passing overall."
+}

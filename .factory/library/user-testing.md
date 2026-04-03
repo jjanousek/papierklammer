@@ -38,3 +38,5 @@
 - Do not modify production code during flow validation; only record observed pass/fail/blocked outcomes.
 - Save the flow report to `.factory/validation/tui-stability/user-testing/flows/<group-id>.json`.
 - Save any supporting logs or command output snippets under mission evidence path for the assigned group.
+- For milestone-focused runs, prefer a focused multi-file command over full-suite execution, e.g.:
+  `pnpm exec vitest run packages/orchestrator-tui/src/__tests__/reasoning-effort.test.tsx packages/orchestrator-tui/src/__tests__/fast-mode.test.tsx packages/orchestrator-tui/src/__tests__/settings-overlay.test.tsx --max-workers=3`

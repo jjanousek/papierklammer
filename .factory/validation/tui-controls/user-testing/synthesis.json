@@ -1,0 +1,31 @@
+{
+  "milestone": "tui-controls",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-TUI-CROSS-002",
+    "VAL-TUI-CTRL-001",
+    "VAL-TUI-CTRL-002",
+    "VAL-TUI-CTRL-003",
+    "VAL-TUI-CTRL-004",
+    "VAL-TUI-CTRL-005",
+    "VAL-TUI-CTRL-006",
+    "VAL-TUI-CTRL-007"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added focused multi-file Vitest command guidance for milestone-scoped TUI assertion validation.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}
