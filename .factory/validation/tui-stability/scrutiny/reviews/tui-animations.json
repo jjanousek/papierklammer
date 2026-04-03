@@ -1,0 +1,22 @@
+{
+  "featureId": "tui-animations",
+  "reviewedAt": "2026-04-03T16:45:23Z",
+  "commitId": "b0b435200d1c06ed778ccc83384c65f71e5027d9",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The implementation satisfies the assigned contract: static thinking indicators in MessageList/InputBar were replaced with ink-spinner, running agents in AgentSidebar now render a spinner while non-running states keep static dots, and rerender-based tests verify spinner unmount behavior when thinking/disabled flips false.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/__tests__/animations.test.tsx",
+        "line": 209,
+        "severity": "non_blocking",
+        "description": "The test named \"full App flow: spinner shows during thinking, stops on completion\" does not actually drive a thinking->completion transition; it only asserts initial no-spinner state and includes unused flow variables, so its title overstates covered behavior."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed handoff, commit diff, transcript skeleton, and skill context for feature tui-animations. Contract behavior is implemented correctly and is adequately covered by focused component tests; one non-blocking test-quality issue was noted in the integration-style test naming/assertions."
+}

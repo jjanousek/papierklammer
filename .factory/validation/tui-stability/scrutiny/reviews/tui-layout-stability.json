@@ -1,0 +1,50 @@
+{
+  "featureId": "tui-layout-stability",
+  "reviewedAt": "2026-04-03T16:32:51Z",
+  "commitId": "4d4c2b3f92bd0c5d62611720bb5c87587fdb4d3b",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The change materially improves TUI stability, but it does not fully satisfy the feature contract as written: fixed bar heights were not implemented for HeaderBar/InputBar, App uses rows-5 instead of rows-3 for middle content, and resize handling clamps rather than resets message scroll offset.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/components/App.tsx",
+        "line": 248,
+        "severity": "blocking",
+        "description": "The feature contract/description requires the middle area height to be `rows - 3`, but this implementation hard-codes `fixedBarHeight = 5` and computes `contentHeight = rows - 5`. This is a direct mismatch against the assigned implementation contract."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/components/HeaderBar.tsx",
+        "line": 18,
+        "severity": "blocking",
+        "description": "VAL-TUI-STAB-001 requires fixed heights for HeaderBar/InputBar/StatusBar, but HeaderBar has only `flexShrink={0}` and no fixed `height`. This leaves header height content-dependent (e.g., long error/status text can wrap), violating the fixed-height requirement."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/components/MessageList.tsx",
+        "line": 151,
+        "severity": "blocking",
+        "description": "On terminal resize, scroll offset is clamped (`Math.min(prev, maxOffset)`) rather than reset. The feature description explicitly requires resize to reset scroll offset; preserving prior offset when user-scrolled does not meet that requirement."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "Ink-testing-library stdout behavior relevant to this feature (columns as getter, no rows by default) is missing from shared testing knowledge.",
+      "evidence": "worker-transcripts.jsonl (session 7138cf1d-708a-4fcc-8c2f-f54e837b5ffc) shows explicit investigation and workaround for missing `rows`; .factory/library/testing.md does not document this TUI-specific constraint."
+    },
+    {
+      "area": "skills",
+      "observation": "The `tui-worker` skill says to write tests first, but the transcript shows implementation work started before feature-specific tests were added.",
+      "evidence": ".factory/skills/tui-worker/SKILL.md step 3 says \"Write tests FIRST\"; transcript skeleton shows `Create useTerminalSize.ts` before creating `layout-stability.test.tsx`."
+    },
+    {
+      "area": "conventions",
+      "observation": "Validation/skill language around \"1-row fixed bars\" and `rows - 3` does not align cleanly with Ink border rendering semantics, which caused implementation churn and divergence.",
+      "evidence": "validation-contract.md VAL-TUI-STAB-001/002 requires fixed heights and rows-3; commit App.tsx uses `fixedBarHeight = 5` with comments accounting for border rows, and transcript records this conflict."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "I reviewed the feature record, handoff, commit diff, transcript skeleton, and skill. The implementation is directionally correct and improves layout behavior, but it does not fully satisfy the stated contract requirements (fixed heights, rows-3 middle area, and resize scroll reset), so this review is marked fail."
+}

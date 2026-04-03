@@ -1,0 +1,28 @@
+{
+  "featureId": "tui-message-flow-fix",
+  "reviewedAt": "2026-04-03T16:31:49Z",
+  "commitId": "63f6172b1c37e9cf19a256114b292477ba34424c",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The implementation replaces stale threadId closure usage with a ref-backed value in useCodex, adds defensive error surfacing for missing client state, and adds targeted message-flow tests covering sequential turns and send-failure recovery. Assigned expected behavior is satisfied.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/components/App.tsx",
+        "line": 230,
+        "severity": "non_blocking",
+        "description": "The handleSubmit catch safety-net checks `if (chat.isThinking)` using a closure value captured before `chat.sendMessage` updates state, so this fallback may not run when a rejection occurs immediately. Consider removing the guard or reading latest thinking state from a ref."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `tui-worker` skill requires TDD order ('Write tests FIRST'), but the transcript shows code edits before new tests were created while `skillFeedback.followedProcedure` remained true. This suggests procedure adherence criteria are unclear.",
+      "evidence": "Transcript skeleton for workerSessionId 70ad0371-76e5-407d-9467-702c9e2332b6 shows Edit calls for useCodex.ts and App.tsx before Create of packages/orchestrator-tui/src/__tests__/message-flow.test.tsx."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed feature tui-message-flow-fix by inspecting feature metadata, worker handoff/transcript skeleton, skill guidance, and commit 63f6172b1c37e9cf19a256114b292477ba34424c diff. The fix satisfies the message-flow contract and test coverage expectations; one non-blocking robustness caveat was noted in App.tsx catch fallback logic."
+}

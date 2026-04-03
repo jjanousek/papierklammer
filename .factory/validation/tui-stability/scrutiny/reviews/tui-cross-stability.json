@@ -1,0 +1,15 @@
+{
+  "featureId": "tui-cross-stability",
+  "reviewedAt": "2026-04-03T16:31:09Z",
+  "commitId": "c000eeddea47364f8eb760cc8cccc7b0b48db282",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Reviewed the feature record, handoff, worker transcript skeleton, and commit diff. The change adds a dedicated cross-stability test suite covering resize during thinking, response completion after resize, mid-stream resize handling, multi-resize stress, and follow-up message flow after a resized turn. The scenarios map to the feature contract and expected behavior, and no high-confidence actionable defects were identified in the reviewed implementation.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Feature tui-cross-stability passes scrutiny: the added tests comprehensively exercise VAL-TUI-CROSS-001 behaviors and the full send→resize→complete→send-again flow, with no blocking or non-blocking issues found from the reviewed evidence."
+}

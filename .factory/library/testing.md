@@ -8,3 +8,12 @@
   3. `delete(companies)`
 
 Without this ordering, cleanup can fail on FK constraints when tests remove companies directly.
+
+## Ink testing-library terminal size behavior (TUI)
+
+- In `ink-testing-library`, the mocked stdout commonly exposes `columns`, but `rows` may be missing unless explicitly defined in tests.
+- For resize/layout tests in `packages/orchestrator-tui`, explicitly define both dimensions on the mocked stdout object (including a getter for `rows` when needed by component hooks).
+- Practical pattern:
+  - set `stdout.columns = <value>`
+  - define `rows` with `Object.defineProperty(stdout, "rows", { get: () => currentRows, configurable: true })`
+  - emit `stdout.emit("resize")` after changing dimensions
