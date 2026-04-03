@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
+import Spinner from "ink-spinner";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
 const STATUS_DOT: Record<string, { symbol: string; color: string }> = {
@@ -96,12 +97,17 @@ export function AgentSidebar({
             const idx = scrollOffset + visIdx;
             const dot = statusDot(agent.status);
             const isSelected = idx === selectedIndex;
+            const isRunning = agent.status === "running";
             return (
               <Text
                 key={`${agent.agentId}:${idx}`}
                 inverse={isSelected && focused}
               >
-                <Text color={dot.color}>{dot.symbol}</Text>{" "}
+                {isRunning ? (
+                  <Text color={dot.color}><Spinner type="dots" /></Text>
+                ) : (
+                  <Text color={dot.color}>{dot.symbol}</Text>
+                )}{" "}
                 {agent.name || agent.agentId} ({agent.status})
               </Text>
             );

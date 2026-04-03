@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text } from "ink";
+import Spinner from "ink-spinner";
 import TextInput from "ink-text-input";
 
 export interface InputBarProps {
@@ -63,7 +64,7 @@ export function InputBar({
       flexShrink={0}
     >
       {disabled ? (
-        <Text dimColor>⠋ Waiting for response...</Text>
+        <Text dimColor><Spinner type="dots" /> Waiting for response...</Text>
       ) : (
         <Box>
           <Text color="green">{">"} </Text>

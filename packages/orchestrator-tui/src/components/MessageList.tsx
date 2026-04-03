@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
+import Spinner from "ink-spinner";
 import { CommandBlock } from "./CommandBlock.js";
 import type { ChatMessage, CommandItem } from "../hooks/useChat.js";
 
@@ -246,7 +247,7 @@ export function MessageList({
                   <Text color="cyan" bold>
                     Orchestrator:{" "}
                   </Text>
-                  <Text dimColor>⠋ thinking...</Text>
+                  <Text dimColor><Spinner type="dots" /> thinking...</Text>
                 </Text>
               ) : streamingText ? (
                 <Box flexDirection="column">
