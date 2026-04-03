@@ -46,6 +46,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
 
   const clientRef = useRef<CodexClient | null>(null);
   const turnIdRef = useRef<string | null>(null);
+  const threadIdRef = useRef<string | null>(null);
   const optsRef = useRef(opts);
   optsRef.current = opts;
 
@@ -91,16 +92,21 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
 
   const sendMessage = useCallback(async (text: string, baseInstructions?: string): Promise<void> => {
     const client = clientRef.current;
-    if (!client) return;
+    if (!client) {
+      const err = new Error("Codex client is not available");
+      optsRef.current.onError?.(err);
+      throw err;
+    }
 
     try {
-      let tid = threadId;
+      let tid = threadIdRef.current;
 
       // Create thread on first message
       if (!tid) {
         tid = await client.startThread({
           ...(baseInstructions ? { baseInstructions } : {}),
         });
+        threadIdRef.current = tid;
         setThreadId(tid);
       }
 
@@ -115,11 +121,11 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       );
       throw error;
     }
-  }, [threadId]);
+  }, []);
 
   const interruptTurn = useCallback(async (): Promise<void> => {
     const client = clientRef.current;
-    const tid = threadId;
+    const tid = threadIdRef.current;
     const turnId = turnIdRef.current;
 
     if (!client || !tid || !turnId) return;
@@ -127,7 +133,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     await client.interrupt(tid, turnId);
     turnIdRef.current = null;
     setConnectionState("connected");
-  }, [threadId]);
+  }, []);
 
   return {
     connectionState,

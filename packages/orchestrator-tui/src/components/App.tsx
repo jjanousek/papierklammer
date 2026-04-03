@@ -222,12 +222,20 @@ export function App({
     (text: string) => {
       chat.sendMessage(text);
       if (codexEnabled) {
-        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS).catch(() => {
-          // useCodex reports the failure via onError; keep the UI alive.
+        void codex.sendMessage(text, ORCHESTRATOR_INSTRUCTIONS).catch((error: unknown) => {
+          // useCodex already reports the failure via onError callback which
+          // calls chat.onError (resets isThinking, shows error message).
+          // This catch prevents unhandled rejection but is a safety net —
+          // if onError somehow wasn't called, reset isThinking here too.
+          if (chat.isThinking) {
+            chat.onError(
+              error instanceof Error ? error.message : "Send failed",
+            );
+          }
         });
       }
     },
-    [chat.sendMessage, codexEnabled, codex.sendMessage],
+    [chat.sendMessage, chat.onError, chat.isThinking, codexEnabled, codex.sendMessage],
   );
 
   const handleDismissHelp = useCallback(() => {
