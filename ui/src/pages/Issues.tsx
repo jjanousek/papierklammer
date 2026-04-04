@@ -7,6 +7,7 @@ import { projectsApi } from "../api/projects";
 import { heartbeatsApi } from "../api/heartbeats";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import { queryKeys } from "../lib/queryKeys";
 import { createIssueDetailLocationState } from "../lib/issueDetailBreadcrumb";
 import { EmptyState } from "../components/EmptyState";
@@ -15,7 +16,7 @@ import { CircleDot } from "lucide-react";
 
 export function Issues() {
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
-  const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
+  const { companies, selectedCompanyId, selectionSource, setSelectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -87,9 +88,18 @@ export function Issues() {
   }, [setBreadcrumbs]);
 
   useEffect(() => {
-    if (!routeCompanyId || routeCompanyId === selectedCompanyId) return;
+    if (
+      !routeCompanyId ||
+      !shouldSyncCompanySelectionFromRoute({
+        selectionSource,
+        selectedCompanyId,
+        routeCompanyId,
+      })
+    ) {
+      return;
+    }
     setSelectedCompanyId(routeCompanyId, { source: "route_sync" });
-  }, [routeCompanyId, selectedCompanyId, setSelectedCompanyId]);
+  }, [routeCompanyId, selectedCompanyId, selectionSource, setSelectedCompanyId]);
 
   const { data: issues, isLoading, error } = useQuery({
     queryKey: resolvedCompanyId

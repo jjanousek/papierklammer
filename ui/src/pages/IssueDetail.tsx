@@ -13,6 +13,7 @@ import { usePanel } from "../context/PanelContext";
 import { useToast } from "../context/ToastContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { assigneeValueFromSelection, suggestedCommentAssigneeValue } from "../lib/assignees";
+import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import { queryKeys } from "../lib/queryKeys";
 import { createIssueDetailPath, readIssueDetailBreadcrumb } from "../lib/issueDetailBreadcrumb";
 import {
@@ -211,7 +212,7 @@ function ActorIdentity({ evt, agentMap }: { evt: ActivityEvent; agentMap: Map<st
 
 export function IssueDetail() {
   const { companyPrefix, issueId } = useParams<{ companyPrefix?: string; issueId: string }>();
-  const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
+  const { companies, selectedCompanyId, selectionSource, setSelectedCompanyId } = useCompany();
   const { openPanel, closePanel, panelVisible, setPanelVisible } = usePanel();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
@@ -798,9 +799,18 @@ export function IssueDetail() {
 
   useEffect(() => {
     const nextCompanyId = issue?.companyId ?? routeCompanyId;
-    if (!nextCompanyId || nextCompanyId === selectedCompanyId) return;
+    if (
+      !nextCompanyId ||
+      !shouldSyncCompanySelectionFromRoute({
+        selectionSource,
+        selectedCompanyId,
+        routeCompanyId: nextCompanyId,
+      })
+    ) {
+      return;
+    }
     setSelectedCompanyId(nextCompanyId, { source: "route_sync" });
-  }, [issue?.companyId, routeCompanyId, selectedCompanyId, setSelectedCompanyId]);
+  }, [issue?.companyId, routeCompanyId, selectedCompanyId, selectionSource, setSelectedCompanyId]);
 
   // Redirect to identifier-based URL if navigated via UUID
   useEffect(() => {

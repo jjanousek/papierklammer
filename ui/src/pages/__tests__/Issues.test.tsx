@@ -48,6 +48,7 @@ const mocks = vi.hoisted(() => {
   return {
     companies,
     selectedCompanyId: "company-a",
+    selectionSource: "route_sync" as "manual" | "route_sync" | "bootstrap",
     setSelectedCompanyId: vi.fn(),
     setBreadcrumbs: vi.fn(),
     invalidateQueries: vi.fn(),
@@ -87,6 +88,7 @@ vi.mock("../../context/CompanyContext", () => ({
   useCompany: () => ({
     companies: mocks.companies,
     selectedCompanyId: mocks.selectedCompanyId,
+    selectionSource: mocks.selectionSource,
     setSelectedCompanyId: mocks.setSelectedCompanyId,
   }),
 }));
@@ -138,6 +140,7 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   mocks.selectedCompanyId = "company-a";
+  mocks.selectionSource = "route_sync";
   mocks.setSelectedCompanyId.mockReset();
   mocks.setBreadcrumbs.mockReset();
   mocks.invalidateQueries.mockReset();
@@ -169,5 +172,17 @@ describe("Issues", () => {
     expect(mocks.liveRunsForCompany).toHaveBeenCalledWith("company-b");
     expect(mocks.setSelectedCompanyId).toHaveBeenCalledWith("company-b", { source: "route_sync" });
     expect(mocks.issuesList).not.toHaveBeenCalledWith("company-a", expect.anything());
+  });
+
+  it("does not snap a manual company switch back to the stale route company", () => {
+    mocks.selectedCompanyId = "company-a";
+    mocks.selectionSource = "manual";
+
+    act(() => {
+      root.render(<Issues />);
+    });
+
+    expect(mocks.issuesList).toHaveBeenCalledWith("company-b", { participantAgentId: undefined });
+    expect(mocks.setSelectedCompanyId).not.toHaveBeenCalled();
   });
 });

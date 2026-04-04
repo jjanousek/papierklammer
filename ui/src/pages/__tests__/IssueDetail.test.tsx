@@ -155,6 +155,7 @@ const mocks = vi.hoisted(() => {
     agents,
     projects,
     selectedCompanyId: "company-a",
+    selectionSource: "route_sync" as "manual" | "route_sync" | "bootstrap",
     setSelectedCompanyId: vi.fn(),
     navigate: vi.fn(),
     setBreadcrumbs: vi.fn(),
@@ -272,6 +273,7 @@ vi.mock("../../context/CompanyContext", () => ({
   useCompany: () => ({
     companies: mocks.companies,
     selectedCompanyId: mocks.selectedCompanyId,
+    selectionSource: mocks.selectionSource,
     setSelectedCompanyId: mocks.setSelectedCompanyId,
   }),
 }));
@@ -494,6 +496,7 @@ async function flush() {
 
 beforeEach(() => {
   mocks.selectedCompanyId = "company-a";
+  mocks.selectionSource = "route_sync";
   mocks.setSelectedCompanyId.mockReset();
   mocks.navigate.mockReset();
   mocks.setBreadcrumbs.mockReset();
@@ -561,6 +564,22 @@ describe("IssueDetail", () => {
 
     expect(mocks.issuesUploadAttachment).toHaveBeenCalledWith("company-b", "BET-7", file);
     expect(mocks.issuesUploadAttachment).not.toHaveBeenCalledWith("company-a", "BET-7", file);
+  });
+
+  it("does not snap a manual company switch back to the deep-linked company", async () => {
+    mocks.selectedCompanyId = "company-a";
+    mocks.selectionSource = "manual";
+
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(mocks.issuesGet).toHaveBeenCalledWith("BET-7");
+    expect(mocks.issuesList).toHaveBeenCalledWith("company-b");
+    expect(mocks.agentsList).toHaveBeenCalledWith("company-b");
+    expect(mocks.projectsList).toHaveBeenCalledWith("company-b");
+    expect(mocks.setSelectedCompanyId).not.toHaveBeenCalled();
   });
 
   it("surfaces work products and completed run results in the issue flow", async () => {
