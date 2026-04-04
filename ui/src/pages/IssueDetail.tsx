@@ -30,6 +30,7 @@ import { InlineEditor } from "../components/InlineEditor";
 import { CommentThread } from "../components/CommentThread";
 import { IssueDocumentsSection } from "../components/IssueDocumentsSection";
 import { IssueProperties } from "../components/IssueProperties";
+import { IssueReviewSurfaces } from "../components/IssueReviewSurfaces";
 import { IssueWorkspaceCard } from "../components/IssueWorkspaceCard";
 import { LiveRunWidget } from "../components/LiveRunWidget";
 import type { MentionOption } from "../components/MarkdownEditor";
@@ -288,6 +289,13 @@ export function IssueDetail() {
   });
 
   const hasLiveRuns = (liveRuns ?? []).length > 0 || !!activeRun;
+  const { data: workProducts } = useQuery({
+    queryKey: queryKeys.issues.workProducts(issueId!),
+    queryFn: () => issuesApi.listWorkProducts(issueId!),
+    enabled: !!issueId,
+    refetchInterval: hasLiveRuns ? 3000 : 10000,
+  });
+  const visibleWorkProducts = workProducts ?? issue?.workProducts ?? [];
   const runningIssueRun = useMemo(
     () => (
       activeRun?.status === "running"
@@ -524,6 +532,7 @@ export function IssueDetail() {
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.approvals(issueId!) });
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.attachments(issueId!) });
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.documents(issueId!) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.issues.workProducts(issueId!) });
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.liveRuns(issueId!) });
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.activeRun(issueId!) });
     if (resolvedCompanyId) {
@@ -1139,6 +1148,13 @@ export function IssueDetail() {
           return attachment.contentPath;
         }}
         extraActions={!hasAttachments ? attachmentUploadButton : undefined}
+      />
+
+      <IssueReviewSurfaces
+        companyId={issue.companyId}
+        workProducts={visibleWorkProducts}
+        runs={linkedRuns ?? []}
+        agentMap={agentMap}
       />
 
       {hasAttachments ? (

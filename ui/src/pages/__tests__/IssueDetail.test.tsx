@@ -3,7 +3,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Agent, Company, Issue, Project } from "@papierklammer/shared";
+import type { Agent, Company, Issue, IssueWorkProduct, Project } from "@papierklammer/shared";
+import type { RunForIssue } from "../../api/activity";
 
 const mocks = vi.hoisted(() => {
   const companies: Company[] = [
@@ -170,6 +171,7 @@ const mocks = vi.hoisted(() => {
     issuesListComments: vi.fn(() => []),
     issuesListApprovals: vi.fn(() => []),
     issuesListAttachments: vi.fn(() => []),
+    issuesListWorkProducts: vi.fn((): IssueWorkProduct[] => []),
     issuesMarkRead: vi.fn(() => ({ id: "issue-1", lastReadAt: new Date("2026-04-04T00:00:00.000Z") })),
     issuesUploadAttachment: vi.fn((companyId: string, issueId: string, file: File) => ({
       id: "attachment-1",
@@ -190,7 +192,7 @@ const mocks = vi.hoisted(() => {
       contentPath: `/files/${file.name}`,
     })),
     activityForIssue: vi.fn(() => []),
-    activityRunsForIssue: vi.fn(() => []),
+    activityRunsForIssue: vi.fn((): RunForIssue[] => []),
     liveRunsForIssue: vi.fn(() => []),
     activeRunForIssue: vi.fn(() => null),
     agentsList: vi.fn(() => agents),
@@ -298,6 +300,7 @@ vi.mock("../../api/issues", () => ({
     listComments: mocks.issuesListComments,
     listApprovals: mocks.issuesListApprovals,
     listAttachments: mocks.issuesListAttachments,
+    listWorkProducts: mocks.issuesListWorkProducts,
     markRead: mocks.issuesMarkRead,
     uploadAttachment: mocks.issuesUploadAttachment,
     update: vi.fn(() => mocks.issue),
@@ -362,6 +365,13 @@ vi.mock("../../components/IssueWorkspaceCard", () => ({
 
 vi.mock("../../components/LiveRunWidget", () => ({
   LiveRunWidget: () => <div data-testid="live-run-widget" />,
+}));
+
+vi.mock("../../components/transcript/useLiveRunTranscripts", () => ({
+  useLiveRunTranscripts: () => ({
+    transcriptByRun: new Map(),
+    hasOutputForRun: () => false,
+  }),
 }));
 
 vi.mock("../../components/ScrollToBottom", () => ({
@@ -500,6 +510,7 @@ beforeEach(() => {
   mocks.issuesListComments.mockClear();
   mocks.issuesListApprovals.mockClear();
   mocks.issuesListAttachments.mockClear();
+  mocks.issuesListWorkProducts.mockClear();
   mocks.issuesMarkRead.mockClear();
   mocks.issuesUploadAttachment.mockClear();
   mocks.activityForIssue.mockClear();
@@ -550,5 +561,63 @@ describe("IssueDetail", () => {
 
     expect(mocks.issuesUploadAttachment).toHaveBeenCalledWith("company-b", "BET-7", file);
     expect(mocks.issuesUploadAttachment).not.toHaveBeenCalledWith("company-a", "BET-7", file);
+  });
+
+  it("surfaces work products and completed run results in the issue flow", async () => {
+    const completedRun: RunForIssue = {
+      runId: "run-12345678",
+      status: "succeeded",
+      agentId: "agent-b",
+      startedAt: "2026-04-04T00:02:00.000Z",
+      finishedAt: "2026-04-04T00:06:00.000Z",
+      createdAt: "2026-04-04T00:01:00.000Z",
+      invocationSource: "manual",
+      usageJson: null,
+      resultJson: {
+        summary: "Prepared a deterministic CLI release report for board review.",
+      },
+    };
+
+    const workProduct: IssueWorkProduct = {
+      id: "wp-1",
+      companyId: "company-b",
+      projectId: "project-b",
+      issueId: "issue-1",
+      executionWorkspaceId: null,
+      runtimeServiceId: null,
+      type: "document",
+      provider: "paperclip",
+      externalId: null,
+      title: "Release report",
+      url: "https://example.test/release-report",
+      status: "ready_for_review",
+      reviewState: "needs_board_review",
+      isPrimary: true,
+      healthStatus: "healthy",
+      summary: "A review-ready markdown report generated from the demo-repo run.",
+      metadata: null,
+      createdByRunId: "run-12345678",
+      createdAt: new Date("2026-04-04T00:05:00.000Z"),
+      updatedAt: new Date("2026-04-04T00:06:00.000Z"),
+    };
+
+    mocks.issuesGet.mockReturnValue({
+      ...mocks.issue,
+      workProducts: [workProduct],
+    });
+    mocks.issuesListWorkProducts.mockReturnValue([workProduct]);
+    mocks.activityRunsForIssue.mockReturnValue([completedRun]);
+
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(mocks.issuesListWorkProducts).toHaveBeenCalledWith("BET-7");
+    expect(container.textContent).toContain("Review surfaces");
+    expect(container.textContent).toContain("Release report");
+    expect(container.textContent).toContain("A review-ready markdown report generated from the demo-repo run.");
+    expect(container.textContent).toContain("Prepared a deterministic CLI release report for board review.");
+    expect(container.textContent).toContain("Inspect run");
   });
 });
