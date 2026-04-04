@@ -229,6 +229,32 @@ describe("OnboardingWizard", () => {
     expect(getButton("Next").disabled).toBe(true);
   });
 
+  it("keeps Task and Launch tabs inaccessible after codex validation fails", async () => {
+    mocks.agentsTestEnvironment.mockResolvedValue(makeEnvResult("fail"));
+
+    await click("Codex");
+    await flush();
+    await click("Next");
+    await flush();
+
+    const taskTab = getButton("Task");
+    const launchTab = getButton("Launch");
+
+    expect(taskTab.disabled).toBe(true);
+    expect(launchTab.disabled).toBe(true);
+
+    await act(async () => {
+      taskTab.click();
+      launchTab.click();
+    });
+    await flush();
+
+    expect(document.body.textContent).toContain("Create your first agent");
+    expect(document.body.textContent).not.toContain("Give it something to do");
+    expect(document.body.textContent).not.toContain("Ready to launch");
+    expect(mocks.agentsCreate).not.toHaveBeenCalled();
+  });
+
   it("wakes the seeded company loop when launching onboarding", async () => {
     mocks.agentsTestEnvironment.mockResolvedValue(makeEnvResult("pass"));
 

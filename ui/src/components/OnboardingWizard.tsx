@@ -159,6 +159,12 @@ export function OnboardingWizard() {
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
   const [createdIssueId, setCreatedIssueId] = useState<string | null>(null);
   const [createdIssueRef, setCreatedIssueRef] = useState<string | null>(null);
+  const maxAccessibleStep = useMemo<Step>(() => {
+    if (!createdCompanyId) return 1;
+    if (!createdAgentId) return 2;
+    if (!taskTitle.trim()) return 3;
+    return 4;
+  }, [createdCompanyId, createdAgentId, taskTitle]);
 
   useEffect(() => {
     setRouteDismissed(false);
@@ -195,6 +201,12 @@ export function OnboardingWizard() {
   useEffect(() => {
     if (step === 3) autoResizeTextarea();
   }, [step, taskDescription, autoResizeTextarea]);
+
+  useEffect(() => {
+    if (step > maxAccessibleStep) {
+      setStep(maxAccessibleStep);
+    }
+  }, [step, maxAccessibleStep]);
 
   const {
     data: adapterModels,
@@ -702,12 +714,19 @@ export function OnboardingWizard() {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => setStep(s)}
+                    onClick={() => {
+                      if (s <= maxAccessibleStep) {
+                        setStep(s);
+                      }
+                    }}
+                    disabled={loading || s > maxAccessibleStep}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px cursor-pointer",
                       s === step
                         ? "border-foreground text-foreground"
-                        : "border-transparent text-muted-foreground hover:text-foreground/70 hover:border-border"
+                        : "border-transparent text-muted-foreground hover:text-foreground/70 hover:border-border",
+                      s > maxAccessibleStep &&
+                        "cursor-not-allowed opacity-40 hover:text-muted-foreground hover:border-transparent"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
