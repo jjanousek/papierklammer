@@ -22,6 +22,12 @@ const updatePrioritySchema = z.object({
   priority: z.string().min(1),
 });
 
+const correctiveActionRequestSchema = z
+  .object({
+    payload: z.record(z.unknown()).optional(),
+  })
+  .strict();
+
 /**
  * Orchestrator API routes.
  *
@@ -149,7 +155,10 @@ export function orchestratorRoutes(db: Db) {
    * Force-unblocks an issue: releases stale lease, clears
    * executionRunId lock, rejects stale intents.
    */
-  router.post("/orchestrator/issues/:id/unblock", async (req, res) => {
+  router.post(
+    "/orchestrator/issues/:id/unblock",
+    validate(correctiveActionRequestSchema),
+    async (req, res) => {
     assertBoard(req);
     const issueId = req.params.id as string;
     const existing = await issueSvc.getById(issueId);
@@ -157,10 +166,12 @@ export function orchestratorRoutes(db: Db) {
       throw notFound("Issue not found");
     }
     assertCompanyAccess(req, existing.companyId);
+    const payload = req.body.payload ?? null;
 
     // Release active lease if any
     let leaseReleased = false;
     const activeLease = await leaseMgr.getActiveLease(issueId);
+    const activeLeaseId = activeLease?.id ?? null;
     if (activeLease) {
       try {
         await leaseMgr.releaseLease(activeLease.id, "force_unblock");
@@ -184,10 +195,20 @@ export function orchestratorRoutes(db: Db) {
 
     res.json({
       issue: updated,
+      payload,
       leaseReleased,
       rejectedIntents,
+      recovery: {
+        issueId,
+        companyId: existing.companyId,
+        releasedLeaseId: leaseReleased ? activeLeaseId : null,
+        clearedExecutionRunId: existing.executionRunId ?? null,
+        clearedCheckoutRunId: existing.checkoutRunId ?? null,
+        rejectedIntentCount: rejectedIntents,
+      },
     });
-  });
+    },
+  );
 
   /**
    * DELETE /api/orchestrator/stale/runs?companyId=xxx
@@ -253,9 +274,13 @@ export function orchestratorRoutes(db: Db) {
    *
    * Creates a manager_escalation intent for the agent.
    */
-  router.post("/orchestrator/agents/:id/nudge", async (req, res) => {
+  router.post(
+    "/orchestrator/agents/:id/nudge",
+    validate(correctiveActionRequestSchema),
+    async (req, res) => {
     assertBoard(req);
     const agentId = req.params.id as string;
+    const payload = req.body.payload ?? null;
 
     const agent = await orchSvc.getAgent(agentId);
     if (!agent) {
@@ -267,21 +292,25 @@ export function orchestratorRoutes(db: Db) {
       agent.companyId,
       agentId,
     );
-    if (!assignedIssue) {
-      throw badRequest("Agent has no active assigned issues to nudge");
+    if (!assignedIssue?.projectId) {
+      throw badRequest("Agent has no active assigned issues with a project to nudge");
     }
 
     const intent = await intentQueue.createIntent({
       companyId: agent.companyId,
       issueId: assignedIssue.id,
-      projectId: assignedIssue.projectId ?? assignedIssue.id, // fallback
+      projectId: assignedIssue.projectId,
       targetAgentId: agentId,
       intentType: "manager_escalation",
       dedupeKey: `nudge:${agentId}:${assignedIssue.id}`,
     });
 
-    res.status(201).json(intent);
-  });
+    res.status(201).json({
+      ...intent,
+      payload,
+    });
+    },
+  );
 
   return router;
 }

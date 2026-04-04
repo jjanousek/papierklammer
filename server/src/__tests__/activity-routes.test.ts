@@ -12,6 +12,10 @@ const mockActivityService = vi.hoisted(() => ({
   create: vi.fn(),
 }));
 
+const mockHeartbeatService = vi.hoisted(() => ({
+  getRun: vi.fn(),
+}));
+
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
   getByIdentifier: vi.fn(),
@@ -22,10 +26,11 @@ vi.mock("../services/activity.js", () => ({
 }));
 
 vi.mock("../services/index.js", () => ({
+  heartbeatService: () => mockHeartbeatService,
   issueService: () => mockIssueService,
 }));
 
-function createApp() {
+function createApp(actor?: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -35,6 +40,7 @@ function createApp() {
       companyIds: ["company-1"],
       source: "session",
       isInstanceAdmin: false,
+      ...(actor ?? {}),
     };
     next();
   });
@@ -66,5 +72,58 @@ describe("activity routes", () => {
     expect(mockIssueService.getById).not.toHaveBeenCalled();
     expect(mockActivityService.runsForIssue).toHaveBeenCalledWith("company-1", "issue-uuid-1");
     expect(res.body).toEqual([{ runId: "run-1" }]);
+  });
+
+  it("enforces company access on heartbeat-run issue fan-out", async () => {
+    mockHeartbeatService.getRun.mockResolvedValue({
+      id: "run-1",
+      companyId: "company-1",
+    });
+    mockActivityService.issuesForRun.mockResolvedValue([
+      { issueId: "issue-1", title: "Investigate" },
+    ]);
+
+    const res = await request(createApp()).get("/api/heartbeat-runs/run-1/issues");
+
+    expect(res.status).toBe(200);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith("run-1");
+    expect(mockActivityService.issuesForRun).toHaveBeenCalledWith("run-1");
+    expect(res.body).toEqual([{ issueId: "issue-1", title: "Investigate" }]);
+  });
+
+  it("rejects unauthenticated heartbeat-run issue fan-out requests", async () => {
+    mockHeartbeatService.getRun.mockResolvedValue({
+      id: "run-1",
+      companyId: "company-1",
+    });
+
+    const res = await request(
+      createApp({
+        type: "none",
+        source: "none",
+      }),
+    ).get("/api/heartbeat-runs/run-1/issues");
+
+    expect(res.status).toBe(401);
+    expect(mockActivityService.issuesForRun).not.toHaveBeenCalled();
+  });
+
+  it("rejects wrong-company agent access to heartbeat-run issue fan-out", async () => {
+    mockHeartbeatService.getRun.mockResolvedValue({
+      id: "run-1",
+      companyId: "company-1",
+    });
+
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-2",
+        source: "agent_key",
+      }),
+    ).get("/api/heartbeat-runs/run-1/issues");
+
+    expect(res.status).toBe(403);
+    expect(mockActivityService.issuesForRun).not.toHaveBeenCalled();
   });
 });

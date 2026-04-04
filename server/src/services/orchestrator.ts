@@ -1,4 +1,4 @@
-import { and, eq, sql, lte, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import {
   agents,
@@ -22,6 +22,17 @@ const ACTIVE_LEASE_STATES = ["granted", "renewed"];
  * Default stale intent threshold: 1 hour in milliseconds.
  */
 const STALE_INTENT_THRESHOLD_MS = 60 * 60 * 1000;
+
+const ACTIVE_NUDGE_STATUSES = ["in_progress", "blocked", "todo"];
+
+const NUDGE_STATUS_PRIORITY = sql<number>`
+  case
+    when ${issues.status} = 'in_progress' then 0
+    when ${issues.status} = 'blocked' then 1
+    when ${issues.status} = 'todo' then 2
+    else 99
+  end
+`;
 
 export interface AgentOverview {
   id: string;
@@ -331,7 +342,16 @@ export function orchestratorService(db: Db) {
     },
 
     /**
-     * Find an agent's most recent assigned issue (for nudge).
+     * Find an agent's deterministic active assigned issue for nudge.
+     *
+     * Priority order:
+     * 1. in_progress
+     * 2. blocked
+     * 3. todo
+     *
+     * Within a status bucket, prefer the most recently started/updated work.
+     * Backlog-only assignments are intentionally excluded so nudge targets
+     * active work instead of arbitrarily selecting unscheduled backlog items.
      */
     async findAgentAssignedIssue(companyId: string, agentId: string): Promise<AgentAssignedIssue | null> {
       const [assignedIssue] = await db
@@ -344,8 +364,16 @@ export function orchestratorService(db: Db) {
           and(
             eq(issues.companyId, companyId),
             eq(issues.assigneeAgentId, agentId),
-            inArray(issues.status, ["todo", "in_progress", "backlog"]),
+            inArray(issues.status, ACTIVE_NUDGE_STATUSES),
+            isNotNull(issues.projectId),
           ),
+        )
+        .orderBy(
+          NUDGE_STATUS_PRIORITY,
+          sql`${issues.startedAt} desc nulls last`,
+          desc(issues.updatedAt),
+          desc(issues.createdAt),
+          desc(issues.id),
         )
         .limit(1);
 
