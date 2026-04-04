@@ -1,0 +1,52 @@
+{
+  "groupId": "gui-browser-rerun-routine-detail",
+  "testedAt": "2026-04-04T03:34:02.775632+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyRoutePrefix": "WEA",
+    "browserSession": "90954350c057",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C1-002",
+      "title": "RoutineDetail page uses design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to the seeded routine detail route /WEA/routines/2175d9e8-0fa6-4cfd-a0ed-485a3e337525",
+          "expected": "Routine detail page renders for a real routine record",
+          "observed": "The page loaded successfully with title \"Validation Routine \u00b7 Routines \u00b7 Papierklammer\"."
+        },
+        {
+          "action": "Audit rendered classes within the main content area",
+          "expected": "No hardcoded emerald/blue/amber/yellow/green/red or shadow utility classes remain",
+          "observed": "A live DOM audit of the main content found 0 matching hardcoded color/shadow classes; the page rendered with design-system tokens and no visible shadows."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/manual-reruns/routine-detail.png"
+        ],
+        "consoleErrors": "none captured",
+        "network": "Routine detail route loaded successfully in the local browser."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The first Cluster 1 browser run targeted a non-existent /api/routines/new flow because the company had no routines.",
+      "resolved": true,
+      "resolution": "Seeded a real routine via POST /api/companies/:companyId/routines and revalidated the actual /WEA/routines/:routineId page.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C1-002"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Revalidated VAL-GUI-EXP-C1-002 after seeding a routine: pass."
+}

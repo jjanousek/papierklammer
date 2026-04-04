@@ -1,0 +1,175 @@
+{
+  "groupId": "gui-browser-cluster4",
+  "testedAt": "2026-04-04T03:19:37.857870+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyRoutePrefix": "WEA",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "browserSession": "90954350c057__u3",
+    "evidenceDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-design-expansion/gui-browser-cluster4"
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C4-001",
+      "title": "Settings pages use design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open Company Settings from the local app at /WEA/company/settings.",
+          "expected": "Company settings render with design-system styling and no hardcoded green/amber/red/shadow classes.",
+          "observed": "Company Settings rendered with JetBrains Mono styling; DOM audit found no rendered forbidden color/shadow classes."
+        },
+        {
+          "action": "Open /instance/settings/general and inspect the rendered settings navigation.",
+          "expected": "Instance General settings use the same design-system styling.",
+          "observed": "General settings rendered correctly and exposed Experimental and Plugins links; DOM audit found no rendered forbidden classes."
+        },
+        {
+          "action": "Open /instance/settings/experimental and /instance/settings/plugins from the instance settings area.",
+          "expected": "Experimental Settings and Plugin Manager also use the design system.",
+          "observed": "Experimental and Plugin Manager pages rendered with the same theme-aware styling; no rendered forbidden classes were found."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-001-company-settings.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-001-instance-settings-general.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-001-instance-settings-experimental.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-001-instance-settings-plugins.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Document navigations observed for /WEA/company/settings, /instance/settings/general, /instance/settings/experimental, and /instance/settings/plugins."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C4-002",
+      "title": "Projects pages use design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/projects and inspect the project list.",
+          "expected": "Projects list uses design-system colors and avoids hardcoded amber/red/shadow-lg classes.",
+          "observed": "Projects list rendered correctly; DOM audit found no rendered forbidden classes."
+        },
+        {
+          "action": "Follow the actual Onboarding project link from the list page.",
+          "expected": "Project detail page renders with the same design-system styling.",
+          "observed": "Navigated to /WEA/projects/onboarding/issues and the project detail view rendered with no rendered forbidden classes."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-002-projects-list.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-002-project-detail.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Projects list rendered with links to /WEA/projects/onboarding and /WEA/projects/onboarding/issues; detail navigation completed through the in-app project link."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C4-003",
+      "title": "Import/Export pages use design system colors",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Follow the Export link from Company Settings.",
+          "expected": "Company Export page renders with design-system styling.",
+          "observed": "Navigation landed on /company/export and rendered the Not Found page instead of an export screen."
+        },
+        {
+          "action": "Follow the Import link from Company Settings.",
+          "expected": "Company Import page renders with design-system styling.",
+          "observed": "Navigation landed on /company/import and rendered the Not Found page instead of an import screen."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-003-export.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-C4-003-import.png"
+        ],
+        "consoleErrors": "none",
+        "network": "In-app links from Company Settings navigated to /company/export and /company/import, both of which rendered Not Found."
+      },
+      "issues": "Export and Import links are present in Company Settings but currently route to Not Found pages, so the styled export/import surfaces could not be validated."
+    },
+    {
+      "id": "VAL-GUI-EXP-S-001",
+      "title": "Standalone pages use design system basics",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /nonexistent-url in the local app.",
+          "expected": "The standalone Not Found page uses design-system font and color variables and avoids rounded-lg/rounded-md source styling.",
+          "observed": "The app rendered the Not Found page with JetBrains Mono, theme variables (--bg #C4878E / --fg #FFFFFF), and no rendered rounded-lg/rounded-md/rounded-xl classes."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-EXP-S-001-not-found.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Opening /nonexistent-url resulted in the Not Found UI at /nonexistent-url/dashboard."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-CROSS-002",
+      "title": "Dashboard agent navigation returns to themed dashboard",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/dashboard and switch the theme to violet-indigo using the sidebar theme control.",
+          "expected": "Dashboard theme changes to violet-indigo and remains active.",
+          "observed": "Dashboard stayed on /WEA/dashboard with data-theme=violet-indigo and --bg=#3A28B0."
+        },
+        {
+          "action": "Click the Active Executive agent name from the dashboard.",
+          "expected": "Agent detail page opens and keeps the violet-indigo theme.",
+          "observed": "Navigated to /WEA/agents/active-executive/dashboard and the detail page still had data-theme=violet-indigo with --bg=#3A28B0."
+        },
+        {
+          "action": "Navigate back to the dashboard.",
+          "expected": "Dashboard returns with the violet-indigo theme preserved.",
+          "observed": "Returned to /WEA/dashboard and the page still had data-theme=violet-indigo with --bg=#3A28B0."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-CROSS-002-dashboard-before-theme.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-CROSS-002-dashboard-violet.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-CROSS-002-agent-detail-violet.png",
+          "gui-design-expansion/gui-browser-cluster4/VAL-GUI-CROSS-002-dashboard-back-violet.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Observed GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/dashboard during dashboard views and GET /api/agents/active-executive?companyId=fe22e791-2c82-4f79-9e78-f2a908e8e272 on agent detail."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The prompt-listed settings and import/export routes did not match the app's actual rendered links. Company Settings was reachable at /WEA/company/settings, instance settings at /instance/settings/*, and the Company Settings Export/Import links resolved to /company/export and /company/import.",
+      "resolved": true,
+      "resolution": "Followed the actual in-app links where available and recorded the import/export destination mismatch as a failed assertion.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C4-001",
+        "VAL-GUI-EXP-C4-003"
+      ]
+    },
+    {
+      "description": "Opening /nonexistent-url redirected the browser URL to /nonexistent-url/dashboard before rendering the Not Found page.",
+      "resolved": true,
+      "resolution": "Validated the rendered Not Found surface at the final URL and recorded the redirect behavior in the evidence.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-S-001"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 5 assertions: 4 passed and 1 failed. The only failure was VAL-GUI-EXP-C4-003 because the Company Settings Export and Import links currently land on Not Found pages."
+}

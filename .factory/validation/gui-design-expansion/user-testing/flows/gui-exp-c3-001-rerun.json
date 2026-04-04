@@ -1,0 +1,28 @@
+{
+  "milestone": "gui-design-expansion",
+  "groupId": "gui-exp-c3-001-rerun",
+  "surface": "gui",
+  "tool": "agent-browser",
+  "testedAt": "2026-04-04T04:07:10Z",
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C3-001",
+      "status": "pass",
+      "reason": "On /WEA/inbox the archive swipe affordance now uses theme-aware semantic tokens instead of hardcoded green/emerald utilities: DOM inspection showed overlay classes bg-[var(--alive)]/12 and text-[var(--alive)] with no hardcoded green/emerald/red classes and no rounded-xl on the inbox row surface. The same overlay token resolved cleanly across papierklammer, violet-indigo, and earth themes, and screenshots showed the inbox remained legible in each theme. Browser console errors were empty.",
+      "evidence": [
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-inbox-initial-annotated.png",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-inbox-papierklammer.png",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-inbox-violet-indigo.png",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-inbox-earth.png",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-overlay-papierklammer.json",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-overlay-violet-indigo.json",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-overlay-earth.json",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-console-errors.txt",
+        "gui-design-expansion/gui-exp-c3-001-rerun/VAL-GUI-EXP-C3-001-network-requests.txt"
+      ]
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["agent-browser"]
+}

@@ -1,0 +1,100 @@
+{
+  "groupId": "gui-vitest-cross",
+  "testedAt": "2026-04-04T03:08:35Z",
+  "isolation": {
+    "mode": "read-only validation",
+    "milestone": "gui-design-expansion",
+    "flowValidatorGuidance": "Flow Validator Guidance: GUI (vitest)",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "assertions": [
+      "VAL-GUI-CROSS-003"
+    ]
+  },
+  "toolsUsed": [
+    "pnpm",
+    "vitest"
+  ],
+  "commandsRun": [
+    {
+      "command": "pnpm --dir \"/Users/aischool/work/papierklammer_droid\" exec vitest run \"/Users/aischool/work/papierklammer_droid/ui/src/\" \"/Users/aischool/work/papierklammer_droid/packages/orchestrator-tui/\" --max-workers=3 --reporter=verbose",
+      "exitCode": 0,
+      "observedOutput": "Test Files 48 passed; Tests 374 passed; Duration 15.97s; VITEST_EXIT_CODE=0",
+      "evidenceLog": "gui-design-expansion/gui-vitest-cross/VAL-GUI-CROSS-003-vitest.log",
+      "evidenceSummary": "gui-design-expansion/gui-vitest-cross/VAL-GUI-CROSS-003-vitest-summary.json"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-CROSS-003",
+      "title": "All tests pass after changes",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run the required cross-suite Vitest command for ui/src and packages/orchestrator-tui/",
+          "expected": "pnpm exec vitest run ui/src/ packages/orchestrator-tui/ --max-workers=3 exits 0 with the combined GUI+TUI suite passing",
+          "observed": "Command exited 0; 48 test files and 374 tests passed in 15.97s"
+        }
+      ],
+      "evidence": {
+        "commandLog": "gui-design-expansion/gui-vitest-cross/VAL-GUI-CROSS-003-vitest.log",
+        "commandSummary": "gui-design-expansion/gui-vitest-cross/VAL-GUI-CROSS-003-vitest-summary.json",
+        "testedFiles": [
+          "packages/orchestrator-tui/src/__tests__/polish.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/integration.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/message-flow.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/settings-overlay.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/cross-stability.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/reasoning-effort.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/panels.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/fast-mode.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/chat.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/layout-stability.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/codex-client.test.ts",
+          "packages/orchestrator-tui/src/__tests__/useCodex.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/exit.test.tsx",
+          "packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+          "ui/src/lib/zip.test.ts",
+          "packages/orchestrator-tui/src/__tests__/animations.test.tsx",
+          "ui/src/context/ThemeContext.test.ts",
+          "ui/src/components/MarkdownBody.test.tsx",
+          "ui/src/components/transcript/RunTranscriptView.test.tsx",
+          "ui/src/lib/company-portability-sidebar.test.ts",
+          "ui/src/lib/optimistic-issue-comments.test.ts",
+          "ui/src/context/LiveUpdatesProvider.test.ts",
+          "ui/src/styles/__tests__/theme-css-variables.test.ts",
+          "ui/src/lib/inbox.test.ts",
+          "ui/src/lib/project-workspaces-tab.test.ts",
+          "ui/src/lib/mention-aware-link-node.test.ts",
+          "packages/orchestrator-tui/src/__tests__/cli.test.ts",
+          "ui/src/lib/instance-settings.test.ts",
+          "ui/src/lib/mention-deletion.test.ts",
+          "ui/src/lib/company-export-selection.test.ts",
+          "ui/src/lib/onboarding-launch.test.ts",
+          "ui/src/lib/issueDetailBreadcrumb.test.ts",
+          "ui/src/lib/assignees.test.ts",
+          "ui/src/lib/onboarding-route.test.ts",
+          "ui/src/lib/agent-skills-state.test.ts",
+          "ui/src/adapters/transcript.test.ts",
+          "ui/src/hooks/useCompanyPageMemory.test.ts",
+          "ui/src/lib/routine-trigger-patch.test.ts",
+          "ui/src/lib/company-selection.test.ts",
+          "ui/src/lib/onboarding-goal.test.ts",
+          "ui/src/lib/company-routes.test.ts",
+          "ui/src/lib/legacy-agent-config.test.ts",
+          "ui/src/lib/comment-submit-draft.test.ts",
+          "ui/src/components/SwipeToArchive.test.tsx",
+          "ui/src/components/__tests__/StatusIcon.test.tsx",
+          "ui/src/pages/__tests__/Dashboard.test.tsx",
+          "ui/src/components/IssueRow.test.tsx",
+          "ui/src/pages/Inbox.test.tsx"
+        ],
+        "testedCasesCount": 374
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assigned assertion (VAL-GUI-CROSS-003): pass via the required combined GUI+TUI Vitest suite with exit code 0 (48 files, 374 tests)."
+}

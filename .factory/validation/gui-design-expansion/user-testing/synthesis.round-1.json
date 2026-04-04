@@ -1,0 +1,44 @@
+{
+  "milestone": "gui-design-expansion",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 17,
+    "passed": 16,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-GUI-CROSS-001",
+    "VAL-GUI-CROSS-002",
+    "VAL-GUI-CROSS-003",
+    "VAL-GUI-EXP-C1-001",
+    "VAL-GUI-EXP-C1-002",
+    "VAL-GUI-EXP-C1-003",
+    "VAL-GUI-EXP-C2-001",
+    "VAL-GUI-EXP-C2-002",
+    "VAL-GUI-EXP-C2-003",
+    "VAL-GUI-EXP-C2-004",
+    "VAL-GUI-EXP-C3-002",
+    "VAL-GUI-EXP-C3-003",
+    "VAL-GUI-EXP-C4-001",
+    "VAL-GUI-EXP-C4-002",
+    "VAL-GUI-EXP-C4-003",
+    "VAL-GUI-EXP-S-001"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-GUI-EXP-C3-001",
+      "reason": "Inbox still renders hardcoded bg-emerald-600 swipe-action overlays for Archive, so the page is not fully migrated to design-system semantic colors."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added GUI validation guidance for company-prefixed routes, seeding a real routine before RoutineDetail checks, and using /<company>/company/export|import for Import/Export page assertions.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}

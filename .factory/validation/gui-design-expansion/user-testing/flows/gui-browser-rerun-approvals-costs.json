@@ -1,0 +1,68 @@
+{
+  "groupId": "gui-browser-rerun-approvals-costs",
+  "testedAt": "2026-04-04T03:34:02.775632+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyRoutePrefix": "WEA",
+    "browserSession": "90954350c057",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C2-001",
+      "title": "Approvals page uses design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Seed a pending approval, then navigate to /WEA/approvals/pending",
+          "expected": "Pending approvals render with --warn styling",
+          "observed": "The page showed a Pending tab labeled \"Pending 1\" and a pending Budget Override approval card."
+        },
+        {
+          "action": "Inspect the rendered warn-themed elements in the live DOM",
+          "expected": "Pending state uses design-system warn tokens, not hardcoded yellow classes",
+          "observed": "The live DOM exposed warn-token classes including bg-[var(--warn)]/20 and text-[var(--warn)] on the pending count badge; no hardcoded amber/yellow utility classes were needed for the visible pending state."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/manual-reruns/approvals-pending.png"
+        ],
+        "consoleErrors": "none captured",
+        "network": "Approvals pending route loaded successfully in the local browser."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C2-003",
+      "title": "Costs page uses design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Seed company budget + spend, then navigate to /WEA/costs",
+          "expected": "A semantic budget bar is visible for live inspection",
+          "observed": "The page rendered Budget $100.00 with 95% monthly budget consumed in range and visible spend data of $95.00."
+        },
+        {
+          "action": "Inspect the budget bar class in the live DOM",
+          "expected": "Budget bar color is driven by design-system semantic tokens",
+          "observed": "The budget bar element rendered with class \"h-full transition-[width,background-color] duration-150 bg-[var(--dead)]\" and inline style width: 95%;, confirming CSS-variable semantic styling rather than hardcoded red/emerald/yellow classes."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/manual-reruns/costs.png"
+        ],
+        "consoleErrors": "none captured",
+        "network": "Costs overview route loaded successfully in the local browser after seeding budget data."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Revalidated the previously blocked approvals/costs assertions after seeding local test data: both passed."
+}

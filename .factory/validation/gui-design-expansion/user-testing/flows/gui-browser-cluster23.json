@@ -1,0 +1,219 @@
+{
+  "groupId": "gui-browser-cluster23",
+  "testedAt": "2026-04-04T03:14:00.058015+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyRoutePrefix": "WEA",
+    "browserSession": "90954350c057__u2",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "python3"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C2-001",
+      "title": "Approvals page uses design system colors",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/approvals and inspect the default Pending tab",
+          "expected": "Pending approvals render with --warn styling and no hardcoded yellow classes",
+          "observed": "The Pending tab rendered 'No pending approvals.' so no pending badge/state was available to verify."
+        },
+        {
+          "action": "Switch to the All tab and audit rendered approval content plus live class names",
+          "expected": "Rendered approvals use design-system tokens with no hardcoded amber/yellow/shadow classes",
+          "observed": "The All tab showed one approved item; the live DOM audit found no rendered amber/yellow/shadow utility classes, but there was still no pending badge to validate against --warn."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C2-001-approvals-page.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/approvals/all -> 200"
+      },
+      "issues": "Blocked by missing seeded pending approval data; the page rendered cleanly but the required pending badge/state was not present."
+    },
+    {
+      "id": "VAL-GUI-EXP-C2-002",
+      "title": "ApprovalDetail page uses design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "From /WEA/approvals/all, follow View details into a real approval detail route",
+          "expected": "A real approval detail page loads for style inspection",
+          "observed": "Navigated to /WEA/approvals/a57b83cc-0599-4e40-ab4c-f8e2ce0597fb with the approval detail rendered successfully."
+        },
+        {
+          "action": "Inspect the approval status chip and nearby detail sections in the live DOM",
+          "expected": "Status styling uses --alive variants and no hardcoded green classes",
+          "observed": "The 'approved' chip rendered with class text-[var(--alive)] on bg-[var(--bg-darker)]; computed color was rgb(130, 232, 138) and the audit found no hardcoded green/emerald/yellow/red/shadow classes."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C2-002-approval-detail.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/approvals/a57b83cc-0599-4e40-ab4c-f8e2ce0597fb -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C2-003",
+      "title": "Costs page uses design system colors",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/costs and inspect the budget overview content",
+          "expected": "Budget bars expose semantic alive/warn/dead colors through CSS variables",
+          "observed": "The page rendered '$0.00' usage with 'Unlimited budget' / 'No monthly cap configured', so no semantic budget bar states were present to inspect."
+        },
+        {
+          "action": "Audit live classes and visible semantic elements on the rendered costs page",
+          "expected": "No hardcoded emerald/yellow/red/shadow classes remain on rendered costs UI",
+          "observed": "The rendered costs UI used design-system borders/text and the class audit found no rendered emerald/yellow/red/shadow utility classes, but the required colored budget bars were absent."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C2-003-costs-page.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/costs -> 200"
+      },
+      "issues": "Blocked by seed data: the company has no monthly cap and no non-zero budget bar state, so alive/warn/dead budget bar colors could not be validated through the live UI."
+    },
+    {
+      "id": "VAL-GUI-EXP-C2-004",
+      "title": "Activity page uses design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/activity and inspect the rendered activity feed",
+          "expected": "Activity page renders with design-system colors and shadcn components",
+          "observed": "The page loaded a populated activity feed with design-system borders/backgrounds and the shared select control styling."
+        },
+        {
+          "action": "Audit live DOM classes and computed styles for page header, filter, and feed content",
+          "expected": "Only design-system tokens/shadcn variables are used, with no hardcoded semantic color or shadow classes",
+          "observed": "Computed styles resolved through var(--bg)/var(--fg)/var(--border); the class audit found no emerald/yellow/red/blue/amber/shadow utility classes and all inspected elements had box-shadow: none."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C2-004-activity-page.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/activity -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C3-001",
+      "title": "Inbox page uses design system colors",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/inbox and inspect issue cards plus alert rows",
+          "expected": "Inbox semantic states use --dead/--alive tokens and no hardcoded red/green classes remain",
+          "observed": "The inbox rendered issue rows, approval items, and an alert row for '1 agent has errors'."
+        },
+        {
+          "action": "Audit live class names and computed styles for inbox semantic elements",
+          "expected": "No hardcoded green/red utility classes or rounded-xl classes are present in the rendered UI",
+          "observed": "The live DOM still contains repeated 'bg-emerald-600' swipe-action overlays for Archive, producing a hardcoded green background instead of a CSS-variable token; no rounded-xl classes were found in the rendered page."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C3-001-inbox-page.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/inbox -> 200"
+      },
+      "issues": "Fail: rendered inbox markup still uses hardcoded 'bg-emerald-600' classes for Archive swipe actions, so the page is not fully on design-system semantic colors."
+    },
+    {
+      "id": "VAL-GUI-EXP-C3-002",
+      "title": "OrgChart uses design system colors and no shadows",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/org and inspect org cards plus status dots",
+          "expected": "Org cards render without shadows and status dots use CSS variables instead of hardcoded hex colors",
+          "observed": "The org chart rendered CEO/CTO and fixture executives with visible status dots and flat cards."
+        },
+        {
+          "action": "Audit card shadows and status-dot styles in the live DOM",
+          "expected": "No shadow-sm/shadow-md or hardcoded hex status colors remain",
+          "observed": "All inspected org cards had box-shadow: none, the class/style audit found no shadow-sm/shadow-md or hardcoded hex colors, and status dots resolved via inline background-color values of var(--warn), var(--dead), and var(--alive)."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C3-002-org-page.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/org -> 200"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C3-003",
+      "title": "Companies page uses design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/companies and inspect the company card",
+          "expected": "Active/warn company states render with design-system semantic colors",
+          "observed": "The Companies page loaded a Weather Corp card with an 'active' status pill and budget metadata."
+        },
+        {
+          "action": "Audit the active badge and page classes in the live DOM",
+          "expected": "Semantic state colors use CSS variables with no hardcoded green/yellow/shadow utility classes",
+          "observed": "The 'active' badge rendered as bg-[var(--alive)]/10 text-[var(--alive)] with computed color rgb(130, 232, 138); the rendered page audit found no green-500/yellow-500/amber/emerald/shadow classes."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster23/VAL-GUI-EXP-C3-003-companies-page.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /WEA/companies -> 200"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The approvals route opened on a Pending view with no seed data; to reach a real detail page, I had to switch to All and click View details.",
+      "resolved": true,
+      "resolution": "Validated the detail assertion from the seeded approved approval available under /WEA/approvals/all.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C2-001",
+        "VAL-GUI-EXP-C2-002"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "No pending approval record was seeded in the assigned company, so the Pending state/badge required by VAL-GUI-EXP-C2-001 was not present.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C2-001"
+      ],
+      "quickFixAttempted": "Checked the default Pending tab, then switched to All and inspected the available approval record; no pending entry existed."
+    },
+    {
+      "description": "The costs page had unlimited budget configuration and zero spend, so no alive/warn/dead budget bars were rendered for live inspection.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C2-003"
+      ],
+      "quickFixAttempted": "Inspected the overview, budgets, and rendered classes on /WEA/costs; the required semantic budget bar states were absent."
+    }
+  ],
+  "summary": "Tested 7 assertions for gui-browser-cluster23: 4 passed, 1 failed, and 2 were blocked by missing seed states (pending approvals and budget bars)."
+}

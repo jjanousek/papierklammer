@@ -1,0 +1,168 @@
+{
+  "groupId": "gui-browser-cluster1",
+  "testedAt": "2026-04-04T03:14:39.144242Z",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyRoutePrefix": "WEA",
+    "browserSession": "90954350c057__u1",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929",
+    "evidenceDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-design-expansion/gui-browser-cluster1"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "actionsRun": [
+    "Opened /WEA/routines and /WEA/goals in agent-browser session 90954350c057__u1 and captured annotated screenshots.",
+    "Ran read-only DOM class audits for hardcoded color tokens and shadow classes on the Routines, Goals, and GoalDetail surfaces.",
+    "Switched the Routines page from Papierklammer to Earth using the sidebar theme controls and recorded pre/post screenshots plus computed CSS variables.",
+    "Verified key local API responses with curl for routines/goals detail endpoints, including the failing /api/routines/new route."
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C1-001",
+      "title": "Routines page uses design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/routines",
+          "expected": "Routines page renders with design-system styling",
+          "observed": "Routines page rendered the empty state with JetBrains Mono styling and no visual regressions."
+        },
+        {
+          "action": "Audit rendered DOM classes for hardcoded amber/emerald/green/yellow/blue/cyan/red tokens and shadow classes",
+          "expected": "No hardcoded Tailwind semantic color or shadow classes remain on the rendered page",
+          "observed": "DOM audit returned an empty match set ([])."
+        },
+        {
+          "action": "Inspect browser errors and network activity",
+          "expected": "No browser errors; routines data request succeeds",
+          "observed": "No console/page errors surfaced. GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/routines returned 200 and the seeded list was empty."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-001-routines-annotated.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/routines -> 200",
+        "artifacts": [
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-001-routines-snapshot.txt",
+          "gui-design-expansion/gui-browser-cluster1/routines-body.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-EXP-C1-002",
+      "title": "RoutineDetail page uses design system colors",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Attempt to reach the RoutineDetail/create surface from the routines area",
+          "expected": "Routine detail/create form should render so its themed styling can be validated",
+          "observed": "The seeded routines list was empty, so I opened /WEA/routines/new directly to reach the create/detail surface."
+        },
+        {
+          "action": "Load /WEA/routines/new",
+          "expected": "Routine detail/create page renders with design-system colors",
+          "observed": "The route did not render the detail UI; the accessibility snapshot exposed an 'Internal server error' message instead."
+        },
+        {
+          "action": "Verify the backing API request",
+          "expected": "Routine detail API request succeeds",
+          "observed": "GET /api/routines/new returned 500 with body {\"error\":\"Internal server error\"}."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-002-routine-detail-direct-annotated.png",
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-002-routine-detail-error.png"
+        ],
+        "consoleErrors": "none surfaced in agent-browser; failure appeared as an in-page 'Internal server error' state",
+        "network": "GET /api/routines/new -> 500; page also requested GET /api/routines/new/runs?limit=50",
+        "artifacts": [
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-002-routine-detail-snapshot.txt",
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-002-routine-detail-error.txt"
+        ]
+      },
+      "issues": "RoutineDetail could not be validated for design-system compliance because the route itself fails to load and returns an internal server error."
+    },
+    {
+      "id": "VAL-GUI-EXP-C1-003",
+      "title": "Goals and GoalDetail pages use design system",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate to /WEA/goals",
+          "expected": "Goals page renders with themed design-system styling",
+          "observed": "Goals page rendered a themed list with the seeded company goal visible."
+        },
+        {
+          "action": "Open the seeded goal detail page",
+          "expected": "GoalDetail renders with theme-aware shadcn/design-system components",
+          "observed": "GoalDetail loaded successfully at /WEA/goals/e5d6f5ec-1b90-416e-805d-c7d99e5c86f7 with themed tabs and status chips."
+        },
+        {
+          "action": "Audit rendered DOM classes and inspect styles",
+          "expected": "No hardcoded semantic Tailwind color or shadow classes remain on the rendered Goals/GoalDetail surfaces",
+          "observed": "DOM audits for both Goals and GoalDetail returned no hardcoded semantic color/shadow class matches, and computed styles showed theme-driven colors."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-003-goals-annotated.png",
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-EXP-C1-003-goal-detail-annotated.png"
+        ],
+        "consoleErrors": "none",
+        "network": "GET /api/companies/fe22e791-2c82-4f79-9e78-f2a908e8e272/goals -> 200; GET /api/goals/e5d6f5ec-1b90-416e-805d-c7d99e5c86f7 -> 200",
+        "artifacts": []
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GUI-CROSS-001",
+      "title": "Theme switching works on newly styled pages",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /WEA/routines in the default theme",
+          "expected": "Routines page renders in the Papierklammer theme",
+          "observed": "The page rendered with html[data-theme=papierklammer] and CSS variable --bg resolved to #C4878E."
+        },
+        {
+          "action": "Click the EARTH theme button in the sidebar footer",
+          "expected": "Theme changes on the same page without a reload",
+          "observed": "The Routines page stayed in place and the footer theme control switched the active theme."
+        },
+        {
+          "action": "Inspect post-switch CSS variables and visuals",
+          "expected": "Routines page colors change to the Earth palette",
+          "observed": "html[data-theme] changed to earth and CSS variables changed to --bg #2D1610 and --fg #E8E0D0; annotated screenshots show the palette shift from rose to brown/ivory."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-CROSS-001-routines-default-annotated.png",
+          "gui-design-expansion/gui-browser-cluster1/VAL-GUI-CROSS-001-routines-earth-annotated.png"
+        ],
+        "consoleErrors": "none",
+        "network": "No extra theme-switch API call was required; the theme changed client-side on /WEA/routines.",
+        "artifacts": []
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The seeded Routines page had no existing routines, so there was no in-list detail link to use for RoutineDetail validation.",
+      "resolved": true,
+      "resolution": "Used the create/detail route /WEA/routines/new to validate the surface directly.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C1-002"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 browser assertions for Cluster 1 pages and cross-theme behavior: 3 passed and 1 failed. The failure is VAL-GUI-EXP-C1-002 because /WEA/routines/new shows an internal server error backed by GET /api/routines/new -> 500."
+}

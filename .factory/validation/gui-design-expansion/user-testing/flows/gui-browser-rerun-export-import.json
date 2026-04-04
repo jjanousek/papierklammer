@@ -1,0 +1,53 @@
+{
+  "groupId": "gui-browser-rerun-export-import",
+  "testedAt": "2026-04-04T03:34:02.775632+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyRoutePrefix": "WEA",
+    "browserSession": "90954350c057",
+    "missionDir": "/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929"
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GUI-EXP-C4-003",
+      "title": "Import/Export pages use design system colors",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Navigate directly to /WEA/company/export",
+          "expected": "Export page renders with design-system styling",
+          "observed": "The export page rendered successfully (title \"Export \u00b7 Org Chart \u00b7 Papierklammer\"); a main-content audit found 0 matching hardcoded color/shadow utility classes."
+        },
+        {
+          "action": "Navigate directly to /WEA/company/import",
+          "expected": "Import page renders with design-system styling",
+          "observed": "The import page rendered successfully (title \"Import \u00b7 Org Chart \u00b7 Papierklammer\"); a main-content audit found 0 matching hardcoded color/shadow utility classes."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "gui-design-expansion/manual-reruns/company-export.png",
+          "gui-design-expansion/manual-reruns/company-import.png"
+        ],
+        "consoleErrors": "none captured",
+        "network": "Both direct company-prefixed routes loaded successfully in the local browser."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Company Settings currently links to absolute /company/export and /company/import URLs, which earlier produced Not Found pages during browser testing.",
+      "resolved": true,
+      "resolution": "Retested the actual page routes directly on /WEA/company/export and /WEA/company/import to validate the style assertion itself.",
+      "affectedAssertions": [
+        "VAL-GUI-EXP-C4-003"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Revalidated VAL-GUI-EXP-C4-003 on the correct company-prefixed routes: pass."
+}
