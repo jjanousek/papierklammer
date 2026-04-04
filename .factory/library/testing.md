@@ -17,3 +17,9 @@ Without this ordering, cleanup can fail on FK constraints when tests remove comp
   - set `stdout.columns = <value>`
   - define `rows` with `Object.defineProperty(stdout, "rows", { get: () => currentRows, configurable: true })`
   - emit `stdout.emit("resize")` after changing dimensions
+
+## Company-scoped GUI routes for agent-browser checks
+
+- Many board pages are mounted under a company prefix in the URL, not at bare paths.
+- For reliable GUI validation, first query `GET /api/companies`, then navigate with the company slug prefix, e.g. `/WEA/company/export` instead of `/company/export`.
+- Using non-prefixed paths can produce false negatives during visual checks (route not found / redirected states).

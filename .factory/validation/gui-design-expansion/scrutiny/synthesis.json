@@ -1,0 +1,51 @@
+{
+  "milestone": "gui-design-expansion",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm exec vitest run ui/src/ packages/orchestrator-tui/ --max-workers=3",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Added shared testing note documenting company-prefixed GUI routes for agent-browser validation (use /api/companies slug and navigate with /<slug>/... paths).",
+      "sourceFeature": "gui-design-expansion-cluster4"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": ".factory/skills/gui-worker/SKILL.md",
+      "suggestion": "Clarify validator expectations for GUI-only features: require ui/src Vitest + typecheck + feature-specified checks, and only require packages/orchestrator-tui Vitest when TUI files are touched or contract explicitly requires it.",
+      "evidence": "Reviews for gui-design-expansion-cluster1/2/3/4 each observed a mismatch between SKILL.md step requiring TUI tests and feature contracts that specified UI tests + agent-browser verification only.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Duplicate reports that gui-worker skill requires TUI tests for GUI-only features.",
+      "reason": "duplicate"
+    }
+  ],
+  "previousRound": null
+}
