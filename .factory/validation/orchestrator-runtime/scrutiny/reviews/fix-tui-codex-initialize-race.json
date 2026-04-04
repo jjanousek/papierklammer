@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-tui-codex-initialize-race",
+  "reviewedAt": "2026-04-04T21:40:10.560252Z",
+  "commitId": "760165a7c14a5109ee84e2fcb644af0dcd236dd8",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix adequately addresses the prior blocking scrutiny failure. `CodexClient.initialize()` now coalesces callers onto a single in-flight handshake and caches the successful initialize result, while `reconnect()` reuses that state instead of issuing a second `initialize` against the same subprocess. The added client- and hook-level regressions cover both concurrent initialize/reconnect and send-before-startup-settles, and the worker transcript/handoff shows a delayed-start PTY check where the first post-launch action completed successfully without an initialize error. I did not identify a new high-confidence correctness issue in the changed code.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/orchestrator-runtime/scrutiny/reviews/tui-company-scoped-orchestrator-actions.json",
+  "summary": "Reviewed the prior failed feature, prior scrutiny report, fix handoff, transcript skeleton, skill guidance, and commit `760165a7c14a5109ee84e2fcb644af0dcd236dd8`. The fix resolves the original Codex initialize race by reusing one startup handshake/result across initialize and reconnect paths, and I found no new high-confidence issues in the fix diff."
+}

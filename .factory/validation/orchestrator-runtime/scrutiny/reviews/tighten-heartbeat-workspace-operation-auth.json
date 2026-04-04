@@ -1,0 +1,15 @@
+{
+  "featureId": "tighten-heartbeat-workspace-operation-auth",
+  "reviewedAt": "2026-04-04T21:40:16Z",
+  "commitId": "58afab22c49c69e083ee3a6b135a28dbb8c134bc",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. The original scrutiny failure was that `backend-orchestrator-action-contracts` made `/api/heartbeat-runs/:runId/events` and `/api/heartbeat-runs/:runId/log` board-only, breaking the shipped agent-authenticated `papierklammer heartbeat run` flow. In the current repo state, the related fix `restore-agent-heartbeat-stream-access` correctly guards those two endpoints with `assertAuthenticated` plus `assertCompanyAccess`, so same-company agent keys can stream run events/logs again (`server/src/routes/agents.ts:2241` and `:2264`) while workspace-operation fan-out and workspace-operation log routes remain board-only via `assertAuthenticatedBoard` (`server/src/routes/agents.ts:2284` and `:2300`). This re-run feature adds the missing regression coverage for that split contract in `server/src/__tests__/heartbeat-run-routes-auth.test.ts:147`, `:260`, `:283`, and `:360`. I did not find any new high-confidence correctness issues in this auth state.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/orchestrator-runtime/scrutiny/reviews/backend-orchestrator-action-contracts.json",
+  "summary": "Reviewed the fix feature handoff, transcript skeleton, prior failed review, commit `58afab22c49c69e083ee3a6b135a28dbb8c134bc`, the related restore commit `9fdc1134`, and the current route/test state. The backend auth contract now preserves same-company agent access for heartbeat run log/events streaming while keeping workspace-operation fan-out and workspace-operation logs board-only, so the prior scrutiny failure is adequately addressed without introducing a new high-confidence issue."
+}

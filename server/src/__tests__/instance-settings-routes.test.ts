@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { errorHandler } from "../middleware/index.js";
-import { instanceSettingsRoutes } from "../routes/instance-settings.js";
 
 const mockInstanceSettingsService = vi.hoisted(() => ({
   getGeneral: vi.fn(),
@@ -18,6 +16,9 @@ vi.mock("../services/index.js", () => ({
   logActivity: mockLogActivity,
 }));
 
+let errorHandler: typeof import("../middleware/index.js").errorHandler;
+let instanceSettingsRoutes: typeof import("../routes/instance-settings.js").instanceSettingsRoutes;
+
 function createApp(actor: any) {
   const app = express();
   app.use(express.json());
@@ -31,8 +32,11 @@ function createApp(actor: any) {
 }
 
 describe("instance settings routes", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    vi.resetModules();
+    ({ errorHandler } = await import("../middleware/index.js"));
+    ({ instanceSettingsRoutes } = await import("../routes/instance-settings.js"));
     mockInstanceSettingsService.getGeneral.mockResolvedValue({
       censorUsernameInLogs: false,
     });

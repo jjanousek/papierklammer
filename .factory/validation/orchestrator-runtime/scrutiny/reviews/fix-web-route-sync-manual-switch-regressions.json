@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-web-route-sync-manual-switch-regressions",
+  "reviewedAt": "2026-04-04T21:39:57.180043Z",
+  "commitId": "2c372326e81cee085eb1b3306d41f7e2291eabe9",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix directly addresses the prior blocking regression by routing both prefixed issue pages through the shared `shouldSyncCompanySelectionFromRoute` guard. The route company still drives company-scoped queries for deep links and prefixed browsing, while manual company switches no longer get overwritten before remembered-path navigation can complete.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/orchestrator-runtime/scrutiny/reviews/web-company-context-and-orchestrator-visibility.json",
+  "summary": "Reviewed the fix feature metadata, transcript skeleton, handoff, `web-runtime-worker` skill, prior failed review, original failing commit `92e05d294e3292ff4def82568bcb24f8ec3212a2`, and fix commit `2c372326e81cee085eb1b3306d41f7e2291eabe9`. The new change appears to fully address the earlier scrutiny failure: both `ui/src/pages/Issues.tsx` and `ui/src/pages/IssueDetail.tsx` now reuse the existing route-sync guard, preserving the original route-owned company query behavior without reintroducing the manual-switch snap-back regression."
+}

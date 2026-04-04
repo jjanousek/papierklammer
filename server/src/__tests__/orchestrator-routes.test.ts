@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { errorHandler } from "../middleware/index.js";
-import { orchestratorRoutes } from "../routes/orchestrator.js";
 
 // ── Mock services ──────────────────────────────────────────────────────────────
 
@@ -60,6 +58,9 @@ const ISSUE_ID = "00000000-0000-0000-0000-000000000020";
 const LEASE_ID = "00000000-0000-0000-0000-000000000030";
 const PROJECT_ID = "00000000-0000-0000-0000-000000000040";
 
+let errorHandler: typeof import("../middleware/index.js").errorHandler;
+let orchestratorRoutes: typeof import("../routes/orchestrator.js").orchestratorRoutes;
+
 function createApp(actor?: any) {
   const app = express();
   app.use(express.json());
@@ -92,8 +93,11 @@ function createUnauthApp() {
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe("orchestrator routes", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetAllMocks();
+    vi.resetModules();
+    ({ errorHandler } = await import("../middleware/index.js"));
+    ({ orchestratorRoutes } = await import("../routes/orchestrator.js"));
   });
 
   // ──────────────────────────────────────────────────────────────────────────

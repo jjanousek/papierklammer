@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-issue-review-error-summary-preview",
+  "reviewedAt": "2026-04-04T21:40:00Z",
+  "commitId": "ed49a46d4bc43fb22c48244b3320f18f14e82619",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "This fix directly addresses the prior scrutiny failure. `IssueReviewSurfaces` now extracts structured failure text from nested `resultJson.error` payloads before falling back to noisier stdout/stderr or transcript content, and the added component tests plus the worker's manual browser evidence cover both the failed-run preview path and the unchanged successful-run path. I did not find any new high-confidence regressions in the reviewed diff.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "Operator-facing run summary selection is still implemented separately in the UI and server layers, so future preview-precedence changes can drift again even though this fix itself is correct.",
+      "evidence": "The mission architecture explicitly asks the Web UI/TUI/API to keep run-summary precedence aligned (`.factory/library/architecture.md:61-66`). This fix adds recursive structured-error parsing in `ui/src/components/IssueReviewSurfaces.tsx:38-75`, while the existing server helper remains a separate implementation in `server/src/services/heartbeat-run-summary.ts:27-49`."
+    }
+  ],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/orchestrator-runtime/scrutiny/reviews/web-run-output-review-surfaces.json",
+  "summary": "Reviewed the fix feature metadata, prior failed review, worker handoff, transcript skeleton, `web-runtime-worker` skill, mission architecture guidance, and commit `ed49a46d4bc43fb22c48244b3320f18f14e82619`. The rerun adequately fixes the original issue-level preview bug by surfacing structured `resultJson.error` summaries for failed completed runs, preserves successful preview behavior, and does not introduce any new high-confidence code issues in the reviewed diff."
+}

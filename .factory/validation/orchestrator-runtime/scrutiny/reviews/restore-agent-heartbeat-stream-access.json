@@ -1,0 +1,15 @@
+{
+  "featureId": "restore-agent-heartbeat-stream-access",
+  "reviewedAt": "2026-04-04T21:40:23Z",
+  "commitId": "9fdc11342a4bbe3180e0ba6f1ad398ffde90c062",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "This fix adequately addresses the prior scrutiny failure. The original regression came from `cfbd70b1a87f45e0524b6a677b61f16752dbfe2d`, which changed `/api/heartbeat-runs/:runId/events` and `/api/heartbeat-runs/:runId/log` to board-only auth and broke the shipped `papierklammer heartbeat run --api-key ...` flow. Commit `9fdc11342a4bbe3180e0ba6f1ad398ffde90c062` introduces `assertAuthenticated()` in `server/src/routes/authz.ts:10-18` and uses it only for those two streaming endpoints in `server/src/routes/agents.ts:2241-2275`, while leaving run detail and cancellation board-only at `server/src/routes/agents.ts:2172-2208`. The updated regression tests in `server/src/__tests__/heartbeat-run-routes-auth.test.ts:134-150,181-190,219-230,233-268` cover the intended same-company agent success plus wrong-company and unauthenticated denial cases. I did not find any new high-confidence correctness issues in the fix.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/orchestrator-runtime/scrutiny/reviews/backend-orchestrator-action-contracts.json",
+  "summary": "Reviewed the prior failed feature review, the fix feature handoff/transcript skeleton, and commit `9fdc11342a4bbe3180e0ba6f1ad398ffde90c062`. The fix is narrowly scoped, restores the agent-authenticated heartbeat CLI streaming flow that the prior review flagged, and preserves the remaining board-only heartbeat run contracts, so this review passes."
+}
