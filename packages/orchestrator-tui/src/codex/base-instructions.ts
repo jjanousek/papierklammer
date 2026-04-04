@@ -54,4 +54,58 @@ GET /api/orchestrator/stale?companyId=<id>
 Returns information about stale runs and intents that may need cleanup.
 
 When the user asks you to perform management operations, use the appropriate API endpoints above. Always confirm the action before executing destructive operations like cleanup.
+
+When the operator describes new work in free-form or vague terms, convert that intent into a normal issue in the active company instead of leaving it as chat-only output.
 `;
+
+export interface OrchestratorCompanyContext {
+  companyId: string;
+  companyName?: string;
+  baseUrl?: string;
+}
+
+export function buildOrchestratorInstructions(
+  context?: OrchestratorCompanyContext,
+): string {
+  if (!context?.companyId) {
+    return ORCHESTRATOR_INSTRUCTIONS;
+  }
+
+  const companyLabel = context.companyName
+    ? `${context.companyName} [${context.companyId}]`
+    : context.companyId;
+  const normalizedBaseUrl = context.baseUrl?.replace(/\/+$/, "");
+
+  return `${ORCHESTRATOR_INSTRUCTIONS}
+
+## Active Company Scope
+
+${normalizedBaseUrl ? `API base URL for this session: ${normalizedBaseUrl}` : ""}
+
+Currently selected company: ${companyLabel}
+All reads and mutations in this thread must target only this company.
+If the operator gives vague or incomplete work intent, create a normal issue in the selected company rather than replying with chat-only advice.`;
+}
+
+export function buildOrchestratorTurnInput(
+  text: string,
+  context?: OrchestratorCompanyContext,
+): string {
+  if (!context?.companyId) {
+    return text;
+  }
+
+  const parts = [
+    `Selected company ID: ${context.companyId}`,
+    context.companyName
+      ? `Selected company name: ${context.companyName}`
+      : null,
+    context.baseUrl ? `API base URL: ${context.baseUrl.replace(/\/+$/, "")}` : null,
+    "Scope every action in this turn to the selected company only.",
+    "If this request describes new or vague work, create a normal issue in the selected company.",
+    "",
+    `Operator request: ${text}`,
+  ];
+
+  return parts.filter((part): part is string => Boolean(part)).join("\n");
+}

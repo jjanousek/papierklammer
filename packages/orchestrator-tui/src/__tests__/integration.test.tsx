@@ -3,7 +3,10 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render } from "ink-testing-library";
 import { EventEmitter, PassThrough } from "node:stream";
 import { App } from "../components/App.js";
-import { ORCHESTRATOR_INSTRUCTIONS } from "../codex/base-instructions.js";
+import {
+  ORCHESTRATOR_INSTRUCTIONS,
+  buildOrchestratorInstructions,
+} from "../codex/base-instructions.js";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
 // Suppress alternate screen buffer escape codes during tests
@@ -378,7 +381,12 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     ) as { method: string; params: Record<string, unknown> } | undefined;
 
     expect(threadStart).toBeDefined();
-    expect(threadStart!.params.baseInstructions).toBe(ORCHESTRATOR_INSTRUCTIONS);
+    expect(threadStart!.params.baseInstructions).toBe(
+      buildOrchestratorInstructions({
+        companyId: "test-company",
+        baseUrl: "http://localhost:3100",
+      }),
+    );
     // Verify it contains the key operation descriptions
     const instructions = threadStart!.params.baseInstructions as string;
     expect(instructions).toContain("POST /api/orchestrator/issues");
