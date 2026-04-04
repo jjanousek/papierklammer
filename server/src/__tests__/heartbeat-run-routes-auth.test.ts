@@ -6,6 +6,7 @@ const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 const OTHER_COMPANY_ID = "00000000-0000-0000-0000-000000000002";
 const RUN_ID = "00000000-0000-0000-0000-000000000010";
 const AGENT_ID = "00000000-0000-0000-0000-000000000020";
+const OPERATION_ID = "00000000-0000-0000-0000-000000000030";
 
 const mockHeartbeatService = vi.hoisted(() => ({
   getRun: vi.fn(),
@@ -20,6 +21,8 @@ const mockInstanceSettingsService = vi.hoisted(() => ({
 
 const mockWorkspaceOperationService = vi.hoisted(() => ({
   listForRun: vi.fn(),
+  getById: vi.fn(),
+  readLog: vi.fn(),
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
@@ -105,6 +108,16 @@ describe("heartbeat run route company isolation", () => {
       status: "cancelled",
     });
     mockWorkspaceOperationService.listForRun.mockResolvedValue([]);
+    mockWorkspaceOperationService.getById.mockResolvedValue({
+      id: OPERATION_ID,
+      companyId: COMPANY_ID,
+    });
+    mockWorkspaceOperationService.readLog.mockResolvedValue({
+      offset: 0,
+      nextOffset: 15,
+      complete: true,
+      content: "workspace log",
+    });
     mockInstanceSettingsService.getGeneral.mockResolvedValue({
       censorUsernameInLogs: false,
     });
@@ -280,6 +293,99 @@ describe("heartbeat run route company isolation", () => {
     expect(res.status).toBe(403);
     expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
     expect(mockWorkspaceOperationService.listForRun).not.toHaveBeenCalled();
+  });
+
+  it("rejects unauthenticated access to run workspace-operation fan-out", async () => {
+    const res = await request(
+      await createApp({
+        type: "none",
+        source: "none",
+      }),
+    ).get(`/api/heartbeat-runs/${RUN_ID}/workspace-operations`);
+
+    expect(res.status).toBe(401);
+    expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
+    expect(mockWorkspaceOperationService.listForRun).not.toHaveBeenCalled();
+  });
+
+  it("rejects wrong-company board access to run workspace-operation fan-out", async () => {
+    const res = await request(
+      await createApp({
+        type: "board",
+        userId: "board-user",
+        companyIds: [OTHER_COMPANY_ID],
+        source: "session",
+        isInstanceAdmin: false,
+      }),
+    ).get(`/api/heartbeat-runs/${RUN_ID}/workspace-operations`);
+
+    expect(res.status).toBe(403);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith(RUN_ID);
+    expect(mockWorkspaceOperationService.listForRun).not.toHaveBeenCalled();
+  });
+
+  it("allows same-company board access to workspace-operation log endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "board",
+        userId: "board-user",
+        companyIds: [COMPANY_ID],
+        source: "session",
+        isInstanceAdmin: false,
+      }),
+    ).get(`/api/workspace-operations/${OPERATION_ID}/log`);
+
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(mockWorkspaceOperationService.getById).toHaveBeenCalledWith(OPERATION_ID);
+    expect(mockWorkspaceOperationService.readLog).toHaveBeenCalledWith(OPERATION_ID, {
+      offset: 0,
+      limitBytes: 256000,
+    });
+    expect(res.body.content).toBe("workspace log");
+  });
+
+  it("rejects unauthenticated access to workspace-operation log endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "none",
+        source: "none",
+      }),
+    ).get(`/api/workspace-operations/${OPERATION_ID}/log`);
+
+    expect(res.status).toBe(401);
+    expect(mockWorkspaceOperationService.getById).not.toHaveBeenCalled();
+    expect(mockWorkspaceOperationService.readLog).not.toHaveBeenCalled();
+  });
+
+  it("rejects same-company agent access to workspace-operation log endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "agent",
+        agentId: AGENT_ID,
+        companyId: COMPANY_ID,
+        source: "agent_key",
+      }),
+    ).get(`/api/workspace-operations/${OPERATION_ID}/log`);
+
+    expect(res.status).toBe(403);
+    expect(mockWorkspaceOperationService.getById).not.toHaveBeenCalled();
+    expect(mockWorkspaceOperationService.readLog).not.toHaveBeenCalled();
+  });
+
+  it("rejects wrong-company board access to workspace-operation log endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "board",
+        userId: "board-user",
+        companyIds: [OTHER_COMPANY_ID],
+        source: "session",
+        isInstanceAdmin: false,
+      }),
+    ).get(`/api/workspace-operations/${OPERATION_ID}/log`);
+
+    expect(res.status).toBe(403);
+    expect(mockWorkspaceOperationService.getById).toHaveBeenCalledWith(OPERATION_ID);
+    expect(mockWorkspaceOperationService.readLog).not.toHaveBeenCalled();
   });
 
   it("allows same-company board access to run cancellation", async () => {
