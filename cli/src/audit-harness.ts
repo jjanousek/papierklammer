@@ -13,11 +13,13 @@ const AUDIT_INSTANCE_CONFIG = {
     label: "audit-app",
     instanceId: "audit",
     port: 3100,
+    embeddedPostgresPort: 54329,
   },
   precompany: {
     label: "precompany-app",
     instanceId: "precompany",
     port: 3101,
+    embeddedPostgresPort: 54330,
   },
 } as const satisfies Record<
   AuditInstanceKey,
@@ -25,6 +27,7 @@ const AUDIT_INSTANCE_CONFIG = {
     label: string;
     instanceId: string;
     port: number;
+    embeddedPostgresPort: number;
   }
 >;
 
@@ -62,6 +65,7 @@ export function resolveAuditInstanceTarget(key: AuditInstanceKey) {
     label: config.label,
     instanceId: config.instanceId,
     port: config.port,
+    embeddedPostgresPort: config.embeddedPostgresPort,
     missionHome: AUDIT_MISSION_HOME,
     instanceRoot,
     configPath: `${instanceRoot}/config.json`,
@@ -75,6 +79,30 @@ export function resolveAuditInstanceTarget(key: AuditInstanceKey) {
 
 export function isAuditInstanceKey(value: string): value is AuditInstanceKey {
   return (AUDIT_INSTANCE_KEYS as readonly string[]).includes(value);
+}
+
+export function applyAuditInstanceDefaults<
+  T extends {
+    database: Record<string, unknown> & { embeddedPostgresPort?: number };
+    server: Record<string, unknown> & { port?: number };
+  },
+>(
+  config: T,
+  key: AuditInstanceKey,
+): T {
+  const target = resolveAuditInstanceTarget(key);
+
+  return {
+    ...config,
+    database: {
+      ...config.database,
+      embeddedPostgresPort: target.embeddedPostgresPort,
+    },
+    server: {
+      ...config.server,
+      port: target.port,
+    },
+  };
 }
 
 export function buildDemoArtifact(workspaceRoot = AUDIT_DEMO_REPO_PATH) {

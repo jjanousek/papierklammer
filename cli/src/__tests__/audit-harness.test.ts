@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AUDIT_DEMO_REPO_PATH,
   AUDIT_MISSION_HOME,
+  applyAuditInstanceDefaults,
   buildDemoArtifact,
   buildDemoProjectFiles,
   resolveAuditInstanceTarget,
@@ -14,6 +15,7 @@ describe("audit harness helpers", () => {
       label: "audit-app",
       instanceId: "audit",
       port: 3100,
+      embeddedPostgresPort: 54329,
       missionHome: AUDIT_MISSION_HOME,
       instanceRoot: `${AUDIT_MISSION_HOME}/instances/audit`,
       configPath: `${AUDIT_MISSION_HOME}/instances/audit/config.json`,
@@ -31,6 +33,7 @@ describe("audit harness helpers", () => {
       label: "precompany-app",
       instanceId: "precompany",
       port: 3101,
+      embeddedPostgresPort: 54330,
       missionHome: AUDIT_MISSION_HOME,
       instanceRoot: `${AUDIT_MISSION_HOME}/instances/precompany`,
       configPath: `${AUDIT_MISSION_HOME}/instances/precompany/config.json`,
@@ -38,6 +41,42 @@ describe("audit harness helpers", () => {
         PAPIERKLAMMER_HOME: AUDIT_MISSION_HOME,
         PAPIERKLAMMER_INSTANCE_ID: "precompany",
         PORT: "3101",
+      },
+    });
+  });
+
+  it("applies stable non-conflicting embedded postgres ports to isolated instance configs", () => {
+    const baseConfig = {
+      database: {
+        mode: "embedded-postgres",
+        embeddedPostgresDataDir: "/tmp/example/db",
+        embeddedPostgresPort: 54329,
+      },
+      server: {
+        deploymentMode: "local_trusted",
+        exposure: "private",
+        host: "127.0.0.1",
+        port: 3100,
+        allowedHostnames: [],
+        serveUi: true,
+      },
+    };
+
+    expect(applyAuditInstanceDefaults(baseConfig, "audit")).toMatchObject({
+      database: {
+        embeddedPostgresPort: 54329,
+      },
+      server: {
+        port: 3100,
+      },
+    });
+
+    expect(applyAuditInstanceDefaults(baseConfig, "precompany")).toMatchObject({
+      database: {
+        embeddedPostgresPort: 54330,
+      },
+      server: {
+        port: 3101,
       },
     });
   });

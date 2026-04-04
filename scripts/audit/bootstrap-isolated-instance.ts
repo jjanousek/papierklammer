@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { onboard } from "../../cli/src/commands/onboard.ts";
+import { readConfig, writeConfig } from "../../cli/src/config/store.ts";
 import {
   AUDIT_INSTANCE_KEYS,
+  applyAuditInstanceDefaults,
   isAuditInstanceKey,
   resolveAuditInstanceTarget,
 } from "./helpers.ts";
@@ -39,6 +41,12 @@ async function main() {
       yes: true,
       invokedByRun: true,
     });
+
+    const config = readConfig(target.configPath);
+    if (!config) {
+      throw new Error(`Expected isolated instance config at ${target.configPath}`);
+    }
+    writeConfig(applyAuditInstanceDefaults(config, instance), target.configPath);
   } finally {
     for (const [key, value] of Object.entries(previousEnv)) {
       if (value === undefined) {
