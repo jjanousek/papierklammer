@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @papierklammer/server exec tsx ../scripts/dev-runner.ts watch",
+    "dev": "node scripts/dev-with-tui.mjs",
     "dev:watch": "pnpm --filter @papierklammer/server exec tsx ../scripts/dev-runner.ts watch",
+    "dev:tui": "node scripts/dev-tui.mjs",
     "dev:once": "pnpm --filter @papierklammer/server exec tsx ../scripts/dev-runner.ts dev",
     "dev:list": "pnpm --filter @papierklammer/server exec tsx ../scripts/dev-service.ts list",
     "dev:stop": "pnpm --filter @papierklammer/server exec tsx ../scripts/dev-service.ts stop",

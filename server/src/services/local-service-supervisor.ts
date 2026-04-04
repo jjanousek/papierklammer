@@ -209,6 +209,26 @@ async function isLikelyMatchingCommand(record: LocalServiceRegistryRecord) {
   }
 }
 
+async function isProcessGroupAlive(processGroupId: number) {
+  if (!Number.isInteger(processGroupId) || processGroupId <= 0 || process.platform === "win32") {
+    return false;
+  }
+  try {
+    const { stdout } = await execFileAsync("ps", ["-axo", "pid=,pgid="]);
+    return stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .some((line) => {
+        const match = line.match(/^(\d+)\s+(\d+)$/);
+        if (!match) return false;
+        return Number.parseInt(match[2], 10) === processGroupId;
+      });
+  } catch {
+    return false;
+  }
+}
+
 export async function findAdoptableLocalService(input: {
   serviceKey: string;
   command?: string | null;
@@ -269,13 +289,21 @@ export async function terminateLocalService(
 
   const deadline = Date.now() + (opts?.forceAfterMs ?? 2_000);
   while (Date.now() < deadline) {
-    if (!isPidAlive(record.pid)) {
+    if (targetProcessGroup) {
+      if (!(await isProcessGroupAlive(record.processGroupId!))) {
+        return;
+      }
+    } else if (!isPidAlive(record.pid)) {
       return;
     }
     await delay(100);
   }
 
-  if (!isPidAlive(record.pid)) return;
+  if (targetProcessGroup) {
+    if (!(await isProcessGroupAlive(record.processGroupId!))) return;
+  } else if (!isPidAlive(record.pid)) {
+    return;
+  }
   try {
     if (targetProcessGroup) {
       process.kill(-record.processGroupId!, "SIGKILL");
@@ -290,7 +318,7 @@ export async function terminateLocalService(
 export async function readLocalServicePortOwner(port: number) {
   if (!Number.isInteger(port) || port <= 0 || process.platform === "win32") return null;
   try {
-    const { stdout } = await execFileAsync("lsof", ["-nPiTCP", `:${port}`, "-sTCP:LISTEN", "-t"]);
+    const { stdout } = await execFileAsync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]);
     const firstPid = stdout
       .split("\n")
       .map((line) => Number.parseInt(line.trim(), 10))

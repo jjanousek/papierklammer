@@ -241,4 +241,164 @@ describeEmbeddedPostgres("applyPendingMigrations", () => {
     },
     20_000,
   );
+
+  it(
+    "replays migration 0047 safely when only part of the schema changes already exist",
+    async () => {
+      const connectionString = await createTempDatabase();
+
+      await applyPendingMigrations(connectionString);
+
+      const sql = postgres(connectionString, { max: 1, onnotice: () => {} });
+      try {
+        const greySentinelsHash = await migrationHash("0047_grey_sentinels.sql");
+
+        await sql.unsafe(
+          `DELETE FROM "drizzle"."__drizzle_migrations" WHERE hash = '${greySentinelsHash}'`,
+        );
+        await sql.unsafe(`DROP INDEX IF EXISTS "control_plane_events_event_type_idx"`);
+      } finally {
+        await sql.end();
+      }
+
+      const pendingState = await inspectMigrations(connectionString);
+      expect(pendingState).toMatchObject({
+        status: "needsMigrations",
+        pendingMigrations: ["0047_grey_sentinels.sql"],
+        reason: "pending-migrations",
+      });
+
+      await applyPendingMigrations(connectionString);
+
+      const finalState = await inspectMigrations(connectionString);
+      expect(finalState.status).toBe("upToDate");
+
+      const verifySql = postgres(connectionString, { max: 1, onnotice: () => {} });
+      try {
+        const indexes = await verifySql.unsafe<{ indexname: string }[]>(
+          `
+            SELECT indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+              AND tablename = 'control_plane_events'
+              AND indexname = 'control_plane_events_event_type_idx'
+          `,
+        );
+        expect(indexes).toHaveLength(1);
+      } finally {
+        await verifySql.end();
+      }
+    },
+    20_000,
+  );
+
+  it(
+    "replays migration 0047 safely when a partially created table is missing columns",
+    async () => {
+      const connectionString = await createTempDatabase();
+
+      await applyPendingMigrations(connectionString);
+
+      const sql = postgres(connectionString, { max: 1, onnotice: () => {} });
+      try {
+        const greySentinelsHash = await migrationHash("0047_grey_sentinels.sql");
+
+        await sql.unsafe(
+          `DELETE FROM "drizzle"."__drizzle_migrations" WHERE hash = '${greySentinelsHash}'`,
+        );
+        await sql.unsafe(`ALTER TABLE "dispatch_intents" DROP COLUMN "project_id" CASCADE`);
+      } finally {
+        await sql.end();
+      }
+
+      const pendingState = await inspectMigrations(connectionString);
+      expect(pendingState).toMatchObject({
+        status: "needsMigrations",
+        pendingMigrations: ["0047_grey_sentinels.sql"],
+        reason: "pending-migrations",
+      });
+
+      await applyPendingMigrations(connectionString);
+
+      const finalState = await inspectMigrations(connectionString);
+      expect(finalState.status).toBe("upToDate");
+
+      const verifySql = postgres(connectionString, { max: 1, onnotice: () => {} });
+      try {
+        const columns = await verifySql.unsafe<{ column_name: string }[]>(
+          `
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'dispatch_intents'
+              AND column_name = 'project_id'
+          `,
+        );
+        const constraints = await verifySql.unsafe<{ conname: string }[]>(
+          `
+            SELECT conname
+            FROM pg_constraint
+            WHERE conname = 'dispatch_intents_project_id_projects_id_fk'
+          `,
+        );
+        expect(columns).toHaveLength(1);
+        expect(constraints).toHaveLength(1);
+      } finally {
+        await verifySql.end();
+      }
+    },
+    20_000,
+  );
+
+  it(
+    "replays migration 0047 safely when a populated partial table is missing a non-null column",
+    async () => {
+      const connectionString = await createTempDatabase();
+
+      await applyPendingMigrations(connectionString);
+
+      const sql = postgres(connectionString, { max: 1, onnotice: () => {} });
+      try {
+        const greySentinelsHash = await migrationHash("0047_grey_sentinels.sql");
+
+        await sql.unsafe(`
+          INSERT INTO "companies" ("id", "name", "issue_prefix", "created_at", "updated_at")
+          VALUES ('00000000-0000-4000-8000-000000000001', 'Legacy Co', 'LEG', now(), now())
+        `);
+        await sql.unsafe(`
+          INSERT INTO "control_plane_events" ("company_id", "entity_type", "entity_id", "event_type", "created_at")
+          VALUES ('00000000-0000-4000-8000-000000000001', 'issue', '00000000-0000-4000-8000-000000000002', 'legacy', now())
+        `);
+        await sql.unsafe(
+          `DELETE FROM "drizzle"."__drizzle_migrations" WHERE hash = '${greySentinelsHash}'`,
+        );
+        await sql.unsafe(`ALTER TABLE "control_plane_events" DROP COLUMN "entity_type"`);
+      } finally {
+        await sql.end();
+      }
+
+      await applyPendingMigrations(connectionString);
+
+      const finalState = await inspectMigrations(connectionString);
+      expect(finalState.status).toBe("upToDate");
+
+      const verifySql = postgres(connectionString, { max: 1, onnotice: () => {} });
+      try {
+        const columns = await verifySql.unsafe<{ column_name: string; is_nullable: string }[]>(
+          `
+            SELECT column_name, is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'control_plane_events'
+              AND column_name = 'entity_type'
+          `,
+        );
+        expect(columns).toHaveLength(1);
+        expect(columns[0]?.is_nullable).toBe("YES");
+      } finally {
+        await verifySql.end();
+      }
+    },
+    20_000,
+  );
 });

@@ -34,6 +34,96 @@ function splitMigrationStatements(content: string): string[] {
     .filter((statement) => statement.length > 0);
 }
 
+function trimTrailingSemicolon(statement: string): string {
+  return statement.trim().replace(/;$/, "").trim();
+}
+
+function splitSqlList(sqlFragment: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let parenDepth = 0;
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+
+  for (let index = 0; index < sqlFragment.length; index += 1) {
+    const char = sqlFragment[index]!;
+    const next = sqlFragment[index + 1];
+
+    if (char === "'" && !inDoubleQuote) {
+      current += char;
+      if (inSingleQuote && next === "'") {
+        current += next;
+        index += 1;
+        continue;
+      }
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+
+    if (char === `"` && !inSingleQuote) {
+      current += char;
+      if (inDoubleQuote && next === `"`) {
+        current += next;
+        index += 1;
+        continue;
+      }
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+
+    if (!inSingleQuote && !inDoubleQuote) {
+      if (char === "(") {
+        parenDepth += 1;
+      } else if (char === ")") {
+        parenDepth = Math.max(0, parenDepth - 1);
+      } else if (char === "," && parenDepth === 0) {
+        const trimmed = current.trim();
+        if (trimmed.length > 0) {
+          parts.push(trimmed);
+        }
+        current = "";
+        continue;
+      }
+    }
+
+    current += char;
+  }
+
+  const trailing = current.trim();
+  if (trailing.length > 0) {
+    parts.push(trailing);
+  }
+  return parts;
+}
+
+type ParsedCreateTableStatement = {
+  tableName: string;
+  columnDefinitions: Array<{ columnName: string; definition: string }>;
+};
+
+function parseCreateTableStatement(statement: string): ParsedCreateTableStatement | null {
+  const trimmed = trimTrailingSemicolon(statement);
+  const match = trimmed.match(/^CREATE TABLE(?: IF NOT EXISTS)? "([^"]+)" \(([\s\S]+)\)$/i);
+  if (!match) return null;
+
+  const [, tableName, body] = match;
+  const columnDefinitions = splitSqlList(body)
+    .map((entry) => {
+      const columnMatch = entry.match(/^"([^"]+)"\s+/);
+      if (!columnMatch) return null;
+      return {
+        columnName: columnMatch[1]!,
+        definition: entry,
+      };
+    })
+    .filter((entry): entry is { columnName: string; definition: string } => entry !== null);
+
+  return {
+    tableName: tableName!,
+    columnDefinitions,
+  };
+}
+
 export type MigrationState =
   | { status: "upToDate"; tableCount: number; availableMigrations: string[]; appliedMigrations: string[] }
   | {
@@ -261,6 +351,13 @@ async function applyPendingMigrationsManually(
 
       await runInTransaction(sql, async () => {
         for (const statement of splitMigrationStatements(migrationContent)) {
+          if (await reconcileCreateTableColumns(sql, statement)) {
+            continue;
+          }
+          // Dirty local DBs can have some statements applied without a journal row.
+          if (await migrationStatementAlreadyApplied(sql, statement)) {
+            continue;
+          }
           await sql.unsafe(statement);
         }
 
@@ -373,15 +470,66 @@ async function constraintExists(
   return rows[0]?.exists ?? false;
 }
 
+async function singleColumnUniqueConstraintExists(
+  sql: ReturnType<typeof postgres>,
+  tableName: string,
+  columnName: string,
+): Promise<boolean> {
+  const rows = await sql<{ exists: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_constraint c
+      JOIN pg_class t ON t.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = t.relnamespace
+      JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = c.conkey[1]
+      WHERE n.nspname = 'public'
+        AND t.relname = ${tableName}
+        AND a.attname = ${columnName}
+        AND c.contype IN ('p', 'u')
+        AND array_length(c.conkey, 1) = 1
+    ) AS exists
+  `;
+  return rows[0]?.exists ?? false;
+}
+
+async function tableHasRows(
+  sql: ReturnType<typeof postgres>,
+  tableName: string,
+): Promise<boolean> {
+  const qualifiedTable = quoteIdentifier(tableName);
+  const rows = await sql.unsafe<{ exists: boolean }[]>(
+    `SELECT EXISTS (SELECT 1 FROM ${qualifiedTable} LIMIT 1) AS exists`,
+  );
+  return rows[0]?.exists ?? false;
+}
+
 async function migrationStatementAlreadyApplied(
   sql: ReturnType<typeof postgres>,
   statement: string,
 ): Promise<boolean> {
-  const normalized = statement.replace(/\s+/g, " ").trim();
+  const normalized = trimTrailingSemicolon(statement).replace(/\s+/g, " ").trim();
 
   const createTableMatch = normalized.match(/^CREATE TABLE(?: IF NOT EXISTS)? "([^"]+)"/i);
   if (createTableMatch) {
-    return tableExists(sql, createTableMatch[1]);
+    const parsed = parseCreateTableStatement(statement);
+    if (!parsed) {
+      return tableExists(sql, createTableMatch[1]!);
+    }
+    if (!(await tableExists(sql, parsed.tableName))) {
+      return false;
+    }
+    for (const column of parsed.columnDefinitions) {
+      if (!(await columnExists(sql, parsed.tableName, column.columnName))) {
+        return false;
+      }
+      if (
+        /\bPRIMARY KEY\b/i.test(column.definition)
+        && !(await singleColumnUniqueConstraintExists(sql, parsed.tableName, column.columnName))
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   const addColumnMatch = normalized.match(
@@ -403,6 +551,50 @@ async function migrationStatementAlreadyApplied(
 
   // If we cannot reason about a statement safely, require manual migration.
   return false;
+}
+
+async function reconcileCreateTableColumns(
+  sql: ReturnType<typeof postgres>,
+  statement: string,
+): Promise<boolean> {
+  const parsed = parseCreateTableStatement(statement);
+  if (!parsed) return false;
+  if (!(await tableExists(sql, parsed.tableName))) return false;
+
+  const qualifiedTable = quoteIdentifier(parsed.tableName);
+  for (const column of parsed.columnDefinitions) {
+    const needsRecoveredUniqueness = /\bPRIMARY KEY\b/i.test(column.definition);
+    if (await columnExists(sql, parsed.tableName, column.columnName)) {
+      if (
+        needsRecoveredUniqueness
+        && !(await singleColumnUniqueConstraintExists(sql, parsed.tableName, column.columnName))
+      ) {
+        await sql.unsafe(
+          `ALTER TABLE ${qualifiedTable} ADD CONSTRAINT ${quoteIdentifier(`${parsed.tableName}_${column.columnName}_recovered_unique`)} UNIQUE (${quoteIdentifier(column.columnName)})`,
+        );
+      }
+      continue;
+    }
+    const shouldRelaxNotNull =
+      await tableHasRows(sql, parsed.tableName)
+      && /\bNOT NULL\b/i.test(column.definition)
+      && !/\bDEFAULT\b/i.test(column.definition);
+    const definition = (shouldRelaxNotNull
+      ? column.definition.replace(/\s+NOT NULL\b/i, "")
+      : column.definition)
+      .replace(/\s+PRIMARY KEY\b/i, "");
+    await sql.unsafe(`ALTER TABLE ${qualifiedTable} ADD COLUMN ${definition}`);
+    if (
+      needsRecoveredUniqueness
+      && !(await singleColumnUniqueConstraintExists(sql, parsed.tableName, column.columnName))
+    ) {
+      await sql.unsafe(
+        `ALTER TABLE ${qualifiedTable} ADD CONSTRAINT ${quoteIdentifier(`${parsed.tableName}_${column.columnName}_recovered_unique`)} UNIQUE (${quoteIdentifier(column.columnName)})`,
+      );
+    }
+  }
+
+  return true;
 }
 
 async function migrationContentAlreadyApplied(

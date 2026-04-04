@@ -2,7 +2,11 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
 import { ensurePostgresDatabase, getPostgresDataDirectory } from "./client.js";
-import { createEmbeddedPostgresLogBuffer, formatEmbeddedPostgresError } from "./embedded-postgres-error.js";
+import {
+  createEmbeddedPostgresLogBuffer,
+  formatEmbeddedPostgresError,
+  isEmbeddedPostgresEmptyPidFailure,
+} from "./embedded-postgres-error.js";
 import { resolveDatabaseTarget } from "./runtime-config.js";
 
 type EmbeddedPostgresInstance = {
@@ -162,10 +166,24 @@ async function ensureEmbeddedPostgresConnection(
   try {
     await instance.start();
   } catch (error) {
-    throw formatEmbeddedPostgresError(error, {
-      fallbackMessage: `Failed to start embedded PostgreSQL on port ${selectedPort}`,
-      recentLogs: logBuffer.getRecentLogs(),
-    });
+    const recentLogs = logBuffer.getRecentLogs();
+    if (isEmbeddedPostgresEmptyPidFailure(recentLogs)) {
+      rmSync(postmasterPidFile, { force: true });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      try {
+        await instance.start();
+      } catch (retryError) {
+        throw formatEmbeddedPostgresError(retryError, {
+          fallbackMessage: `Failed to start embedded PostgreSQL on port ${selectedPort}`,
+          recentLogs: logBuffer.getRecentLogs(),
+        });
+      }
+    } else {
+      throw formatEmbeddedPostgresError(error, {
+        fallbackMessage: `Failed to start embedded PostgreSQL on port ${selectedPort}`,
+        recentLogs,
+      });
+    }
   }
 
   const adminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${selectedPort}/postgres`;

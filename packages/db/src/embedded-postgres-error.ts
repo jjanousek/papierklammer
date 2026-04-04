@@ -35,6 +35,11 @@ function detectEmbeddedPostgresHint(recentLogs: string[]): string | null {
   );
 }
 
+export function isEmbeddedPostgresEmptyPidFailure(recentLogs: string[]): boolean {
+  const haystack = recentLogs.join("\n").toLowerCase();
+  return haystack.includes('postmaster.pid') && haystack.includes("is empty");
+}
+
 export function createEmbeddedPostgresLogBuffer(limit = DEFAULT_RECENT_LOG_LIMIT): {
   append(message: unknown): void;
   getRecentLogs(): string[];

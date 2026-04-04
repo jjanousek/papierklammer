@@ -1,5 +1,6 @@
 #!/usr/bin/env -S node --import tsx
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -8,11 +9,15 @@ import { shouldTrackDevServerPath } from "./dev-runner-paths.mjs";
 import { createDevServiceIdentity, repoRoot } from "./dev-service-profile.ts";
 import {
   findAdoptableLocalService,
+  readLocalServicePortOwner,
   removeLocalServiceRegistryRecord,
   touchLocalServiceRegistryRecord,
   writeLocalServiceRegistryRecord,
 } from "../server/src/services/local-service-supervisor.ts";
 
+const require = createRequire(import.meta.url);
+const tsxCliPath = require.resolve("tsx/cli");
+const serverRoot = path.join(repoRoot, "server");
 const mode = process.argv[2] === "watch" ? "watch" : "dev";
 const cliArgs = process.argv.slice(3);
 const scanIntervalMs = 1500;
@@ -121,6 +126,26 @@ if (existingRunner) {
   console.log(
     `[paperclip] ${devService.serviceName} already running (pid ${existingRunner.pid}${typeof existingRunner.metadata?.childPid === "number" ? `, child ${existingRunner.metadata.childPid}` : ""})`,
   );
+  process.exit(0);
+}
+
+async function hasReachablePaperclipHealth(port: number) {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/health`);
+    if (!response.ok) return false;
+    const payload = await response.json() as { status?: string; version?: string };
+    return payload.status === "ok" && typeof payload.version === "string";
+  } catch {
+    return false;
+  }
+}
+
+const orphanPortOwner = await readLocalServicePortOwner(serverPort);
+if (orphanPortOwner && await hasReachablePaperclipHealth(serverPort)) {
+  console.log(
+    `[paperclip] Paperclip server already listening on http://127.0.0.1:${serverPort} (pid ${orphanPortOwner})`,
+  );
+  console.log("[paperclip] run `pnpm dev:stop` to terminate the existing local instance first.");
   process.exit(0);
 }
 
@@ -275,18 +300,19 @@ function clearDevServerStatus() {
 }
 
 async function updateDevServiceRecord(extra?: Record<string, unknown>) {
+  const childPid = child?.pid ?? null;
   await writeLocalServiceRegistryRecord({
     version: 1,
     serviceKey: devService.serviceKey,
     profileKind: "paperclip-dev",
     serviceName: devService.serviceName,
-    command: "dev-runner.ts",
-    cwd: repoRoot,
+    command: mode === "watch" ? "server/scripts/dev-watch.ts" : "server/src/index.ts",
+    cwd: serverRoot,
     envFingerprint: devService.envFingerprint,
     port: serverPort,
     url: `http://127.0.0.1:${serverPort}`,
-    pid: process.pid,
-    processGroupId: null,
+    pid: childPid ?? process.pid,
+    processGroupId: process.platform !== "win32" && childPid ? childPid : null,
     provider: "local_process",
     runtimeServiceId: null,
     reuseKey: null,
@@ -295,7 +321,8 @@ async function updateDevServiceRecord(extra?: Record<string, unknown>) {
     metadata: {
       repoRoot,
       mode,
-      childPid: child?.pid ?? null,
+      runnerPid: process.pid,
+      childPid,
       url: `http://127.0.0.1:${serverPort}`,
       ...extra,
     },
@@ -451,6 +478,21 @@ async function buildPluginSdk() {
   }
 }
 
+async function runServerPreflight() {
+  const result = await runPnpm(
+    ["--filter", "@papierklammer/server", "run", "preflight:workspace-links"],
+    { stdio: "inherit", cwd: repoRoot, env },
+  );
+  if (result.signal) {
+    exitForSignal(result.signal);
+    return;
+  }
+  if (result.code !== 0) {
+    console.error("[paperclip] server preflight failed");
+    process.exit(result.code);
+  }
+}
+
 async function markChildAsCurrent() {
   previousSnapshot = collectWatchedSnapshot();
   dirtyPaths = new Set();
@@ -494,14 +536,25 @@ async function waitForChildExit() {
   return await childExitPromise;
 }
 
+function signalChildTree(signal: NodeJS.Signals) {
+  if (!child) return;
+  try {
+    if (process.platform !== "win32" && child.pid) {
+      process.kill(-child.pid, signal);
+      return;
+    }
+    child.kill(signal);
+  } catch {
+    // Ignore cleanup races.
+  }
+}
+
 async function stopChildForRestart() {
   if (!child) return { code: 0, signal: null };
   childExitWasExpected = true;
-  child.kill("SIGTERM");
+  signalChildTree("SIGTERM");
   const killTimer = setTimeout(() => {
-    if (child) {
-      child.kill("SIGKILL");
-    }
+    signalChildTree("SIGKILL");
   }, gracefulShutdownTimeoutMs);
   try {
     return await waitForChildExit();
@@ -512,12 +565,23 @@ async function stopChildForRestart() {
 
 async function startServerChild() {
   await buildPluginSdk();
+  await runServerPreflight();
 
-  const serverScript = mode === "watch" ? "dev:watch" : "dev";
   child = spawn(
-    pnpmBin,
-    ["--filter", "@papierklammer/server", serverScript, ...forwardedArgs],
-    { stdio: "inherit", env, shell: process.platform === "win32" },
+    process.execPath,
+    [
+      tsxCliPath,
+      mode === "watch"
+        ? path.join(serverRoot, "scripts", "dev-watch.ts")
+        : path.join(serverRoot, "src", "index.ts"),
+      ...forwardedArgs,
+    ],
+    {
+      cwd: serverRoot,
+      detached: process.platform !== "win32",
+      stdio: "inherit",
+      env,
+    },
   );
 
   childExitPromise = new Promise((resolve, reject) => {
@@ -531,6 +595,7 @@ async function startServerChild() {
         metadata: {
           repoRoot,
           mode,
+          runnerPid: process.pid,
           childPid: null,
           url: `http://127.0.0.1:${serverPort}`,
         },
@@ -626,7 +691,7 @@ async function shutdown(signal: NodeJS.Signals) {
   }
 
   childExitWasExpected = true;
-  child.kill(signal);
+  signalChildTree(signal);
   const exit = await waitForChildExit();
   if (exit.signal) {
     exitForSignal(exit.signal);

@@ -43,18 +43,22 @@
 
 ## Flow Validator Guidance: GUI (agent-browser)
 - Use only the local URL `http://localhost:3100`.
+- Use company-prefixed GUI routes when navigating in the browser (for example `/WEA/dashboard`, `/WEA/routines`, `/WEA/goals`, `/WEA/approvals`, `/WEA/inbox`, `/WEA/org`, `/WEA/projects`, `/WEA/company/settings`, `/WEA/company/export`, `/WEA/company/import`).
+- For `RoutineDetail` validation, navigate to a real `/WEA/routines/:routineId` route. If the seeded company has no routines yet, create one through `POST /api/companies/:companyId/routines` before testing.
+- The Import/Export pages render on company-prefixed routes (`/<company>/company/export`, `/<company>/company/import`). In the current build, absolute `/company/export` and `/company/import` navigation may 404, so use the prefixed routes when the assertion is about page styling rather than link wiring.
 - Use `agent-browser` for interactive GUI assertions and `vitest` for code-level GUI assertions when the contract explicitly requires it.
 - In this environment, prefer `agent-browser --session "<id>" eval "<js>"` for scripted navigation/actions (for example, set `window.location.href = "http://localhost:3100/..."`); subcommands like `navigate --url` were observed to fail.
 - Stay in read/validation mode: do not edit application code, routes, or schema.
 - Keep assertions that depend on the same dashboard stream state in one browser validator to avoid cross-run state interference.
+- When duplicate theme control labels exist across sidebar/settings, use scoped selectors (container-scoped queries or index-targeted eval) to avoid strict locator ambiguity.
 - If no live stream entries are available in the Dashboard UI, record assertions that require stream content as `blocked` with clear evidence.
 - For dashboard stream checks, first click the agent card/header region to expose stream rows; explicit `more/less` controls can appear only after expansion.
-- Save flow reports to `.factory/validation/gui-bug-fixes/user-testing/flows/<group-id>.json`.
-- Save screenshots and any extracted evidence under `/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/<group-id>/`.
+- Save flow reports to `.factory/validation/<milestone>/user-testing/flows/<group-id>.json`.
+- Save screenshots and any extracted evidence under `/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/<milestone>/<group-id>/`.
 
 ## Flow Validator Guidance: GUI (vitest)
 - Run assertion-focused Vitest commands first (do not run unrelated suites).
 - Stay within `/Users/aischool/work/papierklammer_droid`; do not modify source files.
 - Capture command output and include exact tested files/cases in the flow report.
-- Write reports to `.factory/validation/gui-bug-fixes/user-testing/flows/<group-id>.json`.
-- Save command evidence under `/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/gui-bug-fixes/<group-id>/`.
+- Write reports to `.factory/validation/<milestone>/user-testing/flows/<group-id>.json`.
+- Save command evidence under `/Users/aischool/.factory/missions/516c6da4-69e6-4af4-9abd-848cb1f60929/evidence/<milestone>/<group-id>/`.

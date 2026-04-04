@@ -15,6 +15,7 @@ import {
   inspectMigrations,
   applyPendingMigrations,
   createEmbeddedPostgresLogBuffer,
+  isEmbeddedPostgresEmptyPidFailure,
   reconcilePendingMigrationHistory,
   formatDatabaseBackupResult,
   runDatabaseBackup,
@@ -391,11 +392,27 @@ export async function startServer(): Promise<StartedServer> {
         try {
           await embeddedPostgres.start();
         } catch (err) {
-          logEmbeddedPostgresFailure("start", err);
-          throw formatEmbeddedPostgresError(err, {
-            fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
-            recentLogs: logBuffer.getRecentLogs(),
-          });
+          const recentLogs = logBuffer.getRecentLogs();
+          if (isEmbeddedPostgresEmptyPidFailure(recentLogs)) {
+            logger.warn("Embedded PostgreSQL reported an empty postmaster.pid; removing lock file and retrying once");
+            rmSync(postmasterPidFile, { force: true });
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            try {
+              await embeddedPostgres.start();
+            } catch (retryErr) {
+              logEmbeddedPostgresFailure("start", retryErr);
+              throw formatEmbeddedPostgresError(retryErr, {
+                fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
+                recentLogs: logBuffer.getRecentLogs(),
+              });
+            }
+          } else {
+            logEmbeddedPostgresFailure("start", err);
+            throw formatEmbeddedPostgresError(err, {
+              fallbackMessage: `Failed to start embedded PostgreSQL on port ${port}`,
+              recentLogs,
+            });
+          }
         }
         embeddedPostgresStartedByThisProcess = true;
       }

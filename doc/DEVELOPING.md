@@ -36,8 +36,13 @@ This starts:
 
 - API server: `http://localhost:3100`
 - UI: served by the API server in dev middleware mode (same origin as API)
+- Orchestrator TUI: opens in a second terminal when possible after the server is reachable; if multiple companies exist, the TUI opens with a company picker sorted by recent activity
 
 `pnpm dev` runs the server in watch mode and restarts on changes from workspace packages (including adapter packages). Use `pnpm dev:once` to run without file watching.
+
+Use `pnpm dev:watch` or `pnpm dev:server` if you want the server/web UI without the TUI auto-open. Use `pnpm dev:tui` to run the terminal UI in the current terminal against the active dev server.
+
+On macOS, `pnpm dev` now prefers Ghostty for TUI auto-open when Ghostty is installed (or when `TERM_PROGRAM=ghostty`). It launches a fresh Ghostty instance so the TUI command is not lost in an already-running app, and failed launches stay open long enough to show the error. You can override the terminal choice with `PAPIERKLAMMER_TUI_TERMINAL`.
 
 `pnpm dev:once` auto-applies pending local migrations by default before starting the dev server.
 

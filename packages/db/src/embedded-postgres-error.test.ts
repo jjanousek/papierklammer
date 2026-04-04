@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createEmbeddedPostgresLogBuffer, formatEmbeddedPostgresError } from "./embedded-postgres-error.js";
+import {
+  createEmbeddedPostgresLogBuffer,
+  formatEmbeddedPostgresError,
+  isEmbeddedPostgresEmptyPidFailure,
+} from "./embedded-postgres-error.js";
 
 describe("formatEmbeddedPostgresError", () => {
   it("adds a shared-memory hint when initdb logs expose the real cause", () => {
@@ -24,5 +28,14 @@ describe("formatEmbeddedPostgresError", () => {
     buffer.append("line three");
 
     expect(buffer.getRecentLogs()).toEqual(["line two", "line three"]);
+  });
+
+  it("detects the empty postmaster.pid startup failure", () => {
+    expect(
+      isEmbeddedPostgresEmptyPidFailure([
+        'FATAL:  lock file "postmaster.pid" is empty',
+        "HINT:  Either another server is starting, or the lock file is the remnant of a previous server startup crash.",
+      ]),
+    ).toBe(true);
   });
 });
