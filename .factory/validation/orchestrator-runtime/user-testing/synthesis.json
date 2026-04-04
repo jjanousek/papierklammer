@@ -1,0 +1,65 @@
+{
+  "milestone": "orchestrator-runtime",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 20,
+    "passed": 13,
+    "failed": 7,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-CROSS-006",
+    "VAL-ORCH-001",
+    "VAL-ORCH-002",
+    "VAL-ORCH-003",
+    "VAL-ORCH-004",
+    "VAL-ORCH-005",
+    "VAL-ORCH-007",
+    "VAL-ORCH-008",
+    "VAL-ORCH-009",
+    "VAL-RUN-001",
+    "VAL-RUN-002",
+    "VAL-RUN-003",
+    "VAL-RUN-004"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-CROSS-005",
+      "reason": "Unauthenticated run-log access was allowed because the local_trusted deployment implicitly treated the request as board-authenticated instead of denying it."
+    },
+    {
+      "id": "VAL-CROSS-007",
+      "reason": "The dashboard and agent summary surfaces did not expose the same concrete run identity as the issue detail, run detail, and API feeds."
+    },
+    {
+      "id": "VAL-ORCH-006",
+      "reason": "The failure path left the TUI in a prolonged thinking state instead of returning to a clearly recovered, input-ready console."
+    },
+    {
+      "id": "VAL-RUN-005",
+      "reason": "The issue-centric view did not surface an obvious concrete result beyond links to other surfaces."
+    },
+    {
+      "id": "VAL-RUN-006",
+      "reason": "The TUI and API disagreed about active-run count/state during live execution."
+    },
+    {
+      "id": "VAL-RUN-007",
+      "reason": "No direct work-product or artifact surface was available on the completed issue detail flow."
+    },
+    {
+      "id": "VAL-RUN-008",
+      "reason": "No concrete in-TUI run-result inspection path was discoverable for the demo-repo run."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Documented that local_trusted treats headerless requests as board-authenticated and that tuistory input can occasionally drop characters, so validators should anchor negative auth checks and TUI prompts with corroborating evidence.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}

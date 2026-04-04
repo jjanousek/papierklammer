@@ -31,6 +31,7 @@
 - Keep the mission **local-only**; do not rely on Docker, remote services, or hosted integrations.
 - Use **`codex_local` only** for the audited company. If local Codex install/auth readiness fails, mark the affected flow blocked instead of substituting another adapter.
 - Use the tiny sibling CLI repo created for the audit as the managed project under real execution.
+- In `local_trusted` mode, requests without an `Authorization` header are implicitly treated as board-authenticated. Do not treat headerless requests as anonymous-denial checks in this deployment mode; they are valid evidence only when the contract intentionally covers local board access.
 - Capture and reuse the same `companyId`, `issueId`, `agentId`, and `runId` across all three surfaces.
 - Start with API health and empty-instance checks before onboarding, then create the company in Web UI, then validate the TUI against that created company.
 - When validating stale recovery or company isolation, use a second company only for explicit negative checks; do not run a second full bundle in parallel.
@@ -48,6 +49,7 @@
 - Use the company picker or loaded-company header as explicit evidence that the TUI is scoped to the intended company before issuing management requests.
 - Drive one orchestrator action chain at a time for the audit company: create work, nudge active work, or unblock stuck work; do not overlap actions.
 - For company-switch isolation checks, relaunch into company B after using company A and verify no stale thread/transcript context leaks across launches.
+- `tuistory` text entry can occasionally drop characters in the orchestrator input bar; when that happens, verify the resulting action through API/UI evidence instead of relying only on the echoed prompt text.
 - If the TUI lacks a concrete run-output/result inspection affordance, record that negative result explicitly rather than inferring success from API-only evidence.
 
 ## Flow Validator Guidance: API

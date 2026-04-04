@@ -1,0 +1,603 @@
+{
+  "groupId": "orchestrator-runtime-bundle",
+  "testedAt": "2026-04-04T22:16:24.537225+00:00",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "instance": "audit",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "papierklammerHome": "/tmp/papierklammer-mission-64c225d0",
+    "instanceId": "audit",
+    "demoRepoPath": "/Users/aischool/work/papierklammer-audit-demo",
+    "adapterType": "codex_local",
+    "companyA": {
+      "companyId": "738f9d32-4ce6-490d-b10a-ada3604d84ed",
+      "companyName": "Orchestrator Runtime Company A",
+      "companyPrefix": "ORC"
+    },
+    "companyB": {
+      "companyId": "383ff970-da56-4b6c-8b27-3609f5ed001c",
+      "companyName": "Orchestrator Runtime Company B",
+      "companyPrefix": "ORCA"
+    }
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-005",
+      "title": "Run-detail and run-mutation endpoints enforce company isolation",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Read run-log and related fan-out endpoints for run 003eb1ce-84ee-4057-a8c7-b68f7ef429e4 with no Authorization header",
+          "expected": "Unauthenticated requests are denied",
+          "observed": "GET /api/heartbeat-runs/:runId/log returned HTTP 200 in local_trusted mode"
+        },
+        {
+          "action": "Repeat run-detail access with same-company and wrong-company agent API keys",
+          "expected": "Same-company agent access is limited and wrong-company access is denied",
+          "observed": "Same-company agent got 200 for log/events but 403 for run detail/cancel; wrong-company agent got 403"
+        }
+      ],
+      "evidence": {
+        "transcripts": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-noauth-run-log.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-noauth-run-detail.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyA-agent-run-log.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyA-agent-events.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyA-agent-run-detail.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyA-agent-workspace-ops.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyA-agent-cancel.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyB-agent-run-log.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyB-agent-events.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyB-agent-run-detail.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/cross005-companyB-agent-workspace-ops.txt"
+        ],
+        "network": "No-auth GET /api/heartbeat-runs/003eb1ce-84ee-4057-a8c7-b68f7ef429e4/log -> 200; wrong-company agent accesses -> 403"
+      },
+      "issues": "Unauthenticated run-log access was allowed because the local_trusted deployment implicitly treated the request as board-authenticated instead of denying it."
+    },
+    {
+      "id": "VAL-CROSS-006",
+      "title": "Deep-linking to an issue synchronizes company context before secondary queries",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open a company-A issue, then deep-link directly to company-B issue ORCA-1",
+          "expected": "Company context switches to company B",
+          "observed": "The UI header and issue detail switched to Orchestrator Runtime Company B and issue ORCA-1"
+        },
+        {
+          "action": "Inspect follow-up network requests after the deep link loads",
+          "expected": "Secondary company-scoped queries use company B",
+          "observed": "Subsequent live-runs and sidebar-badges requests used companyId 383ff970-da56-4b6c-8b27-3609f5ed001c rather than stale company A context"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-CROSS-006-company-b-deeplink.png"
+        ],
+        "text": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-CROSS-006-company-b-deeplink.txt"
+        ],
+        "network": "orchestrator-runtime/orchestrator-runtime-bundle/VAL-CROSS-006-network.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-007",
+      "title": "One live run keeps the same identity across operator surfaces",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Capture issue detail, run detail, agent detail, dashboard, and API feeds for the demo-repo runs",
+          "expected": "All surfaces expose the same runId/issueId/agentId/company for one run while live and after finish",
+          "observed": "Issue detail, run detail, and API feeds showed run ids, but dashboard and agent views did not surface the same run identity consistently"
+        },
+        {
+          "action": "Cross-check finished ORC-6 run 6881fbdf-e0e2-4941-92b6-31566ec2a6d7 across surfaces",
+          "expected": "The same identifiers remain obvious after finish",
+          "observed": "Finished run detail preserved the id, but dashboard and agent summary views only showed aggregate or issue-level summaries"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-004-005-007-ORC6-issue-detail.png",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-004-run-detail.png",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-CROSS-007-agent-detail.png",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-CROSS-007-dashboard.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-active-run.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-live-runs.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-heartbeat-runs.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-CROSS-007-run-detail.json"
+        ]
+      },
+      "issues": "The dashboard and agent summary surfaces did not expose the same concrete run identity as the issue detail, run detail, and API feeds."
+    },
+    {
+      "id": "VAL-ORCH-001",
+      "title": "TUI company selection scopes the active orchestration target",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the TUI without a preset company",
+          "expected": "A company picker appears",
+          "observed": "The PTY rendered a picker with company B first and company A second"
+        },
+        {
+          "action": "Select company A and create work from the TUI",
+          "expected": "Subsequent actions target only company A",
+          "observed": "After selecting company A, the TUI created ORC-3 in company A and company B remained unchanged"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-001-company-picker.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-001-company-a-session.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-001-company-picker.png",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-001-company-a-session.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-a-issues-after-tui-create.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-b-issues-before-tui-relaunch.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-002",
+      "title": "Free-form operator intent becomes a real issue",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Submit a vague operator request in the company-A TUI",
+          "expected": "The orchestrator replies and creates a normal issue",
+          "observed": "The TUI replied with a scoped work-item summary and created ORC-3"
+        },
+        {
+          "action": "Check company-A issues via API",
+          "expected": "A new issue exists",
+          "observed": "Company A issue list includes ORC-3 'Make the tiny audit CLI produce and verify a deterministic smoke report'"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-002-003-006-tui-transcript.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-002-003-006-tui-state.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-a-issues-after-tui-create.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-003",
+      "title": "Orchestrator-created work appears in the board UI for the same company",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open company-A issues after the TUI created ORC-3",
+          "expected": "The new issue is visible in company A",
+          "observed": "ORC-3 appears in the company-A issues list"
+        },
+        {
+          "action": "Open company-B issues",
+          "expected": "The company-A issue does not leak into company B",
+          "observed": "Company B shows only ORCA-1/ORCA-2 and no ORC-3"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-003-company-a-issues.png",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-003-company-b-issues.png"
+        ],
+        "text": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-003-company-a-issues.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-003-company-b-issues.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-004",
+      "title": "Nudge creates a manager-escalation intent for active company work",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create multiple assigned issues for CEO and invoke nudge with a corrective payload",
+          "expected": "A queued manager_escalation intent is returned for deterministic active work",
+          "observed": "POST /api/orchestrator/agents/:id/nudge returned 201 with manager_escalation intent 164f9e71-842a-4561-8e2f-50b975204bcd for issue ORC-4"
+        },
+        {
+          "action": "Invoke nudge for company-B agent with no active assigned issue",
+          "expected": "A clear failure is returned",
+          "observed": "POST /api/orchestrator/agents/601336c6-1233-4084-bc70-17d777af355e/nudge returned HTTP 400 with 'Agent has no active assigned issues with a project to nudge'"
+        }
+      ],
+      "evidence": {
+        "transcripts": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-004-008-009-nudge-success.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-004-nudge-no-active-issue.txt"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/orc-6-active-run.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-005",
+      "title": "Unblock is company-scoped and returns observable recovery details",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Read blocked issue ORC-1 and company-B issue state before unblock",
+          "expected": "Baseline states are captured",
+          "observed": "Company A ORC-1 was blocked; company B ORCA-1 remained todo"
+        },
+        {
+          "action": "Call /api/orchestrator/issues/:id/unblock with a payload",
+          "expected": "Recovery details are returned and only the target company is affected",
+          "observed": "Response returned the target issue, echoed payload, and reported rejectedIntentCount=1 while company B issue state stayed unchanged"
+        }
+      ],
+      "evidence": {
+        "transcripts": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-005-009-unblock-success.txt"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/orc-1-before-unblock.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/orc-1-after-unblock.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-b-issue-before-unblock.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-b-issue-after-unblock.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-006",
+      "title": "Action failures do not leave the TUI hung",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Ask the company-B TUI to nudge idle work",
+          "expected": "The failure appears in chat and the TUI returns to an input-ready state",
+          "observed": "The TUI surfaced raw shell/error output related to a bad nudge attempt"
+        },
+        {
+          "action": "Wait for the thinking state to clear",
+          "expected": "Input prompt becomes ready again",
+          "observed": "Even after the error output appeared, the TUI still showed 'Waiting for response...' and remained stuck thinking"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-006-before-recovery.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-006-after-recovery.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-006-after-recovery.png"
+        ]
+      },
+      "issues": "The failure path left the TUI in a prolonged thinking state instead of returning to a clearly recovered, input-ready console."
+    },
+    {
+      "id": "VAL-ORCH-007",
+      "title": "Switching companies does not leak prior thread context",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Use the TUI with company A, then relaunch against company B with --company-id",
+          "expected": "The new session starts cleanly in company B",
+          "observed": "The relaunched TUI showed 'Papierklammer \u00b7 Orchestrator Runtime Company B' with only B Agent and no company-A transcript"
+        },
+        {
+          "action": "Compare company-B issues before and after the relaunch",
+          "expected": "No stale company-A actions touch company B during the switch",
+          "observed": "The company-B issue list was unchanged across the relaunch"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-007-company-b-session.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-007-company-b-session.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-b-issues-before-tui-relaunch.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-b-issues-after-tui-relaunch.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-008",
+      "title": "Nudge selects the intended active issue deterministically",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Give CEO multiple assigned issues across blocked/todo states and call nudge",
+          "expected": "Nudge deterministically chooses the intended non-backlog issue",
+          "observed": "The returned dedupe key and issueId consistently targeted ORC-4 rather than backlog-only work"
+        },
+        {
+          "action": "Inspect the returned intent metadata",
+          "expected": "Returned target issue is explicit",
+          "observed": "Response payload identified issueId 14a60a3c-706e-46f6-96b0-4314fe7e4b64 with dedupeKey nudge:0463944a-fc6d-4c2f-a39b-d89a2b475b04:14a60a3c-706e-46f6-96b0-4314fe7e4b64"
+        }
+      ],
+      "evidence": {
+        "transcripts": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-004-008-009-nudge-success.txt"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/company-a-issues-after-tui-create.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/orc-6-active-run.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-ORCH-009",
+      "title": "Corrective-action payloads are preserved or rejected explicitly",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Send a valid nudge payload and a valid unblock payload",
+          "expected": "Accepted payloads are preserved in the response",
+          "observed": "Both endpoints echoed the payload fields unchanged"
+        },
+        {
+          "action": "Send unexpected fields to nudge and unblock",
+          "expected": "Unexpected fields are explicitly rejected",
+          "observed": "Both requests returned HTTP 400 validation errors for unrecognized key 'note'"
+        }
+      ],
+      "evidence": {
+        "transcripts": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-004-008-009-nudge-success.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-005-009-unblock-success.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-009-nudge-bad-field.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-009-unblock-bad-field.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-001",
+      "title": "Assigned demo-repo work creates an issue-linked live run",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create demo-repo issue ORC-4 on the local audit repo workspace and wake CEO",
+          "expected": "A live run is linked to the issue",
+          "observed": "Issue detail showed live run 003eb1ce-84ee-4057-a8c7-b68f7ef429e4 for CEO"
+        },
+        {
+          "action": "Check /api/issues/:issueId/active-run during the live window",
+          "expected": "The same run id is returned",
+          "observed": "Active-run API returned 003eb1ce-84ee-4057-a8c7-b68f7ef429e4 while the UI showed the same id"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-001-issue-detail-live.png"
+        ],
+        "text": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-001-issue-detail-live.txt"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-active-run.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-002",
+      "title": "API surfaces the same active run consistently",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Read /active-run, /live-runs, and company heartbeat-runs during ORC-4 execution",
+          "expected": "All endpoints expose the same run",
+          "observed": "All three endpoints reported run 003eb1ce-84ee-4057-a8c7-b68f7ef429e4 in running state for CEO"
+        }
+      ],
+      "evidence": {
+        "jsonResponses": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-active-run.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-live-runs.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-002-heartbeat-runs.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-003",
+      "title": "Live operator-readable output appears during execution",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect the ORC-4 live run in issue detail",
+          "expected": "Substantive transcript/stdout is visible during execution",
+          "observed": "The live run card showed streamed transcript text plus executed-command entries rather than status-only chrome"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-001-issue-detail-live.png"
+        ],
+        "text": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-001-issue-detail-live.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-004",
+      "title": "Completed runs remain inspectable after execution ends",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open finished run detail for CEO run 6881fbdf-e0e2-4941-92b6-31566ec2a6d7",
+          "expected": "The completed run still exposes summary/status and persisted log content",
+          "observed": "Run detail remained accessible with finished state, expandable stdout, and persisted issue links"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-004-run-detail.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/run-6881fbdf-log.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-005",
+      "title": "Issue-centric review preserves an obvious path to the result",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Review completed issue ORC-6 from the issue detail surface",
+          "expected": "Visible result content or concrete artifact detail is present directly in the issue flow",
+          "observed": "The issue detail showed links to the run and delegated follow-up issue, but no concrete result content or artifact metadata"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-004-005-007-ORC6-issue-detail.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/orc-6-current.json"
+        ]
+      },
+      "issues": "The issue-centric view did not surface an obvious concrete result beyond links to other surfaces."
+    },
+    {
+      "id": "VAL-RUN-006",
+      "title": "TUI run state matches company-scoped API status",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Compare the live ORC-4 run window in TUI and /api/orchestrator/status",
+          "expected": "TUI active-run indicators match the API status totals",
+          "observed": "The TUI header showed 0 active runs while the API reported totalActiveRuns=1 for run 003eb1ce and the sidebar still showed CEO running"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-006-tui-active-mismatch.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-006-tui-active-mismatch.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-006-orchestrator-status.json"
+        ]
+      },
+      "issues": "The TUI and API disagreed about active-run count/state during live execution."
+    },
+    {
+      "id": "VAL-RUN-007",
+      "title": "Issue detail surfaces work products for completed work",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Inspect completed issue ORC-6 and its related run/workspace-operation feeds",
+          "expected": "Issue detail exposes produced artifacts or work products directly",
+          "observed": "Issue detail showed comments and links only; workProducts stayed empty and workspace-operations returned []"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-RUN-004-005-007-ORC6-issue-detail.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/orc-6-current.json",
+          "orchestrator-runtime/orchestrator-runtime-bundle/run-6881fbdf-workspace-ops.json"
+        ]
+      },
+      "issues": "No direct work-product or artifact surface was available on the completed issue detail flow."
+    },
+    {
+      "id": "VAL-RUN-008",
+      "title": "TUI exposes a concrete run-output or result inspection path",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Use the TUI during and after orchestrator actions",
+          "expected": "The TUI provides a concrete run-output or result inspection flow",
+          "observed": "The TUI showed aggregate status, chat responses, and noisy shell spillover, but no dedicated run-output/result inspection affordance for the target run"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-001-company-a-session.txt",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-006-after-recovery.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-001-company-a-session.png",
+          "orchestrator-runtime/orchestrator-runtime-bundle/VAL-ORCH-006-after-recovery.png"
+        ]
+      },
+      "issues": "No concrete in-TUI run-result inspection path was discoverable for the demo-repo run."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "tuistory text entry occasionally dropped characters in the orchestrator input bar, so the typed prompt in company A was visibly garbled even though Codex still interpreted it well enough to create ORC-3.",
+      "resolved": true,
+      "resolution": "Validated the created issue through the API and UI rather than relying only on the exact echoed user text.",
+      "affectedAssertions": [
+        "VAL-ORCH-002",
+        "VAL-ORCH-003"
+      ]
+    },
+    {
+      "description": "The audit instance runs in local_trusted mode, so requests without an Authorization header are implicitly treated as board-authenticated instead of truly anonymous.",
+      "resolved": false,
+      "resolution": null,
+      "affectedAssertions": [
+        "VAL-CROSS-005"
+      ]
+    }
+  ],
+  "blockers": [],
+  "identifiers": {
+    "companyAId": "738f9d32-4ce6-490d-b10a-ada3604d84ed",
+    "companyAPrefix": "ORC",
+    "companyBId": "383ff970-da56-4b6c-8b27-3609f5ed001c",
+    "companyBPrefix": "ORCA",
+    "agentAId": "0463944a-fc6d-4c2f-a39b-d89a2b475b04",
+    "agentAName": "CEO",
+    "agentAUrlKey": "ceo",
+    "agentBId": "601336c6-1233-4084-bc70-17d777af355e",
+    "issueCreatedViaTuiId": "cdc5f66f-bf53-45a4-a77f-7c3f09f88ebe",
+    "issueCreatedViaTuiRef": "ORC-3",
+    "liveIssueId": "14a60a3c-706e-46f6-96b0-4314fe7e4b64",
+    "liveIssueRef": "ORC-4",
+    "liveRunId": "003eb1ce-84ee-4057-a8c7-b68f7ef429e4",
+    "finishedIssueId": "fa8ed0d9-02d3-452c-9bc5-bba204c3db1d",
+    "finishedIssueRef": "ORC-6",
+    "finishedRunId": "6881fbdf-e0e2-4941-92b6-31566ec2a6d7",
+    "unblockIssueId": "cffaf14e-a146-46c6-a10e-2c32a264ad87",
+    "unblockIssueRef": "ORC-1",
+    "companyBIsolationIssueId": "3993355b-228d-4012-a502-bf8e844de667",
+    "companyBIsolationIssueRef": "ORCA-1"
+  },
+  "summary": "Tested 20 assigned orchestrator-runtime assertions on the isolated audit instance: 13 passed, 7 failed, 0 blocked. Passes covered TUI company scoping, free-form work creation, UI company isolation, nudge/unblock API behavior, deep-link company-context sync, and live-run API/UI visibility. Failures were concentrated in unauthenticated run-endpoint access under local_trusted mode, TUI recovery/output visibility, TUI/API run-status divergence, weak issue-centric result surfacing, missing issue work-product surfacing, and inconsistent cross-surface run identity exposure."
+}
