@@ -34,6 +34,14 @@ function createMockProcess() {
   return proc;
 }
 
+function createProcessThatErrorsOnMicrotask(error: Error) {
+  const proc = createMockProcess();
+  queueMicrotask(() => {
+    proc.emit("error", error);
+  });
+  return proc;
+}
+
 function respond(proc: ReturnType<typeof createMockProcess>, msg: unknown): void {
   proc.stdout.write(`${JSON.stringify(msg)}\n`);
 }
@@ -84,7 +92,11 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     expect(frame).toContain("Codex:");
 
     // 2. Codex subprocess is spawned
-    expect(mockSpawn).toHaveBeenCalledWith("codex", ["app-server"], {
+    expect(mockSpawn).toHaveBeenCalledWith("codex", [
+      "app-server",
+      "-c",
+      "sandbox_workspace_write.network_access=true",
+    ], {
       stdio: ["pipe", "pipe", "inherit"],
     });
 
@@ -324,6 +336,41 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     expect(frame).toContain("Why did the send fail?");
     expect(frame).toContain("Error: thread/start failed: thread/start failed in test");
     expect(frame).not.toContain("thinking...");
+
+    unmount();
+  });
+
+  it("shows a recoverable disconnected error state when codex cannot be spawned", async () => {
+    const enoent = Object.assign(new Error("spawn codex ENOENT"), {
+      code: "ENOENT",
+      errno: -2,
+      syscall: "spawn codex",
+      path: "codex",
+    });
+    const mockSpawn = vi
+      .fn()
+      .mockReturnValue(createProcessThatErrorsOnMicrotask(enoent));
+    const mockFetch = createMockFetch();
+
+    const { lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await tick(100);
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Papierklammer");
+    expect(frame).toContain("Codex: disconnected");
+    expect(frame).toContain("spawn codex ENOENT");
+    expect(frame).not.toContain("Waiting for response");
 
     unmount();
   });

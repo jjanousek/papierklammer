@@ -462,4 +462,57 @@ describe("VAL-TUI-STAB-006: Error during send resets thinking state", () => {
 
     unmount();
   });
+
+  it("failed turn completion surfaces an error and leaves the input ready for retry", async () => {
+    const { stdin, lastFrame, unmount, mockProc } = await setupApp();
+
+    stdin.write("Create onboarding work");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_failed_turn" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: {
+        turn: { id: "turn_failed", status: "inProgress", items: [], error: null },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_failed_turn",
+        turn: {
+          id: "turn_failed",
+          status: "failed",
+          items: [],
+          error: {
+            message: "Issue creation failed",
+            additionalDetails: "POST /api/orchestrator/issues returned HTTP 500",
+          },
+        },
+      },
+    });
+    await tick(100);
+
+    let frame = lastFrame()!;
+    expect(frame).toContain("Create onboarding work");
+    expect(frame).toContain("Error: Issue creation failed");
+    expect(frame).not.toContain("thinking...");
+    expect(frame).not.toContain("Waiting for response");
+
+    stdin.write("Retry the request");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    frame = lastFrame()!;
+    expect(frame).toContain("Retry the request");
+    expect(frame).toContain("thinking...");
+
+    unmount();
+  });
 });

@@ -40,12 +40,19 @@ export interface CodexCallbacks {
   onCommandOutput?: (params: CommandOutputDeltaParams) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  onError?: (error: Error) => void;
 }
 
 type PendingRequest = {
   resolve: (value: JsonRpcResponse) => void;
   reject: (reason: Error) => void;
 };
+
+const CODEX_APP_SERVER_ARGS = [
+  "app-server",
+  "-c",
+  "sandbox_workspace_write.network_access=true",
+] as const;
 
 /**
  * Client for the Codex app-server JSON-RPC protocol over stdio.
@@ -78,34 +85,85 @@ export class CodexClient {
   // ── Process management ─────────────────────────────────────────────
 
   private spawnProcess(): void {
-    this.proc = this.spawnFn("codex", ["app-server"], {
-      stdio: ["pipe", "pipe", "inherit"],
-    });
-
-    if (!this.proc.stdout || !this.proc.stdin) {
-      throw new Error("Failed to spawn codex app-server with stdio pipes");
+    let proc: ChildProcess;
+    try {
+      proc = this.spawnFn("codex", [...CODEX_APP_SERVER_ARGS], {
+        stdio: ["pipe", "pipe", "inherit"],
+      });
+    } catch (error) {
+      queueMicrotask(() => {
+        this.handleProcessFailure(error);
+      });
+      return;
     }
 
-    this.rl = readline.createInterface({ input: this.proc.stdout });
+    this.proc = proc;
+
+    if (!proc.stdout || !proc.stdin) {
+      queueMicrotask(() => {
+        if (this.proc === proc) {
+          this.handleProcessFailure(
+            new Error("Failed to spawn codex app-server with stdio pipes"),
+          );
+        }
+      });
+      return;
+    }
+
+    this.rl = readline.createInterface({ input: proc.stdout });
     this.rl.on("line", (line: string) => this.handleLine(line));
 
-    this.proc.on("exit", (code, signal) => {
-      this.cleanup();
-      this.callbacks.onDisconnected?.();
-
-      if (!this.destroyed && this.autoReconnect) {
-        this.reconnectTimer = setTimeout(() => {
-          this.reconnectTimer = null;
-          this.spawnProcess();
-          // Re-initialize after reconnect
-          void this.initialize().then(() => {
-            this.callbacks.onConnected?.();
-          }).catch(() => {
-            // Will be handled by the next reconnect attempt
-          });
-        }, this.reconnectDelayMs);
-      }
+    proc.on("error", (error) => {
+      if (this.proc !== proc) return;
+      this.handleProcessFailure(error);
     });
+
+    proc.on("exit", () => {
+      if (this.proc !== proc) return;
+      this.handleProcessFailure();
+    });
+  }
+
+  private normalizeError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
+  private shouldAutoReconnect(error?: Error): boolean {
+    const errnoLike = error as NodeJS.ErrnoException | undefined;
+    return errnoLike?.code !== "ENOENT";
+  }
+
+  private scheduleReconnect(): void {
+    if (this.destroyed || !this.autoReconnect || this.reconnectTimer) {
+      return;
+    }
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.spawnProcess();
+      // Re-initialize after reconnect
+      void this.initialize().then(() => {
+        this.callbacks.onConnected?.();
+      }).catch(() => {
+        // Process failures will surface via error/exit listeners and schedule
+        // subsequent retries when appropriate.
+      });
+    }, this.reconnectDelayMs);
+  }
+
+  private handleProcessFailure(error?: unknown): void {
+    const normalizedError = error == null ? undefined : this.normalizeError(error);
+    this.cleanup();
+    this.proc = null;
+
+    if (normalizedError) {
+      this.callbacks.onError?.(normalizedError);
+    }
+    this.callbacks.onDisconnected?.();
+
+    if (!normalizedError || this.shouldAutoReconnect(normalizedError)) {
+      this.scheduleReconnect();
+    }
   }
 
   private cleanup(): void {
@@ -223,6 +281,26 @@ export class CodexClient {
   }
 
   /**
+   * Ensure the client has a live subprocess and completed initialize handshake.
+   */
+  async reconnect(): Promise<InitializeResult> {
+    if (this.destroyed) {
+      throw new Error("Codex client has been destroyed");
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (!this.proc) {
+      this.spawnProcess();
+    }
+
+    return this.initialize();
+  }
+
+  /**
    * Start a new thread/conversation.
    * Returns the thread ID.
    */
@@ -286,7 +364,9 @@ export class CodexClient {
     }
 
     if (this.proc) {
-      this.proc.kill("SIGTERM");
+      const proc = this.proc;
+      this.proc = null;
+      proc.kill("SIGTERM");
       this.proc = null;
     }
 

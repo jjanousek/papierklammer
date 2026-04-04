@@ -6,6 +6,7 @@ export type CodexState = "disconnected" | "connected" | "thinking";
 
 export interface StatusBarProps {
   codexState?: CodexState;
+  error?: string | null;
   threadId?: string;
   model?: string;
   reasoningEffort?: ReasoningEffort;
@@ -26,6 +27,7 @@ const STATE_LABELS: Record<CodexState, string> = {
 
 export function StatusBar({
   codexState = "disconnected",
+  error,
   threadId,
   model,
   reasoningEffort,
@@ -34,6 +36,7 @@ export function StatusBar({
   return (
     <Box paddingX={1} gap={1} flexShrink={0} height={1}>
       <Text color={STATE_COLORS[codexState]}>{STATE_LABELS[codexState]}</Text>
+      {error ? <Text color="red">| Error: {error}</Text> : null}
       {threadId ? <Text dimColor>| Thread: {threadId}</Text> : null}
       {model ? <Text dimColor>| Model: {model}</Text> : null}
       {reasoningEffort ? <Text dimColor>| reasoning: {reasoningEffort}</Text> : null}

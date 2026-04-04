@@ -99,7 +99,11 @@ describe("CodexClient", () => {
   it("spawns codex app-server subprocess on construction", () => {
     client = new CodexClient({ spawnFn, autoReconnect: false });
 
-    expect(spawnFn).toHaveBeenCalledWith("codex", ["app-server"], {
+    expect(spawnFn).toHaveBeenCalledWith("codex", [
+      "app-server",
+      "-c",
+      "sandbox_workspace_write.network_access=true",
+    ], {
       stdio: ["pipe", "pipe", "inherit"],
     });
   });

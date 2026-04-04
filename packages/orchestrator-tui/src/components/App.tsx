@@ -171,6 +171,7 @@ function CompanySession({
 
   const effectiveCodexState: CodexState =
     codexStateProp ?? (enableCodex ? codex.connectionState : "disconnected");
+  const effectiveCodexError = enableCodex ? codex.lastError : null;
   const effectiveThreadId = threadIdProp ?? codex.threadId ?? undefined;
   const inputDisabled = chat.isThinking || (enableCodex && codex.isThinking);
 
@@ -267,6 +268,7 @@ function CompanySession({
         />
         <StatusBar
           codexState={effectiveCodexState}
+          error={effectiveCodexError}
           threadId={effectiveThreadId}
           model={model}
           reasoningEffort={reasoningEffort}
@@ -455,6 +457,7 @@ export function App({
           </Box>
           <StatusBar
             codexState={codexStateProp ?? "disconnected"}
+            error={null}
             threadId={undefined}
             model={model}
             reasoningEffort={reasoningEffort}

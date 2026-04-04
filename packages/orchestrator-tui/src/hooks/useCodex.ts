@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CodexClient, type CodexClientOptions } from "../codex/client.js";
-import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningEffort } from "../codex/types.js";
+import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningEffort, TurnInfo } from "../codex/types.js";
 
 export type ConnectionState = "disconnected" | "connected" | "thinking";
 
@@ -26,12 +26,26 @@ export interface UseCodexResult {
   isConnected: boolean;
   /** Convenience: true when thinking (turn in progress). */
   isThinking: boolean;
+  /** Most recent Codex connection or turn error. */
+  lastError: string | null;
   /** Current thread ID (null if no thread started). */
   threadId: string | null;
   /** Send a message. Creates a thread on first call. */
   sendMessage: (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort, serviceTier?: string) => Promise<void>;
   /** Interrupt the current turn. */
   interruptTurn: () => Promise<void>;
+}
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function formatTurnError(turn: TurnInfo): string {
+  const parts = [
+    turn.error?.message ?? "Turn failed",
+    turn.error?.additionalDetails ?? null,
+  ];
+  return parts.filter((part): part is string => Boolean(part)).join(" — ");
 }
 
 /**
@@ -42,13 +56,20 @@ export interface UseCodexResult {
  */
 export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
+  const [lastError, setLastError] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
 
   const clientRef = useRef<CodexClient | null>(null);
   const turnIdRef = useRef<string | null>(null);
   const threadIdRef = useRef<string | null>(null);
+  const lastErrorRef = useRef<string | null>(null);
   const optsRef = useRef(opts);
   optsRef.current = opts;
+
+  const setErrorMessage = useCallback((message: string | null): void => {
+    lastErrorRef.current = message;
+    setLastError(message);
+  }, []);
 
   // Create client on mount, destroy on unmount
   useEffect(() => {
@@ -65,13 +86,26 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       onTurnCompleted: (params) => {
         turnIdRef.current = null;
         setConnectionState("connected");
+        if (params.turn.status === "failed") {
+          const error = new Error(formatTurnError(params.turn));
+          setErrorMessage(error.message);
+          optsRef.current.onError?.(error);
+          return;
+        }
+        setErrorMessage(null);
         optsRef.current.onTurnCompleted?.(params);
       },
       onCommandOutput: (params) => optsRef.current.onCommandOutput?.(params),
-      onConnected: () => setConnectionState("connected"),
+      onConnected: () => {
+        setConnectionState("connected");
+        setErrorMessage(null);
+      },
       onDisconnected: () => {
         setConnectionState("disconnected");
         turnIdRef.current = null;
+      },
+      onError: (error) => {
+        setErrorMessage(normalizeError(error).message);
       },
     };
 
@@ -99,6 +133,12 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     }
 
     try {
+      if (!client.isConnected) {
+        await client.reconnect();
+        setConnectionState("connected");
+      }
+
+      setErrorMessage(null);
       let tid = threadIdRef.current;
 
       // Create thread on first message
@@ -120,13 +160,21 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       turnIdRef.current = result.turn.id;
     } catch (error) {
       turnIdRef.current = null;
+      const normalizedError = normalizeError(error);
+      const message =
+        !client.isConnected && lastErrorRef.current
+          ? lastErrorRef.current
+          : normalizedError.message;
+      const alreadyReported = lastErrorRef.current === message;
+
       setConnectionState(client.isConnected ? "connected" : "disconnected");
-      optsRef.current.onError?.(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      throw error;
+      setErrorMessage(message);
+      if (!alreadyReported || client.isConnected) {
+        optsRef.current.onError?.(new Error(message));
+      }
+      throw new Error(message);
     }
-  }, []);
+  }, [setErrorMessage]);
 
   const interruptTurn = useCallback(async (): Promise<void> => {
     const client = clientRef.current;
@@ -144,6 +192,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     connectionState,
     isConnected: connectionState !== "disconnected",
     isThinking: connectionState === "thinking",
+    lastError,
     threadId,
     sendMessage,
     interruptTurn,
