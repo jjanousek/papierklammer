@@ -79,9 +79,24 @@ export async function resolveLaunchConfig({
     );
   }
 
-  let resolvedCompanyId =
-    companyId?.trim() || process.env.PAPIERKLAMMER_TUI_COMPANY_ID?.trim() || "";
+  const explicitCompanyId = companyId?.trim() || "";
+  const presetCompanyId = process.env.PAPIERKLAMMER_TUI_COMPANY_ID?.trim() || "";
+  let resolvedCompanyId = explicitCompanyId || presetCompanyId;
   const companies = await listCompanies(baseUrl, resolvedApiKey);
+
+  if (resolvedCompanyId) {
+    const presetCompany = companies.find(
+      (company) => String(company?.id ?? "") === resolvedCompanyId,
+    );
+    if (!presetCompany) {
+      if (explicitCompanyId) {
+        throw new Error(
+          `Company ${resolvedCompanyId} was not found. Choose a valid --company-id or omit it to use automatic selection.`,
+        );
+      }
+      resolvedCompanyId = "";
+    }
+  }
 
   if (!resolvedCompanyId) {
     if (companies.length === 0) {

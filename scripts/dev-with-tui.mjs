@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   appleScriptString,
   repoRoot,
@@ -9,11 +11,8 @@ import {
 } from "./dev-tui-utils.mjs";
 
 const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const forwardedArgs = process.argv.slice(2);
-const helpRequested = forwardedArgs.includes("--help") || forwardedArgs.includes("-h");
 
-if (helpRequested) {
-  console.log(`Usage: pnpm dev [-- <dev-runner-flags>]
+export const HELP_TEXT = `Usage: pnpm dev [-- <dev-runner-flags>]
 
 Starts the Paperclip dev server in the current terminal and tries to open the
 orchestrator TUI in a second terminal once the server is reachable.
@@ -24,9 +23,7 @@ Environment:
   PAPIERKLAMMER_TUI_URL=<url>       Override the TUI target base URL
   PAPIERKLAMMER_TUI_API_KEY=<key>   Board API key for authenticated mode
   PAPIERKLAMMER_TUI_COMPANY_ID=<id> Force the company used by the TUI
-`);
-  process.exit(0);
-}
+`;
 
 function openTuiTerminal(command) {
   if (process.platform === "darwin") {
@@ -96,21 +93,19 @@ function openTuiTerminal(command) {
   return false;
 }
 
-function buildTuiCommand(launch) {
-  const parts = [
-    `cd ${shellEscape(repoRoot)}`,
+export function buildTuiCommand(launch) {
+  const envAssignments = [
     `PAPIERKLAMMER_TUI_URL=${shellEscape(launch.baseUrl)}`,
     `PAPIERKLAMMER_TUI_API_KEY=${shellEscape(launch.apiKey)}`,
-    "pnpm dev:tui",
-  ];
-  if (launch.companyName) {
-    parts.splice(3, 0, `PAPIERKLAMMER_TUI_COMPANY_NAME=${shellEscape(launch.companyName)}`);
-  }
-  if (launch.companyId) {
-    parts.splice(launch.companyName ? 4 : 3, 0, `PAPIERKLAMMER_TUI_COMPANY_ID=${shellEscape(launch.companyId)}`);
-  }
+    ...(launch.companyName
+      ? [`PAPIERKLAMMER_TUI_COMPANY_NAME=${shellEscape(launch.companyName)}`]
+      : []),
+    ...(launch.companyId
+      ? [`PAPIERKLAMMER_TUI_COMPANY_ID=${shellEscape(launch.companyId)}`]
+      : []),
+  ].join(" ");
 
-  const command = parts.join(" && ");
+  const command = `cd ${shellEscape(repoRoot)} && ${envAssignments} pnpm dev:tui`;
   return [
     `${command}; status=$?`,
     'if [ "$status" -ne 0 ]; then',
@@ -123,67 +118,85 @@ function buildTuiCommand(launch) {
   ].join("; ");
 }
 
-const serverChild = spawn(
-  pnpmBin,
-  [
-    "--filter",
-    "@papierklammer/server",
-    "exec",
-    "tsx",
-    "../scripts/dev-runner.ts",
-    "watch",
-    ...forwardedArgs,
-  ],
-  {
-    cwd: repoRoot,
-    env: process.env,
-    stdio: "inherit",
-  },
-);
+export function run(argv = process.argv) {
+  const forwardedArgs = argv.slice(2);
+  const helpRequested = forwardedArgs.includes("--help") || forwardedArgs.includes("-h");
 
-const forwardSignal = (signal) => {
-  if (!serverChild.killed) {
-    serverChild.kill(signal);
-  }
-};
-
-process.on("SIGINT", forwardSignal);
-process.on("SIGTERM", forwardSignal);
-
-if (process.stdout.isTTY && process.env.PAPIERKLAMMER_DEV_NO_TUI !== "1") {
-  setTimeout(async () => {
-    try {
-      const launch = await resolveLaunchConfig();
-      const command = buildTuiCommand(launch);
-      const opened = openTuiTerminal(command);
-
-      if (opened) {
-        console.error(
-          launch.companyId
-            ? `[paperclip] opened orchestrator TUI in a new terminal for company ${launch.companyId}`
-            : "[paperclip] opened orchestrator TUI in a new terminal with company picker",
-        );
-        console.error("[paperclip] if you do not see it, run `pnpm dev:tui` in another terminal.");
-        return;
-      }
-
-      console.error("[paperclip] could not open a second terminal automatically.");
-      console.error("[paperclip] run this command in another terminal:");
-      console.error(command);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error resolving TUI launch";
-      console.error(`[paperclip] skipping TUI auto-open: ${message}`);
-    }
-  }, 0);
-}
-
-serverChild.on("exit", (code, signal) => {
-  process.off("SIGINT", forwardSignal);
-  process.off("SIGTERM", forwardSignal);
-  if (signal) {
-    process.kill(process.pid, signal);
+  if (helpRequested) {
+    console.log(HELP_TEXT);
     return;
   }
-  process.exit(code ?? 0);
-});
+
+  const serverChild = spawn(
+    pnpmBin,
+    [
+      "--filter",
+      "@papierklammer/server",
+      "exec",
+      "tsx",
+      "../scripts/dev-runner.ts",
+      "watch",
+      ...forwardedArgs,
+    ],
+    {
+      cwd: repoRoot,
+      env: process.env,
+      stdio: "inherit",
+    },
+  );
+
+  const forwardSignal = (signal) => {
+    if (!serverChild.killed) {
+      serverChild.kill(signal);
+    }
+  };
+
+  process.on("SIGINT", forwardSignal);
+  process.on("SIGTERM", forwardSignal);
+
+  if (process.stdout.isTTY && process.env.PAPIERKLAMMER_DEV_NO_TUI !== "1") {
+    setTimeout(async () => {
+      try {
+        const launch = await resolveLaunchConfig();
+        const command = buildTuiCommand(launch);
+        const opened = openTuiTerminal(command);
+
+        if (opened) {
+          console.error(
+            launch.companyId
+              ? `[paperclip] opened orchestrator TUI in a new terminal for company ${launch.companyId}`
+              : "[paperclip] opened orchestrator TUI in a new terminal with company picker",
+          );
+          console.error("[paperclip] if you do not see it, run `pnpm dev:tui` in another terminal.");
+          return;
+        }
+
+        console.error("[paperclip] could not open a second terminal automatically.");
+        console.error("[paperclip] run this command in another terminal:");
+        console.error(command);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error resolving TUI launch";
+        console.error(`[paperclip] skipping TUI auto-open: ${message}`);
+      }
+    }, 0);
+  }
+
+  serverChild.on("exit", (code, signal) => {
+    process.off("SIGINT", forwardSignal);
+    process.off("SIGTERM", forwardSignal);
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
+    process.exit(code ?? 0);
+  });
+}
+
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const isDirectRun =
+  invokedPath !== "" && import.meta.url === pathToFileURL(invokedPath).href;
+
+if (isDirectRun) {
+  run();
+}
