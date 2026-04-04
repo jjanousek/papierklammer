@@ -6,7 +6,7 @@ import { InputBar } from "../components/InputBar.js";
 import { HeaderBar } from "../components/HeaderBar.js";
 import { StatusBar } from "../components/StatusBar.js";
 import { App } from "../components/App.js";
-import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
+import type { AgentOverview, RunReviewEntry } from "../hooks/useOrchestratorStatus.js";
 
 // Suppress alternate screen buffer escape codes during tests
 beforeEach(() => {
@@ -45,6 +45,23 @@ const MOCK_AGENTS: AgentOverview[] = [
     status: "blocked",
     activeRunCount: 0,
     queuedIntentCount: 2,
+  },
+];
+
+const MOCK_RECENT_RUNS: RunReviewEntry[] = [
+  {
+    runId: "run-completed-1",
+    status: "succeeded",
+    agentId: "a2",
+    agentName: "Dev-1",
+    issueId: "issue-1",
+    issueIdentifier: "AUD-1",
+    createdAt: "2026-04-05T10:00:00.000Z",
+    startedAt: "2026-04-05T10:00:00.000Z",
+    finishedAt: "2026-04-05T10:05:00.000Z",
+    resultSummaryText: "Prepared the audit demo report.",
+    stdoutExcerpt: "verbose stdout",
+    stderrExcerpt: null,
   },
 ];
 
@@ -89,6 +106,54 @@ describe("AgentSidebar", () => {
       <AgentSidebar agents={MOCK_AGENTS} />,
     );
     expect(lastFrame()).toContain("Agents");
+    unmount();
+  });
+
+  it("shows a concrete run review summary for the selected agent", () => {
+    const { lastFrame, unmount } = render(
+      <AgentSidebar
+        agents={MOCK_AGENTS}
+        recentRuns={MOCK_RECENT_RUNS}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Run review");
+    expect(frame).toContain("run-comp");
+    expect(frame).toContain("AUD-1");
+    expect(frame).toContain("Prepared the audit");
+    expect(frame).toContain("demo report.");
+    unmount();
+  });
+
+  it("falls back to excerpt text when a live run has no persisted result summary yet", () => {
+    const { lastFrame, unmount } = render(
+      <AgentSidebar
+        agents={MOCK_AGENTS}
+        activeRuns={[
+          {
+            runId: "run-live-1",
+            status: "running",
+            agentId: "a1",
+            agentName: "CEO",
+            issueId: "issue-live-1",
+            issueIdentifier: "AUD-2",
+            createdAt: "2026-04-05T11:00:00.000Z",
+            startedAt: "2026-04-05T11:00:00.000Z",
+            finishedAt: null,
+            resultSummaryText: null,
+            stdoutExcerpt: "Live stdout preview",
+            stderrExcerpt: null,
+          },
+        ]}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Run review");
+    expect(frame).toContain("run-live");
+    expect(frame).toContain("AUD-2");
+    expect(frame).toContain("Live stdout preview");
     unmount();
   });
 });

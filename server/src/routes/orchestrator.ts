@@ -61,7 +61,7 @@ export function orchestratorRoutes(db: Db) {
     }
     assertCompanyAccess(req, companyId);
 
-    const { agents: agentList, totalActiveLeases } =
+    const { agents: agentList, totalActiveLeases, activeRuns, recentRuns } =
       await orchSvc.getAgentOverviews(companyId);
 
     const totalActiveRuns = agentList.reduce(
@@ -78,6 +78,8 @@ export function orchestratorRoutes(db: Db) {
       totalActiveRuns,
       totalQueuedIntents,
       totalActiveLeases,
+      activeRuns,
+      recentRuns,
     });
   });
 

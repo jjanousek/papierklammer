@@ -160,9 +160,26 @@ describe("orchestrator routes", () => {
     it("returns agent overview with counts", async () => {
       mockOrchestratorService.getAgentOverviews.mockResolvedValue({
         agents: [
-          { id: AGENT_ID, name: "Agent Alpha", status: "idle", activeRunCount: 2, queuedIntentCount: 3 },
+          { agentId: AGENT_ID, name: "Agent Alpha", status: "idle", activeRunCount: 2, queuedIntentCount: 3 },
         ],
         totalActiveLeases: 1,
+        activeRuns: [
+          {
+            runId: "run-live-1",
+            status: "running",
+            agentId: AGENT_ID,
+            agentName: "Agent Alpha",
+            issueId: ISSUE_ID,
+            issueIdentifier: "ISS-1",
+            createdAt: new Date("2026-04-05T10:00:00.000Z"),
+            startedAt: new Date("2026-04-05T10:00:00.000Z"),
+            finishedAt: null,
+            resultSummaryText: "Preparing report output",
+            stdoutExcerpt: "working…",
+            stderrExcerpt: null,
+          },
+        ],
+        recentRuns: [],
       });
 
       const res = await request(createApp())
@@ -171,7 +188,7 @@ describe("orchestrator routes", () => {
       expect(res.status).toBe(200);
       expect(res.body.agents).toHaveLength(1);
       expect(res.body.agents[0]).toEqual({
-        id: AGENT_ID,
+        agentId: AGENT_ID,
         name: "Agent Alpha",
         status: "idle",
         activeRunCount: 2,
@@ -180,6 +197,14 @@ describe("orchestrator routes", () => {
       expect(res.body.totalActiveRuns).toBe(2);
       expect(res.body.totalQueuedIntents).toBe(3);
       expect(res.body.totalActiveLeases).toBe(1);
+      expect(res.body.activeRuns).toHaveLength(1);
+      expect(res.body.activeRuns[0]).toMatchObject({
+        runId: "run-live-1",
+        issueId: ISSUE_ID,
+        issueIdentifier: "ISS-1",
+        resultSummaryText: "Preparing report output",
+      });
+      expect(res.body.recentRuns).toEqual([]);
     });
 
     it("requires companyId query parameter", async () => {
@@ -208,6 +233,8 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.getAgentOverviews.mockResolvedValue({
         agents: [],
         totalActiveLeases: 0,
+        activeRuns: [],
+        recentRuns: [],
       });
 
       const res = await request(createApp())
@@ -223,10 +250,12 @@ describe("orchestrator routes", () => {
     it("computes totals from agent counts", async () => {
       mockOrchestratorService.getAgentOverviews.mockResolvedValue({
         agents: [
-          { id: "a1", name: "A", status: "idle", activeRunCount: 1, queuedIntentCount: 2 },
-          { id: "a2", name: "B", status: "running", activeRunCount: 3, queuedIntentCount: 0 },
+          { agentId: "a1", name: "A", status: "idle", activeRunCount: 1, queuedIntentCount: 2 },
+          { agentId: "a2", name: "B", status: "running", activeRunCount: 3, queuedIntentCount: 0 },
         ],
         totalActiveLeases: 4,
+        activeRuns: [],
+        recentRuns: [],
       });
 
       const res = await request(createApp())

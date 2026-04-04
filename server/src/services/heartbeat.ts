@@ -36,7 +36,7 @@ import { eventLogService } from "./event-log.js";
 import { terminalStatePolicyService } from "./terminal-state-policy.js";
 import { registerCompletedRunWorkspace } from "./warm-workspace-pool.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
-import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
+import { mergeHeartbeatRunResultJson, summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
   buildWorkspaceReadyComment,
   cleanupExecutionWorkspaceArtifacts,
@@ -3019,7 +3019,7 @@ export function heartbeatService(db: Db) {
         exitCode: adapterResult.exitCode,
         signal: adapterResult.signal,
         usageJson,
-        resultJson: adapterResult.resultJson ?? null,
+        resultJson: mergeHeartbeatRunResultJson(adapterResult.resultJson, adapterResult.summary),
         sessionIdAfter: nextSessionState.displayId ?? nextSessionState.legacySessionId,
         stdoutExcerpt,
         stderrExcerpt,

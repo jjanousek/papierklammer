@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { summarizeHeartbeatRunResultJson } from "../services/heartbeat-run-summary.js";
+import {
+  mergeHeartbeatRunResultJson,
+  summarizeHeartbeatRunResultJson,
+} from "../services/heartbeat-run-summary.js";
 
 describe("summarizeHeartbeatRunResultJson", () => {
   it("truncates text fields and preserves cost aliases", () => {
@@ -29,5 +32,38 @@ describe("summarizeHeartbeatRunResultJson", () => {
     expect(summarizeHeartbeatRunResultJson(null)).toBeNull();
     expect(summarizeHeartbeatRunResultJson(["nope"] as unknown as Record<string, unknown>)).toBeNull();
     expect(summarizeHeartbeatRunResultJson({ nested: { only: "ignored" } })).toBeNull();
+  });
+});
+
+describe("mergeHeartbeatRunResultJson", () => {
+  it("persists adapter summaries alongside existing result payload fields", () => {
+    expect(
+      mergeHeartbeatRunResultJson(
+        {
+          stdout: "raw stdout",
+          stderr: "",
+        },
+        "Prepared a concise operator-facing result summary.",
+      ),
+    ).toEqual({
+      stdout: "raw stdout",
+      stderr: "",
+      summary: "Prepared a concise operator-facing result summary.",
+    });
+  });
+
+  it("does not override an existing summary field", () => {
+    expect(
+      mergeHeartbeatRunResultJson(
+        {
+          summary: "keep me",
+          stdout: "raw stdout",
+        },
+        "new summary",
+      ),
+    ).toEqual({
+      summary: "keep me",
+      stdout: "raw stdout",
+    });
   });
 });

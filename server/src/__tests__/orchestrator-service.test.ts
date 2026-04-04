@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { agents, companies, createDb, issues, projects } from "@papierklammer/db";
+import { agents, companies, createDb, heartbeatRuns, issues, projects } from "@papierklammer/db";
 import { sql } from "drizzle-orm";
 import {
   getEmbeddedPostgresTestSupport,
@@ -17,7 +17,7 @@ if (!embeddedPostgresSupport.supported) {
   );
 }
 
-describeDB("orchestratorService.findAgentAssignedIssue", () => {
+describeDB("orchestratorService", () => {
   let db!: ReturnType<typeof createDb>;
   let svc!: ReturnType<typeof orchestratorService>;
   let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
@@ -194,5 +194,105 @@ describeDB("orchestratorService.findAgentAssignedIssue", () => {
     });
 
     await expect(svc.findAgentAssignedIssue(companyId, agentId)).resolves.toBeNull();
+  });
+
+  it("returns company-scoped active and recent run review entries with stable identity fields", async () => {
+    const { companyId, agentId, projectId } = await seedAgentContext();
+    const issueId = randomUUID();
+    const otherCompanyId = randomUUID();
+    const otherAgentId = randomUUID();
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId,
+      projectId,
+      identifier: "TDEMO-1",
+      title: "Demo repo review",
+      status: "in_progress",
+      priority: "medium",
+      assigneeAgentId: agentId,
+    });
+
+    await db.insert(companies).values({
+      id: otherCompanyId,
+      name: "Other Company",
+      issuePrefix: "OTHR",
+      requireBoardApprovalForNewAgents: false,
+    });
+
+    await db.insert(agents).values({
+      id: otherAgentId,
+      companyId: otherCompanyId,
+      name: "Other Agent",
+      role: "engineer",
+      status: "active",
+      adapterType: "codex_local",
+      adapterConfig: {},
+      runtimeConfig: {},
+      permissions: {},
+    });
+
+    await db.insert(heartbeatRuns).values([
+      {
+        id: randomUUID(),
+        companyId,
+        agentId,
+        invocationSource: "manual",
+        status: "running",
+        startedAt: new Date("2026-04-05T10:00:00.000Z"),
+        contextSnapshot: { issueId },
+        stdoutExcerpt: "Live output from the target run",
+      },
+      {
+        id: randomUUID(),
+        companyId,
+        agentId,
+        invocationSource: "manual",
+        status: "succeeded",
+        startedAt: new Date("2026-04-05T09:30:00.000Z"),
+        finishedAt: new Date("2026-04-05T09:45:00.000Z"),
+        contextSnapshot: { issueId },
+        resultJson: {
+          summary: "Created a concise operator-facing result summary.",
+          stdout: "verbose raw stdout that should not win over the summary",
+        },
+      },
+      {
+        id: randomUUID(),
+        companyId: otherCompanyId,
+        agentId: otherAgentId,
+        invocationSource: "manual",
+        status: "running",
+        startedAt: new Date("2026-04-05T11:00:00.000Z"),
+        stdoutExcerpt: "should not leak",
+      },
+    ]);
+
+    const status = await svc.getAgentOverviews(companyId);
+
+    expect(status.agents).toContainEqual({
+      agentId,
+      name: "Agent Alpha",
+      status: "active",
+      activeRunCount: 1,
+      queuedIntentCount: 0,
+    });
+    expect(status.activeRuns).toHaveLength(1);
+    expect(status.activeRuns[0]).toMatchObject({
+      agentId,
+      agentName: "Agent Alpha",
+      issueId,
+      issueIdentifier: "TDEMO-1",
+      status: "running",
+      resultSummaryText: "Live output from the target run",
+    });
+    expect(status.recentRuns).toHaveLength(1);
+    expect(status.recentRuns[0]).toMatchObject({
+      agentId,
+      issueId,
+      issueIdentifier: "TDEMO-1",
+      status: "succeeded",
+      resultSummaryText: "Created a concise operator-facing result summary.",
+    });
   });
 });

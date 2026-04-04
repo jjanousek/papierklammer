@@ -7,6 +7,23 @@ function readNumericField(record: Record<string, unknown>, key: string) {
   return key in record ? record[key] ?? null : undefined;
 }
 
+export function mergeHeartbeatRunResultJson(
+  resultJson: Record<string, unknown> | null | undefined,
+  summary: string | null | undefined,
+): Record<string, unknown> | null {
+  const normalizedSummary = typeof summary === "string" ? summary.trim() : "";
+  const base =
+    resultJson && typeof resultJson === "object" && !Array.isArray(resultJson)
+      ? { ...resultJson }
+      : {};
+
+  if (normalizedSummary && typeof base.summary !== "string") {
+    base.summary = normalizedSummary;
+  }
+
+  return Object.keys(base).length > 0 ? base : null;
+}
+
 export function summarizeHeartbeatRunResultJson(
   resultJson: Record<string, unknown> | null | undefined,
 ): Record<string, unknown> | null {

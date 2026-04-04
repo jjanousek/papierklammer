@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lte, not, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import {
   agents,
@@ -7,6 +7,7 @@ import {
   executionLeases,
   issues,
 } from "@papierklammer/db";
+import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 
 /**
  * Active run statuses for counting purposes.
@@ -24,6 +25,7 @@ const ACTIVE_LEASE_STATES = ["granted", "renewed"];
 const STALE_INTENT_THRESHOLD_MS = 60 * 60 * 1000;
 
 const ACTIVE_NUDGE_STATUSES = ["in_progress", "blocked", "todo"];
+const RUN_REVIEW_TEXT_KEYS = ["summary", "result", "message", "error"] as const;
 
 const NUDGE_STATUS_PRIORITY = sql<number>`
   case
@@ -35,11 +37,57 @@ const NUDGE_STATUS_PRIORITY = sql<number>`
 `;
 
 export interface AgentOverview {
-  id: string;
+  agentId: string;
   name: string;
   status: string;
   activeRunCount: number;
   queuedIntentCount: number;
+}
+
+export interface RunReviewEntry {
+  runId: string;
+  status: string;
+  agentId: string;
+  agentName: string;
+  issueId: string | null;
+  issueIdentifier: string | null;
+  createdAt: Date;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  resultSummaryText: string | null;
+  stdoutExcerpt: string | null;
+  stderrExcerpt: string | null;
+}
+
+function compactRunReviewText(value: string | null | undefined, maxLength = 320) {
+  if (!value) return null;
+  const normalized = value
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!normalized) return null;
+  return normalized.length <= maxLength
+    ? normalized
+    : `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function extractRunReviewText(
+  resultJson: Record<string, unknown> | null | undefined,
+  stdoutExcerpt: string | null | undefined,
+  stderrExcerpt: string | null | undefined,
+) {
+  const summarized = summarizeHeartbeatRunResultJson(resultJson);
+  if (summarized) {
+    for (const key of RUN_REVIEW_TEXT_KEYS) {
+      const value = summarized[key];
+      if (typeof value === "string") {
+        const compacted = compactRunReviewText(value);
+        if (compacted) return compacted;
+      }
+    }
+  }
+
+  return compactRunReviewText(stderrExcerpt) ?? compactRunReviewText(stdoutExcerpt);
 }
 
 export interface StaleRun {
@@ -97,6 +145,8 @@ export function orchestratorService(db: Db) {
     async getAgentOverviews(companyId: string): Promise<{
       agents: AgentOverview[];
       totalActiveLeases: number;
+      activeRuns: RunReviewEntry[];
+      recentRuns: RunReviewEntry[];
     }> {
       // Fetch all agents for the company
       const companyAgents = await db
@@ -159,8 +209,100 @@ export function orchestratorService(db: Db) {
           ),
         );
 
+      const runIssueId = sql<string | null>`${heartbeatRuns.contextSnapshot} ->> 'issueId'`;
+      const runReviewSort = desc(
+        sql`coalesce(${heartbeatRuns.finishedAt}, ${heartbeatRuns.startedAt}, ${heartbeatRuns.createdAt})`,
+      );
+
+      const activeRunRows = await db
+        .select({
+          runId: heartbeatRuns.id,
+          status: heartbeatRuns.status,
+          agentId: heartbeatRuns.agentId,
+          agentName: agents.name,
+          issueId: runIssueId.as("issueId"),
+          issueIdentifier: issues.identifier,
+          createdAt: heartbeatRuns.createdAt,
+          startedAt: heartbeatRuns.startedAt,
+          finishedAt: heartbeatRuns.finishedAt,
+          resultJson: heartbeatRuns.resultJson,
+          stdoutExcerpt: heartbeatRuns.stdoutExcerpt,
+          stderrExcerpt: heartbeatRuns.stderrExcerpt,
+        })
+        .from(heartbeatRuns)
+        .innerJoin(
+          agents,
+          and(eq(agents.id, heartbeatRuns.agentId), eq(agents.companyId, companyId)),
+        )
+        .leftJoin(
+          issues,
+          and(eq(issues.companyId, companyId), sql`${issues.id}::text = ${runIssueId}`),
+        )
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, companyId),
+            inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+          ),
+        )
+        .orderBy(runReviewSort, desc(heartbeatRuns.createdAt))
+        .limit(8);
+
+      const recentRunRows = await db
+        .select({
+          runId: heartbeatRuns.id,
+          status: heartbeatRuns.status,
+          agentId: heartbeatRuns.agentId,
+          agentName: agents.name,
+          issueId: runIssueId.as("issueId"),
+          issueIdentifier: issues.identifier,
+          createdAt: heartbeatRuns.createdAt,
+          startedAt: heartbeatRuns.startedAt,
+          finishedAt: heartbeatRuns.finishedAt,
+          resultJson: heartbeatRuns.resultJson,
+          stdoutExcerpt: heartbeatRuns.stdoutExcerpt,
+          stderrExcerpt: heartbeatRuns.stderrExcerpt,
+        })
+        .from(heartbeatRuns)
+        .innerJoin(
+          agents,
+          and(eq(agents.id, heartbeatRuns.agentId), eq(agents.companyId, companyId)),
+        )
+        .leftJoin(
+          issues,
+          and(eq(issues.companyId, companyId), sql`${issues.id}::text = ${runIssueId}`),
+        )
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, companyId),
+            not(inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES)),
+          ),
+        )
+        .orderBy(runReviewSort, desc(heartbeatRuns.createdAt))
+        .limit(8);
+
+      const toRunReviewEntry = (
+        row: typeof activeRunRows[number] | typeof recentRunRows[number],
+      ): RunReviewEntry => ({
+        runId: row.runId,
+        status: row.status,
+        agentId: row.agentId,
+        agentName: row.agentName,
+        issueId: row.issueId,
+        issueIdentifier: row.issueIdentifier ?? null,
+        createdAt: row.createdAt,
+        startedAt: row.startedAt,
+        finishedAt: row.finishedAt,
+        resultSummaryText: extractRunReviewText(
+          row.resultJson,
+          row.stdoutExcerpt,
+          row.stderrExcerpt,
+        ),
+        stdoutExcerpt: compactRunReviewText(row.stdoutExcerpt),
+        stderrExcerpt: compactRunReviewText(row.stderrExcerpt),
+      });
+
       const agentList = companyAgents.map((agent) => ({
-        id: agent.id,
+        agentId: agent.id,
         name: agent.name,
         status: agent.status,
         activeRunCount: runCountMap.get(agent.id) ?? 0,
@@ -170,6 +312,8 @@ export function orchestratorService(db: Db) {
       return {
         agents: agentList,
         totalActiveLeases: leaseCountRow?.count ?? 0,
+        activeRuns: activeRunRows.map(toRunReviewEntry),
+        recentRuns: recentRunRows.map(toRunReviewEntry),
       };
     },
 

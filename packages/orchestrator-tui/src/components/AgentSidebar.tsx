@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
-import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
+import type { AgentOverview, RunReviewEntry } from "../hooks/useOrchestratorStatus.js";
 
 const STATUS_DOT: Record<string, { symbol: string; color: string }> = {
   idle: { symbol: "●", color: "green" },
@@ -19,6 +19,8 @@ const DEFAULT_MAX_VISIBLE = 20;
 
 export interface AgentSidebarProps {
   agents: AgentOverview[];
+  activeRuns?: RunReviewEntry[];
+  recentRuns?: RunReviewEntry[];
   /** Override max visible agents for testing */
   maxVisible?: number;
   /** Whether the sidebar is currently focused for keyboard navigation */
@@ -31,6 +33,8 @@ export interface AgentSidebarProps {
 
 export function AgentSidebar({
   agents,
+  activeRuns = [],
+  recentRuns = [],
   maxVisible = DEFAULT_MAX_VISIBLE,
   focused = false,
   connected = true,
@@ -71,6 +75,23 @@ export function AgentSidebar({
   const hasMoreAbove = scrollOffset > 0;
   const hasMoreBelow = scrollOffset + maxVisible < agents.length;
   const visibleAgents = agents.slice(scrollOffset, scrollOffset + maxVisible);
+  const selectedAgentId = agents[selectedIndex]?.agentId ?? null;
+  const inspectedRun =
+    [...activeRuns, ...recentRuns].find((run) => run.agentId === selectedAgentId)
+    ?? activeRuns[0]
+    ?? recentRuns[0]
+    ?? null;
+  const inspectedPreview =
+    inspectedRun?.resultSummaryText?.trim()
+    || inspectedRun?.stderrExcerpt?.trim()
+    || inspectedRun?.stdoutExcerpt?.trim()
+    || null;
+  const issueLabel = inspectedRun
+    ? inspectedRun.issueIdentifier
+      ?? inspectedRun.issueId?.slice(0, 8)
+      ?? "—"
+    : null;
+  const runLabel = inspectedRun ? inspectedRun.runId.slice(0, 8) : null;
 
   return (
     <Box
@@ -113,6 +134,30 @@ export function AgentSidebar({
             );
           })}
           {hasMoreBelow && <Text dimColor>▼ more below</Text>}
+          <Box marginTop={1} flexDirection="column">
+            <Text bold underline>
+              Run review
+            </Text>
+            {inspectedRun ? (
+              <>
+                <Text>
+                  {runLabel} · {inspectedRun.status}
+                </Text>
+                <Text dimColor>
+                  issue {issueLabel} · agent {inspectedRun.agentName}
+                </Text>
+                {inspectedPreview ? (
+                  <Text>{inspectedPreview}</Text>
+                ) : inspectedRun.status === "queued" || inspectedRun.status === "running" ? (
+                  <Text dimColor>Waiting for persisted output…</Text>
+                ) : (
+                  <Text dimColor>No persisted result summary.</Text>
+                )}
+              </>
+            ) : (
+              <Text dimColor>No active or recent runs</Text>
+            )}
+          </Box>
         </>
       )}
     </Box>

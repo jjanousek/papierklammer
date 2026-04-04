@@ -8,11 +8,28 @@ export interface AgentOverview {
   queuedIntentCount: number;
 }
 
+export interface RunReviewEntry {
+  runId: string;
+  status: string;
+  agentId: string;
+  agentName: string;
+  issueId: string | null;
+  issueIdentifier: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  resultSummaryText: string | null;
+  stdoutExcerpt: string | null;
+  stderrExcerpt: string | null;
+}
+
 export interface StatusResponse {
   agents: AgentOverview[];
   totalActiveRuns: number;
   totalQueuedIntents: number;
   totalActiveLeases: number;
+  activeRuns?: RunReviewEntry[];
+  recentRuns?: RunReviewEntry[];
 }
 
 export interface OrchestratorStatusResult {
@@ -21,6 +38,8 @@ export interface OrchestratorStatusResult {
   totalAgents: number;
   connected: boolean;
   error: string | null;
+  activeRuns: RunReviewEntry[];
+  recentRuns: RunReviewEntry[];
 }
 
 /**
@@ -41,6 +60,8 @@ export function useOrchestratorStatus(
   const [totalActiveRuns, setTotalActiveRuns] = useState(0);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeRuns, setActiveRuns] = useState<RunReviewEntry[]>([]);
+  const [recentRuns, setRecentRuns] = useState<RunReviewEntry[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const poll = useCallback(async () => {
@@ -49,6 +70,8 @@ export function useOrchestratorStatus(
       setTotalActiveRuns(0);
       setConnected(false);
       setError(null);
+      setActiveRuns([]);
+      setRecentRuns([]);
       return;
     }
 
@@ -66,11 +89,29 @@ export function useOrchestratorStatus(
       }
 
       const data = (await res.json()) as StatusResponse;
-      setAgents(data.agents);
+      const normalizedAgents = Array.isArray(data.agents)
+        ? data.agents.map((agent) => ({
+            agentId:
+              typeof agent.agentId === "string"
+                ? agent.agentId
+                : String((agent as AgentOverview & { id?: string }).id ?? ""),
+            name: agent.name,
+            status: agent.status,
+            activeRunCount: agent.activeRunCount,
+            queuedIntentCount: agent.queuedIntentCount,
+          }))
+        : [];
+      setAgents(normalizedAgents);
       setTotalActiveRuns(data.totalActiveRuns);
+      setActiveRuns(Array.isArray(data.activeRuns) ? data.activeRuns : []);
+      setRecentRuns(Array.isArray(data.recentRuns) ? data.recentRuns : []);
       setConnected(true);
       setError(null);
     } catch (err) {
+      setAgents([]);
+      setTotalActiveRuns(0);
+      setActiveRuns([]);
+      setRecentRuns([]);
       setConnected(false);
       setError(err instanceof Error ? err.message : "Unknown error");
     }
@@ -98,5 +139,7 @@ export function useOrchestratorStatus(
     totalAgents: agents.length,
     connected,
     error,
+    activeRuns,
+    recentRuns,
   };
 }

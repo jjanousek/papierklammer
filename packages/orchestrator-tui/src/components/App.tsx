@@ -232,6 +232,8 @@ function CompanySession({
         <Box flexDirection="row" height={contentHeight}>
           <AgentSidebar
             agents={status.agents}
+            activeRuns={status.activeRuns}
+            recentRuns={status.recentRuns}
             focused={focusTarget === "sidebar"}
             connected={status.connected}
             error={status.error}
