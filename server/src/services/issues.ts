@@ -454,6 +454,47 @@ async function activeRunMapForIssues(
   return map;
 }
 
+async function resolveIssueActiveRun(
+  dbOrTx: any,
+  issue: Pick<IssueRow, "id" | "companyId" | "executionRunId">,
+): Promise<IssueActiveRunRow | null> {
+  const selectRun = async (conditions: any[]) =>
+    dbOrTx
+      .select({
+        id: heartbeatRuns.id,
+        status: heartbeatRuns.status,
+        agentId: heartbeatRuns.agentId,
+        invocationSource: heartbeatRuns.invocationSource,
+        triggerDetail: heartbeatRuns.triggerDetail,
+        startedAt: heartbeatRuns.startedAt,
+        finishedAt: heartbeatRuns.finishedAt,
+        createdAt: heartbeatRuns.createdAt,
+      })
+      .from(heartbeatRuns)
+      .where(and(...conditions))
+      .orderBy(
+        sql`case when ${heartbeatRuns.status} = 'running' then 0 else 1 end`,
+        asc(heartbeatRuns.createdAt),
+      )
+      .limit(1)
+      .then((rows: IssueActiveRunRow[]) => rows[0] ?? null);
+
+  if (issue.executionRunId) {
+    const currentRun = await selectRun([
+      eq(heartbeatRuns.id, issue.executionRunId),
+      eq(heartbeatRuns.companyId, issue.companyId),
+      inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+    ]);
+    if (currentRun) return currentRun;
+  }
+
+  return selectRun([
+    eq(heartbeatRuns.companyId, issue.companyId),
+    inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+    sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issue.id}`,
+  ]);
+}
+
 function withActiveRuns(
   issueRows: IssueWithLabels[],
   runMap: Map<string, IssueActiveRunRow>,
@@ -904,6 +945,81 @@ export function issueService(db: Db) {
       const [enriched] = await withIssueLabels(db, [row]);
       return enriched;
     },
+
+    convergeExecutionState: async (id: string) =>
+      db.transaction(async (tx) => {
+        await tx.execute(sql`select id from issues where id = ${id} for update`);
+
+        const issue = await tx
+          .select()
+          .from(issues)
+          .where(eq(issues.id, id))
+          .then((rows) => rows[0] ?? null);
+        if (!issue) return null;
+
+        const activeRun = await resolveIssueActiveRun(tx, issue);
+        const now = new Date();
+        let nextIssue = issue;
+
+        if (activeRun) {
+          const agentNameKey = await tx
+            .select({ name: agents.name })
+            .from(agents)
+            .where(eq(agents.id, activeRun.agentId))
+            .then((rows) => {
+              const name = rows[0]?.name ?? null;
+              return typeof name === "string" && name.trim().length > 0
+                ? name.trim().toLowerCase()
+                : null;
+            });
+
+          const needsBindingUpdate =
+            issue.executionRunId !== activeRun.id ||
+            issue.executionAgentNameKey !== agentNameKey ||
+            issue.executionLockedAt == null;
+
+          if (needsBindingUpdate) {
+            nextIssue =
+              (await tx
+                .update(issues)
+                .set({
+                  executionRunId: activeRun.id,
+                  executionAgentNameKey: agentNameKey,
+                  executionLockedAt:
+                    issue.executionRunId === activeRun.id && issue.executionLockedAt
+                      ? issue.executionLockedAt
+                      : now,
+                  updatedAt: now,
+                })
+                .where(eq(issues.id, issue.id))
+                .returning()
+                .then((rows) => rows[0] ?? null)) ?? issue;
+          }
+        } else if (
+          issue.executionRunId !== null ||
+          issue.executionAgentNameKey !== null ||
+          issue.executionLockedAt !== null
+        ) {
+          nextIssue =
+            (await tx
+              .update(issues)
+              .set({
+                executionRunId: null,
+                executionAgentNameKey: null,
+                executionLockedAt: null,
+                updatedAt: now,
+              })
+              .where(eq(issues.id, issue.id))
+              .returning()
+              .then((rows) => rows[0] ?? null)) ?? issue;
+        }
+
+        const [enriched] = await withIssueLabels(tx, [nextIssue]);
+        return {
+          issue: enriched,
+          activeRun,
+        };
+      }),
 
     create: async (
       companyId: string,

@@ -2341,17 +2341,21 @@ export function agentRoutes(db: Db) {
     const rawId = req.params.issueId as string;
     const issueSvc = issueService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
-    if (!issue) {
+    const rawIssue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
+    if (!rawIssue) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    assertCompanyAccess(req, rawIssue.companyId);
 
-    let run = issue.executionRunId ? await heartbeat.getRun(issue.executionRunId) : null;
-    if (run && run.status !== "queued" && run.status !== "running") {
-      run = null;
-    }
+    const convergence =
+      typeof issueSvc.convergeExecutionState === "function"
+        ? await issueSvc.convergeExecutionState(rawIssue.id)
+        : null;
+    const issue = convergence?.issue ?? rawIssue;
+
+    let run = convergence?.activeRun ?? (issue.executionRunId ? await heartbeat.getRun(issue.executionRunId) : null);
+    if (run && run.status !== "queued" && run.status !== "running") run = null;
 
     if (!run && issue.assigneeAgentId && issue.status === "in_progress") {
       const candidateRun = await heartbeat.getActiveRunForAgent(issue.assigneeAgentId);

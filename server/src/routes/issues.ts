@@ -384,12 +384,17 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
   router.get("/issues/:id", async (req, res) => {
     const id = req.params.id as string;
-    const issue = await svc.getById(id);
-    if (!issue) {
+    const rawIssue = await svc.getById(id);
+    if (!rawIssue) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    assertCompanyAccess(req, rawIssue.companyId);
+    const convergence =
+      typeof svc.convergeExecutionState === "function"
+        ? await svc.convergeExecutionState(rawIssue.id)
+        : null;
+    const issue = convergence?.issue ?? rawIssue;
     const [{ project, goal }, ancestors, mentionedProjectIds, documentPayload, issueProjection] = await Promise.all([
       resolveIssueProjectAndGoal(issue),
       svc.getAncestors(issue.id),
