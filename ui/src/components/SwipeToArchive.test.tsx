@@ -146,4 +146,33 @@ describe("SwipeToArchive", () => {
       root.unmount();
     });
   });
+
+  it("uses theme-aware semantic tokens for the archive overlay", () => {
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SwipeToArchive onArchive={() => {}}>
+          <button type="button">Open issue</button>
+        </SwipeToArchive>,
+      );
+    });
+
+    const overlay = container.querySelector("[data-swipe-archive-overlay]") as HTMLDivElement | null;
+    const label = container.querySelector("[data-swipe-archive-label]") as HTMLSpanElement | null;
+
+    expect(overlay).not.toBeNull();
+    expect(overlay?.className).toContain("bg-[var(--alive)]/12");
+    expect(overlay?.className).toContain("text-[var(--alive)]");
+    expect(overlay?.className).not.toContain("bg-emerald-600");
+    expect(overlay?.className).not.toContain("text-white");
+
+    expect(label).not.toBeNull();
+    expect(label?.className).toContain("border-[var(--alive)]/35");
+    expect(label?.className).toContain("bg-[var(--alive)]/10");
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

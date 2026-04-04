@@ -141,10 +141,14 @@ export function SwipeToArchive({
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 flex items-center justify-end bg-emerald-600 px-4 text-white"
+        data-swipe-archive-overlay
+        className="pointer-events-none absolute inset-0 flex items-center justify-end bg-[var(--alive)]/12 px-4 text-[var(--alive)]"
         style={{ opacity: Math.max(archiveReveal, 0.2) }}
       >
-        <span className="inline-flex items-center gap-2 text-sm font-medium">
+        <span
+          data-swipe-archive-label
+          className="inline-flex items-center gap-2 border border-[var(--alive)]/35 bg-[var(--alive)]/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]"
+        >
           <Archive className="h-4 w-4" />
           Archive
         </span>
