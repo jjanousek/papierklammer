@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // @ts-expect-error test-only import of untyped ESM launcher helper
 import { resolveLaunchConfig } from "../../../../scripts/dev-tui-utils.mjs";
 // @ts-expect-error test-only import of untyped ESM launcher helper
+import { buildChildEnv } from "../../../../scripts/dev-tui.mjs";
+// @ts-expect-error test-only import of untyped ESM launcher helper
 import { buildTuiCommand } from "../../../../scripts/dev-with-tui.mjs";
 
 describe("launcher readiness", () => {
@@ -168,6 +170,28 @@ describe("launcher readiness", () => {
     ).rejects.toThrow(
       "Company missing-company was not found. Choose a valid --company-id or omit it to use automatic selection.",
     );
+  });
+
+  it("sanitizes stale company env before spawning the child after picker fallback", () => {
+    const childEnv = buildChildEnv(
+      {
+        baseUrl: "http://127.0.0.1:3100",
+        apiKey: "",
+        companyId: "",
+        companyName: "",
+      },
+      {
+        OTHER_VAR: "keep-me",
+        PAPIERKLAMMER_TUI_URL: "http://127.0.0.1:9999",
+        PAPIERKLAMMER_TUI_COMPANY_ID: "missing-company",
+        PAPIERKLAMMER_TUI_COMPANY_NAME: "Ghost Co",
+      },
+    );
+
+    expect(childEnv.OTHER_VAR).toBe("keep-me");
+    expect(childEnv.PAPIERKLAMMER_TUI_URL).toBe("http://127.0.0.1:3100");
+    expect(childEnv.PAPIERKLAMMER_TUI_COMPANY_ID).toBeUndefined();
+    expect(childEnv.PAPIERKLAMMER_TUI_COMPANY_NAME).toBeUndefined();
   });
 
   it("embeds the resolved launch context directly into the auto-open command", () => {

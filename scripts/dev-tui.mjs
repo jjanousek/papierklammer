@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { repoRoot, resolveLaunchConfig } from "./dev-tui-utils.mjs";
 
 const HELP_TEXT = `Usage: pnpm dev:tui [options]
@@ -50,68 +52,106 @@ function parseArgs(argv) {
   return flags;
 }
 
-const flags = parseArgs(process.argv);
+export function buildChildEnv(launch, baseEnv = process.env) {
+  const childEnv = {
+    ...baseEnv,
+    PAPIERKLAMMER_TUI_URL: launch.baseUrl,
+  };
 
-if (flags.showHelp) {
-  console.log(HELP_TEXT);
-  process.exit(0);
+  if (launch.apiKey) {
+    childEnv.PAPIERKLAMMER_TUI_API_KEY = launch.apiKey;
+  } else {
+    delete childEnv.PAPIERKLAMMER_TUI_API_KEY;
+  }
+
+  if (launch.companyId) {
+    childEnv.PAPIERKLAMMER_TUI_COMPANY_ID = launch.companyId;
+  } else {
+    delete childEnv.PAPIERKLAMMER_TUI_COMPANY_ID;
+  }
+
+  if (launch.companyName) {
+    childEnv.PAPIERKLAMMER_TUI_COMPANY_NAME = launch.companyName;
+  } else {
+    delete childEnv.PAPIERKLAMMER_TUI_COMPANY_NAME;
+  }
+
+  return childEnv;
 }
 
-let launch;
+export async function main(argv = process.argv) {
+  const flags = parseArgs(argv);
 
-try {
-  launch = await resolveLaunchConfig(flags);
-} catch (error) {
-  const message =
-    error instanceof Error ? error.message : "Failed to resolve orchestrator TUI launch";
-  console.error(`[paperclip] ${message}`);
-  process.exit(1);
+  if (flags.showHelp) {
+    console.log(HELP_TEXT);
+    return 0;
+  }
+
+  let launch;
+
+  try {
+    launch = await resolveLaunchConfig(flags);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to resolve orchestrator TUI launch";
+    console.error(`[paperclip] ${message}`);
+    return 1;
+  }
+
+  console.error(
+    launch.companyId
+      ? `[paperclip] launching orchestrator TUI for company ${launch.companyId} at ${launch.baseUrl}`
+      : `[paperclip] launching orchestrator TUI with company picker at ${launch.baseUrl}`,
+  );
+
+  const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const child = spawn(
+    pnpmBin,
+    [
+      "--filter",
+      "@papierklammer/server",
+      "exec",
+      "tsx",
+      "../packages/orchestrator-tui/src/index.tsx",
+      "--url",
+      launch.baseUrl,
+      "--api-key",
+      launch.apiKey,
+      ...(launch.companyName ? ["--company-name", launch.companyName] : []),
+      ...(launch.companyId ? ["--company-id", launch.companyId] : []),
+    ],
+    {
+      cwd: repoRoot,
+      env: buildChildEnv(launch),
+      stdio: "inherit",
+    },
+  );
+
+  const forwardSignal = (signal) => {
+    if (!child.killed) {
+      child.kill(signal);
+    }
+  };
+
+  process.on("SIGINT", forwardSignal);
+  process.on("SIGTERM", forwardSignal);
+
+  return await new Promise((resolve) => {
+    child.on("exit", (code, signal) => {
+      process.off("SIGINT", forwardSignal);
+      process.off("SIGTERM", forwardSignal);
+      if (signal) {
+        process.kill(process.pid, signal);
+        return;
+      }
+      resolve(code ?? 0);
+    });
+  });
 }
 
-console.error(
-  launch.companyId
-    ? `[paperclip] launching orchestrator TUI for company ${launch.companyId} at ${launch.baseUrl}`
-    : `[paperclip] launching orchestrator TUI with company picker at ${launch.baseUrl}`,
-);
+const entryScript = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const currentScript = fileURLToPath(import.meta.url);
 
-const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const child = spawn(
-  pnpmBin,
-  [
-    "--filter",
-    "@papierklammer/server",
-    "exec",
-    "tsx",
-    "../packages/orchestrator-tui/src/index.tsx",
-    "--url",
-    launch.baseUrl,
-    "--api-key",
-    launch.apiKey,
-    ...(launch.companyName ? ["--company-name", launch.companyName] : []),
-    ...(launch.companyId ? ["--company-id", launch.companyId] : []),
-  ],
-  {
-    cwd: repoRoot,
-    env: process.env,
-    stdio: "inherit",
-  },
-);
-
-const forwardSignal = (signal) => {
-  if (!child.killed) {
-    child.kill(signal);
-  }
-};
-
-process.on("SIGINT", forwardSignal);
-process.on("SIGTERM", forwardSignal);
-
-child.on("exit", (code, signal) => {
-  process.off("SIGINT", forwardSignal);
-  process.off("SIGTERM", forwardSignal);
-  if (signal) {
-    process.kill(process.pid, signal);
-    return;
-  }
-  process.exit(code ?? 0);
-});
+if (entryScript === currentScript) {
+  process.exitCode = await main();
+}
