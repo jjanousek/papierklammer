@@ -1,0 +1,21 @@
+{
+  "featureId": "demo-audit-harness",
+  "reviewedAt": "2026-04-04T09:56:10Z",
+  "commitId": "863e5a3e361a776ef9792d99612ddbe6548b2c8d",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature delivers the requested deterministic sibling demo repo plus isolated-instance reset/bootstrap helpers for ports 3100 and 3101. I did not find any high-confidence blocking or non-blocking implementation defects in the reviewed commit.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "services",
+      "observation": "The new demo-repo setup command is implemented and documented, but the mission service manifest still does not expose a command for creating the sibling demo repo or for running the combined `audit:bootstrap` helper. Future workers following `.factory/services.yaml` alone could miss the required repo-materialization step.",
+      "evidence": "`package.json:14-21` adds `audit:demo:create` and `audit:bootstrap`; `.factory/library/audit-harness.md:8-13` tells workers to use them; `.factory/services.yaml:1-13` only exposes reset/bootstrap/fresh instance commands and omits demo repo creation."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The reviewed commit cleanly adds the demo harness helpers and deterministic sibling CLI repo requested for `demo-audit-harness`. No actionable code defects were identified; one shared-state observation notes that `.factory/services.yaml` does not yet expose the new demo-repo creation/bootstrap helper commands."
+}

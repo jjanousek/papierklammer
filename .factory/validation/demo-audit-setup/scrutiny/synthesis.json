@@ -1,0 +1,40 @@
+{
+  "milestone": "demo-audit-setup",
+  "round": 3,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run -- --maxWorkers=5",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "printf '%s\\n' \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": ".factory/skills/mission-worker-base/SKILL.md",
+      "suggestion": "Document how mission workers should handle a repo that already has shared `.factory` changes before they start, including how to preserve those files, what clean-tree expectation applies to worker success, and when an isolated worktree or other scoped strategy should be used.",
+      "evidence": "The `fix-tui-child-env-sanitization` review noted that the worker had to deviate from procedure because unrelated `.factory` changes already existed in the repo, so the worker intentionally left them untouched and had no documented isolation workflow to follow.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": ".factory/validation/demo-audit-setup/scrutiny/synthesis.round-2.json"
+}

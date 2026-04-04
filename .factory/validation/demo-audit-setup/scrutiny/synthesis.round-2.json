@@ -1,0 +1,48 @@
+{
+  "milestone": "demo-audit-setup",
+  "round": 2,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run -- --maxWorkers=5",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "failedFeatures": [
+      "fix-tui-launch-context-preservation"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "fix-tui-launch-context-preservation",
+      "severity": "blocking",
+      "description": "Invalid preset company ids are still not fully fail-safe: `scripts/dev-tui.mjs` spawns the real TUI child with `env: process.env`, so in the multi-company invalid-preset case the child can still inherit stale `PAPIERKLAMMER_TUI_COMPANY_ID` / `PAPIERKLAMMER_TUI_COMPANY_NAME` env vars and bypass the picker into the broken preset-company session."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": ".factory/skills/tui-worker/SKILL.md",
+      "suggestion": "Clarify that script-style launcher entrypoints may first need a small import-safety/export refactor before the required test-first flow can be executed, so workers should account for that when validating launcher behavior.",
+      "evidence": "The `fix-tui-launch-context-preservation` review found that the worker had to make `scripts/dev-with-tui.mjs` testable before Vitest could cover the launcher path, and the current skill's strict test-first step does not mention this script-entrypoint caveat.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": ".factory/validation/demo-audit-setup/scrutiny/synthesis.round-1.json"
+}

@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-tui-child-env-sanitization",
+  "reviewedAt": "2026-04-04T13:14:08Z",
+  "commitId": "555587a44c6eb4a65cd37ef35a86ecda7a4b84ef",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. This rerun closes the prior blocking issue from `fix-tui-launch-context-preservation`: `resolveLaunchConfig` still clears invalid preset company ids at the helper layer, and `scripts/dev-tui.mjs` now also sanitizes the actual spawned child environment before launch. `buildChildEnv()` deletes stale `PAPIERKLAMMER_TUI_COMPANY_ID` / `PAPIERKLAMMER_TUI_COMPANY_NAME` when fallback leaves `launch.companyId` and `launch.companyName` empty, and the child is spawned with that sanitized env. Because `packages/orchestrator-tui/src/cli.ts` only repopulates company context from CLI flags or those same TUI env vars, the stale preset values no longer leak through the spawned-child path. The new `dev-tui-spawn.test.ts` covers the exact spawn boundary the prior review said was missing, and the handoff's PTY evidence matches the expected multi-company picker fallback behavior.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Workers are still expected to navigate pre-existing shared `.factory` changes in the main repo, but the shared mission guidance does not document a safe isolation strategy or how to satisfy any clean-tree expectation without disturbing parallel mission state.",
+      "evidence": "The handoff `/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-04T13-07-51-794Z__fix-tui-child-env-sanitization__716928c7-d4be-467d-bf1a-e8c26b60054c.json` records `handoff.skillFeedback.followedProcedure: false` because unrelated `.factory` changes already existed and the worker intentionally left them untouched."
+    }
+  ],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/demo-audit-setup/scrutiny/reviews/fix-tui-launch-context-preservation.json",
+  "summary": "Pass. The spawned-child env path is now covered: stale preset TUI company env vars are explicitly removed before `scripts/dev-tui.mjs` spawns the real TUI process, so the invalid multi-company preset no longer leaks through to bypass picker fallback."
+}

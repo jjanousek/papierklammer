@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-onboarding-tab-validation-bypass",
+  "reviewedAt": "2026-04-04T10:42:04.998134Z",
+  "commitId": "cba02a69",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix commit fully addresses the prior onboarding bypass. `ui/src/components/OnboardingWizard.tsx` now derives the highest reachable step from created onboarding state (`:162-166`), clamps any over-advanced step back down (`:205-208`), and only allows or enables progress-tab navigation when the requested step is reachable (`:718-722`). Combined with the existing `handleStep3Next`/`handleLaunch` guards (`:558-565`), failed `codex_local` validation no longer lets operators reach Task or Launch without a created agent. The added regression in `ui/src/components/OnboardingWizard.test.tsx:232-252` directly covers the original clickable-tab bypass. I did not find any new blocking or non-blocking defects in this focused fix.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "web-onboarding-codex-launch-flow",
+  "summary": "Pass. The reviewed fix closes the prior blocking issue from `web-onboarding-codex-launch-flow`: failed adapter validation now blocks all onboarding progression paths, including clickable progress tabs, and regression coverage explicitly proves Task/Launch stay inaccessible after a failed codex readiness check."
+}

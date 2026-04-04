@@ -1,0 +1,28 @@
+{
+  "featureId": "fix-tui-launch-context-preservation",
+  "reviewedAt": "2026-04-04T10:42:21Z",
+  "commitId": "ef821802009db58e321e90492652a22cc36446b2",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit fixes the `pnpm dev` auto-open export bug and adds good helper-level coverage, but it does not fully close the prior invalid-preset-company failure. When an invalid `PAPIERKLAMMER_TUI_COMPANY_ID` should fall back to picker behavior, the spawned TUI process still re-reads the stale env vars and can skip straight into the broken preset-company path.",
+    "issues": [
+      {
+        "file": "scripts/dev-tui.mjs",
+        "line": 95,
+        "severity": "blocking",
+        "description": "The new fallback logic only clears the invalid preset inside `resolveLaunchConfig`, but `scripts/dev-tui.mjs` still spawns the real TUI child with `env: process.env` and only passes `--company-id/--company-name` when `launch.companyId` is truthy. In the multi-company invalid-preset case, `launch.companyId` becomes empty as intended, yet the child still inherits the stale `PAPIERKLAMMER_TUI_COMPANY_ID` and `PAPIERKLAMMER_TUI_COMPANY_NAME`. `packages/orchestrator-tui/src/cli.ts:36-37` then repopulates those stale values, so the TUI can still bypass the picker into the broken preset-company session the prior review flagged. The new test at `packages/orchestrator-tui/src/__tests__/launcher-readiness.test.ts:88-130` only asserts the helper return value, not the spawned child-process behavior, which is why this end-to-end case still slips through."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `tui-worker` skill's strict 'Write tests FIRST' step is slightly incomplete for script-style launcher entrypoints: this rerun again needed a small import-safety/export refactor before the launcher could be exercised from Vitest, and the worker explicitly called that out in `skillFeedback`.",
+      "evidence": "`.factory/skills/tui-worker/SKILL.md` step 3 says `Write tests FIRST`; the handoff at `/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-04T10-35-46-432Z__fix-tui-launch-context-preservation__f78905e3-1c17-453d-acf2-29c89e082551.json` records `handoff.skillFeedback.followedProcedure: false` because `scripts/dev-with-tui.mjs` first needed an entrypoint guard/export refactor to become testable."
+    }
+  ],
+  "addressesFailureFrom": "tui-launcher-readiness",
+  "summary": "Fail. The fix resolves the original auto-open env-propagation bug, but invalid preset company ids are still not fully fail-safe: the spawned TUI child can inherit stale preset env vars and skip the picker in the multi-company case."
+}

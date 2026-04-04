@@ -1,0 +1,70 @@
+{
+  "milestone": "demo-audit-setup",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run -- --maxWorkers=5",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 1,
+    "failed": 2,
+    "failedFeatures": [
+      "web-onboarding-codex-launch-flow",
+      "tui-launcher-readiness"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "web-onboarding-codex-launch-flow",
+      "severity": "blocking",
+      "description": "Failed `codex_local` validation is still bypassable through the clickable onboarding progress tabs, which lets operators reach the Task/Launch steps and see a misleading ready-to-launch state even though no agent exists."
+    },
+    {
+      "featureId": "tui-launcher-readiness",
+      "severity": "blocking",
+      "description": "`scripts/dev-with-tui.mjs` builds shell assignments for the auto-open TUI launch context without exporting them, so `pnpm dev:tui` still loses the resolved URL/company/api-key context and can open the wrong or contextless TUI session."
+    },
+    {
+      "featureId": "tui-launcher-readiness",
+      "severity": "blocking",
+      "description": "`scripts/dev-tui-utils.mjs` accepts a nonexistent preset company id and returns it with an empty company name, which bypasses the picker and still opens a broken/contextless TUI session."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": ".factory/skills/web-runtime-worker/SKILL.md",
+      "suggestion": "Document that when local adapter readiness checks are too slow or flaky for browser automation, workers may pair deterministic browser stubs with a direct `/adapters/:type/test-environment` API check as acceptable evidence for readiness behavior.",
+      "evidence": "The `web-onboarding-codex-launch-flow` handoff marked a procedure deviation even though the worker still collected valid UI and readiness evidence by combining deterministic browser stubs with the adapter environment endpoint.",
+      "isSystemic": false
+    },
+    {
+      "target": ".factory/skills/tui-worker/SKILL.md",
+      "suggestion": "Document how to provision `tuistory` when the mission requires PTY-backed TUI validation and the command is not already installed, including the expected fallback install path.",
+      "evidence": "The `tui-launcher-readiness` review found that `tuistory` was required by mission guidance but missing from the environment, and the worker had to discover and run `npm install -g tuistory` before validation could continue.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Expose `audit:demo:create` and `audit:bootstrap` directly in `.factory/services.yaml`.",
+      "reason": "already-documented"
+    }
+  ],
+  "previousRound": null
+}

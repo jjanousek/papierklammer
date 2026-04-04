@@ -1,0 +1,34 @@
+{
+  "featureId": "tui-launcher-readiness",
+  "reviewedAt": "2026-04-04T09:57:19Z",
+  "commitId": "af43949234b9ad6bda0a92c7ad8841a03409c59a",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit correctly adds the fresh-instance refusal message and visible company labeling, but two launcher paths still allow broken or contextless sessions. `pnpm dev`'s auto-open command does not actually pass the resolved launch context into `pnpm dev:tui`, and `resolveLaunchConfig` still accepts a nonexistent preselected company id instead of failing or falling back to a valid picker state.",
+    "issues": [
+      {
+        "file": "scripts/dev-with-tui.mjs",
+        "line": 102,
+        "severity": "blocking",
+        "description": "The auto-open command builds `PAPIERKLAMMER_TUI_URL=... && PAPIERKLAMMER_TUI_API_KEY=... && ... && pnpm dev:tui`, but standalone shell assignments are not exported to the later child process. That means the second-terminal launcher still drops the resolved URL/company/api-key context, so on non-default ports or company-targeted launches it can open the wrong instance or a contextless TUI. I verified the shell behavior separately: `PAPIERKLAMMER_TUI_URL=... && python3 ...` leaves `os.environ['PAPIERKLAMMER_TUI_URL']` unset."
+      },
+      {
+        "file": "scripts/dev-tui-utils.mjs",
+        "line": 97,
+        "severity": "blocking",
+        "description": "When `--company-id` or `PAPIERKLAMMER_TUI_COMPANY_ID` is set to an id that is not present in `/api/companies`, `resolveLaunchConfig` still returns that id with an empty `companyName` instead of rejecting it. I confirmed this with a mocked call returning `{ companyId: \"missing-company\", companyName: \"\" }`. Because `App` treats any preset `companyId` as authoritative (`packages/orchestrator-tui/src/components/App.tsx:69-70,119`), the TUI skips the picker and opens straight into the broken/companyless console state the feature was supposed to prevent."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The mission shared state says TUI validation must use `tuistory`, and the `tui-worker` skill makes it required for shipped-runtime changes, but the shared environment notes do not say how to provision it when it is missing.",
+      "evidence": "`.factory/skills/tui-worker/SKILL.md` says `tuistory` is required; `.factory/library/user-testing.md` says to use a real PTY-driven `tuistory` path; the reviewed transcript shows `tuistory --version` failed with `command not found`, after which the worker had to run `npm install -g tuistory` before validation could continue."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail. The commit improves the direct `pnpm dev:tui` readiness checks, but two blocking gaps remain: the `pnpm dev` auto-open path still drops the resolved launch context, and invalid preselected company ids still open a broken/contextless TUI instead of failing safely."
+}

@@ -1,0 +1,28 @@
+{
+  "featureId": "web-onboarding-codex-launch-flow",
+  "reviewedAt": "2026-04-04T09:56:55.391491Z",
+  "commitId": "e09d72a1",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The launch wakeup change looks directionally correct, but the onboarding failure gate is incomplete: after a failed codex_local environment check, the wizard still lets operators jump to later steps via the clickable progress tabs and see the launch screen, so failed validation does not truly block progression.",
+    "issues": [
+      {
+        "file": "ui/src/components/OnboardingWizard.tsx",
+        "line": 705,
+        "severity": "blocking",
+        "description": "The progress-tab buttons always call `setStep(s)` with no prerequisite checks, so after a failed adapter validation the operator can still click into Task/Launch and reach the `Ready to launch` screen even though no agent was created. That violates the feature requirement and VAL-DEMO-005 wording that failed validation must block onboarding progression and avoid an apparently successful setup state. The later guards at `handleStep3Next`/`handleLaunch` only no-op silently (`ui/src/components/OnboardingWizard.tsx:547`, `ui/src/components/OnboardingWizard.tsx:553`), which means the UI still advances into misleading success-looking steps instead of actually blocking progression. The new tests only cover the Next-button path (`ui/src/components/OnboardingWizard.test.tsx:209`, `ui/src/components/OnboardingWizard.test.tsx:232`) and would not catch this bypass."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `web-runtime-worker` procedure should explicitly allow pairing deterministic UI stubs with a direct `/adapters/:type/test-environment` API check when local adapter probes are too slow for browser automation. The worker followed this pattern and marked `followedProcedure` false even though it still gathered valid UI + readiness evidence.",
+      "evidence": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-04T09-27-16-598Z__web-onboarding-codex-launch-flow__7a95c5c9-9636-440e-8ac2-88917cdb788d.json:92-107; /Users/aischool/work/papierklammer_droid/.factory/skills/web-runtime-worker/SKILL.md:24-31"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail. The feature hardens the Next-button path and adds launch wakeup, but failed codex validation is still bypassable through the onboarding progress tabs, so the UI can advance into a misleading launch state. Shared-state note: the web-runtime skill should document when deterministic browser stubs plus direct readiness API checks are acceptable evidence."
+}
