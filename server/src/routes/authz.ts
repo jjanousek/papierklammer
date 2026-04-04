@@ -7,10 +7,14 @@ export function assertBoard(req: Request) {
   }
 }
 
-export function assertAuthenticatedBoard(req: Request) {
+export function assertAuthenticated(req: Request) {
   if (req.actor.type === "none") {
     throw unauthorized();
   }
+}
+
+export function assertAuthenticatedBoard(req: Request) {
+  assertAuthenticated(req);
   assertBoard(req);
 }
 

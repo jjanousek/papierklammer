@@ -45,6 +45,7 @@ import {
 } from "../services/index.js";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
 import {
+  assertAuthenticated,
   assertAuthenticatedBoard,
   assertBoard,
   assertCompanyAccess,
@@ -2238,7 +2239,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId/events", async (req, res) => {
-    assertAuthenticatedBoard(req);
+    assertAuthenticated(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
@@ -2261,7 +2262,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId/log", async (req, res) => {
-    assertAuthenticatedBoard(req);
+    assertAuthenticated(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {

@@ -131,6 +131,25 @@ describe("heartbeat run route company isolation", () => {
     expect(res.body.content).toBe("run output");
   });
 
+  it("allows same-company agent access to run-log streaming endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "agent",
+        agentId: AGENT_ID,
+        companyId: COMPANY_ID,
+        source: "agent_key",
+      }),
+    ).get(`/api/heartbeat-runs/${RUN_ID}/log`);
+
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith(RUN_ID);
+    expect(mockHeartbeatService.readLog).toHaveBeenCalledWith(RUN_ID, {
+      offset: 0,
+      limitBytes: 256000,
+    });
+    expect(res.body.content).toBe("run output");
+  });
+
   it("allows same-company board access to run detail endpoints", async () => {
     const res = await request(
       await createApp({
@@ -159,6 +178,18 @@ describe("heartbeat run route company isolation", () => {
     expect(mockHeartbeatService.readLog).not.toHaveBeenCalled();
   });
 
+  it("rejects unauthenticated access to run event detail endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "none",
+        source: "none",
+      }),
+    ).get(`/api/heartbeat-runs/${RUN_ID}/events`);
+
+    expect(res.status).toBe(401);
+    expect(mockHeartbeatService.listEvents).not.toHaveBeenCalled();
+  });
+
   it("rejects unauthenticated access to run detail endpoints", async () => {
     const res = await request(
       await createApp({
@@ -185,6 +216,20 @@ describe("heartbeat run route company isolation", () => {
     expect(mockHeartbeatService.readLog).not.toHaveBeenCalled();
   });
 
+  it("rejects wrong-company agent access to run event detail endpoints", async () => {
+    const res = await request(
+      await createApp({
+        type: "agent",
+        agentId: AGENT_ID,
+        companyId: OTHER_COMPANY_ID,
+        source: "agent_key",
+      }),
+    ).get(`/api/heartbeat-runs/${RUN_ID}/events`);
+
+    expect(res.status).toBe(403);
+    expect(mockHeartbeatService.listEvents).not.toHaveBeenCalled();
+  });
+
   it("rejects same-company agent access to run detail endpoints", async () => {
     const res = await request(
       await createApp({
@@ -199,7 +244,7 @@ describe("heartbeat run route company isolation", () => {
     expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
   });
 
-  it("rejects same-company agent access to run event detail endpoints", async () => {
+  it("allows same-company agent access to run event detail endpoints", async () => {
     const res = await request(
       await createApp({
         type: "agent",
@@ -209,9 +254,17 @@ describe("heartbeat run route company isolation", () => {
       }),
     ).get(`/api/heartbeat-runs/${RUN_ID}/events`);
 
-    expect(res.status).toBe(403);
-    expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
-    expect(mockHeartbeatService.listEvents).not.toHaveBeenCalled();
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith(RUN_ID);
+    expect(mockHeartbeatService.listEvents).toHaveBeenCalledWith(RUN_ID, 0, 200);
+    expect(res.body).toEqual([
+      {
+        seq: 1,
+        type: "run.started",
+        payload: { detail: "started" },
+        createdAt: "2026-04-05T00:00:00.000Z",
+      },
+    ]);
   });
 
   it("rejects same-company agent access to run workspace-operation fan-out", async () => {
