@@ -2,6 +2,7 @@ export interface CliFlags {
   url: string;
   apiKey: string;
   companyId: string;
+  companyName: string;
 }
 
 export interface ParseArgsResult {
@@ -15,6 +16,7 @@ Options:
   --url <url>            Orchestrator API URL (default: http://localhost:3100)
   --api-key <key>        API key for authentication
   --company-id <id>      Company ID to connect to
+  --company-name <name>  Company name to display in the header
   --help, -h             Show this help message`;
 
 /**
@@ -32,6 +34,7 @@ export function parseArgs(argv: string[]): ParseArgsResult {
       process.env.PAPIERKLAMMER_API_KEY ||
       "",
     companyId: process.env.PAPIERKLAMMER_TUI_COMPANY_ID || "",
+    companyName: process.env.PAPIERKLAMMER_TUI_COMPANY_NAME || "",
   };
 
   let showHelp = false;
@@ -44,6 +47,8 @@ export function parseArgs(argv: string[]): ParseArgsResult {
       flags.apiKey = argv[++i]!;
     } else if (arg === "--company-id" && i + 1 < argv.length) {
       flags.companyId = argv[++i]!;
+    } else if (arg === "--company-name" && i + 1 < argv.length) {
+      flags.companyName = argv[++i]!;
     } else if (arg === "--help" || arg === "-h") {
       showHelp = true;
     }

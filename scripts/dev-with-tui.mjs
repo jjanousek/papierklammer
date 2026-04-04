@@ -103,8 +103,11 @@ function buildTuiCommand(launch) {
     `PAPIERKLAMMER_TUI_API_KEY=${shellEscape(launch.apiKey)}`,
     "pnpm dev:tui",
   ];
+  if (launch.companyName) {
+    parts.splice(3, 0, `PAPIERKLAMMER_TUI_COMPANY_NAME=${shellEscape(launch.companyName)}`);
+  }
   if (launch.companyId) {
-    parts.splice(3, 0, `PAPIERKLAMMER_TUI_COMPANY_ID=${shellEscape(launch.companyId)}`);
+    parts.splice(launch.companyName ? 4 : 3, 0, `PAPIERKLAMMER_TUI_COMPANY_ID=${shellEscape(launch.companyId)}`);
   }
 
   const command = parts.join(" && ");

@@ -17,6 +17,7 @@ render(
     url={flags.url}
     apiKey={flags.apiKey}
     companyId={flags.companyId}
+    companyName={flags.companyName}
     spawnFn={spawn}
     enableCodex
   />,

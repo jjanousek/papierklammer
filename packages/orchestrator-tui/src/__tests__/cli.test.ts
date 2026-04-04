@@ -36,6 +36,10 @@ describe("CLI --help flag", () => {
     expect(HELP_TEXT).toContain("--api-key");
   });
 
+  it("shows --company-name flag documentation in help text", () => {
+    expect(HELP_TEXT).toContain("--company-name");
+  });
+
   it("sets showHelp to true when --help is passed", () => {
     const result = parseArgs(["node", "papierklammer-tui", "--help"]);
     expect(result.showHelp).toBe(true);
@@ -85,5 +89,15 @@ describe("CLI --help flag", () => {
       "company-123",
     ]);
     expect(result.flags.companyId).toBe("company-123");
+  });
+
+  it("parses --company-name flag correctly", () => {
+    const result = parseArgs([
+      "node",
+      "papierklammer-tui",
+      "--company-name",
+      "Audit Co",
+    ]);
+    expect(result.flags.companyName).toBe("Audit Co");
   });
 });

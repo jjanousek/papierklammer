@@ -94,10 +94,15 @@ export async function resolveLaunchConfig({
     }
   }
 
+  const selectedCompany = resolvedCompanyId
+    ? companies.find((company) => String(company?.id ?? "") === resolvedCompanyId)
+    : null;
+
   return {
     baseUrl,
     apiKey: resolvedApiKey,
     companyId: resolvedCompanyId,
+    companyName: selectedCompany?.name ? String(selectedCompany.name) : "",
     health,
     companies,
   };

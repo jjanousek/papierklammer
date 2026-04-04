@@ -35,6 +35,7 @@ export interface AppProps {
   url: string;
   apiKey: string;
   companyId: string;
+  companyName?: string;
   codexState?: CodexState;
   threadId?: string;
   model?: string;
@@ -52,6 +53,7 @@ export function App({
   url,
   apiKey,
   companyId,
+  companyName = "",
   codexState: codexStateProp,
   threadId: threadIdProp,
   model,
@@ -65,6 +67,7 @@ export function App({
   const [helpVisible, setHelpVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState(companyId);
+  const [selectedCompanyName, setSelectedCompanyName] = useState(companyName);
   const [focusTarget, setFocusTarget] = useState<"sidebar" | "input">("input");
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("high");
   const [fastMode, setFastMode] = useState(false);
@@ -146,6 +149,7 @@ export function App({
         setCompaniesError(null);
         if (payload.length === 1 && payload[0]?.id) {
           setSelectedCompanyId(payload[0].id);
+          setSelectedCompanyName(payload[0].name);
         }
       } catch (error) {
         if (!active) return;
@@ -292,6 +296,7 @@ export function App({
 
   const handleCompanySelect = useCallback((company: CompanyOption) => {
     setSelectedCompanyId(company.id);
+    setSelectedCompanyName(company.name);
     setFocusTarget("input");
   }, []);
 
@@ -308,6 +313,7 @@ export function App({
             connected={false}
             totalAgents={0}
             totalActiveRuns={0}
+            companyLabel={null}
             error={companiesError}
           />
           <Box flexGrow={1} height={contentHeight}>
@@ -337,6 +343,7 @@ export function App({
           connected={status.connected}
           totalAgents={status.totalAgents}
           totalActiveRuns={status.totalActiveRuns}
+          companyLabel={selectedCompanyName || selectedCompanyId}
           error={status.error}
         />
         <Box flexDirection="row" height={contentHeight}>

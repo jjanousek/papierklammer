@@ -57,7 +57,16 @@ if (flags.showHelp) {
   process.exit(0);
 }
 
-const launch = await resolveLaunchConfig(flags);
+let launch;
+
+try {
+  launch = await resolveLaunchConfig(flags);
+} catch (error) {
+  const message =
+    error instanceof Error ? error.message : "Failed to resolve orchestrator TUI launch";
+  console.error(`[paperclip] ${message}`);
+  process.exit(1);
+}
 
 console.error(
   launch.companyId
@@ -78,6 +87,7 @@ const child = spawn(
     launch.baseUrl,
     "--api-key",
     launch.apiKey,
+    ...(launch.companyName ? ["--company-name", launch.companyName] : []),
     ...(launch.companyId ? ["--company-id", launch.companyId] : []),
   ],
   {

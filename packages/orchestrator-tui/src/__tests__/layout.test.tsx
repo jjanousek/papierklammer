@@ -68,6 +68,22 @@ describe("App layout", () => {
     unmount();
   });
 
+  it("shows the loaded company label in the header for a preselected company", () => {
+    const { lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey=""
+        companyId="test-company"
+        companyName="Audit Co"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+      />,
+    );
+    const frame = lastFrame();
+    expect(frame).toContain("Papierklammer · Audit Co");
+    unmount();
+  });
+
   it("renders the AgentSidebar with Agents text", () => {
     const { lastFrame, unmount } = render(
       <App url="http://localhost:3100" apiKey="" companyId="test-company" fetchFn={mockFetch} pollInterval={60000} />,

@@ -5,6 +5,7 @@ export interface HeaderBarProps {
   connected: boolean;
   totalAgents: number;
   totalActiveRuns: number;
+  companyLabel?: string | null;
   error?: string | null;
 }
 
@@ -12,6 +13,7 @@ export function HeaderBar({
   connected,
   totalAgents,
   totalActiveRuns,
+  companyLabel = null,
   error = null,
 }: HeaderBarProps): React.ReactElement {
   return (
@@ -27,9 +29,12 @@ export function HeaderBar({
       height={2}
       flexShrink={0}
     >
-      <Text bold color="cyan">
-        Papierklammer
-      </Text>
+      <Box>
+        <Text bold color="cyan">
+          Papierklammer
+        </Text>
+        {companyLabel ? <Text dimColor>{` · ${companyLabel}`}</Text> : null}
+      </Box>
       <Box>
         <Text color={connected ? "green" : "red"}>
           {connected ? "Connected" : "Disconnected"}
