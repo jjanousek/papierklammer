@@ -1,0 +1,33 @@
+{
+  "featureId": "backend-orchestrator-action-contracts",
+  "reviewedAt": "2026-04-04T19:46:44Z",
+  "commitId": "cfbd70b1a87f45e0524b6a677b61f16752dbfe2d",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The follow-up auth hardening closes the same-company agent leak on operator-facing run detail and fan-out endpoints, but it also regresses the shipped CLI heartbeat runner. `papierklammer heartbeat run` explicitly supports agent bearer tokens, wakes an agent run successfully, then polls `/api/heartbeat-runs/:runId/events` and `/api/heartbeat-runs/:runId/log` to stream output. This commit makes both endpoints board-only, so the CLI now fails with 403 for the very agent-authenticated flow it advertises.",
+    "issues": [
+      {
+        "file": "server/src/routes/agents.ts",
+        "line": 2241,
+        "severity": "blocking",
+        "description": "Making `/api/heartbeat-runs/:runId/events` and `/api/heartbeat-runs/:runId/log` board-only breaks the shipped `papierklammer heartbeat run` command for agent-authenticated usage. The CLI advertises `--api-key` for agent-authenticated calls (`cli/src/index.ts:121`), invokes its own agent run, and then polls these endpoints to stream progress (`cli/src/commands/heartbeat-run.ts:220` and `:257`). After this change, the agent can still invoke `/agents/:id/wakeup`, but the follow-up event/log reads now return 403 instead of streaming run output, so the command exits on an API error instead of completing its documented live-log flow."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's mandatory 'write tests first (red)' procedure does not fit partial-hardening follow-up tasks where most of the feature has already landed and the remaining work is a narrow regression patch. The worker explicitly deviated for that reason and suggested updating the skill.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md:32 requires tests-first red; mission handoff 2026-04-04T18-41-13-033Z__backend-orchestrator-action-contracts__327e2010-2fb1-4bb2-8367-a6709124bbfc.json:58 shows `followedProcedure: false`, and line 67 suggests allowing a 'gap analysis then targeted regression patch' flow for partial-hardening follow-ups."
+    },
+    {
+      "area": "knowledge",
+      "observation": "Mission architecture notes the Web UI, TUI, and API as the audited runtime surfaces, but it does not capture that the shipped CLI also depends on heartbeat run detail endpoints with agent-authenticated calls. That omission makes auth hardening changes to these endpoints easier to review in isolation while missing a real in-repo consumer.",
+      "evidence": ".factory/library/architecture.md:7-23 frames the control-plane surfaces as Web UI, TUI, and API only, while `papierklammer heartbeat run` is documented as streaming live logs in `cli/src/index.ts:114-121` and consumes `/api/heartbeat-runs/:runId/events` and `/api/heartbeat-runs/:runId/log` in `cli/src/commands/heartbeat-run.ts:220` and `:257`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature handoff, transcript skeleton, skill, mission shared-state docs, and commit `cfbd70b1a87f45e0524b6a677b61f16752dbfe2d`. The auth hardening patch fixes the reported same-company agent leak on operator-facing run detail surfaces, but it introduces a blocking regression for the shipped `papierklammer heartbeat run` CLI flow when used with an agent API key, so the review fails."
+}

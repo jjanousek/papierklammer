@@ -1,0 +1,33 @@
+{
+  "featureId": "run-identity-and-tui-output",
+  "reviewedAt": "2026-04-04T19:46:26.283591Z",
+  "commitId": "5825983c1b92b2daec2d90e1c1cbc67d30752cdf",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature successfully threads stable run identity and concise persisted summaries through `/api/orchestrator/status` and the TUI sidebar. I found one non-blocking UX/correctness issue in the new TUI run-review selection logic.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/components/AgentSidebar.tsx",
+        "line": 79,
+        "severity": "non_blocking",
+        "description": "When the highlighted agent has no matching entry in `activeRuns` or `recentRuns`, the sidebar falls back to `activeRuns[0]` or `recentRuns[0]`. That can render another agent's run while a different agent row remains selected, which is confusing for a feature whose goal is preserving run/agent identity during review. The new test data already demonstrates the mismatch: `MOCK_AGENTS[0]` is `a1` while `MOCK_RECENT_RUNS[0].agentId` is `a2` in `packages/orchestrator-tui/src/__tests__/panels.test.tsx:20-29,51-62,112-120`."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The audit-worker procedure does not document a stable public-API fallback for seeding deterministic demo-repo work when the onboarding wizard becomes unreliable, even though this feature needed that escape hatch.",
+      "evidence": ".factory/skills/audit-worker/SKILL.md:35-39 requires the real audit flow through Web UI + TUI + API, but the worker handoff records a justified deviation to local API seeding and explicitly suggests documenting that fallback in /Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-04T19-31-45-821Z__run-identity-and-tui-output__09d27aff-a286-4cba-9bb0-9662a08857d4.json:94-100."
+    },
+    {
+      "area": "conventions",
+      "observation": "There is still no shared typed contract for `/api/orchestrator/status`, so the same response shape is duplicated across server, TUI, and console code. That duplication already leaked into a compatibility shim for `id` vs `agentId`, which is exactly the kind of drift the repo-level contract-sync guidance tries to avoid.",
+      "evidence": "Server-side status types live in `server/src/services/orchestrator.ts:39-57`; the TUI redefines them in `packages/orchestrator-tui/src/hooks/useOrchestratorStatus.ts:3-21` and adds `id`->`agentId` normalization at `packages/orchestrator-tui/src/hooks/useOrchestratorStatus.ts:92-99`; the console has its own copy in `packages/orchestrator-console/src/commands/status.ts:3-12`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the worker transcript skeleton, handoff, and commit `5825983c1b92b2daec2d90e1c1cbc67d30752cdf`. The feature is broadly correct and meets its goal of surfacing stable run identity plus concise summaries in orchestrator status/TUI, with one non-blocking issue where the sidebar can show a different agent's run than the currently highlighted agent."
+}

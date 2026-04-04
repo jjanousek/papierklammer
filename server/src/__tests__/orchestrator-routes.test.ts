@@ -93,7 +93,7 @@ function createUnauthApp() {
 
 describe("orchestrator routes", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.resetAllMocks();
   });
 
   // ──────────────────────────────────────────────────────────────────────────

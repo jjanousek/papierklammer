@@ -22,6 +22,11 @@
 - Key audit paths include health/onboarding checks plus orchestrator status, stale inventory, nudge, unblock, active-run, live-run, and heartbeat-run endpoints.
 - Board auth and company access checks are part of the mission: denial and isolation checks are first-class evidence, not secondary polish. If the API is wrong, the UI and TUI evidence do not count as trustworthy.
 
+### CLI heartbeat runner
+- The shipped CLI is also a real runtime consumer for this mission, especially `papierklammer heartbeat run`.
+- That command explicitly supports agent-authenticated usage via `--api-key`, triggers `/agents/:id/wakeup`, and then polls `/api/heartbeat-runs/:runId/events` plus `/api/heartbeat-runs/:runId/log` to stream progress.
+- Auth or contract changes on heartbeat-run detail endpoints must preserve this CLI path or reject it intentionally and explicitly; otherwise in-repo runtime validation can regress even if Web UI and TUI checks still pass.
+
 ### Demo repo audit target
 - A tiny sibling CLI repository created near this workspace and used as the real managed project for the audit.
 - Small enough for repeatable local runs, but real enough to produce actual issue execution, file changes, and inspectable outputs.
@@ -57,6 +62,7 @@
 - Think in evidence chains: company -> issue -> run -> output.
 - Use the API as the truth source first, then verify how the Web UI and TUI represent that same state.
 - Primary proof endpoints in this mission are `/api/health`, `/api/companies`, `/api/orchestrator/status`, `/api/orchestrator/stale`, `/api/issues/:issueId/active-run`, `/api/issues/:issueId/live-runs`, and `/api/companies/:companyId/heartbeat-runs`.
+- When comparing operator-facing run summaries across surfaces, keep the UI/TUI field precedence aligned with the existing server-side heartbeat-run summary behavior, including structured `error` summaries for failed runs.
 - Prioritize onboarding, company scoping, run visibility, and stale recovery over low-value implementation details.
 - Use the demo CLI repo for real execution and output review, not synthetic placeholders.
 - Prefer fresh local state over inherited state whenever behavior is ambiguous.

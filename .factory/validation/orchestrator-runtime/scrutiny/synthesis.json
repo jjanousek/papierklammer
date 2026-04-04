@@ -1,0 +1,94 @@
+{
+  "milestone": "orchestrator-runtime",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run -- --maxWorkers=5",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    },
+    "build": {
+      "passed": true,
+      "command": "pnpm build",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 5,
+    "passed": 1,
+    "failed": 4,
+    "failedFeatures": [
+      "tui-company-scoped-orchestrator-actions",
+      "web-company-context-and-orchestrator-visibility",
+      "web-run-output-review-surfaces",
+      "backend-orchestrator-action-contracts"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "tui-company-scoped-orchestrator-actions",
+      "severity": "blocking",
+      "description": "The new reconnect path can race the initial Codex handshake and send a second initialize request on the same subprocess if the operator submits before startup finishes, breaking the first post-launch action."
+    },
+    {
+      "featureId": "web-company-context-and-orchestrator-visibility",
+      "severity": "blocking",
+      "description": "Issue list route sync bypasses the shared manual-switch guard and can revert a manual company switch back to the stale route company before remembered-path navigation completes."
+    },
+    {
+      "featureId": "web-company-context-and-orchestrator-visibility",
+      "severity": "blocking",
+      "description": "Issue detail repeats the same direct route-sync write and can likewise snap the operator back to the old company during a manual switch from a deep-linked issue page."
+    },
+    {
+      "featureId": "backend-orchestrator-action-contracts",
+      "severity": "blocking",
+      "description": "Making `/api/heartbeat-runs/:runId/events` and `/api/heartbeat-runs/:runId/log` board-only breaks the shipped `papierklammer heartbeat run` agent-authenticated flow, which polls those endpoints after wakeup to stream run output."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Updated `.factory/library/architecture.md` to document the shipped CLI heartbeat runner as a runtime consumer of heartbeat-run detail endpoints and to note that cross-surface run-summary extraction must preserve structured error summaries.",
+      "sourceFeature": "backend-orchestrator-action-contracts"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "When syncing selected company from a company-prefixed route, reuse the shared route-sync guard helper instead of writing direct `setSelectedCompanyId(..., { source: \"route_sync\" })` effects in page components.",
+      "evidence": "The review for `web-company-context-and-orchestrator-visibility` found blocking regressions in both `ui/src/pages/Issues.tsx` and `ui/src/pages/IssueDetail.tsx` because they bypassed `shouldSyncCompanySelectionFromRoute()` and reverted manual company switches mid-navigation.",
+      "isSystemic": false
+    },
+    {
+      "target": "backend-worker skill",
+      "suggestion": "Allow a gap-analysis plus targeted regression-patch flow for partial-hardening follow-ups where most of the feature already landed, instead of always requiring a strict tests-first-red sequence.",
+      "evidence": "The `backend-orchestrator-action-contracts` worker handoff recorded a justified deviation from the current tests-first step for a narrow follow-up patch, and the review echoed that the current skill text does not fit this class of mission work well.",
+      "isSystemic": false
+    },
+    {
+      "target": "audit-worker skill",
+      "suggestion": "Document a stable public-API seeding fallback for deterministic demo-repo work when the onboarding wizard becomes unreliable during validation.",
+      "evidence": "The `run-identity-and-tui-output` handoff described a justified deviation to API-based seeding, and the reviewer noted that this fallback is not captured in the current audit-worker procedure.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Create additional guidance for duplicated `/api/orchestrator/status` types across server, TUI, and console.",
+      "reason": "Rejected as already substantially covered by the existing AGENTS.md contract-sync rule; the review points to a code cleanup opportunity, but it does not yet show a guidance gap distinct from the repo's current synchronization guidance."
+    }
+  ],
+  "previousRound": null
+}

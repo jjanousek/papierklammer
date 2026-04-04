@@ -1,0 +1,28 @@
+{
+  "featureId": "tui-company-scoped-orchestrator-actions",
+  "reviewedAt": "2026-04-05T00:00:00Z",
+  "commitId": "b5359db7ed57cca5ca406caafa6c71574d9ef115",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The change improves recoverability for missing Codex binaries and failed turns, and the company-scoping path remains covered in the current TUI codebase. However, the new reconnect path introduces a startup-handshake race that can break the first operator action if the user submits before Codex finishes connecting, and connected request failures are now reported twice in chat.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/hooks/useCodex.ts",
+        "line": 136,
+        "severity": "blocking",
+        "description": "The hook starts `client.initialize()` on mount at lines 115-118, but `sendMessage()` immediately calls `client.reconnect()` whenever `client.isConnected` is still false. `CodexClient.reconnect()` in `packages/orchestrator-tui/src/codex/client.ts:286-300` unconditionally sends another `initialize` on the same subprocess, so an operator who types before startup finishes can race two initialize handshakes and make the first turn fail or leave protocol state inconsistent."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/components/App.tsx",
+        "line": 213,
+        "severity": "non_blocking",
+        "description": "Connected request failures are surfaced twice. `useCodex.sendMessage()` already calls `opts.onError` for these failures at `packages/orchestrator-tui/src/hooks/useCodex.ts:172-174`, and `App.handleSubmit()` calls `chat.onError(...)` again in its `.catch` block here. Because `isThinkingRef.current` is still true until the rerender from the first error update lands, thread/start or turn/start failures append duplicate assistant error messages."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the completed worker handoff, transcript skeleton, skill guidance, mission contract, and commit `b5359db7ed57cca5ca406caafa6c71574d9ef115`. The feature should not pass as-is because the new reconnect flow can issue a second initialize request before the initial handshake finishes, breaking the first post-launch action; there is also a smaller duplicate-error rendering regression."
+}

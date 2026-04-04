@@ -1,0 +1,34 @@
+{
+  "featureId": "web-company-context-and-orchestrator-visibility",
+  "reviewedAt": "2026-04-04T19:46:23Z",
+  "commitId": "92e05d294e3292ff4def82568bcb24f8ec3212a2",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit correctly moves issue-list and issue-detail company-scoped queries onto the route/deep-linked company, and the new tests cover the stale-selected-company read/upload path. However, both pages now perform their own unconditional route-sync writes back into `selectedCompanyId`, which bypasses the existing manual-switch guard and can snap the operator back to the stale route company before remembered-path navigation completes.",
+    "issues": [
+      {
+        "file": "ui/src/pages/Issues.tsx",
+        "line": 91,
+        "severity": "blocking",
+        "description": "This new effect unconditionally calls `setSelectedCompanyId(routeCompanyId, { source: \"route_sync\" })` whenever the prefixed route and current selection differ. That bypasses the shared guard in `ui/src/lib/company-selection.ts:3-16`, whose explicit purpose is to defer route sync while a manual company switch is in flight, and it can race `useCompanyPageMemory()` (`ui/src/hooks/useCompanyPageMemory.ts:68-74`) when the operator switches companies from `/ALP/issues`. In that flow the switcher sets `selectionSource` to `manual`, but this page can immediately overwrite the new selection back to Alpha before the remembered-path redirect to Beta finishes, breaking manual company switching from the issue list."
+      },
+      {
+        "file": "ui/src/pages/IssueDetail.tsx",
+        "line": 802,
+        "severity": "blocking",
+        "description": "The detail page repeats the same direct route-sync write with `setSelectedCompanyId(nextCompanyId, { source: \"route_sync\" })` instead of going through the existing `shouldSyncCompanySelectionFromRoute()` logic used by `ui/src/components/Layout.tsx:138-144`. As a result, a manual company switch started from a deep-linked issue page like `/ALP/issues/ALP-1` can be reverted back to the route company before `useCompanyPageMemory()` navigates to the newly selected company's remembered page, so this fix trades the stale-query bug for a new company-switch regression on issue detail surfaces."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Route-driven company selection already has a shared guard (`shouldSyncCompanySelectionFromRoute`) to protect manual company switches, but the new issue pages duplicated route-sync behavior instead of reusing that helper.",
+      "evidence": "`ui/src/lib/company-selection.ts:3-16` and `ui/src/components/Layout.tsx:138-144` define the intended route-sync rule; the reviewed commit adds direct `setSelectedCompanyId(..., { source: \"route_sync\" })` calls in `ui/src/pages/Issues.tsx:91` and `ui/src/pages/IssueDetail.tsx:802`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the mission feature metadata, worker handoff, transcript skeleton, `web-runtime-worker` skill, architecture guidance, and commit `92e05d294e3292ff4def82568bcb24f8ec3212a2`. The feature should not pass as-is: while it fixes stale company-scoped issue queries, it also bypasses the existing manual-switch route-sync guard on both issue list and issue detail pages, introducing a blocking regression for switching companies from those surfaces."
+}

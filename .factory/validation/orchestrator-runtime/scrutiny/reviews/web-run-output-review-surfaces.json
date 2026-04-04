@@ -1,0 +1,28 @@
+{
+  "featureId": "web-run-output-review-surfaces",
+  "reviewedAt": "2026-04-04T19:47:26Z",
+  "commitId": "057daf83dce6c69edb968dddbc96a96a6f133682",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature adds the intended issue-level review section and keeps completed runs/work products visible after live execution ends, but the new preview extraction logic drops structured failure summaries for completed runs. That leaves some failed runs without concrete issue-level review text even when the adapter persisted one.",
+    "issues": [
+      {
+        "file": "ui/src/components/IssueReviewSurfaces.tsx",
+        "line": 38,
+        "severity": "non_blocking",
+        "description": "The new `extractRunReviewText()` helper only checks `summary`, `result`, `message`, `stdout`, and `stderr`, so a completed run that stores its operator-facing failure summary in `resultJson.error` renders no preview here and falls back to transcript parsing or the generic 'Inspect run' message. The existing server-side run-review path treats `error` as a first-class summary field (`server/src/services/orchestrator.ts:28`, `server/src/services/orchestrator.ts:74-85`), so the UI now diverges from the control-plane's established run-summary contract for failed runs."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "There is no shared documented/canonical helper for operator-facing run summary extraction across surfaces, so the worker reimplemented summary selection in the UI and drifted from the existing server behavior.",
+      "evidence": "Mission architecture says Web UI, TUI, and API should agree on the same run/output evidence chain (`.factory/library/architecture.md`). Server-side run review already centralizes summary-field precedence including `error` in `server/src/services/orchestrator.ts:28` and `server/src/services/heartbeat-run-summary.ts:27-49`, but the new UI helper in `ui/src/components/IssueReviewSurfaces.tsx:33-40` duplicates that logic with a different field list."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the mission docs, feature metadata, worker handoff/transcript skeleton, skill instructions, and commit `057daf83dce6c69edb968dddbc96a96a6f133682`. The new issue review surfaces are directionally correct, but the implementation should not pass as-is because failed completed runs can lose their structured `resultJson.error` preview on the issue page, making run/result review less trustworthy for error cases."
+}
