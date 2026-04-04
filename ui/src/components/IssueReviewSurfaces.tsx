@@ -21,6 +21,11 @@ function readTextValue(record: Record<string, unknown>, key: string) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
 function compactPreview(text: string, maxLength = 280) {
   const normalized = text
     .replace(/\r\n/g, "\n")
@@ -30,12 +35,44 @@ function compactPreview(text: string, maxLength = 280) {
   return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
+function extractStructuredErrorText(value: unknown): string | null {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const text = extractStructuredErrorText(item);
+      if (text) return text;
+    }
+    return null;
+  }
+
+  const record = asRecord(value);
+  if (!record) return null;
+
+  for (const key of ["summary", "message", "detail", "details", "reason", "error"] as const) {
+    const text = extractStructuredErrorText(record[key]);
+    if (text) return text;
+  }
+
+  return null;
+}
+
 export function extractRunReviewText(resultJson: Record<string, unknown> | null | undefined) {
   if (!resultJson || typeof resultJson !== "object" || Array.isArray(resultJson)) {
     return null;
   }
 
-  for (const key of ["summary", "result", "message", "stdout", "stderr"] as const) {
+  for (const key of ["summary", "result", "message"] as const) {
+    const value = readTextValue(resultJson, key);
+    if (value) return compactPreview(value);
+  }
+
+  const errorText = extractStructuredErrorText(resultJson.error);
+  if (errorText) return compactPreview(errorText);
+
+  for (const key of ["stdout", "stderr"] as const) {
     const value = readTextValue(resultJson, key);
     if (value) return compactPreview(value);
   }
