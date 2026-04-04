@@ -74,6 +74,21 @@ describe("activity routes", () => {
     expect(res.body).toEqual([{ runId: "run-1" }]);
   });
 
+  it("rejects same-company agent access to issue run fan-out", async () => {
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-1",
+        source: "agent_key",
+      }),
+    ).get("/api/issues/PAP-475/runs");
+
+    expect(res.status).toBe(403);
+    expect(mockIssueService.getByIdentifier).not.toHaveBeenCalled();
+    expect(mockActivityService.runsForIssue).not.toHaveBeenCalled();
+  });
+
   it("enforces company access on heartbeat-run issue fan-out", async () => {
     mockHeartbeatService.getRun.mockResolvedValue({
       id: "run-1",
@@ -124,6 +139,21 @@ describe("activity routes", () => {
     ).get("/api/heartbeat-runs/run-1/issues");
 
     expect(res.status).toBe(403);
+    expect(mockActivityService.issuesForRun).not.toHaveBeenCalled();
+  });
+
+  it("rejects same-company agent access to heartbeat-run issue fan-out", async () => {
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-1",
+        source: "agent_key",
+      }),
+    ).get("/api/heartbeat-runs/run-1/issues");
+
+    expect(res.status).toBe(403);
+    expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
     expect(mockActivityService.issuesForRun).not.toHaveBeenCalled();
   });
 });

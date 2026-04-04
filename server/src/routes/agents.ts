@@ -44,7 +44,13 @@ import {
   workspaceOperationService,
 } from "../services/index.js";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
-import { assertBoard, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
+import {
+  assertAuthenticatedBoard,
+  assertBoard,
+  assertCompanyAccess,
+  assertInstanceAdmin,
+  getActorInfo,
+} from "./authz.js";
 import { findServerAdapter, listAdapterModels, detectAdapterModel } from "../adapters/index.js";
 import { redactEventPayload } from "../redaction.js";
 import { redactCurrentUserValue } from "../log-redaction.js";
@@ -2163,6 +2169,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId", async (req, res) => {
+    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
@@ -2174,7 +2181,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.post("/heartbeat-runs/:runId/cancel", async (req, res) => {
-    assertBoard(req);
+    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const existingRun = await heartbeat.getRun(runId);
     if (!existingRun) {
@@ -2231,6 +2238,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId/events", async (req, res) => {
+    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
@@ -2253,6 +2261,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId/log", async (req, res) => {
+    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
@@ -2272,6 +2281,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId/workspace-operations", async (req, res) => {
+    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
@@ -2287,6 +2297,7 @@ export function agentRoutes(db: Db) {
   });
 
   router.get("/workspace-operations/:operationId/log", async (req, res) => {
+    assertAuthenticatedBoard(req);
     const operationId = req.params.operationId as string;
     const operation = await workspaceOperations.getById(operationId);
     if (!operation) {

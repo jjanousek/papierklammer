@@ -7,6 +7,13 @@ export function assertBoard(req: Request) {
   }
 }
 
+export function assertAuthenticatedBoard(req: Request) {
+  if (req.actor.type === "none") {
+    throw unauthorized();
+  }
+  assertBoard(req);
+}
+
 export function assertInstanceAdmin(req: Request) {
   assertBoard(req);
   if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) {
