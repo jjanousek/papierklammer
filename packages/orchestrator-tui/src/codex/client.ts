@@ -67,6 +67,8 @@ export class CodexClient {
   private pending = new Map<number, PendingRequest>();
   private destroyed = false;
   private initialized = false;
+  private initializePromise: Promise<InitializeResult> | null = null;
+  private initializeResult: InitializeResult | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly spawnFn: typeof spawn;
@@ -170,6 +172,8 @@ export class CodexClient {
     this.rl?.close();
     this.rl = null;
     this.initialized = false;
+    this.initializePromise = null;
+    this.initializeResult = null;
 
     // Reject all pending requests
     for (const [, pending] of this.pending) {
@@ -260,6 +264,18 @@ export class CodexClient {
    * 3. Send `initialized` notification
    */
   async initialize(): Promise<InitializeResult> {
+    if (this.destroyed) {
+      throw new Error("Codex client has been destroyed");
+    }
+
+    if (this.initialized && this.proc && this.initializeResult) {
+      return this.initializeResult;
+    }
+
+    if (this.initializePromise) {
+      return this.initializePromise;
+    }
+
     const params: InitializeParams = {
       clientInfo: {
         name: "papierklammer-tui",
@@ -268,16 +284,27 @@ export class CodexClient {
       capabilities: {},
     };
 
-    const response = await this.sendRequest("initialize", params);
+    const initializePromise = this.sendRequest("initialize", params)
+      .then((response) => {
+        if (response.error) {
+          throw new Error(`Initialize failed: ${response.error.message}`);
+        }
 
-    if (response.error) {
-      throw new Error(`Initialize failed: ${response.error.message}`);
-    }
+        const result = response.result as InitializeResult;
+        this.sendNotification("initialized");
+        this.initialized = true;
+        this.initializeResult = result;
 
-    this.sendNotification("initialized");
-    this.initialized = true;
+        return result;
+      })
+      .finally(() => {
+        if (this.initializePromise === initializePromise) {
+          this.initializePromise = null;
+        }
+      });
 
-    return response.result as InitializeResult;
+    this.initializePromise = initializePromise;
+    return initializePromise;
   }
 
   /**
@@ -295,6 +322,10 @@ export class CodexClient {
 
     if (!this.proc) {
       this.spawnProcess();
+    }
+
+    if (this.initialized && this.proc && this.initializeResult) {
+      return this.initializeResult;
     }
 
     return this.initialize();

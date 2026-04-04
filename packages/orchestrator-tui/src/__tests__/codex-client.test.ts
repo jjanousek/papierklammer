@@ -169,6 +169,47 @@ describe("CodexClient", () => {
     await expect(initPromise).rejects.toThrow("Initialize failed: Already initialized");
   });
 
+  it("coalesces reconnect with an in-flight initialize on the same subprocess", async () => {
+    client = new CodexClient({ spawnFn, autoReconnect: false });
+
+    const sentMessages: unknown[] = [];
+    mockProc.stdin.on("data", (chunk: Buffer) => {
+      const lines = chunk.toString().split("\n").filter(Boolean);
+      for (const line of lines) {
+        sentMessages.push(JSON.parse(line));
+      }
+    });
+
+    const initPromise = client.initialize();
+    const reconnectPromise = client.reconnect();
+    await tick();
+
+    expect(
+      sentMessages.filter((msg: any) => msg.method === "initialize"),
+    ).toHaveLength(1);
+
+    respond(mockProc, {
+      id: 0,
+      result: {
+        userAgent: "codex/0.117.0",
+        codexHome: "/home/test/.codex",
+        platformFamily: "unix",
+        platformOs: "macos",
+      } satisfies InitializeResult,
+    });
+
+    const [initResult, reconnectResult] = await Promise.all([
+      initPromise,
+      reconnectPromise,
+    ]);
+
+    expect(initResult).toEqual(reconnectResult);
+    await tick();
+    expect(
+      sentMessages.filter((msg: any) => msg.method === "initialized"),
+    ).toHaveLength(1);
+  });
+
   // ── Thread start ─────────────────────────────────────────────────
 
   it("starts a thread and returns threadId", async () => {

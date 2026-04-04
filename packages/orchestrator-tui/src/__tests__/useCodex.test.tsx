@@ -44,7 +44,9 @@ interface TestHarnessProps {
   onState?: (state: ConnectionState) => void;
   onDelta?: (params: DeltaParams) => void;
   onTurnCompleted?: (params: TurnCompletedParams) => void;
+  onError?: (error: Error) => void;
   sendOnMount?: string;
+  sendImmediately?: string;
   baseInstructions?: string;
 }
 
@@ -53,7 +55,9 @@ function TestHarness({
   onState,
   onDelta,
   onTurnCompleted,
+  onError,
   sendOnMount,
+  sendImmediately,
   baseInstructions,
 }: TestHarnessProps): React.ReactElement {
   const spawnFn = vi.fn().mockReturnValue(mockProc);
@@ -63,6 +67,7 @@ function TestHarness({
     autoReconnect: false,
     onDelta,
     onTurnCompleted,
+    onError,
   });
 
   useEffect(() => {
@@ -76,6 +81,14 @@ function TestHarness({
     // Only trigger once when connected
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected]);
+
+  useEffect(() => {
+    if (sendImmediately) {
+      void sendMessage(sendImmediately, baseInstructions).catch(() => {});
+    }
+    // Only trigger on first mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Box flexDirection="column">
@@ -162,6 +175,67 @@ describe("useCodex", () => {
 
     expect(lastFrame()).toContain("state:connected");
     expect(lastFrame()).toContain("thinking:false");
+
+    unmount();
+  });
+
+  it("waits for the initial initialize handshake when sending before startup settles", async () => {
+    const mockProc = createMockProcess();
+    const sentMessages: unknown[] = [];
+    const errors: string[] = [];
+
+    mockProc.stdin.on("data", (chunk: Buffer) => {
+      const lines = chunk.toString().split("\n").filter(Boolean);
+      for (const line of lines) {
+        sentMessages.push(JSON.parse(line));
+      }
+    });
+
+    const { lastFrame, unmount } = render(
+      <TestHarness
+        mockProc={mockProc}
+        sendImmediately="Hello early"
+        baseInstructions="You are helpful."
+        onError={(error) => errors.push(error.message)}
+      />,
+    );
+
+    await tick(100);
+
+    expect(
+      sentMessages.filter((message: any) => message.method === "initialize"),
+    ).toHaveLength(1);
+
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_early" } } });
+    await tick(100);
+
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_early", status: "inProgress", items: [], error: null } },
+    });
+    await tick(100);
+
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_early",
+        turn: { id: "turn_early", status: "completed", items: [], error: null },
+      },
+    });
+    await tick(100);
+
+    expect(
+      sentMessages.filter((message: any) => message.method === "thread/start"),
+    ).toHaveLength(1);
+    expect(
+      sentMessages.filter((message: any) => message.method === "turn/start"),
+    ).toHaveLength(1);
+    expect(errors).toEqual([]);
+    expect(lastFrame()).toContain("state:connected");
+    expect(lastFrame()).toContain("thread:thr_early");
 
     unmount();
   });
