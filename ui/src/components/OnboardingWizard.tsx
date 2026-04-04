@@ -157,6 +157,7 @@ export function OnboardingWizard() {
   );
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [createdIssueId, setCreatedIssueId] = useState<string | null>(null);
   const [createdIssueRef, setCreatedIssueRef] = useState<string | null>(null);
 
   useEffect(() => {
@@ -175,6 +176,7 @@ export function OnboardingWizard() {
     setCreatedCompanyGoalId(null);
     setCreatedProjectId(null);
     setCreatedAgentId(null);
+    setCreatedIssueId(null);
     setCreatedIssueRef(null);
   }, [
     effectiveOnboardingOpen,
@@ -306,6 +308,7 @@ export function OnboardingWizard() {
     setCreatedCompanyGoalId(null);
     setCreatedAgentId(null);
     setCreatedProjectId(null);
+    setCreatedIssueId(null);
     setCreatedIssueRef(null);
   }
 
@@ -458,6 +461,10 @@ export function OnboardingWizard() {
       if (isLocalAdapter) {
         const result = adapterEnvResult ?? (await runAdapterEnvironmentTest());
         if (!result) return;
+        if (result.status === "fail") {
+          setError("Adapter environment check failed. Fix the errors and retry.");
+          return;
+        }
       }
 
       const agent = await agentsApi.create(createdCompanyId, {
@@ -568,6 +575,7 @@ export function OnboardingWizard() {
       }
 
       let issueRef = createdIssueRef;
+      let issueId = createdIssueId;
       if (!issueRef) {
         const issue = await issuesApi.create(
           createdCompanyId,
@@ -579,12 +587,47 @@ export function OnboardingWizard() {
             goalId
           })
         );
+        issueId = issue.id;
+        setCreatedIssueId(issue.id);
         issueRef = issue.identifier ?? issue.id;
         setCreatedIssueRef(issueRef);
         queryClient.invalidateQueries({
           queryKey: queryKeys.issues.list(createdCompanyId)
         });
       }
+
+      if (!issueId) {
+        throw new Error("Failed to resolve the starter issue for launch.");
+      }
+
+      const wakeResult = await agentsApi.wakeup(
+        createdAgentId,
+        {
+          source: "assignment",
+          triggerDetail: "manual",
+          reason: "onboarding_launch",
+          payload: {
+            issueId,
+            issueRef,
+            mutation: "create",
+          },
+          idempotencyKey: `onboarding-launch:${issueId}`,
+        },
+        createdCompanyId
+      );
+
+      if ("status" in wakeResult && wakeResult.status === "skipped") {
+        throw new Error(
+          "Starter task was created, but the CEO wakeup was skipped. Retry launch to start the company loop."
+        );
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issues.activeRun(issueId)
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issues.liveRuns(issueId)
+      });
 
       setSelectedCompanyId(createdCompanyId);
       reset();
@@ -1292,7 +1335,11 @@ export function OnboardingWizard() {
                     <Button
                       size="sm"
                       disabled={
-                        !agentName.trim() || loading || adapterEnvLoading
+                        !agentName.trim() ||
+                        loading ||
+                        adapterEnvLoading ||
+                        (isLocalAdapter &&
+                          adapterEnvResult?.status === "fail")
                       }
                       onClick={handleStep2Next}
                     >
