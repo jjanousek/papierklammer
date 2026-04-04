@@ -78,8 +78,6 @@ export function AgentSidebar({
   const selectedAgentId = agents[selectedIndex]?.agentId ?? null;
   const inspectedRun =
     [...activeRuns, ...recentRuns].find((run) => run.agentId === selectedAgentId)
-    ?? activeRuns[0]
-    ?? recentRuns[0]
     ?? null;
   const inspectedPreview =
     inspectedRun?.resultSummaryText?.trim()

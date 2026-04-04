@@ -52,8 +52,8 @@ const MOCK_RECENT_RUNS: RunReviewEntry[] = [
   {
     runId: "run-completed-1",
     status: "succeeded",
-    agentId: "a2",
-    agentName: "Dev-1",
+    agentId: "a1",
+    agentName: "CEO",
     issueId: "issue-1",
     issueIdentifier: "AUD-1",
     createdAt: "2026-04-05T10:00:00.000Z",
@@ -123,6 +123,71 @@ describe("AgentSidebar", () => {
     expect(frame).toContain("AUD-1");
     expect(frame).toContain("Prepared the audit");
     expect(frame).toContain("demo report.");
+    unmount();
+  });
+
+  it("does not fall back to another agent's run when the selected agent has no match", () => {
+    const { lastFrame, unmount } = render(
+      <AgentSidebar
+        agents={MOCK_AGENTS}
+        recentRuns={[
+          {
+            runId: "run-completed-2",
+            status: "succeeded",
+            agentId: "a2",
+            agentName: "Dev-1",
+            issueId: "issue-2",
+            issueIdentifier: "AUD-2",
+            createdAt: "2026-04-05T10:10:00.000Z",
+            startedAt: "2026-04-05T10:10:00.000Z",
+            finishedAt: "2026-04-05T10:15:00.000Z",
+            resultSummaryText: "Implemented the CLI command.",
+            stdoutExcerpt: "verbose stdout",
+            stderrExcerpt: null,
+          },
+        ]}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Run review");
+    expect(frame).toContain("No active or recent");
+    expect(frame).toContain("runs");
+    expect(frame).not.toContain("AUD-2");
+    expect(frame).not.toContain("Implemented the CLI command.");
+    unmount();
+  });
+
+  it("prefers the selected agent's active run over its recent run", () => {
+    const { lastFrame, unmount } = render(
+      <AgentSidebar
+        agents={MOCK_AGENTS}
+        activeRuns={[
+          {
+            runId: "run-live-2",
+            status: "running",
+            agentId: "a1",
+            agentName: "CEO",
+            issueId: "issue-live-2",
+            issueIdentifier: "AUD-3",
+            createdAt: "2026-04-05T11:10:00.000Z",
+            startedAt: "2026-04-05T11:10:00.000Z",
+            finishedAt: null,
+            resultSummaryText: null,
+            stdoutExcerpt: "Live stdout preview",
+            stderrExcerpt: null,
+          },
+        ]}
+        recentRuns={MOCK_RECENT_RUNS}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("run-live");
+    expect(frame).toContain("AUD-3");
+    expect(frame).toContain("Live stdout preview");
+    expect(frame).not.toContain("run-comp");
+    expect(frame).not.toContain("AUD-1");
     unmount();
   });
 
