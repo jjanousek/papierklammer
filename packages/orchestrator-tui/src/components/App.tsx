@@ -175,9 +175,6 @@ function CompanySession({
   const effectiveThreadId = threadIdProp ?? codex.threadId ?? undefined;
   const inputDisabled = chat.isThinking || (enableCodex && codex.isThinking);
 
-  const isThinkingRef = useRef(chat.isThinking);
-  isThinkingRef.current = chat.isThinking;
-
   const reasoningEffortRef = useRef(reasoningEffort);
   reasoningEffortRef.current = reasoningEffort;
 
@@ -211,12 +208,12 @@ function CompanySession({
           serviceTier,
         )
         .catch((error: unknown) => {
-          if (isThinkingRef.current) {
-            chat.onError(error instanceof Error ? error.message : "Send failed");
-          }
+          chat.recoverFromPendingError(
+            error instanceof Error ? error.message : "Send failed",
+          );
         });
     },
-    [chat.sendMessage, chat.onError, enableCodex, codex, companyId, companyName],
+    [chat.sendMessage, chat.recoverFromPendingError, enableCodex, codex, companyId, companyName],
   );
 
   return (

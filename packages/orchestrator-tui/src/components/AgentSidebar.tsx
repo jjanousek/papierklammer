@@ -14,6 +14,10 @@ function statusDot(status: string): { symbol: string; color: string } {
   return STATUS_DOT[status] ?? { symbol: "●", color: "gray" };
 }
 
+function formatLiveRunCount(count: number): string {
+  return `${count} live run${count === 1 ? "" : "s"}`;
+}
+
 /** Default max visible agents before scrolling kicks in */
 const DEFAULT_MAX_VISIBLE = 20;
 
@@ -76,6 +80,8 @@ export function AgentSidebar({
   const hasMoreBelow = scrollOffset + maxVisible < agents.length;
   const visibleAgents = agents.slice(scrollOffset, scrollOffset + maxVisible);
   const selectedAgentId = agents[selectedIndex]?.agentId ?? null;
+  const selectedAgentName = agents[selectedIndex]?.name ?? selectedAgentId ?? "selected agent";
+  const hasInspectableRuns = activeRuns.length > 0 || recentRuns.length > 0;
   const inspectedRun =
     [...activeRuns, ...recentRuns].find((run) => run.agentId === selectedAgentId)
     ?? null;
@@ -114,9 +120,16 @@ export function AgentSidebar({
           {hasMoreAbove && <Text dimColor>▲ more above</Text>}
           {visibleAgents.map((agent, visIdx) => {
             const idx = scrollOffset + visIdx;
-            const dot = statusDot(agent.status);
+            const dot =
+              agent.activeRunCount > 0
+                ? { symbol: "●", color: "blue" }
+                : statusDot(agent.status);
             const isSelected = idx === selectedIndex;
-            const isRunning = agent.status === "running";
+            const isRunning = agent.activeRunCount > 0;
+            const liveRunSuffix =
+              agent.activeRunCount > 0
+                ? ` · ${formatLiveRunCount(agent.activeRunCount)}`
+                : "";
             return (
               <Text
                 key={`${agent.agentId}:${idx}`}
@@ -127,35 +140,39 @@ export function AgentSidebar({
                 ) : (
                   <Text color={dot.color}>{dot.symbol}</Text>
                 )}{" "}
-                {agent.name || agent.agentId} ({agent.status})
+                {agent.name || agent.agentId} ({agent.status}{liveRunSuffix})
               </Text>
             );
           })}
           {hasMoreBelow && <Text dimColor>▼ more below</Text>}
-          <Box marginTop={1} flexDirection="column">
-            <Text bold underline>
-              Run review
-            </Text>
-            {inspectedRun ? (
-              <>
-                <Text>
-                  {runLabel} · {inspectedRun.status}
-                </Text>
-                <Text dimColor>
-                  issue {issueLabel} · agent {inspectedRun.agentName}
-                </Text>
-                {inspectedPreview ? (
-                  <Text>{inspectedPreview}</Text>
-                ) : inspectedRun.status === "queued" || inspectedRun.status === "running" ? (
-                  <Text dimColor>Waiting for persisted output…</Text>
-                ) : (
-                  <Text dimColor>No persisted result summary.</Text>
-                )}
-              </>
-            ) : (
-              <Text dimColor>No active or recent runs</Text>
-            )}
-          </Box>
+          {hasInspectableRuns ? (
+            <Box marginTop={1} flexDirection="column">
+              <Text bold underline>
+                Run inspection
+              </Text>
+              <Text dimColor>↑/↓ inspect run</Text>
+              {inspectedRun ? (
+                <>
+                  <Text>
+                    {runLabel} · {inspectedRun.status}
+                  </Text>
+                  <Text dimColor>
+                    issue {issueLabel} · agent {inspectedRun.agentName}
+                  </Text>
+                  <Text dimColor>Result/output</Text>
+                  {inspectedPreview ? (
+                    <Text>{inspectedPreview}</Text>
+                  ) : inspectedRun.status === "queued" || inspectedRun.status === "running" ? (
+                    <Text dimColor>Waiting for persisted output…</Text>
+                  ) : (
+                    <Text dimColor>No persisted result summary.</Text>
+                  )}
+                </>
+              ) : (
+                <Text dimColor>No runs for {selectedAgentName}</Text>
+              )}
+            </Box>
+          ) : null}
         </>
       )}
     </Box>

@@ -89,7 +89,8 @@ describe("AgentSidebar", () => {
     );
     const frame = lastFrame()!;
     expect(frame).toContain("(idle)");
-    expect(frame).toContain("(running)");
+    expect(frame).toContain("(running");
+    expect(frame).toContain("live run");
     expect(frame).toContain("(error)");
     expect(frame).toContain("(blocked)");
     unmount();
@@ -118,9 +119,11 @@ describe("AgentSidebar", () => {
     );
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Run review");
+    expect(frame).toContain("Run inspection");
+    expect(frame).toContain("inspect run");
     expect(frame).toContain("run-comp");
     expect(frame).toContain("AUD-1");
+    expect(frame).toContain("Result/output");
     expect(frame).toContain("Prepared the audit");
     expect(frame).toContain("demo report.");
     unmount();
@@ -150,9 +153,8 @@ describe("AgentSidebar", () => {
     );
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Run review");
-    expect(frame).toContain("No active or recent");
-    expect(frame).toContain("runs");
+    expect(frame).toContain("Run inspection");
+    expect(frame).toContain("No runs for CEO");
     expect(frame).not.toContain("AUD-2");
     expect(frame).not.toContain("Implemented the CLI command.");
     unmount();
@@ -215,10 +217,33 @@ describe("AgentSidebar", () => {
     );
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Run review");
+    expect(frame).toContain("Run inspection");
     expect(frame).toContain("run-live");
     expect(frame).toContain("AUD-2");
     expect(frame).toContain("Live stdout preview");
+    unmount();
+  });
+
+  it("surfaces live run counts directly on agent rows so sidebar indicators match status totals", () => {
+    const { lastFrame, unmount } = render(
+      <AgentSidebar
+        agents={[
+          {
+            agentId: "a1",
+            name: "CEO",
+            status: "idle",
+            activeRunCount: 2,
+            queuedIntentCount: 0,
+          },
+        ]}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("CEO");
+    expect(frame).toContain("(idle");
+    expect(frame).toContain("2 live");
+    expect(frame).toContain("runs)");
     unmount();
   });
 });

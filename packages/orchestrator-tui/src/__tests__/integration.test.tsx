@@ -590,7 +590,8 @@ describe("Agent status updates during chat (VAL-TUI-CROSS-002)", () => {
     expect(frame).toContain("Hello orchestrator");
 
     // Sidebar should have updated status
-    expect(frame).toContain("(running)");
+    expect(frame).toContain("(running");
+    expect(frame).toContain("live run");
     // Agent count should be updated in header
     expect(frame).toContain("1 active run");
 
@@ -678,7 +679,8 @@ describe("Agent status updates during chat (VAL-TUI-CROSS-002)", () => {
     // Streaming text should still be visible
     expect(frame).toContain("Here is my");
     // Sidebar should have updated
-    expect(frame).toContain("(running)");
+    expect(frame).toContain("(running");
+    expect(frame).toContain("live run");
 
     unmount();
   });
