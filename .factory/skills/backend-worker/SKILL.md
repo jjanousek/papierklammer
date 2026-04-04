@@ -68,6 +68,8 @@ None
 7. **Verify manually**:
    - For services: run individual test file to verify output: `cd server && npx vitest run src/__tests__/YOUR_TEST.test.ts`
    - For schema: verify migration SQL is additive (no DROP statements unless intentional).
+   - For API behavior features: run focused `curl` checks for the exact success and failure cases claimed by the feature, including company-isolation or wrong-actor negatives when relevant.
+   - If you start a local Node service for manual API checks, stop it afterward unless the next verification step explicitly reuses it.
 
 ## Example Handoff
 

@@ -1,0 +1,52 @@
+{
+  "groupId": "tui-audit",
+  "testedAt": "2026-04-04T13:57:52Z",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyId": "60f3e4e1-2084-4731-aee4-c1adfb946984",
+    "companyName": "Audit Demo Company",
+    "surface": "orchestrator-tui",
+    "launcherCommand": "pnpm dev:tui --url http://localhost:3100"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-008",
+      "title": "TUI becomes usable after onboarding",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "GET /api/health on the assigned audit instance",
+          "expected": "Local audit instance is reachable and healthy",
+          "observed": "Returned 200 with status ok and deploymentMode local_trusted"
+        },
+        {
+          "action": "GET /api/companies on the assigned audit instance",
+          "expected": "Onboarded company exists before TUI launch",
+          "observed": "Returned Audit Demo Company (60f3e4e1-2084-4731-aee4-c1adfb946984)"
+        },
+        {
+          "action": "Launch the shipped orchestrator TUI through a PTY with `pnpm dev:tui --url http://localhost:3100`",
+          "expected": "TUI opens into a usable company-scoped console after onboarding",
+          "observed": "TUI launched successfully and rendered `Papierklammer \u00b7 Audit Demo Company`, `Connected | 2 agents | 0 active runs`, agent list, chat panel, and input prompt `> Type a message...`"
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "demo-audit-setup/tui-audit/VAL-DEMO-008-startup.txt"
+        ],
+        "screenshots": [
+          "demo-audit-setup/tui-audit/VAL-DEMO-008-startup.png"
+        ],
+        "precheck": "GET /api/health -> 200; GET /api/companies -> 200 with Audit Demo Company"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: VAL-DEMO-008 passed. The shipped PTY-launched orchestrator TUI opened successfully after onboarding and showed a usable console scoped to Audit Demo Company."
+}

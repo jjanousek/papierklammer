@@ -1,0 +1,54 @@
+{
+  "groupId": "api-adapter",
+  "testedAt": "2026-04-04T13:52:39.314Z",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "companyId": "60f3e4e1-2084-4731-aee4-c1adfb946984",
+    "agentId": "c12cfd56-6365-4102-9981-11b996ce261d",
+    "issueId": "3a9142a2-088f-478d-828c-cf5d82bed488",
+    "adapterType": "codex_local"
+  },
+  "toolsUsed": [
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-004",
+      "title": "codex_local readiness is visible before the audit starts",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "POST /api/companies/60f3e4e1-2084-4731-aee4-c1adfb946984/adapters/codex_local/test-environment with {\"adapterConfig\":{}}",
+          "expected": "HTTP 200 response for the onboarded company with a passing codex_local environment test result",
+          "observed": "HTTP 200 with adapterType=codex_local and status=pass"
+        },
+        {
+          "action": "Inspect returned environment checks",
+          "expected": "Checks confirm codex_local readiness, including a successful hello probe",
+          "observed": "codex_cwd_valid (info); codex_command_resolvable (info); codex_openai_api_key_present (info); codex_hello_probe_passed (info)"
+        }
+      ],
+      "evidence": {
+        "curlTranscripts": [
+          "demo-audit-setup/api-adapter/VAL-DEMO-004-curl-transcript.txt"
+        ],
+        "jsonResponses": [
+          "demo-audit-setup/api-adapter/VAL-DEMO-004-response.json",
+          "demo-audit-setup/api-adapter/VAL-DEMO-004-response-headers.txt"
+        ],
+        "network": "POST /api/companies/60f3e4e1-2084-4731-aee4-c1adfb946984/adapters/codex_local/test-environment -> 200",
+        "resultStatus": "pass",
+        "checkCodes": [
+          "codex_cwd_valid",
+          "codex_command_resolvable",
+          "codex_openai_api_key_present",
+          "codex_hello_probe_passed"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: VAL-DEMO-004 passed. The company-scoped codex_local environment test returned HTTP 200 and a passing result with a successful hello probe."
+}

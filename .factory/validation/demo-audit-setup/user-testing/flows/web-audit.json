@@ -1,0 +1,129 @@
+{
+  "groupId": "web-audit",
+  "testedAt": "2026-04-04T13:48:50.770227+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "instance": "audit",
+    "port": 3100,
+    "adapterType": "codex_local",
+    "reservedState": "successful onboarding path; preserve created company/agent/issue/run for follow-up validators"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-003",
+      "title": "Onboarding with codex_local creates an audit-ready company",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open http://localhost:3100 on a zero-company instance",
+          "expected": "First-run onboarding is available",
+          "observed": "Onboarding wizard opened with company, agent, task, and launch steps"
+        },
+        {
+          "action": "Enter company details and continue to the agent step",
+          "expected": "Company info is accepted and onboarding advances",
+          "observed": "Created company named 'Audit Demo Company' with issue prefix AUD"
+        },
+        {
+          "action": "Select the recommended Codex Local agent and run the environment check",
+          "expected": "codex_local readiness is visibly successful before continuing",
+          "observed": "Adapter selection stayed on Codex Local and the UI showed the environment check as 'Passed'"
+        },
+        {
+          "action": "Seed the starter task and finish onboarding via Create & Open Issue",
+          "expected": "The first company, first agent, and first issue are created and the operator lands in a usable company-scoped view",
+          "observed": "Landed on /AUD/issues/AUD-1 with working company navigation, CEO agent visible, and the seeded issue open"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/web-audit/VAL-DEMO-003-codex-selection-annotated.png",
+          "demo-audit-setup/web-audit/VAL-DEMO-003-codex-ready-annotated.png",
+          "demo-audit-setup/web-audit/VAL-DEMO-003-post-onboarding-company-state-annotated.png"
+        ],
+        "consoleErrors": "none (demo-audit-setup/web-audit/browser-console-errors.txt is empty)",
+        "network": [
+          "demo-audit-setup/web-audit/browser-network-requests.txt",
+          "demo-audit-setup/web-audit/companies.json",
+          "demo-audit-setup/web-audit/company-agents.json",
+          "demo-audit-setup/web-audit/issue-AUD-1.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-006",
+      "title": "Onboarding launch starts the seeded company loop",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Reach the Launch step and click Create & Open Issue",
+          "expected": "The seeded onboarding issue is created and enters the normal company loop",
+          "observed": "Issue AUD-1 opened immediately after onboarding and a heartbeat run was started for CEO"
+        },
+        {
+          "action": "Inspect the issue detail page after launch",
+          "expected": "Queued or running work is visible from the company-scoped issue surface",
+          "observed": "The issue page showed 'Live' with CEO run 5d580999 in running state and an Open run link"
+        },
+        {
+          "action": "Confirm the same run through API evidence",
+          "expected": "The seeded issue has matching active run evidence",
+          "observed": "issue-AUD-1-active-run.json and company-heartbeat-runs.json both report run 5d580999-33a2-4d1e-aa63-a9022349393f as running for CEO on AUD-1"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/web-audit/VAL-DEMO-006-post-launch-running-annotated.png"
+        ],
+        "consoleErrors": "none (demo-audit-setup/web-audit/browser-console-errors.txt is empty)",
+        "network": [
+          "demo-audit-setup/web-audit/browser-network-requests.txt",
+          "demo-audit-setup/web-audit/issue-AUD-1-active-run.json",
+          "demo-audit-setup/web-audit/company-heartbeat-runs.json",
+          "demo-audit-setup/web-audit/run-log.json"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The readiness indicator text surfaced as 'Passed' rather than the anticipated 'Environment ready', so the validation flow had to key off the visible pass state instead of that exact phrase.",
+      "resolved": true,
+      "resolution": "Captured the visible 'Passed' state in the readiness screenshot and used it as the success signal.",
+      "affectedAssertions": [
+        "VAL-DEMO-003"
+      ]
+    },
+    {
+      "description": "The saved run log already contains failed reads for HEARTBEAT.md, SOUL.md, and TOOLS.md inside the agent workspace even though the onboarding assertions still passed.",
+      "resolved": false,
+      "resolution": null,
+      "affectedAssertions": [
+        "VAL-DEMO-006"
+      ]
+    }
+  ],
+  "blockers": [],
+  "identifiers": {
+    "companyId": "60f3e4e1-2084-4731-aee4-c1adfb946984",
+    "companyName": "Audit Demo Company",
+    "companyPrefix": "AUD",
+    "agentId": "c12cfd56-6365-4102-9981-11b996ce261d",
+    "agentName": "CEO",
+    "agentUrlKey": "ceo",
+    "projectId": "4ef65023-f189-4339-8163-09138865cc38",
+    "projectUrlKey": "onboarding",
+    "goalId": "3f0c0a19-b1a9-4f95-8fc8-3ede565e4f00",
+    "issueId": "3a9142a2-088f-478d-828c-cf5d82bed488",
+    "issueIdentifier": "AUD-1",
+    "runId": "5d580999-33a2-4d1e-aa63-a9022349393f",
+    "executionWorkspaceId": "dec0455a-3d13-44dc-912b-703ddc509bca"
+  },
+  "summary": "Tested 2 assertions through the real Web UI: VAL-DEMO-003 passed and VAL-DEMO-006 passed. Onboarding created company AUD, agent CEO, issue AUD-1, and running heartbeat run 5d580999-33a2-4d1e-aa63-a9022349393f; see the evidence bundle for screenshots, network traces, API snapshots, and run log output."
+}

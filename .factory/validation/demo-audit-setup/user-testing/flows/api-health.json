@@ -1,0 +1,45 @@
+{
+  "groupId": "api-health",
+  "testedAt": "2026-04-04T13:27:45.807184+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "surface": "fresh audit instance",
+    "constraints": [
+      "read-only API probes only",
+      "no company created during validation",
+      "instance context provided as fresh with zero companies"
+    ]
+  },
+  "toolsUsed": [
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-001",
+      "title": "Fresh isolated instance reports healthy API",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Issue GET http://localhost:3100/api/health",
+          "expected": "HTTP 200 response from the fresh isolated instance",
+          "observed": "Received HTTP/1.1 200 OK"
+        },
+        {
+          "action": "Inspect response JSON body",
+          "expected": "JSON includes status: \"ok\"",
+          "observed": "Response body included {\"status\":\"ok\", ...}"
+        }
+      ],
+      "evidence": {
+        "transcript": "demo-audit-setup/api-health/VAL-DEMO-001-curl-transcript.txt",
+        "headers": "demo-audit-setup/api-health/VAL-DEMO-001-headers.txt",
+        "body": "demo-audit-setup/api-health/VAL-DEMO-001-body.json",
+        "network": "GET /api/health -> 200 OK"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: 1 passed (VAL-DEMO-001 health endpoint returned 200 with status ok on the fresh isolated instance)."
+}

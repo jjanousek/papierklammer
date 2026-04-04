@@ -1,0 +1,100 @@
+{
+  "groupId": "web-precompany",
+  "testedAt": "2026-04-04T13:37:48.102913+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3101",
+    "instance": "precompany",
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "initialState": "fresh zero-company instance",
+    "finalState": "zero-company instance restored through UI deletion",
+    "adapterConstraint": "codex_local only; PATH intentionally excludes codex CLI for real failure"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-002",
+      "title": "Empty instance opens the first-company onboarding flow",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open http://localhost:3101 on the fresh precompany instance",
+          "expected": "The board opens first-company onboarding instead of a blank or broken dashboard",
+          "observed": "The app loaded /onboarding with the company setup step visible and no existing company dashboard"
+        },
+        {
+          "action": "Capture onboarding entry evidence and inspect browser errors",
+          "expected": "Visible onboarding entry state and clean console",
+          "observed": "Onboarding entry UI was visible; console errors output was empty"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/web-precompany/VAL-DEMO-002-onboarding-entry-annotated.png"
+        ],
+        "consoleErrors": "demo-audit-setup/web-precompany/VAL-DEMO-002-console-errors.txt (empty: none)",
+        "network": "Initial browser load landed on http://localhost:3101/onboarding"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-005",
+      "title": "Failed adapter validation blocks onboarding progression",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create the first company in onboarding step 1",
+          "expected": "Wizard progresses to the agent setup step for the new company",
+          "observed": "Company 'Precompany Validation' was created and the wizard advanced to the agent step"
+        },
+        {
+          "action": "Select codex_local and run the adapter environment check",
+          "expected": "The real environment check fails because codex is missing from PATH on this isolated instance",
+          "observed": "The UI showed a failed result with 'Command not found in PATH: \"codex\"' while remaining on /onboarding"
+        },
+        {
+          "action": "Inspect onboarding progression state after the failed validation",
+          "expected": "Onboarding does not advance into a misleading success state and does not enable agent creation",
+          "observed": "The Next button was disabled, the task step stayed inaccessible, and the URL remained http://localhost:3101/onboarding"
+        },
+        {
+          "action": "Query the created company's agent list after the failed validation",
+          "expected": "No agent record is created from the failed attempt",
+          "observed": "GET /api/companies/8b8c0ad2-bee1-4ad7-b08d-1b09be6de829/agents returned []"
+        },
+        {
+          "action": "Delete the temporary validation company through the Web UI",
+          "expected": "The isolated precompany instance returns to zero companies after validation",
+          "observed": "The company was deleted from /companies and GET /api/companies returned []"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-codex-selected-annotated.png",
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-after-test.png",
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-failed-validation-annotated.png",
+          "demo-audit-setup/web-precompany/post-cleanup-onboarding-entry-annotated.png"
+        ],
+        "consoleErrors": "demo-audit-setup/web-precompany/VAL-DEMO-005-console-errors.txt (empty: none)",
+        "network": "POST /api/companies created company Precompany Validation; codex_local environment test returned a failed result; GET /api/companies/8b8c0ad2-bee1-4ad7-b08d-1b09be6de829/agents -> 200 []; post-cleanup GET /api/companies -> 200 []",
+        "apiEvidenceFiles": [
+          "demo-audit-setup/web-precompany/api-companies-after-failed-validation.json",
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-agents-after-failed-validation.json",
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-api-evidence.txt",
+          "demo-audit-setup/web-precompany/post-cleanup-companies.json"
+        ],
+        "transcripts": [
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-body-text.txt",
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-next-enabled.txt",
+          "demo-audit-setup/web-precompany/VAL-DEMO-005-url.txt"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions on the isolated precompany Web UI: 2 passed, 0 failed, 0 blocked. The empty instance opened onboarding, failed codex_local validation kept onboarding in a non-success state, no agent was created, and the instance was restored to zero companies via the UI."
+}

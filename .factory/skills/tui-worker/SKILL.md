@@ -18,7 +18,7 @@ Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
 
 ## Required Skills
 
-None. TUI is tested via Vitest only (no agent-browser needed).
+- `tuistory` — required when the feature affects shipped TUI runtime behavior, company selection, failure recovery, or output/result inspection. Use it for PTY-backed validation.
 
 ## Work Procedure
 
@@ -47,6 +47,8 @@ None. TUI is tested via Vitest only (no agent-browser needed).
    - `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3` — all TUI tests pass
    - `pnpm exec vitest run ui/src/ --max-workers=3` — UI tests still pass (no regressions)
    - `pnpm -r typecheck` — no type errors
+   - If the feature affects shipped runtime behavior, also validate the actual TUI with `tuistory` against the isolated instance and capture terminal evidence.
+   - Keep process count low: do not leave extra `pnpm dev:tui`, `codex app-server`, or helper Node processes running after PTY validation completes.
 
 6. **Commit** with a descriptive message.
 
@@ -97,3 +99,4 @@ None. TUI is tested via Vitest only (no agent-browser needed).
 - Ink's `useStdout()` doesn't work as expected for resize detection
 - CodexClient protocol changes needed that aren't documented
 - Test infrastructure issues (ink-testing-library limitations)
+- PTY-backed validation is unavailable for a feature that fulfills runtime TUI assertions

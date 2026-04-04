@@ -7,40 +7,54 @@ Environment variables, external dependencies, and setup notes.
 
 ---
 
-## Runtime
+## Mission runtime
 
-- Node.js 25.6.1 (>=20 required)
+- Node.js 25.6.1 (repo requires `>=20`)
 - pnpm 9.15.4
 - macOS darwin arm64
-- `rg` (ripgrep) is not installed in this mission environment; use factory `Grep`/`Glob` tools or `grep` fallback commands when needed.
+- `codex` CLI is required for this mission because the audit company uses `codex_local`
+- Docker is off-limits for this mission
 
-## Database
+## Isolated audit instances
 
-- Embedded PostgreSQL (PGlite) for development — no external DB needed
-- Data directory: `~/.papierklammer/instances/default/db` (after rename)
-- For testing: `startEmbeddedPostgresTestDatabase()` from `server/src/__tests__/helpers/embedded-postgres.ts`
+Workers and validators should use fresh isolated local instance data instead of the default Papierklammer home.
 
-## Environment Variables
+- Mission home root: `/tmp/papierklammer-mission-64c225d0`
+- Primary audit instance id: `audit`
+- Primary app port: `3100`
+- Pre-company/TUI launcher instance id: `precompany`
+- Pre-company launcher port: `3101`
 
-After the rename, all env vars use `PAPIERKLAMMER_` prefix:
-- `PAPIERKLAMMER_CONTEXT` — context file path
-- `PAPIERKLAMMER_PUBLIC_URL` — public URL for auth
-- `PAPIERKLAMMER_DEPLOYMENT_MODE` — deployment mode
-- `DATABASE_URL` — optional, for external Postgres (leave unset for embedded)
-- `PORT` — API server port (default 3100)
+Do not reuse `~/.papierklammer/instances/default` for mission validation unless the orchestrator explicitly changes the plan. Reset `instances/audit` or `instances/precompany` under the mission home before fresh validation runs when needed.
 
-## Drizzle Migrations
+## Environment variables
 
-To generate migrations after schema changes:
-```sh
-cd packages/db
-pnpm build          # Compile schema to dist/
-npx drizzle-kit generate  # Generate SQL migration
-```
+Important env vars for this mission:
 
-Migrations are auto-applied on server startup.
+- `PAPIERKLAMMER_HOME` — isolated instance home root
+- `PAPIERKLAMMER_INSTANCE_ID` — isolated instance id within that home
+- `PORT` — hardcoded service port for the chosen instance
+- `DATABASE_URL` — leave unset for embedded Postgres in this mission
 
-## Known Local Validation Quirks
+For `codex_local`, local readiness may come from existing Codex login state and/or `OPENAI_API_KEY`. Workers must never print or commit secrets.
 
-- Full-suite `pnpm test:run` can intermittently fail in this environment due to transient local-state/disk pressure issues (including observed `ENOSPC` cases); rerunning after temp cleanup has resolved these without code changes.
-- Intermittent flakes were observed during milestone work in `board-mutation-guard.test.ts` and `agent-skills-routes.test.ts`; treat single failures there as potentially non-deterministic and re-run to confirm before escalating.
+## Demo repo target
+
+- The audited project is a tiny sibling CLI repo created near `/Users/aischool/work/papierklammer_droid`
+- Use a real absolute workspace path for the demo repo; `codex_local` environment checks depend on a valid local cwd
+
+## Database and migrations
+
+- Embedded PostgreSQL is the default local database for the audit instances
+- Migrations auto-apply on server startup
+- If schema changes are required:
+  ```sh
+  cd packages/db
+  pnpm build
+  npx drizzle-kit generate
+  ```
+
+## Known local constraints
+
+- TUI validation requires a real PTY; raw non-interactive command execution is insufficient
+- This mission validates one full bundle at a time across Web UI + TUI + API because memory headroom is limited
