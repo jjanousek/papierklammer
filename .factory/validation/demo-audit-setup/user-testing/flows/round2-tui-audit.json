@@ -1,0 +1,67 @@
+{
+  "groupId": "round2-tui-audit",
+  "testedAt": "2026-04-04T14:54:34.059910+00:00",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "instance": "audit",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "requiredSurface": "real PTY via tuistory",
+    "companyId": "6b09a705-2900-4a52-86ba-4d6e2ce170a8",
+    "companyName": "Round2 Audit Demo Company",
+    "launcherCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100 --company-id 6b09a705-2900-4a52-86ba-4d6e2ce170a8"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-008",
+      "title": "TUI becomes usable after onboarding",
+      "status": "pass",
+      "reason": "The shipped TUI launcher started successfully through a real PTY and rendered a company-scoped, input-ready console for Round2 Audit Demo Company.",
+      "steps": [
+        {
+          "action": "Confirm the assigned audit instance at http://127.0.0.1:3100 contains the onboarded company",
+          "expected": "The newly onboarded audit company exists before the TUI launches",
+          "observed": "GET /api/companies returned Round2 Audit Demo Company (6b09a705-2900-4a52-86ba-4d6e2ce170a8)."
+        },
+        {
+          "action": "Launch the shipped orchestrator TUI entrypoint through a real PTY with `pnpm dev:tui -- --url http://127.0.0.1:3100 --company-id 6b09a705-2900-4a52-86ba-4d6e2ce170a8`",
+          "expected": "The launcher opens the post-onboarding TUI instead of failing or showing a broken console",
+          "observed": "The PTY-launched TUI started successfully and rendered the `Papierklammer \u00b7 Round2 Audit Demo Company` header with `Connected | 2 agents | 0 active runs`."
+        },
+        {
+          "action": "Verify the launched TUI is usable and company-targeted",
+          "expected": "The console shows the selected company plus an input-ready operator surface",
+          "observed": "The screen showed the company-targeted header, Agents and Chat panels, `No messages yet. Type below to start a conversation.`, the input prompt `> Type a message...`, and `Codex: connected | reasoning: high | fast: OFF`."
+        },
+        {
+          "action": "Capture PTY evidence for the successful startup state",
+          "expected": "Saved snapshot/transcript/screenshot prove successful company-scoped TUI startup",
+          "observed": "Saved a trimmed terminal snapshot, a transcript that includes the exact launcher command, a PNG screenshot, and the prelaunch company API payload."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "demo-audit-setup/round2-tui-audit/VAL-DEMO-008-startup-snapshot.txt"
+        ],
+        "screenshots": [
+          "demo-audit-setup/round2-tui-audit/VAL-DEMO-008-startup.png"
+        ],
+        "transcripts": [
+          "demo-audit-setup/round2-tui-audit/VAL-DEMO-008-transcript.txt"
+        ],
+        "network": "Precondition: GET /api/companies -> 200 with Round2 Audit Demo Company (6b09a705-2900-4a52-86ba-4d6e2ce170a8) on http://127.0.0.1:3100",
+        "apiEvidenceFiles": [
+          "demo-audit-setup/round2-tui-audit/VAL-DEMO-008-prelaunch-companies.json"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion on the onboarded audit TUI surface: 1 passed, 0 failed, 0 blocked. The shipped PTY-launched orchestrator TUI opened successfully after onboarding and showed a usable company-targeted console state for Round2 Audit Demo Company."
+}

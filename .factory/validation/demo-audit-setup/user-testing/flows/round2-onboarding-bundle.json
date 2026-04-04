@@ -1,0 +1,234 @@
+{
+  "groupId": "round2-onboarding-bundle",
+  "testedAt": "2026-04-04T14:47:25.635878Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "instance": "audit",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "adapterType": "codex_local",
+    "note": "Used only the audit instance on port 3100 with one named browser session. The failed validation branch was exercised on the same audit instance by submitting an invalid codex command through the onboarding test-environment request."
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-001",
+      "title": "Fresh isolated instance reports healthy API",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "GET /api/health on the fresh audit instance before any company exists",
+          "expected": "HTTP 200 with status=ok",
+          "observed": "HTTP 200 with JSON body {\"status\":\"ok\", ...}"
+        },
+        {
+          "action": "GET /api/companies before onboarding",
+          "expected": "No companies exist yet",
+          "observed": "Returned []"
+        }
+      ],
+      "evidence": {
+        "curlTranscripts": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-001-health-curl.txt"
+        ],
+        "jsonResponses": [
+          "demo-audit-setup/round2-onboarding-bundle/initial-companies.json"
+        ],
+        "network": "GET /api/health -> 200; GET /api/companies -> 200 []"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-002",
+      "title": "Empty instance opens the first-company onboarding flow",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open http://127.0.0.1:3100 on the fresh zero-company instance",
+          "expected": "The board opens first-company onboarding instead of a blank or broken dashboard",
+          "observed": "The app routed to /onboarding with the Company step visible and later steps disabled"
+        },
+        {
+          "action": "Inspect browser errors on the onboarding entry state",
+          "expected": "No console/page errors",
+          "observed": "No page errors were reported"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-002-onboarding-entry-annotated.png"
+        ],
+        "consoleErrors": "demo-audit-setup/round2-onboarding-bundle/browser-console-errors.txt",
+        "network": "Initial browser load landed on http://127.0.0.1:3100/onboarding"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-003",
+      "title": "Onboarding with codex_local creates an audit-ready company",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create the first company from onboarding step 1",
+          "expected": "A company is created and the wizard advances to the agent step",
+          "observed": "Created company 'Round2 Audit Demo Company' with prefix ROU"
+        },
+        {
+          "action": "Select codex_local and confirm the environment check can pass",
+          "expected": "The UI shows a successful codex_local readiness result before agent creation",
+          "observed": "The audit instance showed a visible 'Passed' readiness state for codex_local"
+        },
+        {
+          "action": "Continue onboarding through agent creation and open the seeded issue",
+          "expected": "The first company, first agent, and starter issue are created and the operator lands in a usable company-scoped state",
+          "observed": "Created company 6b09a705-2900-4a52-86ba-4d6e2ce170a8, agent CEO (ada8be00-7385-442b-853a-494701de3052), and issue ROU-1 (14ad1ece-c42e-41d7-b5e6-b7f4fa481896), then landed on /ROU/issues/ROU-1 with working company navigation"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-003-codex-selection-annotated.png",
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-003-codex-ready-annotated.png",
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-003-post-onboarding-company-state-annotated.png"
+        ],
+        "consoleErrors": "demo-audit-setup/round2-onboarding-bundle/browser-console-errors.txt",
+        "network": [
+          "demo-audit-setup/round2-onboarding-bundle/companies.json",
+          "demo-audit-setup/round2-onboarding-bundle/company-agents.json",
+          "demo-audit-setup/round2-onboarding-bundle/issue-ROU-1.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-004",
+      "title": "codex_local readiness is visible before the audit starts",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "POST /api/companies/6b09a705-2900-4a52-86ba-4d6e2ce170a8/adapters/codex_local/test-environment with {\"adapterConfig\":{}} before relying on the adapter",
+          "expected": "HTTP 200 response with a passing codex_local environment result",
+          "observed": "HTTP 200 with adapterType=codex_local and status=pass"
+        },
+        {
+          "action": "Inspect returned readiness checks",
+          "expected": "Checks confirm cwd, command resolution, auth, and hello probe success",
+          "observed": "Returned codex_cwd_valid, codex_command_resolvable, codex_openai_api_key_present, and codex_hello_probe_passed"
+        }
+      ],
+      "evidence": {
+        "curlTranscripts": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-004-curl-transcript.txt"
+        ],
+        "jsonResponses": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-004-response.json",
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-004-response-headers.txt"
+        ],
+        "network": "POST /api/companies/6b09a705-2900-4a52-86ba-4d6e2ce170a8/adapters/codex_local/test-environment -> 200",
+        "resultStatus": "pass"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-005",
+      "title": "Failed adapter validation blocks onboarding progression",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "From the agent step, exercise a real failing codex_local test-environment request on the audit instance",
+          "expected": "The onboarding environment check returns a failed result",
+          "observed": "Submitted the same onboarding request with adapterConfig.command=definitely-not-a-real-codex-binary, and the backend returned a visible failure: 'Command not found in PATH'"
+        },
+        {
+          "action": "Inspect onboarding progression after the failed validation",
+          "expected": "Onboarding does not create an agent and does not advance misleadingly",
+          "observed": "The wizard stayed on /onboarding, Next was disabled, and Task/Launch remained inaccessible"
+        },
+        {
+          "action": "Query the company agent list after the failed validation",
+          "expected": "No agent record is created from the failed attempt",
+          "observed": "GET /api/companies/6b09a705-2900-4a52-86ba-4d6e2ce170a8/agents returned []"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-005-failed-validation-annotated.png"
+        ],
+        "consoleErrors": "demo-audit-setup/round2-onboarding-bundle/browser-console-errors.txt",
+        "network": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-005-agents-after-failed-validation.json",
+          "demo-audit-setup/round2-onboarding-bundle/companies-after-failed-validation.json",
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-005-body-text.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-DEMO-006",
+      "title": "Onboarding launch starts the seeded company loop",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Finish onboarding and click Create & Open Issue",
+          "expected": "The seeded issue enters the normal company execution loop and shows queued or running work",
+          "observed": "The UI opened /ROU/issues/ROU-1 and immediately showed a Live run card for run ae9f020c-56a0-4dbc-bf0d-ead72dc967fc in running state"
+        },
+        {
+          "action": "Inspect the seeded issue and related run evidence after launch",
+          "expected": "The created company surfaces linked issue/run state for the seeded work",
+          "observed": "Issue ROU-1 now carries checkoutRunId/executionRunId ae9f020c-56a0-4dbc-bf0d-ead72dc967fc and the company heartbeat-runs feed shows the onboarding_launch assignment run for CEO"
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-006-ready-to-launch-annotated.png",
+          "demo-audit-setup/round2-onboarding-bundle/VAL-DEMO-006-post-launch-running-annotated.png"
+        ],
+        "consoleErrors": "demo-audit-setup/round2-onboarding-bundle/browser-console-errors.txt",
+        "network": [
+          "demo-audit-setup/round2-onboarding-bundle/issue-ROU-1.json",
+          "demo-audit-setup/round2-onboarding-bundle/company-heartbeat-runs.json",
+          "demo-audit-setup/round2-onboarding-bundle/run-log.json",
+          "demo-audit-setup/round2-onboarding-bundle/post-launch-body-text.txt"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Because the audit instance on port 3100 had a healthy codex_local environment, exercising the failing onboarding branch required submitting the onboarding test-environment request with an invalid codex command from the same browser session instead of using the off-limits precompany instance on port 3101.",
+      "resolved": true,
+      "resolution": "Injected adapterConfig.command=definitely-not-a-real-codex-binary only for the failed-validation request, confirmed the UI blocked progression and no agent was created, then restored the normal request path and reran the real passing check.",
+      "affectedAssertions": [
+        "VAL-DEMO-005"
+      ]
+    },
+    {
+      "description": "The launch-created run became visible as running in the UI immediately after Create & Open Issue, but it reconciled to a failed/orphaned run within seconds, so the later /api/issues/:issueId/active-run probe returned null even though the issue retained the linked execution run id.",
+      "resolved": false,
+      "resolution": null,
+      "affectedAssertions": [
+        "VAL-DEMO-006"
+      ]
+    }
+  ],
+  "blockers": [],
+  "identifiers": {
+    "companyId": "6b09a705-2900-4a52-86ba-4d6e2ce170a8",
+    "companyName": "Round2 Audit Demo Company",
+    "companyPrefix": "ROU",
+    "agentId": "ada8be00-7385-442b-853a-494701de3052",
+    "agentName": "CEO",
+    "agentUrlKey": "ceo",
+    "goalId": "4966a1a1-d0f8-47c1-917e-defe9528d1c6",
+    "projectId": "494a9681-5bd1-408f-b6b2-94011f2c6713",
+    "projectUrlKey": "onboarding",
+    "issueId": "14ad1ece-c42e-41d7-b5e6-b7f4fa481896",
+    "issueIdentifier": "ROU-1",
+    "runId": "ae9f020c-56a0-4dbc-bf0d-ead72dc967fc"
+  },
+  "summary": "Tested 6 assigned onboarding assertions on the audit instance at port 3100: all 6 passed. The instance started healthy with zero companies; onboarding opened correctly; the failure branch blocked progression without creating an agent; the passing codex_local path created company ROU, CEO, and issue ROU-1; the readiness endpoint passed; and launch created visible run activity plus linked run evidence for run ae9f020c-56a0-4dbc-bf0d-ead72dc967fc."
+}

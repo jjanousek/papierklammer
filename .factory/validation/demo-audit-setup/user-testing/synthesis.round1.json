@@ -1,6 +1,6 @@
 {
   "milestone": "demo-audit-setup",
-  "round": 2,
+  "round": 1,
   "status": "pass",
   "assertionsSummary": {
     "total": 8,
@@ -23,9 +23,9 @@
   "appliedUpdates": [
     {
       "target": "user-testing.md",
-      "description": "Updated user-testing guidance to reflect the stable distinct embedded Postgres ports for audit/precompany instances and added explicit per-surface flow-validator guidance headings.",
+      "description": "Documented the embedded Postgres port collision between concurrent audit and precompany instances and the working precompany override to port 54330.",
       "source": "setup"
     }
   ],
-  "previousRound": ".factory/validation/demo-audit-setup/user-testing/synthesis.round1.json"
+  "previousRound": null
 }

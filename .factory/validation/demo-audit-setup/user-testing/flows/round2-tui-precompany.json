@@ -1,0 +1,61 @@
+{
+  "groupId": "round2-tui-precompany",
+  "testedAt": "2026-04-04T14:29:51.702689+00:00",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3101",
+    "instance": "precompany",
+    "port": 3101,
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "requiredSurface": "real PTY via tuistory",
+    "initialState": "fresh zero-company instance",
+    "finalState": "zero-company instance preserved"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-DEMO-007",
+      "title": "The shipped TUI launcher refuses to run before a company exists",
+      "status": "pass",
+      "reason": "The PTY-launched shipped TUI entrypoint failed fast on the zero-company instance and printed a clear create-a-company-first refusal instead of opening the console.",
+      "steps": [
+        {
+          "action": "Confirm the isolated precompany instance at http://127.0.0.1:3101 has zero companies",
+          "expected": "The instance remains empty before TUI launch",
+          "observed": "GET /api/companies returned []"
+        },
+        {
+          "action": "Launch the shipped orchestrator TUI entrypoint through a PTY with `pnpm dev:tui -- --url http://127.0.0.1:3101`",
+          "expected": "The launcher fails fast with a clear create-a-company-first message instead of opening a broken console",
+          "observed": "The PTY printed `[paperclip] No companies found. Create a company first, then launch the orchestrator TUI.` and exited with code 1."
+        },
+        {
+          "action": "Capture terminal evidence from the PTY session",
+          "expected": "Transcript/snapshot clearly show the launcher command and refusal message",
+          "observed": "Saved transcript text, trimmed snapshot, and PNG screenshot showing the exact command and refusal message."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "demo-audit-setup/round2-tui-precompany/VAL-DEMO-007-refusal-snapshot.txt"
+        ],
+        "screenshots": [
+          "demo-audit-setup/round2-tui-precompany/VAL-DEMO-007-refusal.png"
+        ],
+        "transcripts": [
+          "demo-audit-setup/round2-tui-precompany/VAL-DEMO-007-transcript.txt"
+        ],
+        "network": "Precondition: GET /api/companies -> 200 [] on http://127.0.0.1:3101",
+        "apiEvidenceFiles": [
+          "demo-audit-setup/round2-tui-precompany/VAL-DEMO-007-prelaunch-companies.json"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion on the isolated precompany TUI surface: 1 passed, 0 failed, 0 blocked. The shipped launcher refused to start against the zero-company instance and showed a clear create-a-company-first message rather than opening a broken console."
+}

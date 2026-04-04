@@ -27,7 +27,7 @@
 ## Validation Setup Notes
 - Use a **fresh isolated local instance** for the audit; do not reuse stale prior app state.
 - Before a fresh validation pass, run the relevant reset command from `.factory/services.yaml` (`reset_audit_instance` or `reset_precompany_instance`) so the mission home starts from clean state.
-- When running the `audit` and `precompany` isolated instances at the same time, ensure they do **not** share the same embedded PostgreSQL port. In this mission run both bootstraps defaulted to `54329`; updating the precompany instance config to `embeddedPostgresPort: 54330` was required before both services could start concurrently.
+- The isolated audit harness now assigns distinct embedded PostgreSQL ports by default: `audit` uses `54329` and `precompany` uses `54330`. You can run both mission services concurrently without manual config edits.
 - Keep the mission **local-only**; do not rely on Docker, remote services, or hosted integrations.
 - Use **`codex_local` only** for the audited company. If local Codex install/auth readiness fails, mark the affected flow blocked instead of substituting another adapter.
 - Use the tiny sibling CLI repo created for the audit as the managed project under real execution.
@@ -36,23 +36,21 @@
 - When validating stale recovery or company isolation, use a second company only for explicit negative checks; do not run a second full bundle in parallel.
 - If you start a local server or TUI process only for one check, stop it before continuing to the next unrelated check.
 
-## Flow Validator Guidance
-
-### Web UI
+## Flow Validator Guidance: Web UI
 - Start from the empty-instance onboarding flow and confirm the product enters first-company setup instead of a broken dashboard.
 - During onboarding, explicitly select `codex_local` and capture the successful environment validation result before relying on the adapter for real work.
 - Keep validation focused on the audit company’s issue, run, and recovery views; use company switching only when the contract calls for an isolation check.
 - When validating live execution, correlate visible run state with the exact `issueId`/`runId` already confirmed via API.
 - After stale cleanup or unblock actions, refresh the issue list/detail views and verify the UI no longer presents the issue as actively running.
 
-### Orchestrator TUI
+## Flow Validator Guidance: Orchestrator TUI
 - Validate the no-company startup refusal first only on a truly fresh instance; after onboarding, relaunch and confirm the TUI becomes usable for the created company.
 - Use the company picker or loaded-company header as explicit evidence that the TUI is scoped to the intended company before issuing management requests.
 - Drive one orchestrator action chain at a time for the audit company: create work, nudge active work, or unblock stuck work; do not overlap actions.
 - For company-switch isolation checks, relaunch into company B after using company A and verify no stale thread/transcript context leaks across launches.
 - If the TUI lacks a concrete run-output/result inspection affordance, record that negative result explicitly rather than inferring success from API-only evidence.
 
-### API
+## Flow Validator Guidance: API
 - Begin with `GET /api/health` on the fresh isolated instance, then use company-scoped reads/writes to confirm the entities created during onboarding and audit execution.
 - Use API probes to anchor every cross-surface check: company creation, agent selection, issue creation, active run identity, heartbeat run status, stale inventory, nudge intent, and unblock recovery.
 - During live-run validation, poll the related run endpoints sequentially for the same issue and confirm matching identifiers instead of probing unrelated endpoints in parallel.
