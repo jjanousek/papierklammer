@@ -209,8 +209,8 @@ function ActorIdentity({ evt, agentMap }: { evt: ActivityEvent; agentMap: Map<st
 }
 
 export function IssueDetail() {
-  const { issueId } = useParams<{ issueId: string }>();
-  const { selectedCompanyId } = useCompany();
+  const { companyPrefix, issueId } = useParams<{ companyPrefix?: string; issueId: string }>();
+  const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { openPanel, closePanel, panelVisible, setPanelVisible } = usePanel();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
@@ -229,13 +229,18 @@ export function IssueDetail() {
   const [optimisticComments, setOptimisticComments] = useState<OptimisticIssueComment[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastMarkedReadIssueIdRef = useRef<string | null>(null);
+  const routeCompanyId = useMemo(() => {
+    if (!companyPrefix) return null;
+    const requestedPrefix = companyPrefix.toUpperCase();
+    return companies.find((company) => company.issuePrefix.toUpperCase() === requestedPrefix)?.id ?? null;
+  }, [companies, companyPrefix]);
 
   const { data: issue, isLoading, error } = useQuery({
     queryKey: queryKeys.issues.detail(issueId!),
     queryFn: () => issuesApi.get(issueId!),
     enabled: !!issueId,
   });
-  const resolvedCompanyId = issue?.companyId ?? selectedCompanyId;
+  const resolvedCompanyId = issue?.companyId ?? routeCompanyId ?? (!companyPrefix ? selectedCompanyId : null);
 
   const { data: comments } = useQuery({
     queryKey: queryKeys.issues.comments(issueId!),
@@ -306,15 +311,15 @@ export function IssueDetail() {
   }, [linkedRuns, liveRuns, activeRun]);
 
   const { data: allIssues } = useQuery({
-    queryKey: queryKeys.issues.list(selectedCompanyId!),
-    queryFn: () => issuesApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId ? queryKeys.issues.list(resolvedCompanyId) : ["issues", "__route-pending__"],
+    queryFn: () => issuesApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
   });
 
   const { data: agents } = useQuery({
-    queryKey: queryKeys.agents.list(selectedCompanyId!),
-    queryFn: () => agentsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId ? queryKeys.agents.list(resolvedCompanyId) : ["agents", "__route-pending__"],
+    queryFn: () => agentsApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
   });
 
   const { data: session } = useQuery({
@@ -323,14 +328,14 @@ export function IssueDetail() {
   });
 
   const { data: projects } = useQuery({
-    queryKey: queryKeys.projects.list(selectedCompanyId!),
-    queryFn: () => projectsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId ? queryKeys.projects.list(resolvedCompanyId) : ["projects", "__route-pending__"],
+    queryFn: () => projectsApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
   });
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
   const { orderedProjects } = useProjectOrder({
     projects: projects ?? [],
-    companyId: selectedCompanyId,
+    companyId: resolvedCompanyId,
     userId: currentUserId,
   });
   const { slots: issuePluginDetailSlots } = usePluginSlots({
@@ -521,23 +526,23 @@ export function IssueDetail() {
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.documents(issueId!) });
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.liveRuns(issueId!) });
     queryClient.invalidateQueries({ queryKey: queryKeys.issues.activeRun(issueId!) });
-    if (selectedCompanyId) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.issues.listMineByMe(selectedCompanyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.issues.listTouchedByMe(selectedCompanyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.issues.listUnreadTouchedByMe(selectedCompanyId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(selectedCompanyId) });
+    if (resolvedCompanyId) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(resolvedCompanyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.listMineByMe(resolvedCompanyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.listTouchedByMe(resolvedCompanyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.listUnreadTouchedByMe(resolvedCompanyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(resolvedCompanyId) });
     }
   };
 
   const markIssueRead = useMutation({
     mutationFn: (id: string) => issuesApi.markRead(id),
     onSuccess: () => {
-      if (selectedCompanyId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.issues.listMineByMe(selectedCompanyId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.issues.listTouchedByMe(selectedCompanyId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.issues.listUnreadTouchedByMe(selectedCompanyId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(selectedCompanyId) });
+      if (resolvedCompanyId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.listMineByMe(resolvedCompanyId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.listTouchedByMe(resolvedCompanyId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.listUnreadTouchedByMe(resolvedCompanyId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(resolvedCompanyId) });
       }
     },
   });
@@ -725,8 +730,8 @@ export function IssueDetail() {
 
   const uploadAttachment = useMutation({
     mutationFn: async (file: File) => {
-      if (!selectedCompanyId) throw new Error("No company selected");
-      return issuesApi.uploadAttachment(selectedCompanyId, issueId!, file);
+      if (!resolvedCompanyId) throw new Error("No company selected");
+      return issuesApi.uploadAttachment(resolvedCompanyId, issueId!, file);
     },
     onSuccess: () => {
       setAttachmentError(null);
@@ -781,6 +786,12 @@ export function IssueDetail() {
       { label: hasLiveRuns ? `🔵 ${titleLabel}` : titleLabel },
     ]);
   }, [setBreadcrumbs, sourceBreadcrumb, issue, issueId, hasLiveRuns]);
+
+  useEffect(() => {
+    const nextCompanyId = issue?.companyId ?? routeCompanyId;
+    if (!nextCompanyId || nextCompanyId === selectedCompanyId) return;
+    setSelectedCompanyId(nextCompanyId, { source: "route_sync" });
+  }, [issue?.companyId, routeCompanyId, selectedCompanyId, setSelectedCompanyId]);
 
   // Redirect to identifier-based URL if navigated via UUID
   useEffect(() => {

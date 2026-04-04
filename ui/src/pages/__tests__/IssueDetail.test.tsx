@@ -1,0 +1,554 @@
+// @vitest-environment jsdom
+
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Agent, Company, Issue, Project } from "@papierklammer/shared";
+
+const mocks = vi.hoisted(() => {
+  const companies: Company[] = [
+    {
+      id: "company-a",
+      name: "Alpha Co",
+      description: null,
+      status: "active",
+      pauseReason: null,
+      pausedAt: null,
+      issuePrefix: "ALP",
+      issueCounter: 1,
+      budgetMonthlyCents: 0,
+      spentMonthlyCents: 0,
+      requireBoardApprovalForNewAgents: false,
+      brandColor: null,
+      logoAssetId: null,
+      logoUrl: null,
+      createdAt: new Date("2026-04-04T00:00:00.000Z"),
+      updatedAt: new Date("2026-04-04T00:00:00.000Z"),
+    },
+    {
+      id: "company-b",
+      name: "Beta Co",
+      description: null,
+      status: "active",
+      pauseReason: null,
+      pausedAt: null,
+      issuePrefix: "BET",
+      issueCounter: 7,
+      budgetMonthlyCents: 0,
+      spentMonthlyCents: 0,
+      requireBoardApprovalForNewAgents: false,
+      brandColor: null,
+      logoAssetId: null,
+      logoUrl: null,
+      createdAt: new Date("2026-04-04T00:00:00.000Z"),
+      updatedAt: new Date("2026-04-04T00:00:00.000Z"),
+    },
+  ];
+
+  const issue: Issue = {
+    id: "issue-1",
+    companyId: "company-b",
+    projectId: "project-b",
+    projectWorkspaceId: null,
+    goalId: null,
+    parentId: null,
+    ancestors: [],
+    title: "Deep-link target",
+    description: "Investigate route-scoped issue detail lookups",
+    status: "todo",
+    priority: "medium",
+    assigneeAgentId: null,
+    assigneeUserId: null,
+    checkoutRunId: null,
+    executionRunId: null,
+    executionAgentNameKey: null,
+    executionLockedAt: null,
+    createdByAgentId: null,
+    createdByUserId: null,
+    issueNumber: 7,
+    identifier: "BET-7",
+    requestDepth: 0,
+    billingCode: null,
+    assigneeAdapterOverrides: null,
+    executionWorkspaceId: null,
+    executionWorkspacePreference: null,
+    executionWorkspaceSettings: null,
+    startedAt: null,
+    completedAt: null,
+    cancelledAt: null,
+    hiddenAt: null,
+    labels: [],
+    labelIds: [],
+    documentSummaries: [],
+    workProducts: [],
+    createdAt: new Date("2026-04-04T00:00:00.000Z"),
+    updatedAt: new Date("2026-04-04T00:00:00.000Z"),
+  };
+
+  const agents: Agent[] = [
+    {
+      id: "agent-b",
+      companyId: "company-b",
+      name: "Beta Agent",
+      urlKey: "beta-agent",
+      role: "engineer",
+      title: null,
+      icon: null,
+      status: "active",
+      reportsTo: null,
+      capabilities: null,
+      adapterType: "codex_local",
+      adapterConfig: {},
+      runtimeConfig: {},
+      budgetMonthlyCents: 0,
+      spentMonthlyCents: 0,
+      pauseReason: null,
+      pausedAt: null,
+      permissions: { canCreateAgents: false },
+      lastHeartbeatAt: null,
+      metadata: null,
+      createdAt: new Date("2026-04-04T00:00:00.000Z"),
+      updatedAt: new Date("2026-04-04T00:00:00.000Z"),
+    },
+  ];
+
+  const projects: Project[] = [
+    {
+      id: "project-b",
+      companyId: "company-b",
+      urlKey: "beta-project",
+      goalId: null,
+      goalIds: [],
+      goals: [],
+      name: "Beta Project",
+      description: null,
+      status: "planned",
+      leadAgentId: null,
+      targetDate: null,
+      color: null,
+      pauseReason: null,
+      pausedAt: null,
+      executionWorkspacePolicy: null,
+      codebase: {
+        workspaceId: null,
+        repoUrl: null,
+        repoRef: null,
+        defaultRef: null,
+        repoName: null,
+        localFolder: "/tmp/project-b",
+        managedFolder: "/tmp/project-b",
+        effectiveLocalFolder: "/tmp/project-b",
+        origin: "local_folder",
+      },
+      workspaces: [],
+      primaryWorkspace: null,
+      archivedAt: null,
+      createdAt: new Date("2026-04-04T00:00:00.000Z"),
+      updatedAt: new Date("2026-04-04T00:00:00.000Z"),
+    },
+  ];
+
+  return {
+    companies,
+    issue,
+    agents,
+    projects,
+    selectedCompanyId: "company-a",
+    setSelectedCompanyId: vi.fn(),
+    navigate: vi.fn(),
+    setBreadcrumbs: vi.fn(),
+    openPanel: vi.fn(),
+    closePanel: vi.fn(),
+    setPanelVisible: vi.fn(),
+    pushToast: vi.fn(),
+    invalidateQueries: vi.fn(),
+    cancelQueries: vi.fn(),
+    getQueryData: vi.fn(),
+    setQueryData: vi.fn(),
+    issuesGet: vi.fn(() => issue),
+    issuesList: vi.fn(() => []),
+    issuesListComments: vi.fn(() => []),
+    issuesListApprovals: vi.fn(() => []),
+    issuesListAttachments: vi.fn(() => []),
+    issuesMarkRead: vi.fn(() => ({ id: "issue-1", lastReadAt: new Date("2026-04-04T00:00:00.000Z") })),
+    issuesUploadAttachment: vi.fn((companyId: string, issueId: string, file: File) => ({
+      id: "attachment-1",
+      companyId,
+      issueId,
+      issueCommentId: null,
+      assetId: "asset-1",
+      provider: "local_disk",
+      objectKey: file.name,
+      contentType: file.type || "text/plain",
+      byteSize: file.size,
+      sha256: "abc123",
+      originalFilename: file.name,
+      createdByAgentId: null,
+      createdByUserId: null,
+      createdAt: new Date("2026-04-04T00:00:00.000Z"),
+      updatedAt: new Date("2026-04-04T00:00:00.000Z"),
+      contentPath: `/files/${file.name}`,
+    })),
+    activityForIssue: vi.fn(() => []),
+    activityRunsForIssue: vi.fn(() => []),
+    liveRunsForIssue: vi.fn(() => []),
+    activeRunForIssue: vi.fn(() => null),
+    agentsList: vi.fn(() => agents),
+    projectsList: vi.fn(() => projects),
+    getSession: vi.fn(() => ({ user: { id: "user-1" }, session: { userId: "user-1" } })),
+  };
+});
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: ({ enabled = true, queryFn }: { enabled?: boolean; queryFn: () => unknown }) => ({
+    data: enabled ? queryFn() : undefined,
+    isLoading: false,
+    error: null,
+  }),
+  useMutation: ({
+    mutationFn,
+    onMutate,
+    onSuccess,
+    onError,
+    onSettled,
+  }: {
+    mutationFn: (input: unknown) => unknown;
+    onMutate?: (input: unknown) => unknown;
+    onSuccess?: (result: unknown, input: unknown, context: unknown) => unknown;
+    onError?: (error: unknown, input: unknown, context: unknown) => unknown;
+    onSettled?: (result?: unknown, error?: unknown, input?: unknown, context?: unknown) => unknown;
+  }) => ({
+    mutate: async (input: unknown) => {
+      const context = await onMutate?.(input);
+      try {
+        const result = await mutationFn(input);
+        await onSuccess?.(result, input, context);
+        await onSettled?.(result, undefined, input, context);
+      } catch (error) {
+        await onError?.(error, input, context);
+        await onSettled?.(undefined, error, input, context);
+      }
+    },
+    mutateAsync: async (input: unknown) => {
+      const context = await onMutate?.(input);
+      try {
+        const result = await mutationFn(input);
+        await onSuccess?.(result, input, context);
+        await onSettled?.(result, undefined, input, context);
+        return result;
+      } catch (error) {
+        await onError?.(error, input, context);
+        await onSettled?.(undefined, error, input, context);
+        throw error;
+      }
+    },
+    isPending: false,
+  }),
+  useQueryClient: () => ({
+    invalidateQueries: mocks.invalidateQueries,
+    cancelQueries: mocks.cancelQueries,
+    getQueryData: mocks.getQueryData,
+    setQueryData: mocks.setQueryData,
+  }),
+}));
+
+vi.mock("@/lib/router", () => ({
+  Link: ({ children, to, ...props }: { children: React.ReactNode; to?: string }) => (
+    <a href={typeof to === "string" ? to : undefined} {...props}>{children}</a>
+  ),
+  useLocation: () => ({
+    pathname: "/BET/issues/BET-7",
+    search: "",
+    hash: "",
+    state: null,
+  }),
+  useNavigate: () => mocks.navigate,
+  useParams: () => ({ companyPrefix: "BET", issueId: "BET-7" }),
+}));
+
+vi.mock("../../context/CompanyContext", () => ({
+  useCompany: () => ({
+    companies: mocks.companies,
+    selectedCompanyId: mocks.selectedCompanyId,
+    setSelectedCompanyId: mocks.setSelectedCompanyId,
+  }),
+}));
+
+vi.mock("../../context/PanelContext", () => ({
+  usePanel: () => ({
+    openPanel: mocks.openPanel,
+    closePanel: mocks.closePanel,
+    panelVisible: false,
+    setPanelVisible: mocks.setPanelVisible,
+  }),
+}));
+
+vi.mock("../../context/ToastContext", () => ({
+  useToast: () => ({ pushToast: mocks.pushToast }),
+}));
+
+vi.mock("../../context/BreadcrumbContext", () => ({
+  useBreadcrumbs: () => ({ setBreadcrumbs: mocks.setBreadcrumbs }),
+}));
+
+vi.mock("../../api/issues", () => ({
+  issuesApi: {
+    get: mocks.issuesGet,
+    list: mocks.issuesList,
+    listComments: mocks.issuesListComments,
+    listApprovals: mocks.issuesListApprovals,
+    listAttachments: mocks.issuesListAttachments,
+    markRead: mocks.issuesMarkRead,
+    uploadAttachment: mocks.issuesUploadAttachment,
+    update: vi.fn(() => mocks.issue),
+    addComment: vi.fn(),
+    upsertDocument: vi.fn(),
+    deleteAttachment: vi.fn(),
+  },
+}));
+
+vi.mock("../../api/activity", () => ({
+  activityApi: {
+    forIssue: mocks.activityForIssue,
+    runsForIssue: mocks.activityRunsForIssue,
+  },
+}));
+
+vi.mock("../../api/heartbeats", () => ({
+  heartbeatsApi: {
+    liveRunsForIssue: mocks.liveRunsForIssue,
+    activeRunForIssue: mocks.activeRunForIssue,
+    cancel: vi.fn(),
+  },
+}));
+
+vi.mock("../../api/agents", () => ({
+  agentsApi: {
+    list: mocks.agentsList,
+  },
+}));
+
+vi.mock("../../api/auth", () => ({
+  authApi: {
+    getSession: mocks.getSession,
+  },
+}));
+
+vi.mock("../../api/projects", () => ({
+  projectsApi: {
+    list: mocks.projectsList,
+  },
+}));
+
+vi.mock("../../components/InlineEditor", () => ({
+  InlineEditor: ({ value }: { value: string }) => <div>{value}</div>,
+}));
+
+vi.mock("../../components/CommentThread", () => ({
+  CommentThread: () => <div data-testid="comment-thread" />,
+}));
+
+vi.mock("../../components/IssueDocumentsSection", () => ({
+  IssueDocumentsSection: ({ extraActions }: { extraActions?: React.ReactNode }) => <div>{extraActions}</div>,
+}));
+
+vi.mock("../../components/IssueProperties", () => ({
+  IssueProperties: () => <div data-testid="issue-properties" />,
+}));
+
+vi.mock("../../components/IssueWorkspaceCard", () => ({
+  IssueWorkspaceCard: () => <div data-testid="issue-workspace-card" />,
+}));
+
+vi.mock("../../components/LiveRunWidget", () => ({
+  LiveRunWidget: () => <div data-testid="live-run-widget" />,
+}));
+
+vi.mock("../../components/ScrollToBottom", () => ({
+  ScrollToBottom: () => null,
+}));
+
+vi.mock("../../components/StatusIcon", () => ({
+  StatusIcon: () => <span data-testid="status-icon" />,
+}));
+
+vi.mock("../../components/PriorityIcon", () => ({
+  PriorityIcon: () => <span data-testid="priority-icon" />,
+}));
+
+vi.mock("../../components/StatusBadge", () => ({
+  StatusBadge: ({ status }: { status: string }) => <span>{status}</span>,
+}));
+
+vi.mock("../../components/Identity", () => ({
+  Identity: ({ name }: { name: string }) => <span>{name}</span>,
+}));
+
+vi.mock("../../plugins/slots", () => ({
+  PluginSlotMount: () => null,
+  PluginSlotOutlet: () => null,
+  usePluginSlots: () => ({ slots: [] }),
+}));
+
+vi.mock("../../plugins/launchers", () => ({
+  PluginLauncherOutlet: () => null,
+}));
+
+vi.mock("@/components/ui/separator", () => ({
+  Separator: () => <div data-testid="separator" />,
+}));
+
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    type = "button",
+    ...props
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    type?: "button" | "submit" | "reset";
+  }) => (
+    <button type={type} onClick={onClick} disabled={disabled} {...props}>
+      {children}
+    </button>
+  ),
+}));
+
+vi.mock("@/components/ui/collapsible", () => ({
+  Collapsible: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  CollapsibleContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  CollapsibleTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SheetHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SheetTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/scroll-area", () => ({
+  ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TabsContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ children }: { children: React.ReactNode }) => <button type="button">{children}</button>,
+}));
+
+vi.mock("lucide-react", () => {
+  const icon = (name: string) => () => <span data-icon={name} />;
+  return {
+    Activity: icon("Activity"),
+    Check: icon("Check"),
+    ChevronDown: icon("ChevronDown"),
+    ChevronRight: icon("ChevronRight"),
+    Copy: icon("Copy"),
+    EyeOff: icon("EyeOff"),
+    Hexagon: icon("Hexagon"),
+    ListTree: icon("ListTree"),
+    MessageSquare: icon("MessageSquare"),
+    MoreHorizontal: icon("MoreHorizontal"),
+    Paperclip: icon("Paperclip"),
+    Repeat: icon("Repeat"),
+    SlidersHorizontal: icon("SlidersHorizontal"),
+    Trash2: icon("Trash2"),
+  };
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+import { IssueDetail } from "../IssueDetail";
+
+let container: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
+
+async function flush() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+beforeEach(() => {
+  mocks.selectedCompanyId = "company-a";
+  mocks.setSelectedCompanyId.mockReset();
+  mocks.navigate.mockReset();
+  mocks.setBreadcrumbs.mockReset();
+  mocks.openPanel.mockReset();
+  mocks.closePanel.mockReset();
+  mocks.setPanelVisible.mockReset();
+  mocks.pushToast.mockReset();
+  mocks.invalidateQueries.mockReset();
+  mocks.cancelQueries.mockReset();
+  mocks.getQueryData.mockReset();
+  mocks.setQueryData.mockReset();
+  mocks.issuesGet.mockClear();
+  mocks.issuesList.mockClear();
+  mocks.issuesListComments.mockClear();
+  mocks.issuesListApprovals.mockClear();
+  mocks.issuesListAttachments.mockClear();
+  mocks.issuesMarkRead.mockClear();
+  mocks.issuesUploadAttachment.mockClear();
+  mocks.activityForIssue.mockClear();
+  mocks.activityRunsForIssue.mockClear();
+  mocks.liveRunsForIssue.mockClear();
+  mocks.activeRunForIssue.mockClear();
+  mocks.agentsList.mockClear();
+  mocks.projectsList.mockClear();
+  mocks.getSession.mockClear();
+
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
+
+afterEach(() => {
+  act(() => root.unmount());
+  container.remove();
+});
+
+describe("IssueDetail", () => {
+  it("uses the deep-linked company for secondary queries and attachments", async () => {
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(mocks.issuesGet).toHaveBeenCalledWith("BET-7");
+    expect(mocks.issuesList).toHaveBeenCalledWith("company-b");
+    expect(mocks.agentsList).toHaveBeenCalledWith("company-b");
+    expect(mocks.projectsList).toHaveBeenCalledWith("company-b");
+    expect(mocks.setSelectedCompanyId).toHaveBeenCalledWith("company-b", { source: "route_sync" });
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+
+    const file = new File(["hello"], "notes.txt", { type: "text/plain" });
+
+    Object.defineProperty(input!, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    await act(async () => {
+      input!.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    expect(mocks.issuesUploadAttachment).toHaveBeenCalledWith("company-b", "BET-7", file);
+    expect(mocks.issuesUploadAttachment).not.toHaveBeenCalledWith("company-a", "BET-7", file);
+  });
+});

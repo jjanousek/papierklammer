@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback } from "react";
-import { useLocation, useSearchParams } from "@/lib/router";
+import { useLocation, useParams, useSearchParams } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
@@ -14,11 +14,18 @@ import { IssuesList } from "../components/IssuesList";
 import { CircleDot } from "lucide-react";
 
 export function Issues() {
-  const { selectedCompanyId } = useCompany();
+  const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const routeCompanyId = useMemo(() => {
+    if (!companyPrefix) return null;
+    const requestedPrefix = companyPrefix.toUpperCase();
+    return companies.find((company) => company.issuePrefix.toUpperCase() === requestedPrefix)?.id ?? null;
+  }, [companies, companyPrefix]);
+  const resolvedCompanyId = routeCompanyId ?? (!companyPrefix ? selectedCompanyId : null);
 
   const initialSearch = searchParams.get("q") ?? "";
   const participantAgentId = searchParams.get("participantAgentId") ?? undefined;
@@ -39,21 +46,21 @@ export function Issues() {
   }, []);
 
   const { data: agents } = useQuery({
-    queryKey: queryKeys.agents.list(selectedCompanyId!),
-    queryFn: () => agentsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId ? queryKeys.agents.list(resolvedCompanyId) : ["agents", "__route-pending__"],
+    queryFn: () => agentsApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
   });
 
   const { data: projects } = useQuery({
-    queryKey: queryKeys.projects.list(selectedCompanyId!),
-    queryFn: () => projectsApi.list(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId ? queryKeys.projects.list(resolvedCompanyId) : ["projects", "__route-pending__"],
+    queryFn: () => projectsApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
   });
 
   const { data: liveRuns } = useQuery({
-    queryKey: queryKeys.liveRuns(selectedCompanyId!),
-    queryFn: () => heartbeatsApi.liveRunsForCompany(selectedCompanyId!),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId ? queryKeys.liveRuns(resolvedCompanyId) : ["live-runs", "__route-pending__"],
+    queryFn: () => heartbeatsApi.liveRunsForCompany(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
     refetchInterval: 5000,
   });
 
@@ -79,21 +86,30 @@ export function Issues() {
     setBreadcrumbs([{ label: "Issues" }]);
   }, [setBreadcrumbs]);
 
+  useEffect(() => {
+    if (!routeCompanyId || routeCompanyId === selectedCompanyId) return;
+    setSelectedCompanyId(routeCompanyId, { source: "route_sync" });
+  }, [routeCompanyId, selectedCompanyId, setSelectedCompanyId]);
+
   const { data: issues, isLoading, error } = useQuery({
-    queryKey: [...queryKeys.issues.list(selectedCompanyId!), "participant-agent", participantAgentId ?? "__all__"],
-    queryFn: () => issuesApi.list(selectedCompanyId!, { participantAgentId }),
-    enabled: !!selectedCompanyId,
+    queryKey: resolvedCompanyId
+      ? [...queryKeys.issues.list(resolvedCompanyId), "participant-agent", participantAgentId ?? "__all__"]
+      : ["issues", "__route-pending__", "participant-agent", participantAgentId ?? "__all__"],
+    queryFn: () => issuesApi.list(resolvedCompanyId!, { participantAgentId }),
+    enabled: !!resolvedCompanyId,
   });
 
   const updateIssue = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
       issuesApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId!) });
+      if (resolvedCompanyId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(resolvedCompanyId) });
+      }
     },
   });
 
-  if (!selectedCompanyId) {
+  if (!resolvedCompanyId) {
     return <EmptyState icon={CircleDot} message="Select a company to view issues." />;
   }
 
