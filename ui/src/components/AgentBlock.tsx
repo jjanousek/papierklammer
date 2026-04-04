@@ -2,7 +2,9 @@ import { useState } from "react";
 import type { Agent } from "@papierklammer/shared";
 import type { LiveRunForIssue } from "../api/heartbeats";
 import { Link } from "../lib/router";
-import { agentUrl } from "../lib/utils";
+import { useCompany } from "../context/CompanyContext";
+import { RunIdentityGrid } from "./RunIdentityGrid";
+import { agentRouteRef, agentUrl } from "../lib/utils";
 
 /** Stream entry in an agent's output. */
 export interface StreamEntry {
@@ -27,6 +29,7 @@ function isActiveAgent(agent: Agent): boolean {
 }
 
 export function AgentBlock({ agent, run, elapsed, result, streamEntries }: AgentBlockProps) {
+  const { selectedCompany } = useCompany();
   const activeRun = isActiveRun(run);
   const activeAgent = isActiveAgent(agent);
   // Default to expanded if the agent has an active run OR an active/running status
@@ -130,6 +133,19 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
         <MetaRow label="role" value={agent.role} />
         {agent.reportsTo && <MetaRow label="reports to" value={agent.reportsTo} />}
         {agent.adapterType && <MetaRow label="adapter" value={agent.adapterType} />}
+        {run ? (
+          <RunIdentityGrid
+            className="mt-2"
+            companyId={agent.companyId}
+            companyIssuePrefix={selectedCompany?.id === agent.companyId ? selectedCompany.issuePrefix : null}
+            issueId={run.issueId ?? null}
+            issueHref={run.issueId ? `/issues/${run.issueId}` : null}
+            agentId={agent.id}
+            agentHref={agentUrl(agent)}
+            runId={run.id}
+            runHref={`/agents/${agentRouteRef(agent)}/runs/${run.id}`}
+          />
+        ) : null}
       </div>
 
       {/* Stream content */}

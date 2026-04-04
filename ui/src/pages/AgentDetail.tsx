@@ -38,6 +38,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { RunButton, PauseResumeButton } from "../components/AgentActionButtons";
 import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
 import { PackageFileTree, buildFileTree } from "../components/PackageFileTree";
+import { RunIdentityGrid } from "../components/RunIdentityGrid";
 import { ScrollToBottom } from "../components/ScrollToBottom";
 import { formatCents, formatDate, relativeTime, formatTokens, visibleRunCostUsd } from "../lib/utils";
 import { cn } from "../lib/utils";
@@ -96,6 +97,7 @@ import {
   arraysEqual,
   isReadOnlyUnmanagedSkillEntry,
 } from "../lib/agent-skills-state";
+import { readIssueIdFromHeartbeatRun } from "../lib/runIdentity";
 
 const runStatusIcons: Record<string, { icon: typeof CheckCircle2; color: string }> = {
   succeeded: { icon: CheckCircle2, color: "text-[var(--alive)]" },
@@ -556,6 +558,8 @@ export function AgentDetail() {
     enabled: canFetchAgent,
   });
   const resolvedCompanyId = agent?.companyId ?? selectedCompanyId;
+  const resolvedCompanyIssuePrefix =
+    companies.find((company) => company.id === (agent?.companyId ?? resolvedCompanyId))?.issuePrefix ?? null;
   const canonicalAgentRef = agent ? agentRouteRef(agent) : routeAgentRef;
   const agentLookupRef = agent?.id ?? routeAgentRef;
   const resolvedAgentId = agent?.id ?? null;
@@ -1013,6 +1017,7 @@ export function AgentDetail() {
           runtimeState={runtimeState}
           agentId={agent.id}
           agentRouteId={canonicalAgentRef}
+          companyIssuePrefix={resolvedCompanyIssuePrefix}
         />
       )}
 
@@ -1083,7 +1088,15 @@ function SummaryRow({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: string }) {
+function LatestRunCard({
+  runs,
+  agentId,
+  companyIssuePrefix,
+}: {
+  runs: HeartbeatRun[];
+  agentId: string;
+  companyIssuePrefix?: string | null;
+}) {
   if (runs.length === 0) return null;
 
   const sorted = [...runs].sort(
@@ -1116,6 +1129,7 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
     }
     return excerpt.join(" ");
   }, [summaryRaw]);
+  const issueId = readIssueIdFromHeartbeatRun(run);
 
   return (
     <div className="space-y-3">
@@ -1153,6 +1167,14 @@ function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: strin
           <span className="ml-auto text-xs text-muted-foreground">{relativeTime(run.createdAt)}</span>
         </div>
 
+        <RunIdentityGrid
+          companyId={run.companyId}
+          companyIssuePrefix={companyIssuePrefix}
+          issueId={issueId}
+          agentId={run.agentId}
+          runId={run.id}
+        />
+
         {summary && (
           <div className="overflow-hidden max-h-16">
             <MarkdownBody className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">{summary}</MarkdownBody>
@@ -1172,6 +1194,7 @@ function AgentOverview({
   runtimeState,
   agentId,
   agentRouteId,
+  companyIssuePrefix,
 }: {
   agent: AgentDetailRecord;
   runs: HeartbeatRun[];
@@ -1179,11 +1202,12 @@ function AgentOverview({
   runtimeState?: AgentRuntimeState;
   agentId: string;
   agentRouteId: string;
+  companyIssuePrefix?: string | null;
 }) {
   return (
     <div className="space-y-8">
       {/* Latest Run */}
-      <LatestRunCard runs={runs} agentId={agentRouteId} />
+      <LatestRunCard runs={runs} agentId={agentRouteId} companyIssuePrefix={companyIssuePrefix} />
 
       {/* Charts */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

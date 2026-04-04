@@ -16,12 +16,16 @@ vi.mock("@/lib/router", () => ({
   useNavigate: () => () => {},
 }));
 
-vi.mock("@/context/CompanyContext", () => ({
-  useCompany: () => ({
-    selectedCompanyId: "company-1",
-    companies: [{ id: "company-1", name: "Test Corp" }],
-  }),
-}));
+vi.mock("@/context/CompanyContext", () => {
+  const company = { id: "company-1", name: "Test Corp", issuePrefix: "TST" };
+  return {
+    useCompany: () => ({
+      selectedCompanyId: "company-1",
+      selectedCompany: company,
+      companies: [company],
+    }),
+  };
+});
 
 vi.mock("@/context/DialogContext", () => ({
   useDialog: () => ({ openOnboarding: vi.fn() }),
@@ -61,8 +65,8 @@ const mockOrgNodes = [
 ];
 
 const mockLiveRuns = [
-  { id: "run-1", status: "running", agentId: "a-eng1", agentName: "eng-alpha", adapterType: "claude_local", createdAt: new Date(Date.now() - 30000).toISOString(), startedAt: new Date(Date.now() - 25000).toISOString(), finishedAt: null, invocationSource: "assignment", triggerDetail: null },
-  { id: "run-2", status: "queued", agentId: "a-eng3", agentName: "eng-gamma", adapterType: "claude_local", createdAt: new Date(Date.now() - 10000).toISOString(), startedAt: new Date(Date.now() - 5000).toISOString(), finishedAt: null, invocationSource: "assignment", triggerDetail: null },
+  { id: "run-1", status: "running", agentId: "a-eng1", agentName: "eng-alpha", adapterType: "claude_local", createdAt: new Date(Date.now() - 30000).toISOString(), startedAt: new Date(Date.now() - 25000).toISOString(), finishedAt: null, invocationSource: "assignment", triggerDetail: null, issueId: "issue-101" },
+  { id: "run-2", status: "queued", agentId: "a-eng3", agentName: "eng-gamma", adapterType: "claude_local", createdAt: new Date(Date.now() - 10000).toISOString(), startedAt: new Date(Date.now() - 5000).toISOString(), finishedAt: null, invocationSource: "assignment", triggerDetail: null, issueId: "issue-303" },
 ];
 
 const mockSummary = {
@@ -208,6 +212,14 @@ describe("Dashboard tier-column layout", () => {
     // Verify at least one link has an href containing /agents/
     const hrefs = Array.from(links).map((l) => l.getAttribute("href") ?? "");
     expect(hrefs.some((h) => h.includes("/agents/"))).toBe(true);
+  });
+
+  it("renders stable run identity fields for active dashboard agents", () => {
+    renderDashboard();
+    expect(container.textContent).toContain("TST · company-1");
+    expect(container.textContent).toContain("issue-101");
+    expect(container.textContent).toContain("a-eng1");
+    expect(container.textContent).toContain("run-1");
   });
 
   it("has MAX_STREAM_ENTRIES_PER_AGENT >= 20", () => {
