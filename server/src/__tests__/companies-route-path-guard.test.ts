@@ -2,7 +2,7 @@ import express from "express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 
-const mockCompanyService = {
+const mockCompanyService = vi.hoisted(() => ({
   list: vi.fn(),
   stats: vi.fn(),
   getById: vi.fn(),
@@ -10,32 +10,34 @@ const mockCompanyService = {
   update: vi.fn(),
   archive: vi.fn(),
   remove: vi.fn(),
-};
+}));
 
-const mockCompanyPortabilityService = {
+const mockCompanyPortabilityService = vi.hoisted(() => ({
   exportBundle: vi.fn(),
   previewExport: vi.fn(),
   previewImport: vi.fn(),
   importBundle: vi.fn(),
-};
+}));
 
-const mockAccessService = {
+const mockAccessService = vi.hoisted(() => ({
   canUser: vi.fn(),
   ensureMembership: vi.fn(),
-};
+}));
 
-const mockBudgetService = {
+const mockBudgetService = vi.hoisted(() => ({
   upsertPolicy: vi.fn(),
-};
+}));
 
-const mockAgentService = {
+const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
-};
+}));
 
-const mockLogActivity = vi.fn();
+const mockLogActivity = vi.hoisted(() => vi.fn());
 
 describe("company routes malformed issue path guard", () => {
   it("returns a clear error when companyId is missing for issues list path", async () => {
+    vi.resetModules();
+    vi.clearAllMocks();
     const { companyRoutes } = await import("../routes/companies.js");
     const app = express();
     app.use((req, _res, next) => {

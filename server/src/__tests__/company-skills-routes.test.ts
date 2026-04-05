@@ -1,25 +1,27 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { errorHandler } from "../middleware/index.js";
-import { companySkillRoutes } from "../routes/company-skills.js";
 
-const mockAgentService = {
+const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
-};
+}));
 
-const mockAccessService = {
+const mockAccessService = vi.hoisted(() => ({
   canUser: vi.fn(),
   hasPermission: vi.fn(),
-};
+}));
 
-const mockCompanySkillService = {
+const mockCompanySkillService = vi.hoisted(() => ({
   importFromSource: vi.fn(),
-};
+}));
 
-const mockLogActivity = vi.fn();
+const mockLogActivity = vi.hoisted(() => vi.fn());
 
 async function createApp(actor: Record<string, unknown>) {
+  const [{ errorHandler }, { companySkillRoutes }] = await Promise.all([
+    import("../middleware/index.js"),
+    import("../routes/company-skills.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -38,6 +40,8 @@ async function createApp(actor: Record<string, unknown>) {
 
 describe("company skill mutation permissions", () => {
   beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
     mockAgentService.getById.mockReset();
     mockAccessService.canUser.mockReset();
     mockAccessService.hasPermission.mockReset();

@@ -64,6 +64,8 @@ async function createApp(actor: any) {
 
 describe("cli auth routes", () => {
   beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
     mockAccessService.isInstanceAdmin.mockReset();
     mockAccessService.hasPermission.mockReset();
     mockAccessService.canUser.mockReset();

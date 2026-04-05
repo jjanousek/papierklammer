@@ -76,6 +76,14 @@ vi.mock("../services/issue-assignment-wakeup.js", () => ({
   queueIssueAssignmentIntent: vi.fn(async () => undefined),
 }));
 
+vi.mock("../services/dependency.js", () => ({
+  dependencyService: () => ({
+    listForIssue: vi.fn(async () => []),
+    create: vi.fn(),
+    remove: vi.fn(),
+  }),
+}));
+
 const issueId = "11111111-1111-4111-8111-111111111111";
 
 async function createApp() {
@@ -128,6 +136,7 @@ function makeIssue(status: "todo" | "done") {
 describe("issue comment reopen routes", () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.clearAllMocks();
     mockIssueService.getById.mockReset();
     mockIssueService.update.mockReset();
     mockIssueService.addComment.mockReset();
@@ -296,16 +305,18 @@ describe("issue comment reopen routes", () => {
     });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
-    expect(mockEventLogEmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        entityType: "issue",
-        eventType: "issue_status_changed",
-        payload: expect.objectContaining({
-          from: "done",
-          to: "todo",
+    await vi.waitFor(() => {
+      expect(mockEventLogEmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: "issue",
+          eventType: "issue_status_changed",
+          payload: expect.objectContaining({
+            from: "done",
+            to: "todo",
+          }),
         }),
-      }),
-    );
+      );
+    });
   });
 
   it("emits issue_status_changed event in the POST comment reopen flow", async () => {
@@ -322,15 +333,17 @@ describe("issue comment reopen routes", () => {
     });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
-    expect(mockEventLogEmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        entityType: "issue",
-        eventType: "issue_status_changed",
-        payload: expect.objectContaining({
-          from: "done",
-          to: "todo",
+    await vi.waitFor(() => {
+      expect(mockEventLogEmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: "issue",
+          eventType: "issue_status_changed",
+          payload: expect.objectContaining({
+            from: "done",
+            to: "todo",
+          }),
         }),
-      }),
-    );
+      );
+    });
   });
 });

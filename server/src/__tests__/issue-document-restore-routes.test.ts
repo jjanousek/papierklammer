@@ -19,11 +19,57 @@ const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(),
 }));
 
+const mockHeartbeatService = vi.hoisted(() => ({
+  wakeup: vi.fn(async () => undefined),
+  reportRunActivity: vi.fn(async () => undefined),
+  getRun: vi.fn(async () => null),
+  getActiveRunForAgent: vi.fn(async () => null),
+  cancelRun: vi.fn(async () => null),
+}));
+
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn(async () => undefined));
+const mockEventLogEmit = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock("../services/event-log.js", () => ({
+  eventLogService: () => ({ emit: mockEventLogEmit }),
+}));
+
+vi.mock("../services/intent-queue.js", () => ({
+  intentQueueService: () => ({
+    createIntent: vi.fn(async () => ({})),
+    invalidateForClosedIssue: vi.fn(async () => 0),
+  }),
+}));
+
+vi.mock("../services/lease-manager.js", () => ({
+  leaseManagerService: () => ({
+    renewLeaseForIssueActivity: vi.fn(async () => undefined),
+  }),
+}));
+
+vi.mock("../services/projections.js", () => ({
+  projectionService: () => ({
+    invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
+    getIssueProjection: vi.fn(async () => null),
+    projectIssuesList: vi.fn(async (rows: unknown[]) => rows),
+  }),
+}));
+
+vi.mock("../services/issue-assignment-wakeup.js", () => ({
+  queueIssueAssignmentIntent: vi.fn(async () => undefined),
+}));
+
+vi.mock("../services/dependency.js", () => ({
+  dependencyService: () => ({
+    listForIssue: vi.fn(async () => []),
+    create: vi.fn(),
+    remove: vi.fn(),
+  }),
+}));
 
 vi.mock("../services/index.js", () => ({
   accessService: () => mockAccessService,
@@ -31,10 +77,7 @@ vi.mock("../services/index.js", () => ({
   documentService: () => mockDocumentsService,
   executionWorkspaceService: () => ({}),
   goalService: () => ({}),
-  heartbeatService: () => ({
-    wakeup: vi.fn(async () => undefined),
-    reportRunActivity: vi.fn(async () => undefined),
-  }),
+  heartbeatService: () => mockHeartbeatService,
   issueApprovalService: () => ({}),
   issueService: () => mockIssueService,
   logActivity: mockLogActivity,
@@ -71,6 +114,12 @@ describe("issue document revision routes", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    mockHeartbeatService.wakeup.mockReset().mockResolvedValue(undefined);
+    mockHeartbeatService.reportRunActivity.mockReset().mockResolvedValue(undefined);
+    mockHeartbeatService.getRun.mockReset().mockResolvedValue(null);
+    mockHeartbeatService.getActiveRunForAgent.mockReset().mockResolvedValue(null);
+    mockHeartbeatService.cancelRun.mockReset().mockResolvedValue(null);
+    mockEventLogEmit.mockReset().mockResolvedValue(undefined);
     mockIssueService.getById.mockResolvedValue({
       id: issueId,
       companyId,
