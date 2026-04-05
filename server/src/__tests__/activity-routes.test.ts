@@ -145,7 +145,15 @@ describe("activity routes", () => {
     expect(mockActivityService.issuesForRun).not.toHaveBeenCalled();
   });
 
-  it("rejects same-company agent access to heartbeat-run issue fan-out", async () => {
+  it("allows same-company agent access to heartbeat-run issue fan-out", async () => {
+    mockHeartbeatService.getRun.mockResolvedValue({
+      id: "run-1",
+      companyId: "company-1",
+    });
+    mockActivityService.issuesForRun.mockResolvedValue([
+      { issueId: "issue-1", title: "Investigate" },
+    ]);
+
     const res = await request(
       await createApp({
         type: "agent",
@@ -155,8 +163,9 @@ describe("activity routes", () => {
       }),
     ).get("/api/heartbeat-runs/run-1/issues");
 
-    expect(res.status).toBe(403);
-    expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
-    expect(mockActivityService.issuesForRun).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith("run-1");
+    expect(mockActivityService.issuesForRun).toHaveBeenCalledWith("run-1");
+    expect(res.body).toEqual([{ issueId: "issue-1", title: "Investigate" }]);
   });
 });

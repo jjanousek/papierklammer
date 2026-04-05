@@ -4,6 +4,7 @@ import type { Db } from "@papierklammer/db";
 import { validate } from "../middleware/validate.js";
 import { activityService } from "../services/activity.js";
 import { assertAuthenticatedBoard, assertBoard, assertCompanyAccess } from "./authz.js";
+import { assertHeartbeatRunStreamAccess } from "./heartbeat-run-auth.js";
 import { heartbeatService, issueService } from "../services/index.js";
 import { sanitizeRecord } from "../redaction.js";
 
@@ -81,14 +82,13 @@ export function activityRoutes(db: Db) {
   });
 
   router.get("/heartbeat-runs/:runId/issues", async (req, res) => {
-    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
       res.status(404).json({ error: "Heartbeat run not found" });
       return;
     }
-    assertCompanyAccess(req, run.companyId);
+    assertHeartbeatRunStreamAccess(req, run.companyId);
     const result = await svc.issuesForRun(runId);
     res.json(result);
   });
