@@ -2,7 +2,6 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { INBOX_MINE_ISSUE_STATUS_FILTER } from "@papierklammer/shared";
-import { agentRoutes } from "../routes/agents.js";
 import { errorHandler } from "../middleware/index.js";
 
 const agentId = "11111111-1111-4111-8111-111111111111";
@@ -94,6 +93,26 @@ const mockLeaseManagerService = {};
 const mockFindServerAdapter = vi.fn();
 const mockListAdapterModels = vi.fn();
 const mockDetectAdapterModel = vi.fn();
+let principalPermissionCalls: Array<{
+  companyId: string;
+  principalType: string;
+  principalId: string;
+  permissionKey: string;
+  enabled: boolean;
+  grantedByUserId: string | null;
+}>;
+let ensureMembershipCalls: Array<{
+  companyId: string;
+  principalType: string;
+  principalId: string;
+  membershipRole: string;
+  status: string;
+}>;
+let issueListCalls: Array<{
+  companyId: string;
+  filters: Record<string, unknown>;
+}>;
+let issueListResult: Array<Record<string, unknown>>;
 
 function createDbStub() {
   return {
@@ -111,7 +130,8 @@ function createDbStub() {
   };
 }
 
-function createApp(actor: Record<string, unknown>) {
+async function createApp(actor: Record<string, unknown>) {
+  const { agentRoutes } = await vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js");
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -147,7 +167,39 @@ function createApp(actor: Record<string, unknown>) {
 
 describe("agent permission routes", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    principalPermissionCalls = [];
+    ensureMembershipCalls = [];
+    issueListCalls = [];
+    issueListResult = [];
+    mockAgentService.getById.mockReset();
+    mockAgentService.create.mockReset();
+    mockAgentService.updatePermissions.mockReset();
+    mockAgentService.getChainOfCommand.mockReset();
+    mockAgentService.resolveByReference.mockReset();
+    mockAccessService.canUser.mockReset();
+    mockAccessService.hasPermission.mockReset();
+    mockAccessService.getMembership.mockReset();
+    mockAccessService.ensureMembership.mockReset();
+    mockAccessService.listPrincipalGrants.mockReset();
+    mockAccessService.setPrincipalPermission.mockReset();
+    mockApprovalService.create.mockReset();
+    mockApprovalService.getById.mockReset();
+    mockBudgetService.upsertPolicy.mockReset();
+    mockHeartbeatService.listTaskSessions.mockReset();
+    mockHeartbeatService.resetRuntimeSession.mockReset();
+    mockIssueApprovalService.linkManyForApproval.mockReset();
+    mockIssueService.list.mockReset();
+    mockSecretService.normalizeAdapterConfigForPersistence.mockReset();
+    mockSecretService.resolveAdapterConfigForRuntime.mockReset();
+    mockAgentInstructionsService.materializeManagedBundle.mockReset();
+    mockCompanySkillService.listRuntimeSkillEntries.mockReset();
+    mockCompanySkillService.resolveRequestedSkillKeys.mockReset();
+    mockLogActivity.mockReset();
+    mockSyncInstructionsBundleConfigFromFilePath.mockClear();
+    mockInstanceSettingsService.getGeneral.mockReset();
+    mockFindServerAdapter.mockReset();
+    mockListAdapterModels.mockReset();
+    mockDetectAdapterModel.mockReset();
     mockAgentService.getById.mockResolvedValue(baseAgent);
     mockAgentService.getChainOfCommand.mockResolvedValue([]);
     mockAgentService.resolveByReference.mockResolvedValue({ ambiguous: false, agent: baseAgent });
@@ -164,8 +216,36 @@ describe("agent permission routes", () => {
       updatedAt: new Date("2026-03-19T00:00:00.000Z"),
     });
     mockAccessService.listPrincipalGrants.mockResolvedValue([]);
-    mockAccessService.ensureMembership.mockResolvedValue(undefined);
-    mockAccessService.setPrincipalPermission.mockResolvedValue(undefined);
+    mockAccessService.ensureMembership.mockImplementation(
+      async (
+        companyId: string,
+        principalType: string,
+        principalId: string,
+        membershipRole: string,
+        status: string,
+      ) => {
+        ensureMembershipCalls.push({ companyId, principalType, principalId, membershipRole, status });
+      },
+    );
+    mockAccessService.setPrincipalPermission.mockImplementation(
+      async (
+        companyId: string,
+        principalType: string,
+        principalId: string,
+        permissionKey: string,
+        enabled: boolean,
+        grantedByUserId: string | null,
+      ) => {
+        principalPermissionCalls.push({
+          companyId,
+          principalType,
+          principalId,
+          permissionKey,
+          enabled,
+          grantedByUserId,
+        });
+      },
+    );
     mockCompanySkillService.listRuntimeSkillEntries.mockResolvedValue([]);
     mockCompanySkillService.resolveRequestedSkillKeys.mockImplementation(async (_companyId, requested) => requested);
     mockBudgetService.upsertPolicy.mockResolvedValue(undefined);
@@ -192,10 +272,14 @@ describe("agent permission routes", () => {
       censorUsernameInLogs: false,
     });
     mockLogActivity.mockResolvedValue(undefined);
+    mockIssueService.list.mockImplementation(async (companyId: string, filters: Record<string, unknown>) => {
+      issueListCalls.push({ companyId, filters });
+      return issueListResult;
+    });
   });
 
   it("grants tasks:assign by default when board creates a new agent", async () => {
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -213,21 +297,21 @@ describe("agent permission routes", () => {
       });
 
     expect(res.status).toBe(201);
-    expect(mockAccessService.ensureMembership).toHaveBeenCalledWith(
+    expect(ensureMembershipCalls).toContainEqual({
       companyId,
-      "agent",
-      agentId,
-      "member",
-      "active",
-    );
-    expect(mockAccessService.setPrincipalPermission).toHaveBeenCalledWith(
+      principalType: "agent",
+      principalId: agentId,
+      membershipRole: "member",
+      status: "active",
+    });
+    expect(principalPermissionCalls).toContainEqual({
       companyId,
-      "agent",
-      agentId,
-      "tasks:assign",
-      true,
-      "board-user",
-    );
+      principalType: "agent",
+      principalId: agentId,
+      permissionKey: "tasks:assign",
+      enabled: true,
+      grantedByUserId: "board-user",
+    });
   });
 
   it("exposes explicit task assignment access on agent detail", async () => {
@@ -245,7 +329,7 @@ describe("agent permission routes", () => {
       },
     ]);
 
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -266,7 +350,7 @@ describe("agent permission routes", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -279,29 +363,29 @@ describe("agent permission routes", () => {
       .send({ canCreateAgents: true, canAssignTasks: false });
 
     expect(res.status).toBe(200);
-    expect(mockAccessService.setPrincipalPermission).toHaveBeenCalledWith(
+    expect(principalPermissionCalls).toContainEqual({
       companyId,
-      "agent",
-      agentId,
-      "tasks:assign",
-      true,
-      "board-user",
-    );
+      principalType: "agent",
+      principalId: agentId,
+      permissionKey: "tasks:assign",
+      enabled: true,
+      grantedByUserId: "board-user",
+    });
     expect(res.body.access.canAssignTasks).toBe(true);
     expect(res.body.access.taskAssignSource).toBe("agent_creator");
   });
 
   it("exposes a dedicated agent route for the inbox mine view", async () => {
-    mockIssueService.list.mockResolvedValue([
+    issueListResult = [
       {
         id: "issue-1",
         identifier: "PAP-910",
         title: "Inbox follow-up",
         status: "todo",
       },
-    ]);
+    ];
 
-    const app = createApp({
+    const app = await createApp({
       type: "agent",
       agentId,
       companyId,
@@ -314,10 +398,13 @@ describe("agent permission routes", () => {
       .query({ userId: "board-user" });
 
     expect(res.status).toBe(200);
-    expect(mockIssueService.list).toHaveBeenCalledWith(companyId, {
-      touchedByUserId: "board-user",
-      inboxArchivedByUserId: "board-user",
-      status: INBOX_MINE_ISSUE_STATUS_FILTER,
+    expect(issueListCalls).toContainEqual({
+      companyId,
+      filters: {
+        touchedByUserId: "board-user",
+        inboxArchivedByUserId: "board-user",
+        status: INBOX_MINE_ISSUE_STATUS_FILTER,
+      },
     });
     expect(res.body).toEqual([
       {

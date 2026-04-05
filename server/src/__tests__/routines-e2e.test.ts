@@ -54,21 +54,11 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
   }, 20_000);
 
   beforeEach(async () => {
-    vi.resetModules();
-    vi.unmock("../services/access.js");
-    vi.unmock("../services/activity-log.js");
-    vi.unmock("../services/intent-queue.js");
-    vi.unmock("../services/issue-assignment-wakeup.js");
-    vi.unmock("../services/issues.js");
-    vi.unmock("../services/routines.js");
-    vi.unmock("../services/secrets.js");
-    vi.unmock("../routes/routines.js");
-
     const [{ accessService }, { logActivity }, { routineService }, { routineRoutes }] = await Promise.all([
-      import("../services/access.js"),
-      import("../services/activity-log.js"),
-      import("../services/routines.js"),
-      import("../routes/routines.js"),
+      vi.importActual<typeof import("../services/access.js")>("../services/access.js"),
+      vi.importActual<typeof import("../services/activity-log.js")>("../services/activity-log.js"),
+      vi.importActual<typeof import("../services/routines.js")>("../services/routines.js"),
+      vi.importActual<typeof import("../routes/routines.js")>("../routes/routines.js"),
     ]);
 
     accessServiceImpl = accessService;

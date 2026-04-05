@@ -38,7 +38,11 @@ async function createApp(actor: Record<string, unknown>) {
 
 describe("company skill mutation permissions", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockAgentService.getById.mockReset();
+    mockAccessService.canUser.mockReset();
+    mockAccessService.hasPermission.mockReset();
+    mockCompanySkillService.importFromSource.mockReset();
+    mockLogActivity.mockReset();
     mockCompanySkillService.importFromSource.mockResolvedValue({
       imported: [],
       warnings: [],
