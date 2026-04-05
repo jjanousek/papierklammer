@@ -32,10 +32,14 @@ export interface AgentSidebarProps {
   maxVisible?: number;
   /** Whether the sidebar is currently focused for keyboard navigation */
   focused?: boolean;
+  /** Whether sidebar keyboard shortcuts should be active */
+  shortcutsEnabled?: boolean;
   /** Whether the sidebar is connected to the orchestrator API */
   connected?: boolean;
   /** Error message from the last failed poll */
   error?: string | null;
+  /** Error message from pending approvals polling */
+  pendingApprovalsError?: string | null;
   onInvokeSelectedAgent?: (agent: AgentOverview) => void;
   onWakeSelectedAgent?: (agent: AgentOverview) => void;
   onApproveSelectedApproval?: (approval: PendingApprovalSummary) => void;
@@ -49,8 +53,10 @@ export function AgentSidebar({
   pendingApprovals = [],
   maxVisible = DEFAULT_MAX_VISIBLE,
   focused = false,
+  shortcutsEnabled = true,
   connected = true,
   error = null,
+  pendingApprovalsError = null,
   onInvokeSelectedAgent,
   onWakeSelectedAgent,
   onApproveSelectedApproval,
@@ -71,7 +77,7 @@ export function AgentSidebar({
 
   useInput(
     (input, key) => {
-      if (!focused) return;
+      if (!focused || !shortcutsEnabled) return;
       if (key.downArrow) {
         setSelectedIndex((prev) => {
           const next = Math.min(prev + 1, agents.length - 1);
@@ -111,7 +117,7 @@ export function AgentSidebar({
         onRejectSelectedApproval?.(pendingApprovals[selectedApprovalIndex]!);
       }
     },
-    { isActive: focused },
+    { isActive: focused && shortcutsEnabled },
   );
 
   const borderColor = focused ? "cyan" : undefined;
@@ -236,6 +242,11 @@ export function AgentSidebar({
                 <Text dimColor>
                   {selectedApprovalIndex + 1}/{pendingApprovals.length} · status {selectedApproval.status}
                 </Text>
+              </>
+            ) : pendingApprovalsError ? (
+              <>
+                <Text color="red">Pending approvals unavailable</Text>
+                <Text dimColor>{pendingApprovalsError}</Text>
               </>
             ) : (
               <Text dimColor>No pending approvals</Text>

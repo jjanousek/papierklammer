@@ -338,8 +338,10 @@ function CompanySession({
             recentRuns={status.recentRuns}
             pendingApprovals={approvals.approvals}
             focused={focusTarget === "sidebar"}
+            shortcutsEnabled={!helpVisible && !settingsVisible}
             connected={status.connected}
-            error={status.error ?? approvals.error}
+            error={status.error}
+            pendingApprovalsError={approvals.error}
             onInvokeSelectedAgent={handleInvokeSelectedAgent}
             onWakeSelectedAgent={handleWakeSelectedAgent}
             onApproveSelectedApproval={handleApproveSelectedApproval}

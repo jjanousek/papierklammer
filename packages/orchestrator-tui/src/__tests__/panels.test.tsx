@@ -396,14 +396,27 @@ describe("StatusBar", () => {
 
 describe("Keyboard navigation", () => {
   function createMockFetch(agents: AgentOverview[] = MOCK_AGENTS) {
-    return vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        agents,
-        totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
-        totalQueuedIntents: 0,
-        totalActiveLeases: 0,
-      }),
+    return vi.fn().mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("/approvals?status=pending")) {
+        return {
+          ok: true,
+          json: async () => [],
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          agents,
+          totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
+          totalQueuedIntents: 0,
+          totalActiveLeases: 0,
+          activeRuns: [],
+          recentRuns: [],
+        }),
+      };
     });
   }
 
@@ -536,14 +549,27 @@ describe("Agent list scrolling", () => {
   }
 
   function createMockFetch(agents: AgentOverview[]) {
-    return vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        agents,
-        totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
-        totalQueuedIntents: 0,
-        totalActiveLeases: 0,
-      }),
+    return vi.fn().mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("/approvals?status=pending")) {
+        return {
+          ok: true,
+          json: async () => [],
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          agents,
+          totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
+          totalQueuedIntents: 0,
+          totalActiveLeases: 0,
+          activeRuns: [],
+          recentRuns: [],
+        }),
+      };
     });
   }
 

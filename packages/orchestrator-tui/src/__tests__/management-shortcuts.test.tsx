@@ -27,6 +27,7 @@ function createManagementFetch(options?: {
     requestedByAgentId?: string | null;
     createdAt?: string;
   }>;
+  approvalsError?: string;
 }) {
   const calls: FetchCall[] = [];
   let approvals = (options?.approvals ?? []).map((approval) => ({
@@ -71,6 +72,14 @@ function createManagementFetch(options?: {
     }
 
     if (url.endsWith("/api/companies/company-1/approvals?status=pending")) {
+      if (options?.approvalsError) {
+        return {
+          ok: false,
+          status: 500,
+          json: async () => ({ error: options.approvalsError }),
+        };
+      }
+
       return {
         ok: true,
         json: async () => approvals,
@@ -272,6 +281,88 @@ describe("management shortcuts", () => {
       calls.some((call) => call.url.includes("/api/approvals/") && call.method === "POST"),
     ).toBe(false);
     expect(lastFrame()).toContain("> a");
+
+    unmount();
+  });
+
+  it.each([
+    ["help", "?"],
+    ["settings", "s"],
+  ])(
+    "does not fire sidebar mutation shortcuts while the %s overlay is open",
+    async (_overlayName, openKey) => {
+      const { fetchFn, calls } = createManagementFetch({
+        approvals: [
+          {
+            id: "bbbbbbbb-1111-1111-1111-111111111111",
+            type: "hire_agent",
+            createdAt: "2026-04-05T00:00:00.000Z",
+          },
+        ],
+      });
+
+      const { stdin, lastFrame, unmount } = render(
+        <App
+          url="http://localhost:3100"
+          apiKey="board-key"
+          companyId="company-1"
+          companyName="Audit Co"
+          fetchFn={fetchFn}
+          pollInterval={60000}
+          enableCodex={false}
+        />,
+      );
+
+      await tick(100);
+      stdin.write("\t");
+      await tick(50);
+      stdin.write(openKey);
+      await tick(50);
+      stdin.write("v");
+      stdin.write("a");
+      await tick(100);
+
+      expect(
+        calls.some(
+          (call) =>
+            call.method === "POST"
+            && (
+              call.url.endsWith("/api/agents/agent-1/heartbeat/invoke")
+              || call.url.includes("/api/approvals/")
+            ),
+        ),
+      ).toBe(false);
+      expect(lastFrame()).not.toContain("Invoked heartbeat for CEO");
+      expect(lastFrame()).not.toContain("Approved hire_agent approval");
+
+      unmount();
+    },
+  );
+
+  it("shows an explicit pending approvals polling error instead of an empty approvals message", async () => {
+    const { fetchFn } = createManagementFetch({
+      approvalsError: "Approval polling failed",
+    });
+
+    const { lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-1"
+        companyName="Audit Co"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick(100);
+
+    expect(lastFrame()).toContain("Pending approvals");
+    expect(lastFrame()).toContain("unavailable");
+    expect(lastFrame()).toContain("Approval polling");
+    expect(lastFrame()).toContain("failed");
+    expect(lastFrame()).not.toContain("No pending approvals");
 
     unmount();
   });
