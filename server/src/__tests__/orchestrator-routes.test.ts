@@ -1,54 +1,37 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { orchestratorRoutes } from "../routes/orchestrator.js";
 
 // ── Mock services ──────────────────────────────────────────────────────────────
 
-const mockIssueService = vi.hoisted(() => ({
-  create: vi.fn(),
-  getById: vi.fn(),
-  update: vi.fn(),
-}));
+let mockIssueService: {
+  create: ReturnType<typeof vi.fn>;
+  getById: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+};
 
-const mockIntentQueueService = vi.hoisted(() => ({
-  createIntent: vi.fn(),
-  invalidateForClosedIssue: vi.fn(),
-  rejectIntent: vi.fn(),
-}));
+let mockIntentQueueService: {
+  createIntent: ReturnType<typeof vi.fn>;
+  invalidateForClosedIssue: ReturnType<typeof vi.fn>;
+  rejectIntent: ReturnType<typeof vi.fn>;
+};
 
-const mockLeaseManagerService = vi.hoisted(() => ({
-  getActiveLease: vi.fn(),
-  releaseLease: vi.fn(),
-}));
+let mockLeaseManagerService: {
+  getActiveLease: ReturnType<typeof vi.fn>;
+  releaseLease: ReturnType<typeof vi.fn>;
+};
 
-const mockOrchestratorService = vi.hoisted(() => ({
-  getAgentOverviews: vi.fn(),
-  getStaleItems: vi.fn(),
-  findStaleRunsForCleanup: vi.fn(),
-  cancelRun: vi.fn(),
-  findStaleIntentsForCleanup: vi.fn(),
-  getAgent: vi.fn(),
-  findAgentAssignedIssue: vi.fn(),
-  clearIssueLock: vi.fn(),
-}));
-
-// ── Module mocks ───────────────────────────────────────────────────────────────
-
-vi.mock("../services/index.js", () => ({
-  issueService: () => mockIssueService,
-}));
-
-vi.mock("../services/intent-queue.js", () => ({
-  intentQueueService: () => mockIntentQueueService,
-}));
-
-vi.mock("../services/lease-manager.js", () => ({
-  leaseManagerService: () => mockLeaseManagerService,
-}));
-
-vi.mock("../services/orchestrator.js", () => ({
-  orchestratorService: () => mockOrchestratorService,
-}));
+let mockOrchestratorService: {
+  getAgentOverviews: ReturnType<typeof vi.fn>;
+  getStaleItems: ReturnType<typeof vi.fn>;
+  findStaleRunsForCleanup: ReturnType<typeof vi.fn>;
+  cancelRun: ReturnType<typeof vi.fn>;
+  findStaleIntentsForCleanup: ReturnType<typeof vi.fn>;
+  getAgent: ReturnType<typeof vi.fn>;
+  findAgentAssignedIssue: ReturnType<typeof vi.fn>;
+  clearIssueLock: ReturnType<typeof vi.fn>;
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -58,46 +41,151 @@ const ISSUE_ID = "00000000-0000-0000-0000-000000000020";
 const LEASE_ID = "00000000-0000-0000-0000-000000000030";
 const PROJECT_ID = "00000000-0000-0000-0000-000000000040";
 
-let errorHandler: typeof import("../middleware/index.js").errorHandler;
-let orchestratorRoutes: typeof import("../routes/orchestrator.js").orchestratorRoutes;
-
 function createApp(actor?: any) {
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    req.actor = actor ?? {
+  return {
+    actor: actor ?? {
       type: "board",
       userId: "local-board",
       source: "local_implicit",
       isInstanceAdmin: true,
-    };
-    next();
-  });
-  app.use("/api", orchestratorRoutes({} as any));
-  app.use(errorHandler);
-  return app;
+    },
+  };
 }
 
 function createUnauthApp() {
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    req.actor = { type: "none", source: "none" };
-    next();
+  return {
+    actor: { type: "none", source: "none" },
+  };
+}
+
+function getRouteHandlers(
+  method: "get" | "post" | "patch" | "delete",
+  path: string,
+) {
+  const router = orchestratorRoutes({} as any, {
+    issueService: mockIssueService as any,
+    intentQueueService: mockIntentQueueService as any,
+    leaseManagerService: mockLeaseManagerService as any,
+    orchestratorService: mockOrchestratorService as any,
   });
-  app.use("/api", orchestratorRoutes({} as any));
-  app.use(errorHandler);
-  return app;
+  const layer = (router as any).stack.find(
+    (entry: any) =>
+      entry.route?.path === path && entry.route.methods?.[method],
+  );
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) {
+        resolve();
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function callRoute(options: {
+  method: "get" | "post" | "patch" | "delete";
+  path: string;
+  actor?: any;
+  body?: unknown;
+  query?: Record<string, unknown>;
+  params?: Record<string, string>;
+}) {
+  const req = {
+    actor: options.actor ?? createApp().actor,
+    body: options.body ?? {},
+    query: options.query ?? {},
+    params: options.params ?? {},
+    method: options.method.toUpperCase(),
+    originalUrl: `/api${options.path}`,
+  } as any;
+  let statusCode = 200;
+  let body: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      body = payload;
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(getRouteHandlers(options.method, options.path), req, res);
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
+  }
+
+  return { status: statusCode, body };
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
-describe("orchestrator routes", () => {
-  beforeEach(async () => {
-    vi.resetAllMocks();
-    vi.resetModules();
-    ({ errorHandler } = await import("../middleware/index.js"));
-    ({ orchestratorRoutes } = await import("../routes/orchestrator.js"));
+describe.sequential("orchestrator routes", () => {
+  beforeEach(() => {
+    mockIssueService = {
+      create: vi.fn(),
+      getById: vi.fn(),
+      update: vi.fn(),
+    };
+    mockIntentQueueService = {
+      createIntent: vi.fn(),
+      invalidateForClosedIssue: vi.fn(),
+      rejectIntent: vi.fn(),
+    };
+    mockLeaseManagerService = {
+      getActiveLease: vi.fn(),
+      releaseLease: vi.fn(),
+    };
+    mockOrchestratorService = {
+      getAgentOverviews: vi.fn(),
+      getStaleItems: vi.fn(),
+      findStaleRunsForCleanup: vi.fn(),
+      cancelRun: vi.fn(),
+      findStaleIntentsForCleanup: vi.fn(),
+      getAgent: vi.fn(),
+      findAgentAssignedIssue: vi.fn(),
+      clearIssueLock: vi.fn(),
+    };
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -105,54 +193,85 @@ describe("orchestrator routes", () => {
   // ──────────────────────────────────────────────────────────────────────────
   describe("authentication", () => {
     it("GET /api/orchestrator/status returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .get(`/api/orchestrator/status?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+        actor: createUnauthApp().actor,
+        query: { companyId: COMPANY_ID },
+      });
       expect(res.status).toBe(403);
     });
 
     it("GET /api/orchestrator/stale returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .get(`/api/orchestrator/stale?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/stale",
+        actor: createUnauthApp().actor,
+        query: { companyId: COMPANY_ID },
+      });
       expect(res.status).toBe(403);
     });
 
     it("POST /api/orchestrator/issues returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .post("/api/orchestrator/issues")
-        .send({ companyId: COMPANY_ID, title: "Test" });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues",
+        actor: createUnauthApp().actor,
+        body: { companyId: COMPANY_ID, title: "Test" },
+      });
       expect(res.status).toBe(403);
     });
 
     it("PATCH /api/orchestrator/issues/:id/priority returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .patch(`/api/orchestrator/issues/${ISSUE_ID}/priority`)
-        .send({ priority: "high" });
+      const res = await callRoute({
+        method: "patch",
+        path: "/orchestrator/issues/:id/priority",
+        actor: createUnauthApp().actor,
+        params: { id: ISSUE_ID },
+        body: { priority: "high" },
+      });
       expect(res.status).toBe(403);
     });
 
     it("POST /api/orchestrator/issues/:id/unblock returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        actor: createUnauthApp().actor,
+        params: { id: ISSUE_ID },
+        body: {},
+      });
       expect(res.status).toBe(403);
     });
 
     it("DELETE /api/orchestrator/stale/runs returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .delete(`/api/orchestrator/stale/runs?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+        actor: createUnauthApp().actor,
+        query: { companyId: COMPANY_ID },
+      });
       expect(res.status).toBe(403);
     });
 
     it("DELETE /api/orchestrator/stale/intents returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .delete(`/api/orchestrator/stale/intents?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/intents",
+        actor: createUnauthApp().actor,
+        query: { companyId: COMPANY_ID },
+      });
       expect(res.status).toBe(403);
     });
 
     it("POST /api/orchestrator/agents/:id/nudge returns 403 without board auth", async () => {
-      const res = await request(createUnauthApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        actor: createUnauthApp().actor,
+        params: { id: AGENT_ID },
+        body: {},
+      });
       expect(res.status).toBe(403);
     });
   });
@@ -186,8 +305,11 @@ describe("orchestrator routes", () => {
         recentRuns: [],
       });
 
-      const res = await request(createApp())
-        .get(`/api/orchestrator/status?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.agents).toHaveLength(1);
@@ -212,8 +334,10 @@ describe("orchestrator routes", () => {
     });
 
     it("requires companyId query parameter", async () => {
-      const res = await request(createApp())
-        .get("/api/orchestrator/status");
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+      });
       expect(res.status).toBe(400);
     });
 
@@ -226,8 +350,12 @@ describe("orchestrator routes", () => {
         isInstanceAdmin: false,
       };
 
-      const res = await request(createApp(limitedBoard))
-        .get(`/api/orchestrator/status?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+        actor: limitedBoard,
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(403);
       expect(mockOrchestratorService.getAgentOverviews).not.toHaveBeenCalled();
@@ -241,8 +369,11 @@ describe("orchestrator routes", () => {
         recentRuns: [],
       });
 
-      const res = await request(createApp())
-        .get(`/api/orchestrator/status?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.agents).toHaveLength(0);
@@ -262,8 +393,11 @@ describe("orchestrator routes", () => {
         recentRuns: [],
       });
 
-      const res = await request(createApp())
-        .get(`/api/orchestrator/status?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.totalActiveRuns).toBe(4);
@@ -290,8 +424,11 @@ describe("orchestrator routes", () => {
         ],
       });
 
-      const res = await request(createApp())
-        .get(`/api/orchestrator/stale?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/stale",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.staleRuns).toHaveLength(1);
@@ -305,8 +442,10 @@ describe("orchestrator routes", () => {
     });
 
     it("requires companyId query parameter", async () => {
-      const res = await request(createApp())
-        .get("/api/orchestrator/stale");
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/stale",
+      });
       expect(res.status).toBe(400);
     });
 
@@ -317,8 +456,11 @@ describe("orchestrator routes", () => {
         orphanedLeases: [],
       });
 
-      const res = await request(createApp())
-        .get(`/api/orchestrator/stale?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/stale",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.staleRuns).toHaveLength(0);
@@ -341,16 +483,18 @@ describe("orchestrator routes", () => {
       };
       mockIssueService.create.mockResolvedValue(createdIssue);
 
-      const res = await request(createApp())
-        .post("/api/orchestrator/issues")
-        .send({
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues",
+        body: {
           companyId: COMPANY_ID,
           title: "New issue",
           description: "Some details",
           assigneeAgentId: AGENT_ID,
           projectId: PROJECT_ID,
           priority: "high",
-        });
+        },
+      });
 
       expect(res.status).toBe(201);
       expect(res.body.id).toBe(ISSUE_ID);
@@ -364,18 +508,22 @@ describe("orchestrator routes", () => {
     });
 
     it("rejects missing title", async () => {
-      const res = await request(createApp())
-        .post("/api/orchestrator/issues")
-        .send({ companyId: COMPANY_ID });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues",
+        body: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(400);
       expect(mockIssueService.create).not.toHaveBeenCalled();
     });
 
     it("rejects missing companyId", async () => {
-      const res = await request(createApp())
-        .post("/api/orchestrator/issues")
-        .send({ title: "No company" });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues",
+        body: { title: "No company" },
+      });
 
       expect(res.status).toBe(400);
       expect(mockIssueService.create).not.toHaveBeenCalled();
@@ -391,9 +539,11 @@ describe("orchestrator routes", () => {
       };
       mockIssueService.create.mockResolvedValue(createdIssue);
 
-      const res = await request(createApp())
-        .post("/api/orchestrator/issues")
-        .send({ companyId: COMPANY_ID, title: "Defaults" });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues",
+        body: { companyId: COMPANY_ID, title: "Defaults" },
+      });
 
       expect(res.status).toBe(201);
       expect(mockIssueService.create).toHaveBeenCalledWith(COMPANY_ID, {
@@ -421,9 +571,12 @@ describe("orchestrator routes", () => {
       mockIssueService.getById.mockResolvedValue(existing);
       mockIssueService.update.mockResolvedValue(updated);
 
-      const res = await request(createApp())
-        .patch(`/api/orchestrator/issues/${ISSUE_ID}/priority`)
-        .send({ priority: "urgent" });
+      const res = await callRoute({
+        method: "patch",
+        path: "/orchestrator/issues/:id/priority",
+        params: { id: ISSUE_ID },
+        body: { priority: "urgent" },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.priority).toBe("urgent");
@@ -435,25 +588,34 @@ describe("orchestrator routes", () => {
     it("returns 404 for unknown issue", async () => {
       mockIssueService.getById.mockResolvedValue(null);
 
-      const res = await request(createApp())
-        .patch(`/api/orchestrator/issues/${ISSUE_ID}/priority`)
-        .send({ priority: "high" });
+      const res = await callRoute({
+        method: "patch",
+        path: "/orchestrator/issues/:id/priority",
+        params: { id: ISSUE_ID },
+        body: { priority: "high" },
+      });
 
       expect(res.status).toBe(404);
     });
 
     it("rejects missing priority", async () => {
-      const res = await request(createApp())
-        .patch(`/api/orchestrator/issues/${ISSUE_ID}/priority`)
-        .send({});
+      const res = await callRoute({
+        method: "patch",
+        path: "/orchestrator/issues/:id/priority",
+        params: { id: ISSUE_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(400);
     });
 
     it("rejects empty priority string", async () => {
-      const res = await request(createApp())
-        .patch(`/api/orchestrator/issues/${ISSUE_ID}/priority`)
-        .send({ priority: "" });
+      const res = await callRoute({
+        method: "patch",
+        path: "/orchestrator/issues/:id/priority",
+        params: { id: ISSUE_ID },
+        body: { priority: "" },
+      });
 
       expect(res.status).toBe(400);
     });
@@ -490,9 +652,12 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(2);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        params: { id: ISSUE_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.leaseReleased).toBe(true);
@@ -532,9 +697,12 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(0);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        params: { id: ISSUE_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.leaseReleased).toBe(false);
@@ -545,9 +713,12 @@ describe("orchestrator routes", () => {
     it("returns 404 for unknown issue", async () => {
       mockIssueService.getById.mockResolvedValue(null);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        params: { id: ISSUE_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(404);
     });
@@ -572,9 +743,12 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(0);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        params: { id: ISSUE_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.leaseReleased).toBe(false);
@@ -595,14 +769,17 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(0);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        params: { id: ISSUE_ID },
+        body: {
           payload: {
             requestedBy: "operator",
             reason: "lease looks stale",
           },
-        });
+        },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.payload).toEqual({
@@ -612,9 +789,12 @@ describe("orchestrator routes", () => {
     });
 
     it("rejects unexpected unblock request fields instead of silently dropping them", async () => {
-      const res = await request(createApp())
-        .post(`/api/orchestrator/issues/${ISSUE_ID}/unblock`)
-        .send({ note: "please fix this" });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues/:id/unblock",
+        params: { id: ISSUE_ID },
+        body: { note: "please fix this" },
+      });
 
       expect(res.status).toBe(400);
       expect(mockLeaseManagerService.getActiveLease).not.toHaveBeenCalled();
@@ -634,8 +814,11 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.cancelRun.mockResolvedValue(undefined);
       mockLeaseManagerService.releaseLease.mockResolvedValue({});
 
-      const res = await request(createApp())
-        .delete(`/api/orchestrator/stale/runs?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.cancelled).toBe(2);
@@ -648,16 +831,21 @@ describe("orchestrator routes", () => {
     it("returns 0 cancelled when no stale runs exist", async () => {
       mockOrchestratorService.findStaleRunsForCleanup.mockResolvedValue([]);
 
-      const res = await request(createApp())
-        .delete(`/api/orchestrator/stale/runs?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.cancelled).toBe(0);
     });
 
     it("requires companyId query parameter", async () => {
-      const res = await request(createApp())
-        .delete("/api/orchestrator/stale/runs");
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+      });
       expect(res.status).toBe(400);
     });
 
@@ -668,8 +856,11 @@ describe("orchestrator routes", () => {
       mockOrchestratorService.cancelRun.mockResolvedValue(undefined);
       mockLeaseManagerService.releaseLease.mockRejectedValue(new Error("conflict"));
 
-      const res = await request(createApp())
-        .delete(`/api/orchestrator/stale/runs?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.cancelled).toBe(1);
@@ -688,8 +879,11 @@ describe("orchestrator routes", () => {
       ]);
       mockIntentQueueService.rejectIntent.mockResolvedValue({});
 
-      const res = await request(createApp())
-        .delete(`/api/orchestrator/stale/intents?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/intents",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.rejected).toBe(3);
@@ -702,16 +896,21 @@ describe("orchestrator routes", () => {
     it("returns 0 when no stale intents exist", async () => {
       mockOrchestratorService.findStaleIntentsForCleanup.mockResolvedValue([]);
 
-      const res = await request(createApp())
-        .delete(`/api/orchestrator/stale/intents?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/intents",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.rejected).toBe(0);
     });
 
     it("requires companyId query parameter", async () => {
-      const res = await request(createApp())
-        .delete("/api/orchestrator/stale/intents");
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/intents",
+      });
       expect(res.status).toBe(400);
     });
 
@@ -724,8 +923,11 @@ describe("orchestrator routes", () => {
         .mockResolvedValueOnce({})
         .mockRejectedValueOnce(new Error("already rejected"));
 
-      const res = await request(createApp())
-        .delete(`/api/orchestrator/stale/intents?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/intents",
+        query: { companyId: COMPANY_ID },
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.rejected).toBe(1);
@@ -756,9 +958,12 @@ describe("orchestrator routes", () => {
       };
       mockIntentQueueService.createIntent.mockResolvedValue(createdIntent);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(201);
       expect(res.body.intentType).toBe("manager_escalation");
@@ -777,9 +982,12 @@ describe("orchestrator routes", () => {
     it("returns 404 for unknown agent", async () => {
       mockOrchestratorService.getAgent.mockResolvedValue(null);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(404);
     });
@@ -792,9 +1000,12 @@ describe("orchestrator routes", () => {
       });
       mockOrchestratorService.findAgentAssignedIssue.mockResolvedValue(null);
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(400);
     });
@@ -817,14 +1028,17 @@ describe("orchestrator routes", () => {
         status: "queued",
       });
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: {
           payload: {
             requestedBy: "operator",
             summary: "Please take another pass",
           },
-        });
+        },
+      });
 
       expect(res.status).toBe(201);
       expect(res.body.payload).toEqual({
@@ -834,9 +1048,12 @@ describe("orchestrator routes", () => {
     });
 
     it("rejects unexpected nudge request fields instead of silently dropping them", async () => {
-      const res = await request(createApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({ note: "check in" });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: { note: "check in" },
+      });
 
       expect(res.status).toBe(400);
       expect(mockOrchestratorService.getAgent).not.toHaveBeenCalled();
@@ -854,9 +1071,12 @@ describe("orchestrator routes", () => {
         projectId: null,
       });
 
-      const res = await request(createApp())
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: {},
+      });
 
       expect(res.status).toBe(400);
       expect(mockIntentQueueService.createIntent).not.toHaveBeenCalled();
@@ -875,28 +1095,43 @@ describe("orchestrator routes", () => {
     };
 
     it("rejects agent for GET /api/orchestrator/status", async () => {
-      const res = await request(createApp(agentActor))
-        .get(`/api/orchestrator/status?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "get",
+        path: "/orchestrator/status",
+        actor: agentActor,
+        query: { companyId: COMPANY_ID },
+      });
       expect(res.status).toBe(403);
     });
 
     it("rejects agent for POST /api/orchestrator/issues", async () => {
-      const res = await request(createApp(agentActor))
-        .post("/api/orchestrator/issues")
-        .send({ companyId: COMPANY_ID, title: "Test" });
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/issues",
+        actor: agentActor,
+        body: { companyId: COMPANY_ID, title: "Test" },
+      });
       expect(res.status).toBe(403);
     });
 
     it("rejects agent for DELETE /api/orchestrator/stale/runs", async () => {
-      const res = await request(createApp(agentActor))
-        .delete(`/api/orchestrator/stale/runs?companyId=${COMPANY_ID}`);
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+        actor: agentActor,
+        query: { companyId: COMPANY_ID },
+      });
       expect(res.status).toBe(403);
     });
 
     it("rejects agent for POST /api/orchestrator/agents/:id/nudge", async () => {
-      const res = await request(createApp(agentActor))
-        .post(`/api/orchestrator/agents/${AGENT_ID}/nudge`)
-        .send({});
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        actor: agentActor,
+        params: { id: AGENT_ID },
+        body: {},
+      });
       expect(res.status).toBe(403);
     });
   });

@@ -3,7 +3,8 @@ import type { Db } from "@papierklammer/db";
 import { patchInstanceExperimentalSettingsSchema, patchInstanceGeneralSettingsSchema } from "@papierklammer/shared";
 import { forbidden } from "../errors.js";
 import { validate } from "../middleware/validate.js";
-import { instanceSettingsService, logActivity } from "../services/index.js";
+import { logActivity } from "../services/activity-log.js";
+import { instanceSettingsService } from "../services/instance-settings.js";
 import { getActorInfo } from "./authz.js";
 
 function assertCanManageInstanceSettings(req: Request) {
@@ -16,9 +17,18 @@ function assertCanManageInstanceSettings(req: Request) {
   throw forbidden("Instance admin access required");
 }
 
-export function instanceSettingsRoutes(db: Db) {
+export interface InstanceSettingsRouteDependencies {
+  instanceSettingsService?: ReturnType<typeof instanceSettingsService>;
+  logActivity?: typeof logActivity;
+}
+
+export function instanceSettingsRoutes(
+  db: Db,
+  deps: InstanceSettingsRouteDependencies = {},
+) {
   const router = Router();
-  const svc = instanceSettingsService(db);
+  const svc = deps.instanceSettingsService ?? instanceSettingsService(db);
+  const writeActivity = deps.logActivity ?? logActivity;
 
   router.get("/instance/settings/general", async (req, res) => {
     assertCanManageInstanceSettings(req);
@@ -35,7 +45,7 @@ export function instanceSettingsRoutes(db: Db) {
       const companyIds = await svc.listCompanyIds();
       await Promise.all(
         companyIds.map((companyId) =>
-          logActivity(db, {
+          writeActivity(db, {
             companyId,
             actorType: actor.actorType,
             actorId: actor.actorId,
@@ -70,7 +80,7 @@ export function instanceSettingsRoutes(db: Db) {
       const companyIds = await svc.listCompanyIds();
       await Promise.all(
         companyIds.map((companyId) =>
-          logActivity(db, {
+          writeActivity(db, {
             companyId,
             actorType: actor.actorType,
             actorId: actor.actorId,

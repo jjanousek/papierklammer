@@ -1,56 +1,33 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
-const mockAgentService = vi.hoisted(() => ({
-  getById: vi.fn(),
-  update: vi.fn(),
-  resolveByReference: vi.fn(),
-}));
-
-const mockAgentInstructionsService = vi.hoisted(() => ({
-  getBundle: vi.fn(),
-  readFile: vi.fn(),
-  updateBundle: vi.fn(),
-  writeFile: vi.fn(),
-  deleteFile: vi.fn(),
-  exportFiles: vi.fn(),
-  ensureManagedBundle: vi.fn(),
-  materializeManagedBundle: vi.fn(),
-}));
-
-const mockAccessService = vi.hoisted(() => ({
-  canUser: vi.fn(),
-  hasPermission: vi.fn(),
-}));
-
-const mockSecretService = vi.hoisted(() => ({
-  resolveAdapterConfigForRuntime: vi.fn(),
-  normalizeAdapterConfigForPersistence: vi.fn(async (_companyId: string, config: Record<string, unknown>) => config),
-}));
-
-const mockLogActivity = vi.hoisted(() => vi.fn());
-
-vi.mock("../services/index.js", () => ({
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => mockAgentInstructionsService,
-  accessService: () => mockAccessService,
-  approvalService: () => ({}),
-  companySkillService: () => ({ listRuntimeSkillEntries: vi.fn() }),
-  budgetService: () => ({}),
-  heartbeatService: () => ({}),
-  issueApprovalService: () => ({}),
-  issueService: () => ({}),
-  logActivity: mockLogActivity,
-  secretService: () => mockSecretService,
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => ({}),
-}));
-
-vi.mock("../adapters/index.js", () => ({
-  findServerAdapter: vi.fn(),
-  listAdapterModels: vi.fn(),
-}));
+let mockAgentService: {
+  getById: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  resolveByReference: ReturnType<typeof vi.fn>;
+};
+let mockAgentInstructionsService: {
+  getBundle: ReturnType<typeof vi.fn>;
+  readFile: ReturnType<typeof vi.fn>;
+  updateBundle: ReturnType<typeof vi.fn>;
+  writeFile: ReturnType<typeof vi.fn>;
+  deleteFile: ReturnType<typeof vi.fn>;
+  exportFiles: ReturnType<typeof vi.fn>;
+  ensureManagedBundle: ReturnType<typeof vi.fn>;
+  materializeManagedBundle: ReturnType<typeof vi.fn>;
+};
+let mockAccessService: {
+  canUser: ReturnType<typeof vi.fn>;
+  hasPermission: ReturnType<typeof vi.fn>;
+};
+let mockSecretService: {
+  resolveAdapterConfigForRuntime: ReturnType<typeof vi.fn>;
+  normalizeAdapterConfigForPersistence: ReturnType<typeof vi.fn>;
+};
+let mockLogActivity: ReturnType<typeof vi.fn>;
 
 async function createApp() {
   const app = express();
@@ -65,11 +42,20 @@ async function createApp() {
     };
     next();
   });
-  const [{ agentRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/agents.js"),
-    import("../middleware/index.js"),
-  ]);
-  app.use("/api", agentRoutes({} as any));
+  app.use("/api", agentRoutes({} as any, {
+    agentService: mockAgentService as any,
+    agentInstructionsService: mockAgentInstructionsService as any,
+    accessService: mockAccessService as any,
+    secretService: mockSecretService as any,
+    logActivity: mockLogActivity,
+    approvalService: {} as any,
+    companySkillService: { listRuntimeSkillEntries: vi.fn() } as any,
+    budgetService: {} as any,
+    heartbeatService: {} as any,
+    issueApprovalService: {} as any,
+    workspaceOperationService: {} as any,
+    syncInstructionsBundleConfigFromFilePath: (_agent, config) => config,
+  }));
   app.use(errorHandler);
   return app;
 }
@@ -94,7 +80,30 @@ function makeAgent() {
 
 describe("agent instructions bundle routes", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockAgentService = {
+      getById: vi.fn(),
+      update: vi.fn(),
+      resolveByReference: vi.fn(),
+    };
+    mockAgentInstructionsService = {
+      getBundle: vi.fn(),
+      readFile: vi.fn(),
+      updateBundle: vi.fn(),
+      writeFile: vi.fn(),
+      deleteFile: vi.fn(),
+      exportFiles: vi.fn(),
+      ensureManagedBundle: vi.fn(),
+      materializeManagedBundle: vi.fn(),
+    };
+    mockAccessService = {
+      canUser: vi.fn(),
+      hasPermission: vi.fn(),
+    };
+    mockSecretService = {
+      resolveAdapterConfigForRuntime: vi.fn(),
+      normalizeAdapterConfigForPersistence: vi.fn(async (_companyId: string, config: Record<string, unknown>) => config),
+    };
+    mockLogActivity = vi.fn();
     mockAgentService.getById.mockResolvedValue(makeAgent());
     mockAgentService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
       ...makeAgent(),

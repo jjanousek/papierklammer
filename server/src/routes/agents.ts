@@ -71,7 +71,27 @@ import {
 } from "../services/default-agent-instructions.js";
 import { leaseManagerService } from "../services/lease-manager.js";
 
-export function agentRoutes(db: Db) {
+type AgentRouteDependencies = {
+  agentService?: ReturnType<typeof agentService>;
+  agentInstructionsService?: ReturnType<typeof agentInstructionsService>;
+  accessService?: ReturnType<typeof accessService>;
+  approvalService?: ReturnType<typeof approvalService>;
+  companySkillService?: ReturnType<typeof companySkillService>;
+  budgetService?: ReturnType<typeof budgetService>;
+  heartbeatService?: ReturnType<typeof heartbeatService>;
+  issueApprovalService?: ReturnType<typeof issueApprovalService>;
+  secretService?: ReturnType<typeof secretService>;
+  workspaceOperationService?: ReturnType<typeof workspaceOperationService>;
+  instanceSettingsService?: ReturnType<typeof instanceSettingsService>;
+  leaseManagerService?: ReturnType<typeof leaseManagerService>;
+  logActivity?: typeof logActivity;
+  syncInstructionsBundleConfigFromFilePath?: typeof syncInstructionsBundleConfigFromFilePath;
+  findServerAdapter?: typeof findServerAdapter;
+  listAdapterModels?: typeof listAdapterModels;
+  detectAdapterModel?: typeof detectAdapterModel;
+};
+
+export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   const DEFAULT_INSTRUCTIONS_PATH_KEYS: Record<string, string> = {
     claude_local: "instructionsFilePath",
     codex_local: "instructionsFilePath",
@@ -91,18 +111,24 @@ export function agentRoutes(db: Db) {
   ] as const;
 
   const router = Router();
-  const svc = agentService(db);
-  const access = accessService(db);
-  const approvalsSvc = approvalService(db);
-  const budgets = budgetService(db);
-  const heartbeat = heartbeatService(db);
-  const issueApprovalsSvc = issueApprovalService(db);
-  const secretsSvc = secretService(db);
-  const instructions = agentInstructionsService();
-  const companySkills = companySkillService(db);
-  const workspaceOperations = workspaceOperationService(db);
-  const instanceSettings = instanceSettingsService(db);
-  const leaseMgr = leaseManagerService(db);
+  const svc = deps.agentService ?? agentService(db);
+  const access = deps.accessService ?? accessService(db);
+  const approvalsSvc = deps.approvalService ?? approvalService(db);
+  const budgets = deps.budgetService ?? budgetService(db);
+  const heartbeat = deps.heartbeatService ?? heartbeatService(db);
+  const issueApprovalsSvc = deps.issueApprovalService ?? issueApprovalService(db);
+  const secretsSvc = deps.secretService ?? secretService(db);
+  const instructions = deps.agentInstructionsService ?? agentInstructionsService();
+  const companySkills = deps.companySkillService ?? companySkillService(db);
+  const workspaceOperations = deps.workspaceOperationService ?? workspaceOperationService(db);
+  const instanceSettings = deps.instanceSettingsService ?? instanceSettingsService(db);
+  const leaseMgr = deps.leaseManagerService ?? leaseManagerService(db);
+  const writeActivity = deps.logActivity ?? logActivity;
+  const syncBundleConfigFromFilePath =
+    deps.syncInstructionsBundleConfigFromFilePath ?? syncInstructionsBundleConfigFromFilePath;
+  const resolveServerAdapter = deps.findServerAdapter ?? findServerAdapter;
+  const loadAdapterModels = deps.listAdapterModels ?? listAdapterModels;
+  const inspectAdapterModel = deps.detectAdapterModel ?? detectAdapterModel;
   const strictSecretsMode = process.env.PAPIERKLAMMER_SECRETS_STRICT_MODE === "true";
 
   async function getCurrentUserRedactionOptions() {
@@ -677,7 +703,7 @@ export function agentRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const type = req.params.type as string;
-    const models = await listAdapterModels(type);
+    const models = await loadAdapterModels(type);
     res.json(models);
   });
 
@@ -686,7 +712,7 @@ export function agentRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const type = req.params.type as string;
 
-    const detected = await detectAdapterModel(type);
+    const detected = await inspectAdapterModel(type);
     res.json(detected);
   });
 
@@ -698,7 +724,7 @@ export function agentRoutes(db: Db) {
       const type = req.params.type as string;
       await assertCanReadConfigurations(req, companyId);
 
-      const adapter = findServerAdapter(type);
+      const adapter = resolveServerAdapter(type);
       if (!adapter) {
         res.status(404).json({ error: `Unknown adapter type: ${type}` });
         return;
@@ -735,7 +761,7 @@ export function agentRoutes(db: Db) {
     }
     await assertCanReadConfigurations(req, agent.companyId);
 
-    const adapter = findServerAdapter(agent.adapterType);
+    const adapter = resolveServerAdapter(agent.adapterType);
     if (!adapter?.listSkills) {
       const preference = readPaperclipSkillSyncPreference(
         agent.adapterConfig as Record<string, unknown>,
@@ -813,7 +839,7 @@ export function agentRoutes(db: Db) {
         return;
       }
 
-      const adapter = findServerAdapter(updated.adapterType);
+      const adapter = resolveServerAdapter(updated.adapterType);
       const { config: runtimeConfig } = await secretsSvc.resolveAdapterConfigForRuntime(
         updated.companyId,
         updated.adapterConfig,
@@ -838,7 +864,7 @@ export function agentRoutes(db: Db) {
             })
           : buildUnsupportedSkillSnapshot(updated.adapterType, desiredSkills);
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId: updated.companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -1111,7 +1137,7 @@ export function agentRoutes(db: Db) {
       return;
     }
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: updated.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1175,7 +1201,7 @@ export function agentRoutes(db: Db) {
         : null;
     const state = await heartbeat.resetRuntimeSession(id, { taskKey });
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -1304,7 +1330,7 @@ export function agentRoutes(db: Db) {
       }
     }
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1330,7 +1356,7 @@ export function agentRoutes(db: Db) {
     );
 
     if (approval) {
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -1389,7 +1415,7 @@ export function agentRoutes(db: Db) {
     const agent = await materializeDefaultInstructionsBundleForNewAgent(createdAgent);
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1467,7 +1493,7 @@ export function agentRoutes(db: Db) {
     );
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1513,7 +1539,7 @@ export function agentRoutes(db: Db) {
       nextAdapterConfig[adapterConfigKey] = resolveInstructionsFilePath(req.body.path, existingAdapterConfig);
     }
 
-    const syncedAdapterConfig = syncInstructionsBundleConfigFromFilePath(existing, nextAdapterConfig);
+    const syncedAdapterConfig = syncBundleConfigFromFilePath(existing, nextAdapterConfig);
     const normalizedAdapterConfig = await secretsSvc.normalizeAdapterConfigForPersistence(
       existing.companyId,
       syncedAdapterConfig,
@@ -1539,7 +1565,7 @@ export function agentRoutes(db: Db) {
     const updatedAdapterConfig = asRecord(agent.adapterConfig) ?? {};
     const pathValue = asNonEmptyString(updatedAdapterConfig[adapterConfigKey]);
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1602,7 +1628,7 @@ export function agentRoutes(db: Db) {
       },
     );
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: existing.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1670,7 +1696,7 @@ export function agentRoutes(db: Db) {
       },
     );
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: existing.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1706,7 +1732,7 @@ export function agentRoutes(db: Db) {
 
     const actor = getActorInfo(req);
     const result = await instructions.deleteFile(existing, relativePath);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: existing.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1807,7 +1833,7 @@ export function agentRoutes(db: Db) {
         effectiveAdapterConfig,
         { strictMode: strictSecretsMode },
       );
-      patchData.adapterConfig = syncInstructionsBundleConfigFromFilePath(existing, normalizedEffectiveAdapterConfig);
+      patchData.adapterConfig = syncBundleConfigFromFilePath(existing, normalizedEffectiveAdapterConfig);
     }
     if (touchesAdapterConfiguration && requestedAdapterType === "opencode_local") {
       const effectiveAdapterConfig = asRecord(patchData.adapterConfig) ?? {};
@@ -1831,7 +1857,7 @@ export function agentRoutes(db: Db) {
       return;
     }
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1857,7 +1883,7 @@ export function agentRoutes(db: Db) {
 
     await heartbeat.cancelActiveForAgent(id);
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -1878,7 +1904,7 @@ export function agentRoutes(db: Db) {
       return;
     }
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -1901,7 +1927,7 @@ export function agentRoutes(db: Db) {
 
     await heartbeat.cancelActiveForAgent(id);
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -1922,7 +1948,7 @@ export function agentRoutes(db: Db) {
       return;
     }
 
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -1948,7 +1974,7 @@ export function agentRoutes(db: Db) {
 
     const agent = await svc.getById(id);
     if (agent) {
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId: agent.companyId,
         actorType: "user",
         actorId: req.actor.userId ?? "board",
@@ -2008,7 +2034,7 @@ export function agentRoutes(db: Db) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -2057,7 +2083,7 @@ export function agentRoutes(db: Db) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: agent.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -2193,7 +2219,7 @@ export function agentRoutes(db: Db) {
     const run = await heartbeat.cancelRun(runId);
 
     if (run) {
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId: run.companyId,
         actorType: "user",
         actorId: req.actor.userId ?? "board",
@@ -2223,7 +2249,7 @@ export function agentRoutes(db: Db) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: run.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,

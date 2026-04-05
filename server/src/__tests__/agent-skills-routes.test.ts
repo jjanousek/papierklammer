@@ -1,80 +1,54 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
-const mockAgentService = vi.hoisted(() => ({
-  getById: vi.fn(),
-  update: vi.fn(),
-  create: vi.fn(),
-  resolveByReference: vi.fn(),
-}));
-
-const mockAccessService = vi.hoisted(() => ({
-  canUser: vi.fn(),
-  hasPermission: vi.fn(),
-  getMembership: vi.fn(),
-  listPrincipalGrants: vi.fn(),
-  ensureMembership: vi.fn(),
-  setPrincipalPermission: vi.fn(),
-}));
-
-const mockApprovalService = vi.hoisted(() => ({
-  create: vi.fn(),
-}));
-const mockBudgetService = vi.hoisted(() => ({}));
-const mockHeartbeatService = vi.hoisted(() => ({}));
-const mockIssueApprovalService = vi.hoisted(() => ({
-  linkManyForApproval: vi.fn(),
-}));
-const mockWorkspaceOperationService = vi.hoisted(() => ({}));
-const mockAgentInstructionsService = vi.hoisted(() => ({
-  getBundle: vi.fn(),
-  readFile: vi.fn(),
-  updateBundle: vi.fn(),
-  writeFile: vi.fn(),
-  deleteFile: vi.fn(),
-  exportFiles: vi.fn(),
-  ensureManagedBundle: vi.fn(),
-  materializeManagedBundle: vi.fn(),
-}));
-
-const mockCompanySkillService = vi.hoisted(() => ({
-  listRuntimeSkillEntries: vi.fn(),
-  resolveRequestedSkillKeys: vi.fn(),
-}));
-
-const mockSecretService = vi.hoisted(() => ({
-  resolveAdapterConfigForRuntime: vi.fn(),
-  normalizeAdapterConfigForPersistence: vi.fn(async (_companyId: string, config: Record<string, unknown>) => config),
-}));
-
-const mockLogActivity = vi.hoisted(() => vi.fn());
-
-const mockAdapter = vi.hoisted(() => ({
-  listSkills: vi.fn(),
-  syncSkills: vi.fn(),
-}));
-
-vi.mock("../services/index.js", () => ({
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => mockAgentInstructionsService,
-  accessService: () => mockAccessService,
-  approvalService: () => mockApprovalService,
-  companySkillService: () => mockCompanySkillService,
-  budgetService: () => mockBudgetService,
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => mockIssueApprovalService,
-  issueService: () => ({}),
-  logActivity: mockLogActivity,
-  secretService: () => mockSecretService,
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => mockWorkspaceOperationService,
-}));
-
-vi.mock("../adapters/index.js", () => ({
-  findServerAdapter: vi.fn(() => mockAdapter),
-  listAdapterModels: vi.fn(),
-}));
+let mockAgentService: {
+  getById: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+  resolveByReference: ReturnType<typeof vi.fn>;
+};
+let mockAccessService: {
+  canUser: ReturnType<typeof vi.fn>;
+  hasPermission: ReturnType<typeof vi.fn>;
+  getMembership: ReturnType<typeof vi.fn>;
+  listPrincipalGrants: ReturnType<typeof vi.fn>;
+  ensureMembership: ReturnType<typeof vi.fn>;
+  setPrincipalPermission: ReturnType<typeof vi.fn>;
+};
+let mockApprovalService: {
+  create: ReturnType<typeof vi.fn>;
+};
+let mockBudgetService: Record<string, never>;
+let mockHeartbeatService: Record<string, never>;
+let mockIssueApprovalService: {
+  linkManyForApproval: ReturnType<typeof vi.fn>;
+};
+let mockWorkspaceOperationService: Record<string, never>;
+let mockAgentInstructionsService: {
+  getBundle: ReturnType<typeof vi.fn>;
+  readFile: ReturnType<typeof vi.fn>;
+  updateBundle: ReturnType<typeof vi.fn>;
+  writeFile: ReturnType<typeof vi.fn>;
+  deleteFile: ReturnType<typeof vi.fn>;
+  exportFiles: ReturnType<typeof vi.fn>;
+  ensureManagedBundle: ReturnType<typeof vi.fn>;
+  materializeManagedBundle: ReturnType<typeof vi.fn>;
+};
+let mockCompanySkillService: {
+  listRuntimeSkillEntries: ReturnType<typeof vi.fn>;
+  resolveRequestedSkillKeys: ReturnType<typeof vi.fn>;
+};
+let mockSecretService: {
+  resolveAdapterConfigForRuntime: ReturnType<typeof vi.fn>;
+  normalizeAdapterConfigForPersistence: ReturnType<typeof vi.fn>;
+};
+let mockLogActivity: ReturnType<typeof vi.fn>;
+let mockAdapter: {
+  listSkills: ReturnType<typeof vi.fn>;
+  syncSkills: ReturnType<typeof vi.fn>;
+};
 
 function createDb(requireBoardApprovalForNewAgents = false) {
   return {
@@ -91,26 +65,127 @@ function createDb(requireBoardApprovalForNewAgents = false) {
   };
 }
 
-async function createApp(db: Record<string, unknown> = createDb()) {
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = {
+function createApp(db: Record<string, unknown> = createDb()) {
+  return agentRoutes(db as any, {
+    agentService: mockAgentService as any,
+    agentInstructionsService: mockAgentInstructionsService as any,
+    accessService: mockAccessService as any,
+    approvalService: mockApprovalService as any,
+    companySkillService: mockCompanySkillService as any,
+    budgetService: mockBudgetService as any,
+    heartbeatService: mockHeartbeatService as any,
+    issueApprovalService: mockIssueApprovalService as any,
+    secretService: mockSecretService as any,
+    workspaceOperationService: mockWorkspaceOperationService as any,
+    logActivity: mockLogActivity,
+    syncInstructionsBundleConfigFromFilePath: (_agent, config) => config,
+    findServerAdapter: () => mockAdapter as any,
+  });
+}
+
+function getRouteHandlers(
+  db: Record<string, unknown>,
+  method: "get" | "post" | "patch" | "delete",
+  path: string,
+) {
+  const router = createApp(db);
+  const layer = (router as any).stack.find(
+    (entry: any) => entry.route?.path === path && entry.route.methods?.[method],
+  );
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) {
+        resolve();
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function callRoute(options: {
+  db?: Record<string, unknown>;
+  method: "get" | "post" | "patch" | "delete";
+  path: string;
+  body?: unknown;
+  query?: Record<string, unknown>;
+  params?: Record<string, string>;
+}) {
+  const req = {
+    actor: {
       type: "board",
       userId: "local-board",
       companyIds: ["company-1"],
       source: "local_implicit",
       isInstanceAdmin: false,
-    };
-    next();
-  });
-  const [{ agentRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/agents.js"),
-    import("../middleware/index.js"),
-  ]);
-  app.use("/api", agentRoutes(db as any));
-  app.use(errorHandler);
-  return app;
+    },
+    body: options.body ?? {},
+    query: options.query ?? {},
+    params: options.params ?? {},
+    method: options.method.toUpperCase(),
+    originalUrl: `/api${options.path}`,
+  } as any;
+  let statusCode = 200;
+  let body: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      body = payload;
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(
+      getRouteHandlers(options.db ?? createDb(), options.method, options.path),
+      req,
+      res,
+    );
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
+  }
+
+  return { status: statusCode, body };
 }
 
 function makeAgent(adapterType: string) {
@@ -133,8 +208,52 @@ function makeAgent(adapterType: string) {
 
 describe("agent skill routes", () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    vi.resetModules();
+    mockAgentService = {
+      getById: vi.fn(),
+      update: vi.fn(),
+      create: vi.fn(),
+      resolveByReference: vi.fn(),
+    };
+    mockAccessService = {
+      canUser: vi.fn(),
+      hasPermission: vi.fn(),
+      getMembership: vi.fn(),
+      listPrincipalGrants: vi.fn(),
+      ensureMembership: vi.fn(),
+      setPrincipalPermission: vi.fn(),
+    };
+    mockApprovalService = {
+      create: vi.fn(),
+    };
+    mockBudgetService = {};
+    mockHeartbeatService = {};
+    mockIssueApprovalService = {
+      linkManyForApproval: vi.fn(),
+    };
+    mockWorkspaceOperationService = {};
+    mockAgentInstructionsService = {
+      getBundle: vi.fn(),
+      readFile: vi.fn(),
+      updateBundle: vi.fn(),
+      writeFile: vi.fn(),
+      deleteFile: vi.fn(),
+      exportFiles: vi.fn(),
+      ensureManagedBundle: vi.fn(),
+      materializeManagedBundle: vi.fn(),
+    };
+    mockCompanySkillService = {
+      listRuntimeSkillEntries: vi.fn(),
+      resolveRequestedSkillKeys: vi.fn(),
+    };
+    mockSecretService = {
+      resolveAdapterConfigForRuntime: vi.fn(),
+      normalizeAdapterConfigForPersistence: vi.fn(async (_companyId: string, config: Record<string, unknown>) => config),
+    };
+    mockLogActivity = vi.fn();
+    mockAdapter = {
+      listSkills: vi.fn(),
+      syncSkills: vi.fn(),
+    };
     mockAgentService.resolveByReference.mockResolvedValue({
       ambiguous: false,
       agent: makeAgent("claude_local"),
@@ -217,8 +336,12 @@ describe("agent skill routes", () => {
   it("skips runtime materialization when listing Claude skills", async () => {
     mockAgentService.getById.mockResolvedValue(makeAgent("claude_local"));
 
-    const res = await request(await createApp())
-      .get("/api/agents/11111111-1111-4111-8111-111111111111/skills?companyId=company-1");
+    const res = await callRoute({
+      method: "get",
+      path: "/agents/:id/skills",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      query: { companyId: "company-1" },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockCompanySkillService.listRuntimeSkillEntries).toHaveBeenCalledWith("company-1", {
@@ -245,8 +368,12 @@ describe("agent skill routes", () => {
       warnings: [],
     });
 
-    const res = await request(await createApp())
-      .get("/api/agents/11111111-1111-4111-8111-111111111111/skills?companyId=company-1");
+    const res = await callRoute({
+      method: "get",
+      path: "/agents/:id/skills",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      query: { companyId: "company-1" },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockCompanySkillService.listRuntimeSkillEntries).toHaveBeenCalledWith("company-1", {
@@ -257,9 +384,13 @@ describe("agent skill routes", () => {
   it("skips runtime materialization when syncing Claude skills", async () => {
     mockAgentService.getById.mockResolvedValue(makeAgent("claude_local"));
 
-    const res = await request(await createApp())
-      .post("/api/agents/11111111-1111-4111-8111-111111111111/skills/sync?companyId=company-1")
-      .send({ desiredSkills: ["papierklammer/paperclip/paperclip"] });
+    const res = await callRoute({
+      method: "post",
+      path: "/agents/:id/skills/sync",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      query: { companyId: "company-1" },
+      body: { desiredSkills: ["papierklammer/paperclip/paperclip"] },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockCompanySkillService.listRuntimeSkillEntries).toHaveBeenCalledWith("company-1", {
@@ -271,9 +402,13 @@ describe("agent skill routes", () => {
   it("canonicalizes desired skill references before syncing", async () => {
     mockAgentService.getById.mockResolvedValue(makeAgent("claude_local"));
 
-    const res = await request(await createApp())
-      .post("/api/agents/11111111-1111-4111-8111-111111111111/skills/sync?companyId=company-1")
-      .send({ desiredSkills: ["paperclip"] });
+    const res = await callRoute({
+      method: "post",
+      path: "/agents/:id/skills/sync",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      query: { companyId: "company-1" },
+      body: { desiredSkills: ["paperclip"] },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockCompanySkillService.resolveRequestedSkillKeys).toHaveBeenCalledWith("company-1", ["paperclip"]);
@@ -291,15 +426,18 @@ describe("agent skill routes", () => {
   });
 
   it("persists canonical desired skills when creating an agent directly", async () => {
-    const res = await request(await createApp())
-      .post("/api/companies/company-1/agents")
-      .send({
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/agents",
+      params: { companyId: "company-1" },
+      body: {
         name: "QA Agent",
         role: "engineer",
         adapterType: "claude_local",
         desiredSkills: ["paperclip"],
         adapterConfig: {},
-      });
+      },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockCompanySkillService.resolveRequestedSkillKeys).toHaveBeenCalledWith("company-1", ["paperclip"]);
@@ -316,16 +454,19 @@ describe("agent skill routes", () => {
   });
 
   it("materializes a managed AGENTS.md for directly created local agents", async () => {
-    const res = await request(await createApp())
-      .post("/api/companies/company-1/agents")
-      .send({
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/agents",
+      params: { companyId: "company-1" },
+      body: {
         name: "QA Agent",
         role: "engineer",
         adapterType: "claude_local",
         adapterConfig: {
           promptTemplate: "You are QA.",
         },
-      });
+      },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(
@@ -354,14 +495,17 @@ describe("agent skill routes", () => {
   });
 
   it("materializes the bundled CEO instruction set for default CEO agents", async () => {
-    const res = await request(await createApp())
-      .post("/api/companies/company-1/agents")
-      .send({
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/agents",
+      params: { companyId: "company-1" },
+      body: {
         name: "CEO",
         role: "ceo",
         adapterType: "claude_local",
         adapterConfig: {},
-      });
+      },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(
@@ -381,14 +525,17 @@ describe("agent skill routes", () => {
   });
 
   it("materializes the bundled default instruction set for non-CEO agents with no prompt template", async () => {
-    const res = await request(await createApp())
-      .post("/api/companies/company-1/agents")
-      .send({
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/agents",
+      params: { companyId: "company-1" },
+      body: {
         name: "Engineer",
         role: "engineer",
         adapterType: "claude_local",
         adapterConfig: {},
-      });
+      },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(
@@ -407,15 +554,19 @@ describe("agent skill routes", () => {
   it("includes canonical desired skills in hire approvals", async () => {
     const db = createDb(true);
 
-    const res = await request(await createApp(db))
-      .post("/api/companies/company-1/agent-hires")
-      .send({
+    const res = await callRoute({
+      db,
+      method: "post",
+      path: "/companies/:companyId/agent-hires",
+      params: { companyId: "company-1" },
+      body: {
         name: "QA Agent",
         role: "engineer",
         adapterType: "claude_local",
         desiredSkills: ["paperclip"],
         adapterConfig: {},
-      });
+      },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockCompanySkillService.resolveRequestedSkillKeys).toHaveBeenCalledWith("company-1", ["paperclip"]);
@@ -433,16 +584,20 @@ describe("agent skill routes", () => {
   });
 
   it("uses managed AGENTS config in hire approval payloads", async () => {
-    const res = await request(await createApp(createDb(true)))
-      .post("/api/companies/company-1/agent-hires")
-      .send({
+    const res = await callRoute({
+      db: createDb(true),
+      method: "post",
+      path: "/companies/:companyId/agent-hires",
+      params: { companyId: "company-1" },
+      body: {
         name: "QA Agent",
         role: "engineer",
         adapterType: "claude_local",
         adapterConfig: {
           promptTemplate: "You are QA.",
         },
-      });
+      },
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockApprovalService.create).toHaveBeenCalledWith(

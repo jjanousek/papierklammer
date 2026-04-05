@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Db } from "@papierklammer/db";
 import { validate } from "../middleware/validate.js";
 import { assertBoard, assertCompanyAccess } from "./authz.js";
-import { issueService } from "../services/index.js";
+import { issueService } from "../services/issues.js";
 import { intentQueueService } from "../services/intent-queue.js";
 import { leaseManagerService } from "../services/lease-manager.js";
 import { orchestratorService } from "../services/orchestrator.js";
@@ -28,6 +28,13 @@ const correctiveActionRequestSchema = z
   })
   .strict();
 
+export interface OrchestratorRouteDependencies {
+  issueService?: ReturnType<typeof issueService>;
+  intentQueueService?: ReturnType<typeof intentQueueService>;
+  leaseManagerService?: ReturnType<typeof leaseManagerService>;
+  orchestratorService?: ReturnType<typeof orchestratorService>;
+}
+
 /**
  * Orchestrator API routes.
  *
@@ -40,12 +47,15 @@ const correctiveActionRequestSchema = z
  *
  * All endpoints require board-level authentication.
  */
-export function orchestratorRoutes(db: Db) {
+export function orchestratorRoutes(
+  db: Db,
+  deps: OrchestratorRouteDependencies = {},
+) {
   const router = Router();
-  const issueSvc = issueService(db);
-  const intentQueue = intentQueueService(db);
-  const leaseMgr = leaseManagerService(db);
-  const orchSvc = orchestratorService(db);
+  const issueSvc = deps.issueService ?? issueService(db);
+  const intentQueue = deps.intentQueueService ?? intentQueueService(db);
+  const leaseMgr = deps.leaseManagerService ?? leaseManagerService(db);
+  const orchSvc = deps.orchestratorService ?? orchestratorService(db);
 
   /**
    * GET /api/orchestrator/status?companyId=xxx
