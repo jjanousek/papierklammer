@@ -35,15 +35,6 @@ const mockCompanyPortabilityService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  budgetService: () => mockBudgetService,
-  companyPortabilityService: () => mockCompanyPortabilityService,
-  companyService: () => mockCompanyService,
-  logActivity: mockLogActivity,
-}));
-
 function createCompany() {
   const now = new Date("2026-03-19T02:00:00.000Z");
   return {
@@ -71,7 +62,17 @@ function createApp(actor: Record<string, unknown>) {
     (req as any).actor = actor;
     next();
   });
-  app.use("/api/companies", companyRoutes({} as any));
+  app.use(
+    "/api/companies",
+    companyRoutes({} as any, undefined, {
+      accessService: mockAccessService as any,
+      agentService: mockAgentService as any,
+      budgetService: mockBudgetService as any,
+      companyPortabilityService: mockCompanyPortabilityService as any,
+      companyService: mockCompanyService as any,
+      logActivity: mockLogActivity,
+    }),
+  );
   app.use(errorHandler);
   return app;
 }

@@ -21,13 +21,23 @@ import {
 import type { StorageService } from "../storage/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
-export function companyRoutes(db: Db, storage?: StorageService) {
+export interface CompanyRouteDependencies {
+  companyService?: ReturnType<typeof companyService>;
+  agentService?: ReturnType<typeof agentService>;
+  accessService?: ReturnType<typeof accessService>;
+  budgetService?: ReturnType<typeof budgetService>;
+  companyPortabilityService?: ReturnType<typeof companyPortabilityService>;
+  logActivity?: typeof logActivity;
+}
+
+export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRouteDependencies = {}) {
   const router = Router();
-  const svc = companyService(db);
-  const agents = agentService(db);
-  const portability = companyPortabilityService(db, storage);
-  const access = accessService(db);
-  const budgets = budgetService(db);
+  const svc = deps.companyService ?? companyService(db);
+  const agents = deps.agentService ?? agentService(db);
+  const portability = deps.companyPortabilityService ?? companyPortabilityService(db, storage);
+  const access = deps.accessService ?? accessService(db);
+  const budgets = deps.budgetService ?? budgetService(db);
+  const writeActivity = deps.logActivity ?? logActivity;
 
   async function assertCanUpdateBranding(req: Request, companyId: string) {
     assertCompanyAccess(req, companyId);
@@ -127,7 +137,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     }
     const actor = getActorInfo(req);
     const result = await portability.importBundle(req.body, req.actor.type === "board" ? req.actor.userId : null);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: result.company.id,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -190,7 +200,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       mode: "agent_safe",
       sourceCompanyId: companyId,
     });
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: result.company.id,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -217,7 +227,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     }
     const company = await svc.create(req.body);
     await access.ensureMembership(company.id, "user", req.actor.userId ?? "local-board", "owner", "active");
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: company.id,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -250,8 +260,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
     if (req.actor.type === "agent") {
       // Only CEO agents may update company branding fields
-      const agentSvc = agentService(db);
-      const actorAgent = req.actor.agentId ? await agentSvc.getById(req.actor.agentId) : null;
+      const actorAgent = req.actor.agentId ? await agents.getById(req.actor.agentId) : null;
       if (!actorAgent || actorAgent.role !== "ceo") {
         throw forbidden("Only CEO agents or board users may update company settings");
       }
@@ -269,7 +278,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -292,7 +301,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       return;
     }
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -315,7 +324,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",

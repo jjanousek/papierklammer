@@ -2,6 +2,8 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { INBOX_MINE_ISSUE_STATUS_FILTER } from "@papierklammer/shared";
+import { agentRoutes } from "../routes/agents.js";
+import { errorHandler } from "../middleware/index.js";
 
 const agentId = "11111111-1111-4111-8111-111111111111";
 const companyId = "22222222-2222-4222-8222-222222222222";
@@ -109,18 +111,13 @@ function createDbStub() {
   };
 }
 
-async function createApp(actor: Record<string, unknown>) {
-  vi.resetModules();
+function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
     (req as any).actor = actor;
     next();
   });
-  const [{ agentRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/agents.js"),
-    import("../middleware/index.js"),
-  ]);
   app.use(
     "/api",
     agentRoutes(createDbStub() as any, {
@@ -198,7 +195,7 @@ describe("agent permission routes", () => {
   });
 
   it("grants tasks:assign by default when board creates a new agent", async () => {
-    const app = await createApp({
+    const app = createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -248,7 +245,7 @@ describe("agent permission routes", () => {
       },
     ]);
 
-    const app = await createApp({
+    const app = createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -269,7 +266,7 @@ describe("agent permission routes", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const app = await createApp({
+    const app = createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -304,7 +301,7 @@ describe("agent permission routes", () => {
       },
     ]);
 
-    const app = await createApp({
+    const app = createApp({
       type: "agent",
       agentId,
       companyId,
