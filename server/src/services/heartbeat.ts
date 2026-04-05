@@ -37,6 +37,7 @@ import { terminalStatePolicyService } from "./terminal-state-policy.js";
 import { registerCompletedRunWorkspace } from "./warm-workspace-pool.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { mergeHeartbeatRunResultJson, summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
+import { seedAgentHomeContextFiles } from "./agent-home-context.js";
 import {
   buildWorkspaceReadyComment,
   cleanupExecutionWorkspaceArtifacts,
@@ -2617,6 +2618,12 @@ export function heartbeatService(db: Db) {
           ]
         : []),
     ];
+    const agentHome = resolveDefaultAgentWorkspaceDir(agent.id);
+    await seedAgentHomeContextFiles({
+      agent,
+      agentHome,
+    });
+
     context.paperclipWorkspace = {
       cwd: executionWorkspace.cwd,
       source: executionWorkspace.source,
@@ -2628,11 +2635,7 @@ export function heartbeatService(db: Db) {
       repoRef: executionWorkspace.repoRef,
       branchName: executionWorkspace.branchName,
       worktreePath: executionWorkspace.worktreePath,
-      agentHome: await (async () => {
-        const home = resolveDefaultAgentWorkspaceDir(agent.id);
-        await fs.mkdir(home, { recursive: true });
-        return home;
-      })(),
+      agentHome,
     };
     context.paperclipWorkspaces = resolvedWorkspace.workspaceHints;
     const runtimeServiceIntents = (() => {
