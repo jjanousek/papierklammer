@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-work-product-deduplication-without-run-id",
+  "reviewedAt": "2026-04-05T18:33:45Z",
+  "commitId": "03dc79d254e49a37c9dfee9c538580f20babf334",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Commit `03dc79d254e49a37c9dfee9c538580f20babf334` fixes the exact blocker from `align-work-products-with-artifact-comments`. `server/src/services/work-products.ts:107-132` replaces the run-id-dependent artifact signature with stable signatures derived from artifact path, URL, title, and sha256, and `server/src/services/work-products.ts:314-321` now suppresses a derived completion-comment artifact whenever an existing persisted artifact row already represents the same output even if that row has `createdByRunId: null`. The added regression at `server/src/__tests__/work-products.test.ts:340-366` covers the null-run-id case alongside the existing matching-run-id dedupe test at `307-338`. After reviewing both the original commit `d3b05092aa8194026fbd9b717f56e6b03b15ac98` and this fix commit, I did not find a new high-confidence blocking correctness issue in scope.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill is stricter than current practice for small backend regressions: it requires a full `pnpm test:run` red-phase run, but this fix's transcript/handoff shows a focused `server` Vitest red run was the practical first step and the worker still completed the required full-suite validation afterward.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md:32-41 requires a full-suite red run; the fix handoff at /Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-05T17-37-48-517Z__fix-work-product-deduplication-without-run-id__8f19a099-f91d-49ee-b715-f4c3352a609e.json:26-31,76-80 records the focused `pnpm -C \"/Users/aischool/work/papierklammer_droid/server\" exec vitest run src/__tests__/work-products.test.ts` red/green loop and suggests allowing focused package-level red runs before the mandatory final full-suite pass."
+    }
+  ],
+  "addressesFailureFrom": "align-work-products-with-artifact-comments",
+  "summary": "Review passed: I checked the mission/repo guidance, the prior failed review, both relevant diffs, both handoffs, the fix transcript skeleton, and the `backend-worker` skill. Commit `03dc79d254e49a37c9dfee9c538580f20babf334` resolves the original duplicate-artifact blocker for persisted rows with null `createdByRunId`, adds focused regression coverage for that case, and I did not find a new blocking issue in scope."
+}

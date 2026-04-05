@@ -1,7 +1,7 @@
 {
   "milestone": "hardening-regression",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
@@ -25,75 +25,26 @@
     }
   },
   "reviewsSummary": {
-    "total": 9,
-    "passed": 3,
-    "failed": 6,
-    "failedFeatures": [
-      "stale-recovery-backend-hardening",
-      "stale-recovery-operator-visibility",
-      "full-demo-repo-regression-loop",
-      "stabilize-tui-management-text-entry",
-      "align-work-products-with-artifact-comments",
-      "stabilize-remaining-full-suite-flakes"
-    ]
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "failedFeatures": []
   },
-  "blockingIssues": [
+  "blockingIssues": [],
+  "nonBlockingIssues": [
     {
-      "featureId": "stale-recovery-backend-hardening",
-      "severity": "blocking",
-      "description": "`server/src/services/heartbeat.ts` still reaps stale lease runs by joining expired leases to runs on `runId` alone, so a malformed foreign-company lease row can still cancel another company's run."
-    },
-    {
-      "featureId": "stale-recovery-operator-visibility",
-      "severity": "blocking",
-      "description": "`ui/src/components/IssuesList.tsx` still filters, sorts, and groups by raw `issue.status`, so recovered stale work can remain visible under active issue buckets even when row rendering shows recovered/todo state."
-    },
-    {
-      "featureId": "full-demo-repo-regression-loop",
-      "severity": "blocking",
-      "description": "The recorded regression loop used curl for approval and heartbeat mutations, so it did not prove a real TUI management action against the demo work and does not satisfy the intended VAL-CROSS-002 coverage."
-    },
-    {
-      "featureId": "stabilize-tui-management-text-entry",
-      "severity": "blocking",
-      "description": "New sidebar management shortcuts remain live behind help/settings overlays, allowing hidden mutating actions while an overlay covers the main panel."
-    },
-    {
-      "featureId": "stabilize-tui-management-text-entry",
-      "severity": "blocking",
-      "description": "Approval polling failures are rendered as `No pending approvals` instead of an error, making the shortcut-based approval flow unreliable and not operator-visible when its API call fails."
-    },
-    {
-      "featureId": "align-work-products-with-artifact-comments",
-      "severity": "blocking",
-      "description": "`server/src/services/work-products.ts` dedupes artifacts using `createdByRunId`, so persisted artifact rows with a null run id can still duplicate a derived fallback for the same concrete artifact."
-    },
-    {
-      "featureId": "stabilize-remaining-full-suite-flakes",
-      "severity": "blocking",
-      "description": "`server/src/__tests__/issue-comment-reopen-routes.test.ts` now invokes only the final route handler, bypassing validation middleware and weakening the real HTTP route-contract coverage."
-    },
-    {
-      "featureId": "stabilize-remaining-full-suite-flakes",
-      "severity": "blocking",
-      "description": "`server/src/__tests__/routines-routes.test.ts` likewise bypasses the real middleware stack, so the suite can miss validator and route-wiring regressions while staying deterministic."
+      "featureId": "stabilize-final-full-suite-route-flakes",
+      "severity": "non_blocking",
+      "description": "server/src/__tests__/agent-instructions-routes.test.ts no longer asserts the svc.update() persistence path in the bundle-file case, so that test covers the file write but not the persistence half of the route behavior."
     }
   ],
   "appliedUpdates": [],
-  "suggestedGuidanceUpdates": [
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [
     {
-      "target": "backend-worker skill",
-      "suggestion": "Relax the mandatory tests-first/red sequence for partial hardening and flake-stabilization follow-ups, while still requiring targeted regression coverage and full validators before handoff.",
-      "evidence": "Both `stale-recovery-backend-hardening` and `stabilize-remaining-full-suite-flakes` recorded justified deviations from the current tests-first step because the work required reproduction/gap analysis against already-landed code before tightening the fix.",
-      "isSystemic": true
-    },
-    {
-      "target": "audit-worker skill",
-      "suggestion": "Clarify when TUI validation is mandatory and document an acceptable fallback for mutation-oriented TUI assertions when `tuistory` text entry is flaky or when a feature changes no TUI behavior.",
-      "evidence": "`full-demo-repo-regression-loop` fell back to curl/browser mutations and missed the intended TUI-management assertion, while `harden-onboarding-workspace-seed-files` was a non-TUI fix that still had to record a skill deviation because the procedure unconditionally required `tuistory` checks.",
-      "isSystemic": true
+      "observation": "A review suggested relaxing backend-worker red-phase guidance for small backend regressions.",
+      "reason": "already-documented in round 1 suggestedGuidanceUpdates"
     }
   ],
-  "rejectedObservations": [],
-  "previousRound": null
+  "previousRound": ".factory/validation/hardening-regression/scrutiny/synthesis.round-1.json"
 }

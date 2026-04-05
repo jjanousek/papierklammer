@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-stale-lease-company-scope",
+  "reviewedAt": "2026-04-05T18:18:38Z",
+  "commitId": "dd73a1ad4eee65c1c5248229dc92de1c71c84d31",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix closes the exact isolation hole called out in the prior failure. `reapStaleLeaseRuns()` now joins expired leases to runs by both `runId` and `companyId`, and the new regression test demonstrates that a malformed foreign-company expired lease row pointing at the same run id no longer fails or cancels the real run.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "stale-recovery-backend-hardening",
+  "summary": "Review passed: I checked the repo/mission guidance, the prior failed review, both relevant diffs, the fix handoff, the fix transcript skeleton, and the `backend-worker` skill. Commit `dd73a1ad4eee65c1c5248229dc92de1c71c84d31` resolves the original blocking company-isolation bug in `server/src/services/heartbeat.ts` and adds focused coverage in `server/src/__tests__/stale-run-reaper.test.ts`; I did not find any new blocking issues in scope for this fix review."
+}

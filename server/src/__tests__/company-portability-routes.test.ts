@@ -61,6 +61,7 @@ async function createApp(actor: Record<string, unknown>) {
 
 describe("company portability routes", () => {
   beforeEach(() => {
+    vi.resetModules();
     mockAgentService.getById.mockReset();
     mockCompanyPortabilityService.exportBundle.mockReset();
     mockCompanyPortabilityService.previewExport.mockReset();

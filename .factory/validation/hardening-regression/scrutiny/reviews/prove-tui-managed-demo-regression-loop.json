@@ -1,0 +1,15 @@
+{
+  "featureId": "prove-tui-managed-demo-regression-loop",
+  "reviewedAt": "2026-04-05T18:25:33Z",
+  "commitId": "f2bfd36f0df94d9a71baf984b447e344cc991bd5",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. Commit `f2bfd36f0df94d9a71baf984b447e344cc991bd5` rewrites `.factory/library/full-demo-regression-loop.md:6-28` to replace the earlier curl-only management proof with a concrete shipped-TUI flow: approve the CTO hire from the sidebar with `Tab` + `a`, then invoke the CTO heartbeat with `v`, while recording the resulting company, issue, and run IDs. The handoff and transcript skeleton corroborate that the worker actually performed those TUI mutations through `tuistory` and then matched the same `Audit Co` company, child issue `AUD-2`, and run `45ecc95e-dc0c-41af-a08f-ca6f78e48691` through API and Web evidence. That directly fixes the blocking gap called out in the prior `full-demo-repo-regression-loop` review, and I did not find a new high-confidence blocking issue in this proof rerun.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "full-demo-repo-regression-loop",
+  "summary": "Reviewed the prior failed review, the fix feature metadata, handoff, transcript skeleton, `audit-worker` skill, mission shared-state docs, and both relevant diffs (`a4854ea4` and `f2bfd36f0df94d9a71baf984b447e344cc991bd5`). The fix adequately closes the original failure by proving a real TUI-driven approval and heartbeat invocation in the demo loop, with corroborating API/Web evidence on the same company/issue/run chain, so this re-review passes."
+}

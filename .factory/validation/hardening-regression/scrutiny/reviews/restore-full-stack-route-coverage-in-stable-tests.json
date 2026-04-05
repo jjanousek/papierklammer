@@ -1,0 +1,15 @@
+{
+  "featureId": "restore-full-stack-route-coverage-in-stable-tests",
+  "reviewedAt": "2026-04-05T18:38:00Z",
+  "commitId": "633793166081aaf16e3ef9f8c4295a82af0c26ea",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. The prior blocker was that `stabilize-remaining-full-suite-flakes` replaced the Express/Supertest harness with direct final-handler invocation, which skipped route validation middleware and weakened route-contract coverage. This fix restores real Express + Supertest harnesses in `server/src/__tests__/issue-comment-reopen-routes.test.ts:81-103` and `server/src/__tests__/routines-routes.test.ts:86-110`, then adds invalid-payload assertions at `server/src/__tests__/issue-comment-reopen-routes.test.ts:158-180` and `server/src/__tests__/routines-routes.test.ts:289-309` to prove the route stack now rejects bad bodies before any service lookup. It also closes the manual routine-run contract drift by asserting HTTP `202` with defaulted `source: \"manual\"` in both the mocked route suite (`server/src/__tests__/routines-routes.test.ts:345-369`) and the embedded-Postgres full-stack coverage (`server/src/__tests__/routines-e2e.test.ts:56-67`, `157-239`, especially `205-207`). I reviewed both the failing commit `b1ddf3cb79fd57c07eb78684743c8fb0bb993f7a` and the fix commit `633793166081aaf16e3ef9f8c4295a82af0c26ea` and did not find a new high-confidence blocking issue in the fix.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "stabilize-remaining-full-suite-flakes",
+  "summary": "Reviewed the mission metadata, prior failure report, fix handoff, fix transcript skeleton, backend-worker skill, shared-state docs, and both relevant diffs. The fix directly addresses the original scrutiny failure by restoring full route-stack coverage and reasserting the routines manual-run HTTP contract without introducing a new blocking correctness issue, so this re-review passes."
+}

@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-recovered-issues-list-projection",
+  "reviewedAt": "2026-04-05T18:22:10Z",
+  "commitId": "2a0ea8f325c18f9145b5e83d19e26c6f54fbc2e4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The fix closes the exact Web issues-board inconsistency called out in the prior failed review. `ui/src/components/IssuesList.tsx` now routes status filtering, status sorting, and status grouping through `getIssueDisplayStatus(...)` (`getIssueListStatus` at lines 97-128 and 325), so a stale-recovered issue with raw `status: \"in_progress\"` and projected/display `todo` no longer remains in active list buckets. The added focused regressions in `ui/src/components/IssuesList.test.tsx` cover the recovered grouping, filtering, and sorting cases that were previously missing. I did not find any new blocking issues in scope for this fix review.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "stale-recovery-operator-visibility",
+  "summary": "Review passed: I checked the mission/repo guidance, the prior failed review, both relevant diffs, both handoffs, the fix transcript skeleton, and the `web-runtime-worker`/`audit-worker` skills. Commit `2a0ea8f325c18f9145b5e83d19e26c6f54fbc2e4` resolves the original blocking `IssuesList` raw-status bug by using projected/display status for list filtering, sorting, and status grouping, and I did not find any new blocking issues in scope."
+}

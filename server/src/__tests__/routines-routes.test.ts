@@ -1,6 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { routineRoutes } from "../routes/routines.js";
 
 const companyId = "22222222-2222-4222-8222-222222222222";
 const agentId = "11111111-1111-4111-8111-111111111111";
@@ -82,10 +84,6 @@ const mockAccessService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
 async function createApp(actor: Record<string, unknown>) {
-  const [{ routineRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/routines.js"),
-    import("../middleware/index.js"),
-  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -127,7 +125,6 @@ async function invokeRoute({
 
 describe("routine routes", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     mockRoutineService.create.mockResolvedValue(routine);
     mockRoutineService.get.mockResolvedValue(routine);

@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-tui-management-overlay-guards",
+  "reviewedAt": "2026-04-05T18:29:24Z",
+  "commitId": "a89709fadf927c18b5d08a9133a656e7728ce355",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. Commit `a89709fadf927c18b5d08a9133a656e7728ce355` closes both blockers from `stabilize-tui-management-text-entry`. `packages/orchestrator-tui/src/components/App.tsx:341-344` now passes `shortcutsEnabled={!helpVisible && !settingsVisible}` and keeps the orchestrator-connection error separate from approvals polling errors, while `packages/orchestrator-tui/src/components/AgentSidebar.tsx:80-120` disables the sidebar shortcut handler whenever those overlays are visible and `packages/orchestrator-tui/src/components/AgentSidebar.tsx:246-249` renders an explicit `Pending approvals unavailable` state instead of falling back to `No pending approvals`. The focused regression coverage at `packages/orchestrator-tui/src/__tests__/management-shortcuts.test.tsx:292-367` exercises both help/settings overlay suppression and approvals-fetch failure rendering, and the supporting panel mock updates at `packages/orchestrator-tui/src/__tests__/panels.test.tsx:402-416` and `555-569` keep the rest of the TUI suite aligned with the new approvals polling path. After reviewing both the original shortcut commit `3eee2db40c08048af10c27a66956a418421d5922` and this fix commit, I did not find a new high-confidence blocking correctness issue in the narrowed fix.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "stabilize-tui-management-text-entry",
+  "summary": "Reviewed the feature metadata, fix handoff, fix transcript skeleton, prior failed review, `tui-worker` skill, mission shared-state docs, and commits `3eee2db40c08048af10c27a66956a418421d5922` and `a89709fadf927c18b5d08a9133a656e7728ce355`. This re-review passes: the sidebar mutation shortcuts are now guarded while help/settings overlays are open, pending-approval polling failures are surfaced explicitly to operators, and I did not find a new blocking regression in the fix."
+}
