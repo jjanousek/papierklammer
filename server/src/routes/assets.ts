@@ -12,7 +12,10 @@ import { assertCompanyAccess, getActorInfo } from "./authz.js";
 type AssetRouteDependencies = {
   assetService?: Pick<ReturnType<typeof assetService>, "create" | "getById">;
   logActivity?: typeof logActivity;
+  runAssetUpload?: SingleFileUploadRunner;
+  runCompanyLogoUpload?: SingleFileUploadRunner;
 };
+type SingleFileUploadRunner = (req: Request, res: Response) => Promise<void>;
 const SVG_CONTENT_TYPE = "image/svg+xml";
 const ALLOWED_COMPANY_LOGO_CONTENT_TYPES = new Set([
   "image/png",
@@ -116,13 +119,18 @@ export function assetRoutes(
       });
     });
   }
+  const runAssetUpload =
+    deps.runAssetUpload ?? ((req: Request, res: Response) => runSingleFileUpload(assetUpload, req, res));
+  const runCompanyLogoUpload =
+    deps.runCompanyLogoUpload ??
+    ((req: Request, res: Response) => runSingleFileUpload(companyLogoUpload, req, res));
 
   router.post("/companies/:companyId/assets/images", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
 
     try {
-      await runSingleFileUpload(assetUpload, req, res);
+      await runAssetUpload(req, res);
     } catch (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
@@ -225,7 +233,7 @@ export function assetRoutes(
     assertCompanyAccess(req, companyId);
 
     try {
-      await runSingleFileUpload(companyLogoUpload, req, res);
+      await runCompanyLogoUpload(req, res);
     } catch (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
