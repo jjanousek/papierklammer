@@ -104,18 +104,37 @@ function inferArtifactTitle(label: string | null, source: string) {
   return fileName && fileName !== "." ? fileName : "Artifact output";
 }
 
-function buildArtifactSignature(product: Pick<IssueWorkProduct, "type" | "createdByRunId" | "url" | "title" | "metadata">) {
+function buildArtifactSignatures(product: Pick<IssueWorkProduct, "type" | "url" | "title" | "metadata">) {
   const metadata = product.metadata ?? {};
   const pathValue = typeof metadata["path"] === "string" ? metadata["path"].trim() : "";
+  const sha256Value = typeof metadata["sha256"] === "string" ? metadata["sha256"].trim() : "";
   const urlValue = product.url?.trim() ?? "";
   const titleValue = product.title.trim();
-  return [
-    product.type,
-    product.createdByRunId ?? "",
-    urlValue.toLowerCase(),
-    pathValue.toLowerCase(),
-    titleValue.toLowerCase(),
-  ].join("|");
+  const signatures = new Set<string>();
+
+  if (pathValue) {
+    signatures.add([product.type, "path", pathValue.toLowerCase()].join("|"));
+    if (titleValue) {
+      signatures.add([product.type, "title+path", titleValue.toLowerCase(), pathValue.toLowerCase()].join("|"));
+    }
+  }
+
+  if (urlValue) {
+    signatures.add([product.type, "url", urlValue.toLowerCase()].join("|"));
+    if (titleValue) {
+      signatures.add([product.type, "title+url", titleValue.toLowerCase(), urlValue.toLowerCase()].join("|"));
+    }
+  }
+
+  if (sha256Value) {
+    signatures.add([product.type, "sha256", sha256Value.toLowerCase()].join("|"));
+  }
+
+  if (titleValue && signatures.size === 0) {
+    signatures.add([product.type, "title", titleValue.toLowerCase()].join("|"));
+  }
+
+  return [...signatures];
 }
 
 export function deriveIssueWorkProductsFromComments(commentSources: DerivedCommentSource[]): IssueWorkProduct[] {
@@ -292,9 +311,11 @@ export function workProductService(db: Db) {
         }),
       );
 
-      const persistedSignatures = new Set(persisted.map(buildArtifactSignature));
+      const persistedSignatures = new Set(
+        persisted.filter((product) => product.type === "artifact").flatMap(buildArtifactSignatures),
+      );
       const mergedDerived = derived
-        .filter((product) => !persistedSignatures.has(buildArtifactSignature(product)))
+        .filter((product) => !buildArtifactSignatures(product).some((signature) => persistedSignatures.has(signature)))
         .map((product) => ({ ...product, isPrimary: persisted.some((entry) => entry.isPrimary) ? false : product.isPrimary }));
 
       return [...persisted, ...mergedDerived];

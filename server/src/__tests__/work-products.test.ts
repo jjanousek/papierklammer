@@ -336,4 +336,37 @@ describeEmbeddedPostgres("workProductService.listForIssue derived comment artifa
     expect(products).toHaveLength(1);
     expect(products[0]?.id).toBe(persistedId);
   });
+
+  it("does not duplicate a persisted artifact when createdByRunId is null", async () => {
+    const { companyId, issueId } = await seedCompletedIssueWithArtifactComment();
+    const persistedId = randomUUID();
+
+    await db.insert(issueWorkProducts).values({
+      id: persistedId,
+      companyId,
+      issueId,
+      type: "artifact",
+      provider: "paperclip",
+      title: "latest-report.json",
+      status: "ready_for_review",
+      reviewState: "needs_board_review",
+      isPrimary: true,
+      healthStatus: "healthy",
+      summary:
+        "AUDIT_DEMO_OK · /Users/aischool/work/papierklammer-audit-demo/artifacts/latest-report.json",
+      metadata: {
+        path: "/Users/aischool/work/papierklammer-audit-demo/artifacts/latest-report.json",
+      },
+      createdByRunId: null,
+    });
+
+    const products = await svc.listForIssue({
+      id: issueId,
+      companyId,
+      projectId: null,
+    });
+
+    expect(products).toHaveLength(1);
+    expect(products[0]?.id).toBe(persistedId);
+  });
 });
