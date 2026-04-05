@@ -1,0 +1,34 @@
+{
+  "featureId": "stabilize-remaining-full-suite-flakes",
+  "reviewedAt": "2026-04-05T14:33:56Z",
+  "commitId": "b1ddf3cb79fd57c07eb78684743c8fb0bb993f7a",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The diff stabilizes the two flaky route suites by bypassing Express and Supertest, but the new harnesses call only the final route handler and therefore skip the real route middleware stack. That makes the suites deterministic by weakening what they cover, so they can now miss real regressions in the shipped HTTP contracts.",
+    "issues": [
+      {
+        "file": "server/src/__tests__/issue-comment-reopen-routes.test.ts",
+        "line": 96,
+        "severity": "blocking",
+        "description": "createRouteHandler() extracts only route.stack.at(-1) and invokeRoute() calls that handler directly, so this suite no longer executes the middleware chain for PATCH /issues/:id and POST /issues/:id/comments. Those production routes are registered with validate(updateIssueRouteSchema) and validate(addIssueCommentSchema) in server/src/routes/issues.ts:1020 and server/src/routes/issues.ts:1551, so the rewritten tests can stay green even if the real HTTP route starts failing validation or other route-level wiring regresses. This masks route-contract failures instead of stabilizing them."
+      },
+      {
+        "file": "server/src/__tests__/routines-routes.test.ts",
+        "line": 103,
+        "severity": "blocking",
+        "description": "The new direct-handler harness bypasses the middleware stack for every covered routines endpoint by calling only the final Express handler. The real endpoints all include validate(...) middleware in server/src/routes/routines.ts:66, :99, :152, :178, and :270, so these permission tests no longer verify the actual shipped HTTP surface. A broken validator or route-level middleware order regression would now be invisible here, which is exactly the kind of masked failure this feature was supposed to avoid."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's mandatory 'write tests first' step does not fit test-hardening work very well. For this flake-stabilization feature the worker had to reproduce and tighten existing flaky suites instead, and recorded that as an explicit procedure deviation.",
+      "evidence": "Handoff skillFeedback.followedProcedure=false with deviation at step '3. Write tests first'; transcript skeleton for workerSessionId 292fd96d-28bf-49a8-916c-f80eb2cf8b0e shows the worker spending time on repeated reproduction loops before editing the existing tests."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature handoff, transcript skeleton, shared-state docs, and commit b1ddf3cb79fd57c07eb78684743c8fb0bb993f7a. The flake fix makes the suites deterministic by replacing the HTTP harness with direct final-handler invocation, but that skips route validation middleware and weakens the route-contract coverage enough to mask real regressions, so this review fails."
+}

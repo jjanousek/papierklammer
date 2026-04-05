@@ -1,0 +1,22 @@
+{
+  "featureId": "stale-recovery-operator-visibility",
+  "reviewedAt": "2026-04-05T14:47:04Z",
+  "commitId": "e36a3906f5cdd95290d4d3a1247ffcd5c1a95450",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit usefully adds recovered-state badges, stamps reconciliation time, and normalizes stale running indicators on the dashboard and TUI. But the main Web issues board still drives status filtering, sorting, and status-grouping from raw `issue.status` instead of the projected recovery status, so a cleaned-up issue can still appear under active buckets even while the row itself renders as recovered/todo. That leaves the operator-facing board UI internally inconsistent and does not fully satisfy the requirement that stale work stop presenting as active after recovery.",
+    "issues": [
+      {
+        "file": "ui/src/components/IssuesList.tsx",
+        "line": 99,
+        "severity": "blocking",
+        "description": "The list-level status controls still key off raw issue status: `applyFilters()` filters on `i.status` (line 99), `sortIssues()` orders by `a.status`/`b.status` (line 122), and `groupedContent` groups by `i.status` (line 319). After stale cleanup, the server can project an issue from raw `in_progress` back to recovered follow-up work (`projectedStatus: \"todo\"`), and the row rendering correctly uses `getIssueDisplayStatus(issue)` plus a `Recovered` badge later in this file. But the surrounding board mechanics will still include that issue in the \"Active\" quick filter and can still place it under the \"In Progress\" status group, which means the Web issues board can continue presenting recovered stale work as active."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, audit-worker skill, shared-state docs, and commit `e36a3906f5cdd95290d4d3a1247ffcd5c1a95450`. The review fails because `ui/src/components/IssuesList.tsx` still uses raw issue status for board filters/sorting/grouping, so recovered stale work can remain visible under active issue buckets despite the new recovered-state badges."
+}

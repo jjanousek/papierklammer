@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-heartbeat-run-issue-fanout-auth",
+  "reviewedAt": "2026-04-05T14:34:39Z",
+  "commitId": "463621b9058da98ab52b377ab4c0b1967382828b",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. Commit `463621b9058da98ab52b377ab4c0b1967382828b` restores `GET /api/heartbeat-runs/:runId/issues` to the same auth shape as the other heartbeat run read endpoints by loading the run first and then applying `assertHeartbeatRunStreamAccess(req, run.companyId)` in `server/src/routes/activity.ts:90-98`. That closes the reported company-isolation regression for wrong-company agents while preserving same-company agent and board access, which the updated route tests cover at `server/src/__tests__/activity-routes.test.ts:163-245` across board success, unauthenticated 401, wrong-company agent 403, and same-company agent 200. The endpoint is also a shipped operator-facing API consumer used by the UI run review flow (`ui/src/api/activity.ts:35`, `ui/src/pages/AgentDetail.tsx:3015`), and I did not find a new high-confidence auth or company-boundary issue in this fix.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, backend-worker skill, mission shared-state docs, and commit `463621b9058da98ab52b377ab4c0b1967382828b`. The patch is narrowly scoped, restores the expected company-scoped auth contract on `/api/heartbeat-runs/:runId/issues`, preserves the shipped UI/API consumer path, and does not introduce a new high-confidence correctness issue, so this review passes."
+}

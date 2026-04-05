@@ -1,0 +1,22 @@
+{
+  "featureId": "align-work-products-with-artifact-comments",
+  "reviewedAt": "2026-04-05T14:39:47Z",
+  "commitId": "d3b05092aa8194026fbd9b717f56e6b03b15ac98",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature correctly derives artifact work products from successful run-linked completion comments, but the new dedupe key is too strict. Matching persisted artifact rows that do not carry `createdByRunId` will still be returned alongside a newly derived fallback entry, so `/api/issues/:id/work-products` can show duplicate outputs instead of the single concrete artifact already visible in the completion comment/review surface.",
+    "issues": [
+      {
+        "file": "server/src/services/work-products.ts",
+        "line": 107,
+        "severity": "blocking",
+        "description": "The new `buildArtifactSignature()` includes `createdByRunId` in the dedupe key, and `listForIssue()` uses that signature to suppress derived artifacts (`server/src/services/work-products.ts:107-118`, `295-298`). But persisted work products are allowed to omit `createdByRunId` (`packages/shared/src/validators/work-product.ts:32-47`), so an existing artifact row with the same title/path/url but a null run id will not match the derived comment artifact and both copies will be returned. The issue page consumes `/api/issues/:id/work-products` directly (`ui/src/pages/IssueDetail.tsx:297-303`) and renders every returned entry (`ui/src/components/IssueReviewSurfaces.tsx:239-244`), so this edge case breaks the feature's API/UI alignment goal by surfacing duplicate work products for the same concrete artifact."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Review failed: I checked the mission/repo guidance, the feature metadata, the worker handoff/transcript skeleton, the `backend-worker` skill, and commit `d3b05092aa8194026fbd9b717f56e6b03b15ac98`. The main derivation logic is directionally correct, but the dedupe contract is incomplete because persisted artifact rows with nullable `createdByRunId` can still produce duplicate outputs in `/api/issues/:id/work-products` and the issue review UI."
+}

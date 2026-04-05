@@ -1,0 +1,15 @@
+{
+  "featureId": "stabilize-server-test-order-dependence",
+  "reviewedAt": "2026-04-05T14:38:28Z",
+  "commitId": "a95baaf8d2b7ff01d256b9e654dcc0244632ec9a",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. Commit `a95baaf8d2b7ff01d256b9e654dcc0244632ec9a` fixes the earlier route-suite weakening by running the full Express route stack rather than only the terminal handler in the rewritten auth-heavy tests. The new helpers in `server/src/__tests__/activity-routes.test.ts:23-100`, `server/src/__tests__/company-branding-route.test.ts:57-137`, and `server/src/__tests__/openclaw-invite-prompt-route.test.ts:74-171` rebuild each router, collect every handler from `route.stack`, and execute them sequentially, so these suites still exercise the real route-level validation and auth wiring for `GET /issues/:id/runs` and `GET /heartbeat-runs/:runId/issues` in `server/src/routes/activity.ts:77-98`, `PATCH /:companyId/branding` in `server/src/routes/companies.ts:295-316`, and the OpenClaw invite prompt route guarded by `validate(createOpenClawInvitePromptSchema)` in `server/src/routes/access.ts:2002-2038`. The routines stabilization is also appropriately narrow: `server/src/__tests__/routines-e2e.test.ts:31-33,79-91` switches to static imports for the real route/service factories while preserving the embedded-Postgres integration path and documented cleanup ordering at `server/src/__tests__/routines-e2e.test.ts:57-70`. I did not find a new high-confidence correctness risk in these flake fixes.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, backend-worker skill, mission shared-state docs, and commit `a95baaf8d2b7ff01d256b9e654dcc0244632ec9a`. The patch keeps the targeted server auth and validation suites deterministic without weakening their real route-stack coverage, and I did not find a new high-confidence correctness issue, so this review passes."
+}

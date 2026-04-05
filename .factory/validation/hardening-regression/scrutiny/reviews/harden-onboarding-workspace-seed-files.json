@@ -1,0 +1,21 @@
+{
+  "featureId": "harden-onboarding-workspace-seed-files",
+  "reviewedAt": "2026-04-05T14:37:31.755064Z",
+  "commitId": "57b14d0640a74a259983fa386248dfd9e42403c4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. The change seeds `HEARTBEAT.md`, `SOUL.md`, and `TOOLS.md` into `AGENT_HOME` before heartbeat execution (`server/src/services/heartbeat.ts`), sourcing content from the managed instructions bundle and preserving any existing agent-home copies. The focused helper tests cover initial seeding and no-overwrite behavior, and the handoff's manual onboarding/run-log check directly verifies the intended reduction in avoidable missing-file noise for the demo onboarding path.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `audit-worker` skill currently over-requires TUI validation for narrow onboarding/log-suppression fixes. This feature only touched onboarding starter-run seeding and was adequately validated with Web UI plus API/log inspection, but the skill still marked the worker as deviating because step 7 mandates `tuistory` checks.",
+      "evidence": ".factory/skills/audit-worker/SKILL.md step 7 requires `TUI checks with tuistory`; the reviewed transcript skeleton for session `83c596a5-5475-40fe-b933-ff14796c27c4` contains `agent-browser` usage but no `tuistory` tool calls; the handoff's `skillFeedback.followedProcedure` is `false` and explicitly says TUI validation was skipped because no TUI behavior changed."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the handoff, transcript skeleton, skill instructions, and commit `57b14d0640a74a259983fa386248dfd9e42403c4`. The implementation cleanly seeds the CEO onboarding context files into `AGENT_HOME` before heartbeat runs, preventing the expected missing-file log noise in the normal demo onboarding path without overwriting existing agent-home files. No feature-scoped code defects were found."
+}

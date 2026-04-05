@@ -1,0 +1,28 @@
+{
+  "featureId": "stabilize-tui-management-text-entry",
+  "reviewedAt": "2026-04-05T14:47:12Z",
+  "commitId": "3eee2db40c08048af10c27a66956a418421d5922",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit adds a sensible non-text management path for invoke, wake, approve, and reject actions, and the new focused tests plus manual tuistory evidence show the happy path working. However, I found two blocking correctness regressions in the new shortcut flow: sidebar management shortcuts remain live behind the help/settings overlays, so operators can accidentally mutate company state while an overlay is covering the main panel, and approval-poll failures are silently rendered as `No pending approvals`, which makes the new approval shortcut path unreliable and not operator-visible when its backing API fails.",
+    "issues": [
+      {
+        "file": "packages/orchestrator-tui/src/components/App.tsx",
+        "line": 340,
+        "severity": "blocking",
+        "description": "The new sidebar management shortcuts stay active even while the help or settings overlay is open. `AgentSidebar` is still passed `focused={focusTarget === \"sidebar\"}` at `App.tsx:335-346`, and its `useInput` handler at `packages/orchestrator-tui/src/components/AgentSidebar.tsx:72-115` still binds `v`, `w`, `a`, `x`, `[` and `]` whenever that focus flag is true. Because the overlays are rendered alongside the still-focused sidebar at `App.tsx:348-361`, opening help/settings from the sidebar does not disable those mutation keys, so an operator can approve/reject or wake/invoke an agent behind the overlay without seeing the management panel. That is a hidden mutating path in the exact management flow this feature introduces."
+      },
+      {
+        "file": "packages/orchestrator-tui/src/hooks/usePendingApprovals.ts",
+        "line": 35,
+        "severity": "blocking",
+        "description": "Approval polling failures are silently downgraded into an empty-state UI. On any fetch error, `usePendingApprovals()` clears the approvals list and only stores an error string (`usePendingApprovals.ts:35-37`). But `App.tsx:339-342` still marks the sidebar as connected based solely on orchestrator-status polling, and `AgentSidebar.tsx:153-160` only renders `error` text in the disconnected branch. If `/api/companies/:companyId/approvals?status=pending` fails while `/api/orchestrator/status` still succeeds, the sidebar shows `No pending approvals` instead of surfacing the failure. That makes the new approval shortcut path look available and empty when it is actually broken, violating the feature's requirement for a reliable, operator-visible management alternative."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, mission shared-state docs, `tui-worker` skill, and commit `3eee2db40c08048af10c27a66956a418421d5922`. The shortcut-based management approach is directionally correct, but the review fails because the new sidebar actions can still fire behind help/settings overlays and approval-fetch failures are silently misrepresented as an empty approvals list."
+}

@@ -1,0 +1,28 @@
+{
+  "featureId": "stale-recovery-backend-hardening",
+  "reviewedAt": "2026-04-05T14:38:28Z",
+  "commitId": "908509b3f653290829e1fdeb355f764c53d90932",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit materially improves stale inventory, manual unblock, duplicate-lease deduping, and targeted cleanup recovery. But one blocking company-isolation hole remains in the background stale-lease reaper: it still joins expired leases to runs only by `runId`, so a stray foreign-company lease row can cause the wrong company's active run to be failed. Because the feature explicitly hardens stale recovery against cross-company lease leakage, this remaining path means the backend stale-recovery logic is not fully isolated yet.",
+    "issues": [
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 1993,
+        "severity": "blocking",
+        "description": "`reapStaleLeaseRuns()` still does `innerJoin(executionLeases, eq(executionLeases.runId, heartbeatRuns.id))` without also constraining `executionLeases.companyId` to the run's company. That means an expired lease row from company B that incorrectly references company A's run will still select that company A run for cancellation, and `setRunStatus(run.id, \"failed\", ...)` runs before any later issue lookup can limit the damage. This is exactly the malformed cross-company lease scenario the new orchestrator cleanup path now defends against in `server/src/services/orchestrator.ts:364-388,487-489` and `server/src/__tests__/orchestrator-service.test.ts:510-580`, so stale recovery is still not fully company-isolated."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's mandatory tests-first red step still does not fit follow-up hardening work very well. This worker explicitly deviated by batching the regression tests with the implementation and suggested loosening the procedure for tightly coupled partial fixes.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md:32 requires 'Write tests first (red)', while the handoff at /Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-05T03-55-27-932Z__stale-recovery-backend-hardening__ac2c9944-29c4-4949-b957-9d4b2aec0726.json:59-63 records `followedProcedure: false` and the explicit deviation from step 3."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, backend-worker skill, mission shared-state docs, and commit `908509b3f653290829e1fdeb355f764c53d90932`. The patch fixes most of the targeted stale-recovery regressions, but `reapStaleLeaseRuns()` still allows a foreign-company expired lease row to cancel another company's run, so the review fails on an unresolved company-isolation bug."
+}

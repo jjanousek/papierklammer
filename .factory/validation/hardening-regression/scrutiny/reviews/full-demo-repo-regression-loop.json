@@ -1,0 +1,28 @@
+{
+  "featureId": "full-demo-repo-regression-loop",
+  "reviewedAt": "2026-04-05T14:35:23Z",
+  "commitId": "a4854ea4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The worker captured a useful note about the isolated-instance demo flow, but the reviewed run did not actually prove the TUI can manage the same company end to end. The evidence shows Web UI onboarding, API mutations, and TUI inspection, not a real TUI management action against the demo work.",
+    "issues": [
+      {
+        "file": ".factory/library/full-demo-regression-loop.md",
+        "line": 23,
+        "severity": "blocking",
+        "description": "The committed notes explicitly limit the TUI portion to status inspection and direct operators to use API/browser controls for mission-critical mutations. In the handoff, the actual approval and heartbeat actions were both done via curl, so this feature never exercised a real management action from the TUI and therefore does not satisfy the feature expectation or VAL-CROSS-002 ('manage the same company from the TUI')."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `audit-worker` skill requires TUI validation but does not spell out how to satisfy action-oriented TUI assertions when `tuistory` text entry is flaky. In this run the worker fell back to API/browser mutations, yet still marked the feature complete.",
+      "evidence": ".factory/skills/audit-worker/SKILL.md:35-45 requires TUI checks but provides no fallback for mutation-focused assertions; the handoff's discovered issues mention dropped TUI characters, and .factory/library/full-demo-regression-loop.md:23 tells operators to avoid TUI mutations when exact text matters."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review failed: commit `a4854ea4` documents the full demo loop clearly, but the recorded validation only proved TUI company scoping/run inspection. Because the actual management steps were executed through curl instead of the TUI, the feature does not fully cover the required cross-surface loop."
+}
