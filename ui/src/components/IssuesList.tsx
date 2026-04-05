@@ -94,9 +94,15 @@ function toggleInArray(arr: string[], value: string): string[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
+function getIssueListStatus(issue: Pick<Issue, "status" | "projectedStatus">): string {
+  return getIssueDisplayStatus(issue);
+}
+
 function applyFilters(issues: Issue[], state: IssueViewState, currentUserId?: string | null): Issue[] {
   let result = issues;
-  if (state.statuses.length > 0) result = result.filter((i) => state.statuses.includes(i.status));
+  if (state.statuses.length > 0) {
+    result = result.filter((issue) => state.statuses.includes(getIssueListStatus(issue)));
+  }
   if (state.priorities.length > 0) result = result.filter((i) => state.priorities.includes(i.priority));
   if (state.assignees.length > 0) {
     result = result.filter((issue) => {
@@ -119,7 +125,7 @@ function sortIssues(issues: Issue[], state: IssueViewState): Issue[] {
   sorted.sort((a, b) => {
     switch (state.sortField) {
       case "status":
-        return dir * (statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+        return dir * (statusOrder.indexOf(getIssueListStatus(a)) - statusOrder.indexOf(getIssueListStatus(b)));
       case "priority":
         return dir * (priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
       case "title":
@@ -316,7 +322,7 @@ export function IssuesList({
       return [{ key: "__all", label: null as string | null, items: filtered }];
     }
     if (viewState.groupBy === "status") {
-      const groups = groupBy(filtered, (i) => i.status);
+      const groups = groupBy(filtered, (issue) => getIssueListStatus(issue));
       return statusOrder
         .filter((s) => groups[s]?.length)
         .map((s) => ({ key: s, label: statusLabel(s), items: groups[s]! }));
