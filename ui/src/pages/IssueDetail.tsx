@@ -1165,6 +1165,7 @@ export function IssueDetail() {
         workProducts={visibleWorkProducts}
         runs={linkedRuns ?? []}
         agentMap={agentMap}
+        comments={commentsWithRunMeta}
       />
 
       {hasAttachments ? (

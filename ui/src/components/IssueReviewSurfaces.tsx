@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Agent, IssueWorkProduct } from "@papierklammer/shared";
+import type { Agent, IssueComment, IssueWorkProduct } from "@papierklammer/shared";
 import { Link } from "@/lib/router";
 import type { RunForIssue } from "../api/activity";
 import type { LiveRunForIssue } from "../api/heartbeats";
@@ -80,6 +80,109 @@ export function extractRunReviewText(resultJson: Record<string, unknown> | null 
   return null;
 }
 
+function stripMarkdownToText(value: string) {
+  return value
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s?/gm, "")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/^\d+\.\s+/gm, "")
+    .replace(/\r\n/g, "\n");
+}
+
+function extractCommentReviewText(body: string) {
+  const plainText = stripMarkdownToText(body)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+  return plainText ? compactPreview(plainText) : null;
+}
+
+function extractCommentLinks(body: string) {
+  const results: Array<{ label: string; href: string }> = [];
+  const seen = new Set<string>();
+  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(body)) !== null) {
+    const label = match[1]?.trim() ?? "";
+    const href = match[2]?.trim() ?? "";
+    if (!label || !href) continue;
+    if (!(href.startsWith("/") || href.startsWith("http://") || href.startsWith("https://"))) continue;
+    if (href.startsWith("/tmp/")) continue;
+    const dedupeKey = `${label}|${href}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    results.push({ label, href });
+    if (results.length >= 4) break;
+  }
+
+  return results;
+}
+
+function metadataValueText(value: unknown) {
+  if (typeof value === "string" && value.trim().length > 0) return compactPreview(value.trim(), 120);
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return null;
+}
+
+function metadataLabel(key: string) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function describeWorkProductMetadata(product: IssueWorkProduct) {
+  const details: Array<{ label: string; value: string }> = [];
+  const seen = new Set<string>();
+  const push = (label: string, value: string | null) => {
+    if (!value) return;
+    const dedupeKey = `${label}|${value}`;
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    details.push({ label, value });
+  };
+
+  push("External ID", product.externalId);
+  if (product.healthStatus !== "unknown") {
+    push("Health", formatLabel(product.healthStatus));
+  }
+
+  const metadata = product.metadata ?? {};
+  const preferredKeys = [
+    "branchName",
+    "branch",
+    "baseRef",
+    "commitSha",
+    "commit",
+    "artifactCount",
+    "fileCount",
+    "fileName",
+    "path",
+    "repoUrl",
+    "repoRef",
+  ] as const;
+
+  for (const key of preferredKeys) {
+    push(metadataLabel(key), metadataValueText(metadata[key]));
+    if (details.length >= 4) return details;
+  }
+
+  for (const [key, value] of Object.entries(metadata)) {
+    if (preferredKeys.includes(key as (typeof preferredKeys)[number])) continue;
+    if (["title", "summary", "status", "provider", "url"].includes(key)) continue;
+    push(metadataLabel(key), metadataValueText(value));
+    if (details.length >= 4) break;
+  }
+
+  return details;
+}
+
 function describeWorkProduct(product: IssueWorkProduct) {
   return product.summary?.trim() || product.url || null;
 }
@@ -112,11 +215,13 @@ export function IssueReviewSurfaces({
   workProducts,
   runs,
   agentMap,
+  comments = [],
 }: {
   companyId: string;
   workProducts: IssueWorkProduct[];
   runs: RunForIssue[];
   agentMap: Map<string, Agent>;
+  comments?: Array<Pick<IssueComment, "id" | "body" | "createdAt"> & { runId?: string | null }>;
 }) {
   const completedRuns = useMemo(
     () =>
@@ -140,6 +245,27 @@ export function IssueReviewSurfaces({
   );
 
   const runById = useMemo(() => new Map(completedRuns.map((run) => [run.runId, run])), [completedRuns]);
+  const commentSummaryByRun = useMemo(() => {
+    const summaries = new Map<string, { preview: string; links: Array<{ label: string; href: string }> }>();
+    const sortedComments = [...comments]
+      .filter((comment) => typeof comment.runId === "string" && comment.runId.length > 0)
+      .sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+    for (const comment of sortedComments) {
+      const runId = comment.runId ?? null;
+      if (!runId || summaries.has(runId)) continue;
+      const preview = extractCommentReviewText(comment.body);
+      if (!preview) continue;
+      summaries.set(runId, {
+        preview,
+        links: extractCommentLinks(comment.body),
+      });
+    }
+
+    return summaries;
+  }, [comments]);
   const transcriptRuns = useMemo<LiveRunForIssue[]>(
     () =>
       completedRuns.slice(0, 3).map((run) => ({
@@ -179,6 +305,7 @@ export function IssueReviewSurfaces({
             {orderedWorkProducts.map((product) => {
               const createdByRun = product.createdByRunId ? runById.get(product.createdByRunId) ?? null : null;
               const summary = describeWorkProduct(product);
+              const metadata = describeWorkProductMetadata(product);
 
               return (
                 <article key={product.id} className="rounded-lg border border-border p-3">
@@ -207,6 +334,16 @@ export function IssueReviewSurfaces({
                       </div>
                       {summary && (
                         <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">{summary}</p>
+                      )}
+                      {metadata.length > 0 && (
+                        <dl className="grid gap-x-3 gap-y-1 text-[11px] text-muted-foreground sm:grid-cols-2">
+                          {metadata.map((entry) => (
+                            <div key={`${product.id}:${entry.label}`} className="break-all">
+                              <dt className="inline">{entry.label}: </dt>
+                              <dd className="inline text-foreground/90">{entry.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
                       )}
                       <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
                         <span>{formatLabel(product.provider)}</span>
@@ -256,8 +393,10 @@ export function IssueReviewSurfaces({
           </div>
           <div className="space-y-2">
             {completedRuns.map((run) => {
+              const commentSummary = commentSummaryByRun.get(run.runId) ?? null;
               const preview = extractRunReviewText(run.resultJson)
-                ?? extractTranscriptReviewText(transcriptByRun.get(run.runId));
+                ?? extractTranscriptReviewText(transcriptByRun.get(run.runId))
+                ?? commentSummary?.preview;
               const agentName = agentMap.get(run.agentId)?.name ?? run.agentId.slice(0, 8);
 
               return (
@@ -277,6 +416,32 @@ export function IssueReviewSurfaces({
                         <p className="text-sm text-muted-foreground">
                           Transcript, logs, and workspace operations remain available on the run detail page.
                         </p>
+                      )}
+                      {commentSummary && commentSummary.links.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="text-muted-foreground">Related outputs:</span>
+                          {commentSummary.links.map((entry) => (
+                            entry.href.startsWith("/") ? (
+                              <Link
+                                key={`${run.runId}:${entry.href}`}
+                                to={entry.href}
+                                className="inline-flex border border-border bg-background/80 px-2 py-0.5 font-medium hover:opacity-80"
+                              >
+                                {entry.label}
+                              </Link>
+                            ) : (
+                              <a
+                                key={`${run.runId}:${entry.href}`}
+                                href={entry.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex border border-border bg-background/80 px-2 py-0.5 font-medium hover:opacity-80"
+                              >
+                                {entry.label}
+                              </a>
+                            )
+                          ))}
+                        </div>
                       )}
                     </div>
 

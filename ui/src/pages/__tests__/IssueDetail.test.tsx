@@ -3,7 +3,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Agent, Company, Issue, IssueWorkProduct, Project } from "@papierklammer/shared";
+import type { ActivityEvent, Agent, Company, Issue, IssueComment, IssueWorkProduct, Project } from "@papierklammer/shared";
 import type { RunForIssue } from "../../api/activity";
 
 const mocks = vi.hoisted(() => {
@@ -169,7 +169,7 @@ const mocks = vi.hoisted(() => {
     setQueryData: vi.fn(),
     issuesGet: vi.fn(() => issue),
     issuesList: vi.fn(() => []),
-    issuesListComments: vi.fn(() => []),
+    issuesListComments: vi.fn<() => IssueComment[]>(() => []),
     issuesListApprovals: vi.fn(() => []),
     issuesListAttachments: vi.fn(() => []),
     issuesListWorkProducts: vi.fn((): IssueWorkProduct[] => []),
@@ -192,7 +192,7 @@ const mocks = vi.hoisted(() => {
       updatedAt: new Date("2026-04-04T00:00:00.000Z"),
       contentPath: `/files/${file.name}`,
     })),
-    activityForIssue: vi.fn(() => []),
+    activityForIssue: vi.fn<() => ActivityEvent[]>(() => []),
     activityRunsForIssue: vi.fn((): RunForIssue[] => []),
     liveRunsForIssue: vi.fn(() => []),
     activeRunForIssue: vi.fn(() => null),
@@ -614,7 +614,10 @@ describe("IssueDetail", () => {
       isPrimary: true,
       healthStatus: "healthy",
       summary: "A review-ready markdown report generated from the demo-repo run.",
-      metadata: null,
+      metadata: {
+        branchName: "review/release-report",
+        commitSha: "abc1234",
+      },
       createdByRunId: "run-12345678",
       createdAt: new Date("2026-04-04T00:05:00.000Z"),
       updatedAt: new Date("2026-04-04T00:06:00.000Z"),
@@ -636,7 +639,65 @@ describe("IssueDetail", () => {
     expect(container.textContent).toContain("Review surfaces");
     expect(container.textContent).toContain("Release report");
     expect(container.textContent).toContain("A review-ready markdown report generated from the demo-repo run.");
+    expect(container.textContent).toContain("review/release-report");
     expect(container.textContent).toContain("Prepared a deterministic CLI release report for board review.");
     expect(container.textContent).toContain("Inspect run");
+  });
+
+  it("falls back to run-linked comments when completed runs lack persisted summaries", async () => {
+    const completedRun: RunForIssue = {
+      runId: "run-23456789",
+      status: "succeeded",
+      agentId: "agent-b",
+      startedAt: "2026-04-04T00:02:00.000Z",
+      finishedAt: "2026-04-04T00:06:00.000Z",
+      createdAt: "2026-04-04T00:01:00.000Z",
+      invocationSource: "manual",
+      usageJson: null,
+      resultJson: null,
+    };
+
+    mocks.activityForIssue.mockReturnValue([
+      {
+        id: "activity-1",
+        companyId: "company-b",
+        actorType: "agent",
+        actorId: "agent-b",
+        agentId: "agent-b",
+        runId: "run-23456789",
+        action: "issue.comment_added",
+        entityType: "issue",
+        entityId: "issue-1",
+        details: { commentId: "comment-1" },
+        createdAt: new Date("2026-04-04T00:06:10.000Z"),
+      },
+    ] as ActivityEvent[]);
+    mocks.issuesListComments.mockReturnValue([
+      {
+        id: "comment-1",
+        companyId: "company-b",
+        issueId: "issue-1",
+        authorAgentId: "agent-b",
+        authorUserId: null,
+        body: [
+          "Heartbeat completed with a concrete next step.",
+          "",
+          "- Created follow-up issue [BET-8](/BET/issues/BET-8) for the CTO.",
+          "- Requested approval [app-1](/BET/approvals/app-1).",
+        ].join("\n"),
+        createdAt: new Date("2026-04-04T00:06:10.000Z"),
+        updatedAt: new Date("2026-04-04T00:06:10.000Z"),
+      },
+    ] as IssueComment[]);
+    mocks.activityRunsForIssue.mockReturnValue([completedRun]);
+
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(container.textContent).toContain("Heartbeat completed with a concrete next step.");
+    expect(container.querySelector('a[href="/BET/issues/BET-8"]')?.textContent).toBe("BET-8");
+    expect(container.querySelector('a[href="/BET/approvals/app-1"]')?.textContent).toBe("app-1");
   });
 });

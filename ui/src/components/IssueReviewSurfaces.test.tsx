@@ -120,6 +120,7 @@ describe("IssueReviewSurfaces", () => {
             }),
           ]}
           agentMap={agentMap}
+          comments={[]}
         />,
       );
     });
@@ -150,11 +151,46 @@ describe("IssueReviewSurfaces", () => {
             }),
           ]}
           agentMap={agentMap}
+          comments={[]}
         />,
       );
     });
 
     expect(container.textContent).toContain("Prepared the release report and attached it for board review.");
     expect(container.textContent).not.toContain("Fallback transcript that should not replace the persisted summary.");
+  });
+
+  it("falls back to run-linked issue updates when persisted run data has no preview", () => {
+    act(() => {
+      root.render(
+        <IssueReviewSurfaces
+          companyId="company-1"
+          workProducts={[]}
+          runs={[
+            createRun({
+              status: "succeeded",
+            }),
+          ]}
+          agentMap={agentMap}
+          comments={[
+            {
+              id: "comment-1",
+              body: [
+                "Heartbeat completed as CEO with delegation-first handling.",
+                "",
+                "- Created CTO execution child [ORC-7](/ORC/issues/ORC-7) under [ORC-6](/ORC/issues/ORC-6).",
+                "- Posted blocker references to approval [fcd4484b](/ORC/approvals/fcd4484b-fb1d-479c-bba7-b371517c4336).",
+              ].join("\n"),
+              createdAt: new Date("2026-04-05T00:06:00.000Z"),
+              runId: "run-1",
+            },
+          ]}
+        />,
+      );
+    });
+
+    expect(container.textContent).toContain("Heartbeat completed as CEO with delegation-first handling.");
+    expect(container.querySelector('a[href="/ORC/issues/ORC-7"]')?.textContent).toBe("ORC-7");
+    expect(container.querySelector('a[href="/ORC/approvals/fcd4484b-fb1d-479c-bba7-b371517c4336"]')?.textContent).toBe("fcd4484b");
   });
 });
