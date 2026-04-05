@@ -7,6 +7,7 @@ const OTHER_COMPANY_ID = "00000000-0000-0000-0000-000000000002";
 const RUN_ID = "00000000-0000-0000-0000-000000000010";
 const AGENT_ID = "00000000-0000-0000-0000-000000000020";
 const OPERATION_ID = "00000000-0000-0000-0000-000000000030";
+const EXECUTION_WORKSPACE_ID = "00000000-0000-0000-0000-000000000040";
 
 const mockHeartbeatService = vi.hoisted(() => ({
   getRun: vi.fn(),
@@ -85,7 +86,7 @@ describe("heartbeat run route company isolation", () => {
       status: "running",
       logStore: "local_file",
       logRef: "log-ref",
-      contextSnapshot: {},
+      contextSnapshot: { executionWorkspaceId: EXECUTION_WORKSPACE_ID },
     });
     mockHeartbeatService.readLog.mockResolvedValue({
       offset: 0,
@@ -293,6 +294,42 @@ describe("heartbeat run route company isolation", () => {
     expect(res.status).toBe(403);
     expect(mockHeartbeatService.getRun).not.toHaveBeenCalled();
     expect(mockWorkspaceOperationService.listForRun).not.toHaveBeenCalled();
+  });
+
+  it("allows same-company board access to run workspace-operation fan-out", async () => {
+    mockWorkspaceOperationService.listForRun.mockResolvedValue([
+      {
+        id: OPERATION_ID,
+        companyId: COMPANY_ID,
+        heartbeatRunId: RUN_ID,
+        executionWorkspaceId: EXECUTION_WORKSPACE_ID,
+      },
+    ]);
+
+    const res = await request(
+      await createApp({
+        type: "board",
+        userId: "board-user",
+        companyIds: [COMPANY_ID],
+        source: "session",
+        isInstanceAdmin: false,
+      }),
+    ).get(`/api/heartbeat-runs/${RUN_ID}/workspace-operations`);
+
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(mockHeartbeatService.getRun).toHaveBeenCalledWith(RUN_ID);
+    expect(mockWorkspaceOperationService.listForRun).toHaveBeenCalledWith(
+      RUN_ID,
+      EXECUTION_WORKSPACE_ID,
+    );
+    expect(res.body).toEqual([
+      {
+        id: OPERATION_ID,
+        companyId: COMPANY_ID,
+        heartbeatRunId: RUN_ID,
+        executionWorkspaceId: EXECUTION_WORKSPACE_ID,
+      },
+    ]);
   });
 
   it("rejects unauthenticated access to run workspace-operation fan-out", async () => {
