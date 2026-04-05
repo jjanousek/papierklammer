@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 import { MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
@@ -8,14 +8,6 @@ const { createAssetMock, getAssetByIdMock, logActivityMock } = vi.hoisted(() => 
   createAssetMock: vi.fn(),
   getAssetByIdMock: vi.fn(),
   logActivityMock: vi.fn(),
-}));
-
-vi.mock("../services/index.js", () => ({
-  assetService: vi.fn(() => ({
-    create: createAssetMock,
-    getById: getAssetByIdMock,
-  })),
-  logActivity: logActivityMock,
 }));
 
 function createAsset() {
@@ -74,15 +66,20 @@ async function createApp(storage: ReturnType<typeof createStorageService>) {
     };
     next();
   });
-  app.use("/api", assetRoutes({} as any, storage));
+  app.use(
+    "/api",
+    assetRoutes({} as any, storage, {
+      assetService: {
+        create: createAssetMock,
+        getById: getAssetByIdMock,
+      },
+      logActivity: logActivityMock,
+    }),
+  );
   return app;
 }
 
 describe("POST /api/companies/:companyId/assets/images", () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
-
   afterEach(() => {
     createAssetMock.mockReset();
     getAssetByIdMock.mockReset();
@@ -139,10 +136,6 @@ describe("POST /api/companies/:companyId/assets/images", () => {
 });
 
 describe("POST /api/companies/:companyId/logo", () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
-
   afterEach(() => {
     createAssetMock.mockReset();
     getAssetByIdMock.mockReset();

@@ -71,20 +71,6 @@ const mockBudgetService = vi.hoisted(() => ({
   resolveIncident: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  budgetService: () => mockBudgetService,
-  costService: () => mockCostService,
-  financeService: () => mockFinanceService,
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  heartbeatService: () => mockHeartbeatService,
-  logActivity: mockLogActivity,
-}));
-
-vi.mock("../services/quota-windows.js", () => ({
-  fetchAllQuotaWindows: mockFetchAllQuotaWindows,
-}));
-
 async function createApp() {
   const [{ costRoutes }, { errorHandler }] = await Promise.all([
     import("../routes/costs.js"),
@@ -96,7 +82,19 @@ async function createApp() {
     req.actor = { type: "board", userId: "board-user", source: "local_implicit" };
     next();
   });
-  app.use("/api", costRoutes(makeDb() as any));
+  app.use(
+    "/api",
+    costRoutes(makeDb() as any, {
+      budgetService: mockBudgetService as any,
+      costService: mockCostService as any,
+      financeService: mockFinanceService as any,
+      companyService: mockCompanyService as any,
+      agentService: mockAgentService as any,
+      heartbeatService: mockHeartbeatService as any,
+      logActivity: mockLogActivity,
+      fetchAllQuotaWindows: mockFetchAllQuotaWindows,
+    }),
+  );
   app.use(errorHandler);
   return app;
 }
@@ -112,7 +110,19 @@ async function createAppWithActor(actor: any) {
     req.actor = actor;
     next();
   });
-  app.use("/api", costRoutes(makeDb() as any));
+  app.use(
+    "/api",
+    costRoutes(makeDb() as any, {
+      budgetService: mockBudgetService as any,
+      costService: mockCostService as any,
+      financeService: mockFinanceService as any,
+      companyService: mockCompanyService as any,
+      agentService: mockAgentService as any,
+      heartbeatService: mockHeartbeatService as any,
+      logActivity: mockLogActivity,
+      fetchAllQuotaWindows: mockFetchAllQuotaWindows,
+    }),
+  );
   app.use(errorHandler);
   return app;
 }

@@ -1,7 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
-import { companyRoutes } from "../routes/companies.js";
 
 const mockCompanyService = {
   list: vi.fn(),
@@ -37,6 +36,7 @@ const mockLogActivity = vi.fn();
 
 describe("company routes malformed issue path guard", () => {
   it("returns a clear error when companyId is missing for issues list path", async () => {
+    const { companyRoutes } = await import("../routes/companies.js");
     const app = express();
     app.use((req, _res, next) => {
       (req as any).actor = {

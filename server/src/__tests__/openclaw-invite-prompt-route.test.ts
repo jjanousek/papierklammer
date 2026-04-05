@@ -1,7 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companies, invites } from "@papierklammer/db";
 
 const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(),
@@ -51,21 +50,17 @@ function createDbStub() {
     createdAt: new Date("2099-03-07T00:00:00.000Z"),
     updatedAt: new Date("2099-03-07T00:00:00.000Z"),
   };
+  const inviteWithCompany = {
+    ...createdInvite,
+    name: "Acme AI",
+  };
   const returning = vi.fn().mockResolvedValue([createdInvite]);
   const values = vi.fn().mockReturnValue({ returning });
   const insert = vi.fn().mockReturnValue({ values });
   const select = vi.fn(() => ({
-    from(table: unknown) {
+    from(_table: unknown) {
       return {
-        where: vi.fn().mockImplementation(() => {
-          if (table === invites) {
-            return Promise.resolve([createdInvite]);
-          }
-          if (table === companies) {
-            return Promise.resolve([{ name: "Acme AI" }]);
-          }
-          return Promise.resolve([]);
-        }),
+        where: vi.fn().mockResolvedValue([inviteWithCompany]),
       };
     },
   }));
@@ -112,6 +107,7 @@ async function createApp(actor: Record<string, unknown>, db: Record<string, unkn
 
 describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
   beforeEach(() => {
+    vi.resetModules();
     mockAccessService.canUser.mockResolvedValue(false);
     mockAccessService.hasPermission.mockReset();
     mockAccessService.isInstanceAdmin.mockReset();

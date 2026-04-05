@@ -8,6 +8,11 @@ import type { StorageService } from "../storage/types.js";
 import { assetService, logActivity } from "../services/index.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
+
+type AssetRouteDependencies = {
+  assetService?: Pick<ReturnType<typeof assetService>, "create" | "getById">;
+  logActivity?: typeof logActivity;
+};
 const SVG_CONTENT_TYPE = "image/svg+xml";
 const ALLOWED_COMPANY_LOGO_CONTENT_TYPES = new Set([
   "image/png",
@@ -82,9 +87,14 @@ function sanitizeSvgBuffer(input: Buffer): Buffer | null {
   }
 }
 
-export function assetRoutes(db: Db, storage: StorageService) {
+export function assetRoutes(
+  db: Db,
+  storage: StorageService,
+  deps: AssetRouteDependencies = {},
+) {
   const router = Router();
-  const svc = assetService(db);
+  const svc = deps.assetService ?? assetService(db);
+  const logActivityFn = deps.logActivity ?? logActivity;
   const assetUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -177,7 +187,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
       createdByUserId: actor.actorType === "user" ? actor.actorId : null,
     });
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -275,7 +285,7 @@ export function assetRoutes(db: Db, storage: StorageService) {
       createdByUserId: actor.actorType === "user" ? actor.actorId : null,
     });
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,

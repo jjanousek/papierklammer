@@ -18,11 +18,17 @@ const createActivitySchema = z.object({
   details: z.record(z.unknown()).optional().nullable(),
 });
 
-export function activityRoutes(db: Db) {
+export interface ActivityRouteDependencies {
+  activityService?: ReturnType<typeof activityService>;
+  heartbeatService?: ReturnType<typeof heartbeatService>;
+  issueService?: ReturnType<typeof issueService>;
+}
+
+export function activityRoutes(db: Db, deps: ActivityRouteDependencies = {}) {
   const router = Router();
-  const svc = activityService(db);
-  const issueSvc = issueService(db);
-  const heartbeat = heartbeatService(db);
+  const svc = deps.activityService ?? activityService(db);
+  const issueSvc = deps.issueService ?? issueService(db);
+  const heartbeat = deps.heartbeatService ?? heartbeatService(db);
 
   async function resolveIssueByRef(rawId: string) {
     if (/^[A-Z]+-\d+$/i.test(rawId)) {

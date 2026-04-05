@@ -21,17 +21,30 @@ import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { fetchAllQuotaWindows } from "../services/quota-windows.js";
 import { badRequest } from "../errors.js";
 
-export function costRoutes(db: Db) {
+export interface CostRouteDependencies {
+  budgetService?: ReturnType<typeof budgetService>;
+  costService?: ReturnType<typeof costService>;
+  financeService?: ReturnType<typeof financeService>;
+  companyService?: ReturnType<typeof companyService>;
+  agentService?: ReturnType<typeof agentService>;
+  heartbeatService?: ReturnType<typeof heartbeatService>;
+  logActivity?: typeof logActivity;
+  fetchAllQuotaWindows?: typeof fetchAllQuotaWindows;
+}
+
+export function costRoutes(db: Db, deps: CostRouteDependencies = {}) {
   const router = Router();
-  const heartbeat = heartbeatService(db);
+  const heartbeat = deps.heartbeatService ?? heartbeatService(db);
   const budgetHooks = {
     cancelWorkForScope: heartbeat.cancelBudgetScopeWork,
   };
-  const costs = costService(db, budgetHooks);
-  const finance = financeService(db);
-  const budgets = budgetService(db, budgetHooks);
-  const companies = companyService(db);
-  const agents = agentService(db);
+  const costs = deps.costService ?? costService(db, budgetHooks);
+  const finance = deps.financeService ?? financeService(db);
+  const budgets = deps.budgetService ?? budgetService(db, budgetHooks);
+  const companies = deps.companyService ?? companyService(db);
+  const agents = deps.agentService ?? agentService(db);
+  const logActivityFn = deps.logActivity ?? logActivity;
+  const fetchAllQuotaWindowsFn = deps.fetchAllQuotaWindows ?? fetchAllQuotaWindows;
 
   router.post("/companies/:companyId/cost-events", validate(createCostEventSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
@@ -48,7 +61,7 @@ export function costRoutes(db: Db) {
     });
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -73,7 +86,7 @@ export function costRoutes(db: Db) {
     });
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -203,7 +216,7 @@ export function costRoutes(db: Db) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
-    const results = await fetchAllQuotaWindows();
+    const results = await fetchAllQuotaWindowsFn();
     res.json(results);
   });
 
@@ -257,7 +270,7 @@ export function costRoutes(db: Db) {
       return;
     }
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: "user",
       actorId: req.actor.userId ?? "board",
@@ -305,7 +318,7 @@ export function costRoutes(db: Db) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: updated.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,

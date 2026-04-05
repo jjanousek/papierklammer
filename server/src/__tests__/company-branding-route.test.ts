@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companyRoutes } from "../routes/companies.js";
-import { errorHandler } from "../middleware/index.js";
 
 const mockCompanyService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -55,7 +53,11 @@ function createCompany() {
   };
 }
 
-function createApp(actor: Record<string, unknown>) {
+async function createApp(actor: Record<string, unknown>) {
+  const [{ companyRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/companies.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -90,7 +92,7 @@ describe("PATCH /api/companies/:companyId/branding", () => {
       companyId: "company-1",
       role: "engineer",
     });
-    const app = createApp({
+    const app = await createApp({
       type: "agent",
       agentId: "agent-1",
       companyId: "company-1",
@@ -115,7 +117,7 @@ describe("PATCH /api/companies/:companyId/branding", () => {
       role: "ceo",
     });
     mockCompanyService.update.mockResolvedValue(company);
-    const app = createApp({
+    const app = await createApp({
       type: "agent",
       agentId: "agent-1",
       companyId: "company-1",
@@ -161,7 +163,7 @@ describe("PATCH /api/companies/:companyId/branding", () => {
       logoAssetId: null,
       logoUrl: null,
     });
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "user-1",
       source: "local_implicit",
@@ -177,7 +179,7 @@ describe("PATCH /api/companies/:companyId/branding", () => {
   });
 
   it("rejects non-branding fields in the request body", async () => {
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "user-1",
       source: "local_implicit",
