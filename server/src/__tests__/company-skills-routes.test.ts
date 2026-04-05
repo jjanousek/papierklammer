@@ -1,48 +1,43 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { companySkillRoutes } from "../routes/company-skills.js";
 
-const mockAgentService = vi.hoisted(() => ({
+const mockAgentService = {
   getById: vi.fn(),
-}));
+};
 
-const mockAccessService = vi.hoisted(() => ({
+const mockAccessService = {
   canUser: vi.fn(),
   hasPermission: vi.fn(),
-}));
+};
 
-const mockCompanySkillService = vi.hoisted(() => ({
+const mockCompanySkillService = {
   importFromSource: vi.fn(),
-}));
+};
 
-const mockLogActivity = vi.hoisted(() => vi.fn());
-
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  companySkillService: () => mockCompanySkillService,
-  logActivity: mockLogActivity,
-}));
+const mockLogActivity = vi.fn();
 
 async function createApp(actor: Record<string, unknown>) {
-  const [{ companySkillRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/company-skills.js"),
-    import("../middleware/index.js"),
-  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
     (req as any).actor = actor;
     next();
   });
-  app.use("/api", companySkillRoutes({} as any));
+  app.use("/api", companySkillRoutes({} as any, {
+    accessService: mockAccessService as any,
+    agentService: mockAgentService as any,
+    companySkillService: mockCompanySkillService as any,
+    logActivity: mockLogActivity,
+  }));
   app.use(errorHandler);
   return app;
 }
 
 describe("company skill mutation permissions", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     mockCompanySkillService.importFromSource.mockResolvedValue({
       imported: [],

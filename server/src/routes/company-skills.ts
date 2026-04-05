@@ -11,11 +11,19 @@ import { accessService, agentService, companySkillService, logActivity } from ".
 import { forbidden } from "../errors.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
 
-export function companySkillRoutes(db: Db) {
+export interface CompanySkillRouteDependencies {
+  agentService?: ReturnType<typeof agentService>;
+  accessService?: ReturnType<typeof accessService>;
+  companySkillService?: ReturnType<typeof companySkillService>;
+  logActivity?: typeof logActivity;
+}
+
+export function companySkillRoutes(db: Db, deps: CompanySkillRouteDependencies = {}) {
   const router = Router();
-  const agents = agentService(db);
-  const access = accessService(db);
-  const svc = companySkillService(db);
+  const agents = deps.agentService ?? agentService(db);
+  const access = deps.accessService ?? accessService(db);
+  const svc = deps.companySkillService ?? companySkillService(db);
+  const writeActivity = deps.logActivity ?? logActivity;
 
   function canCreateAgents(agent: { permissions: Record<string, unknown> | null | undefined }) {
     if (!agent.permissions || typeof agent.permissions !== "object") return false;
@@ -104,7 +112,7 @@ export function companySkillRoutes(db: Db) {
       const result = await svc.createLocalSkill(companyId, req.body);
 
       const actor = getActorInfo(req);
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -138,7 +146,7 @@ export function companySkillRoutes(db: Db) {
       );
 
       const actor = getActorInfo(req);
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -167,7 +175,7 @@ export function companySkillRoutes(db: Db) {
       const result = await svc.importFromSource(companyId, source);
 
       const actor = getActorInfo(req);
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -197,7 +205,7 @@ export function companySkillRoutes(db: Db) {
       const result = await svc.scanProjectWorkspaces(companyId, req.body);
 
       const actor = getActorInfo(req);
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -232,7 +240,7 @@ export function companySkillRoutes(db: Db) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -261,7 +269,7 @@ export function companySkillRoutes(db: Db) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
