@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { errorHandler } from "../middleware/index.js";
-import { activityRoutes } from "../routes/activity.js";
 
 const mockActivityService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -30,7 +28,11 @@ vi.mock("../services/index.js", () => ({
   issueService: () => mockIssueService,
 }));
 
-function createApp(actor?: Record<string, unknown>) {
+async function createApp(actor?: Record<string, unknown>) {
+  const [{ activityRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/activity.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -51,6 +53,7 @@ function createApp(actor?: Record<string, unknown>) {
 
 describe("activity routes", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
   });
 
@@ -65,7 +68,7 @@ describe("activity routes", () => {
       },
     ]);
 
-    const res = await request(createApp()).get("/api/issues/PAP-475/runs");
+    const res = await request(await createApp()).get("/api/issues/PAP-475/runs");
 
     expect(res.status).toBe(200);
     expect(mockIssueService.getByIdentifier).toHaveBeenCalledWith("PAP-475");
@@ -76,7 +79,7 @@ describe("activity routes", () => {
 
   it("rejects same-company agent access to issue run fan-out", async () => {
     const res = await request(
-      createApp({
+      await createApp({
         type: "agent",
         agentId: "agent-1",
         companyId: "company-1",
@@ -98,7 +101,7 @@ describe("activity routes", () => {
       { issueId: "issue-1", title: "Investigate" },
     ]);
 
-    const res = await request(createApp()).get("/api/heartbeat-runs/run-1/issues");
+    const res = await request(await createApp()).get("/api/heartbeat-runs/run-1/issues");
 
     expect(res.status).toBe(200);
     expect(mockHeartbeatService.getRun).toHaveBeenCalledWith("run-1");
@@ -113,7 +116,7 @@ describe("activity routes", () => {
     });
 
     const res = await request(
-      createApp({
+      await createApp({
         type: "none",
         source: "none",
       }),
@@ -130,7 +133,7 @@ describe("activity routes", () => {
     });
 
     const res = await request(
-      createApp({
+      await createApp({
         type: "agent",
         agentId: "agent-1",
         companyId: "company-2",
@@ -144,7 +147,7 @@ describe("activity routes", () => {
 
   it("rejects same-company agent access to heartbeat-run issue fan-out", async () => {
     const res = await request(
-      createApp({
+      await createApp({
         type: "agent",
         agentId: "agent-1",
         companyId: "company-1",

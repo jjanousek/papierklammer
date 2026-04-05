@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { approvalRoutes } from "../routes/approvals.js";
-import { errorHandler } from "../middleware/index.js";
 
 const mockApprovalService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -39,7 +37,11 @@ vi.mock("../services/index.js", () => ({
   secretService: () => mockSecretService,
 }));
 
-function createApp() {
+async function createApp() {
+  const [{ approvalRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/approvals.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -59,6 +61,7 @@ function createApp() {
 
 describe("approval routes idempotent retries", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     mockHeartbeatService.wakeup.mockResolvedValue({ id: "wake-1" });
     mockIssueApprovalService.listIssuesForApproval.mockResolvedValue([{ id: "issue-1" }]);
@@ -78,7 +81,7 @@ describe("approval routes idempotent retries", () => {
       applied: false,
     });
 
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .post("/api/approvals/approval-1/approve")
       .send({});
 
@@ -100,7 +103,7 @@ describe("approval routes idempotent retries", () => {
       applied: false,
     });
 
-    const res = await request(createApp())
+    const res = await request(await createApp())
       .post("/api/approvals/approval-1/reject")
       .send({});
 

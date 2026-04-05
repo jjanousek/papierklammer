@@ -99,7 +99,11 @@ function CompanySession({
 
   useInput((_input, key) => {
     if (key.tab && !helpVisible) {
-      setFocusTarget((current) => (current === "input" ? "sidebar" : "input"));
+      setFocusTarget((current) => {
+        const next = current === "input" ? "sidebar" : "input";
+        onInputFocusChange(next === "input");
+        return next;
+      });
     }
   });
 
@@ -302,7 +306,7 @@ export function App({
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(!companyId);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
-  const inputFocusedRef = useRef(false);
+  const inputFocusedRef = useRef(true);
   const previousLaunchContextRef = useRef({
     companyId,
     companyName,

@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { costRoutes } from "../routes/costs.js";
-import { errorHandler } from "../middleware/index.js";
 
 function makeDb(overrides: Record<string, unknown> = {}) {
   const selectChain = {
@@ -87,7 +85,11 @@ vi.mock("../services/quota-windows.js", () => ({
   fetchAllQuotaWindows: mockFetchAllQuotaWindows,
 }));
 
-function createApp() {
+async function createApp() {
+  const [{ costRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/costs.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -99,7 +101,11 @@ function createApp() {
   return app;
 }
 
-function createAppWithActor(actor: any) {
+async function createAppWithActor(actor: any) {
+  const [{ costRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/costs.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -112,6 +118,7 @@ function createAppWithActor(actor: any) {
 }
 
 beforeEach(() => {
+  vi.resetModules();
   vi.clearAllMocks();
   mockCompanyService.update.mockResolvedValue({
     id: "company-1",
@@ -131,7 +138,7 @@ beforeEach(() => {
 
 describe("cost routes", () => {
   it("accepts valid ISO date strings and passes them to cost summary routes", async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await request(app)
       .get("/api/companies/company-1/costs/summary")
       .query({ from: "2026-01-01T00:00:00.000Z", to: "2026-01-31T23:59:59.999Z" });
@@ -139,7 +146,7 @@ describe("cost routes", () => {
   });
 
   it("returns 400 for an invalid 'from' date string", async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await request(app)
       .get("/api/companies/company-1/costs/summary")
       .query({ from: "not-a-date" });
@@ -148,7 +155,7 @@ describe("cost routes", () => {
   });
 
   it("returns 400 for an invalid 'to' date string", async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await request(app)
       .get("/api/companies/company-1/costs/summary")
       .query({ to: "banana" });
@@ -157,7 +164,7 @@ describe("cost routes", () => {
   });
 
   it("returns finance summary rows for valid requests", async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await request(app)
       .get("/api/companies/company-1/costs/finance-summary")
       .query({ from: "2026-02-01T00:00:00.000Z", to: "2026-02-28T23:59:59.999Z" });
@@ -166,7 +173,7 @@ describe("cost routes", () => {
   });
 
   it("returns 400 for invalid finance event list limits", async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await request(app)
       .get("/api/companies/company-1/costs/finance-events")
       .query({ limit: "0" });
@@ -175,7 +182,7 @@ describe("cost routes", () => {
   });
 
   it("accepts valid finance event list limits", async () => {
-    const app = createApp();
+    const app = await createApp();
     const res = await request(app)
       .get("/api/companies/company-1/costs/finance-events")
       .query({ limit: "25" });
@@ -184,7 +191,7 @@ describe("cost routes", () => {
   });
 
   it("rejects company budget updates for board users outside the company", async () => {
-    const app = createAppWithActor({
+    const app = await createAppWithActor({
       type: "board",
       userId: "board-user",
       source: "session",
@@ -208,7 +215,7 @@ describe("cost routes", () => {
       budgetMonthlyCents: 100,
       spentMonthlyCents: 0,
     });
-    const app = createAppWithActor({
+    const app = await createAppWithActor({
       type: "board",
       userId: "board-user",
       source: "session",

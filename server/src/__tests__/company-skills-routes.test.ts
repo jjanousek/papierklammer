@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companySkillRoutes } from "../routes/company-skills.js";
-import { errorHandler } from "../middleware/index.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -26,7 +24,11 @@ vi.mock("../services/index.js", () => ({
   logActivity: mockLogActivity,
 }));
 
-function createApp(actor: Record<string, unknown>) {
+async function createApp(actor: Record<string, unknown>) {
+  const [{ companySkillRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/company-skills.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -40,6 +42,7 @@ function createApp(actor: Record<string, unknown>) {
 
 describe("company skill mutation permissions", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     mockCompanySkillService.importFromSource.mockResolvedValue({
       imported: [],
@@ -51,7 +54,7 @@ describe("company skill mutation permissions", () => {
   });
 
   it("allows local board operators to mutate company skills", async () => {
-    const res = await request(createApp({
+    const res = await request(await createApp({
       type: "board",
       userId: "local-board",
       companyIds: ["company-1"],
@@ -75,7 +78,7 @@ describe("company skill mutation permissions", () => {
       permissions: {},
     });
 
-    const res = await request(createApp({
+    const res = await request(await createApp({
       type: "agent",
       agentId: "agent-1",
       companyId: "company-1",
@@ -95,7 +98,7 @@ describe("company skill mutation permissions", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const res = await request(createApp({
+    const res = await request(await createApp({
       type: "agent",
       agentId: "agent-1",
       companyId: "company-1",

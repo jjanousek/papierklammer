@@ -1,8 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { accessRoutes } from "../routes/access.js";
-import { errorHandler } from "../middleware/index.js";
 
 const mockAccessService = vi.hoisted(() => ({
   isInstanceAdmin: vi.fn(),
@@ -29,7 +27,11 @@ const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockDeduplicateAgentName = vi.hoisted(() => vi.fn((name: string) => name));
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 
-function createApp(actor: any) {
+async function createApp(actor: any) {
+  const [{ accessRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/access.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -62,7 +64,22 @@ function createApp(actor: any) {
 
 describe("cli auth routes", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockAccessService.isInstanceAdmin.mockReset();
+    mockAccessService.hasPermission.mockReset();
+    mockAccessService.canUser.mockReset();
+    mockAgentService.getById.mockReset();
+    mockBoardAuthService.createCliAuthChallenge.mockReset();
+    mockBoardAuthService.describeCliAuthChallenge.mockReset();
+    mockBoardAuthService.approveCliAuthChallenge.mockReset();
+    mockBoardAuthService.cancelCliAuthChallenge.mockReset();
+    mockBoardAuthService.resolveBoardAccess.mockReset();
+    mockBoardAuthService.resolveBoardActivityCompanyIds.mockReset();
+    mockBoardAuthService.assertCurrentBoardKey.mockReset();
+    mockBoardAuthService.revokeBoardApiKey.mockReset();
+    mockLogActivity.mockReset();
+    mockDeduplicateAgentName.mockReset();
+    mockDeduplicateAgentName.mockImplementation((name: string) => name);
+    mockNotifyHireApproved.mockReset();
   });
 
   it("creates a CLI auth challenge with approval metadata", async () => {

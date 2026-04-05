@@ -2,8 +2,6 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { companies, invites } from "@papierklammer/db";
-import { accessRoutes } from "../routes/access.js";
-import { errorHandler } from "../middleware/index.js";
 
 const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(),
@@ -77,7 +75,11 @@ function createDbStub() {
   };
 }
 
-function createApp(actor: Record<string, unknown>, db: Record<string, unknown>) {
+async function createApp(actor: Record<string, unknown>, db: Record<string, unknown>) {
+  const [{ accessRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/access.js"),
+    import("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -111,8 +113,29 @@ function createApp(actor: Record<string, unknown>, db: Record<string, unknown>) 
 describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
   beforeEach(() => {
     mockAccessService.canUser.mockResolvedValue(false);
+    mockAccessService.hasPermission.mockReset();
+    mockAccessService.isInstanceAdmin.mockReset();
+    mockAccessService.getMembership.mockReset();
+    mockAccessService.ensureMembership.mockReset();
+    mockAccessService.listMembers.mockReset();
+    mockAccessService.setMemberPermissions.mockReset();
+    mockAccessService.promoteInstanceAdmin.mockReset();
+    mockAccessService.demoteInstanceAdmin.mockReset();
+    mockAccessService.listUserCompanyAccess.mockReset();
+    mockAccessService.setUserCompanyAccess.mockReset();
+    mockAccessService.setPrincipalGrants.mockReset();
     mockAgentService.getById.mockReset();
+    mockBoardAuthService.createCliAuthChallenge.mockReset();
+    mockBoardAuthService.describeCliAuthChallenge.mockReset();
+    mockBoardAuthService.approveCliAuthChallenge.mockReset();
+    mockBoardAuthService.cancelCliAuthChallenge.mockReset();
+    mockBoardAuthService.resolveBoardAccess.mockReset();
+    mockBoardAuthService.assertCurrentBoardKey.mockReset();
+    mockBoardAuthService.revokeBoardApiKey.mockReset();
     mockLogActivity.mockResolvedValue(undefined);
+    mockDeduplicateAgentName.mockReset();
+    mockDeduplicateAgentName.mockImplementation((name?: string) => name ?? "");
+    mockNotifyHireApproved.mockReset();
   });
 
   it("rejects non-CEO agent callers", async () => {
@@ -122,7 +145,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       companyId: "company-1",
       role: "engineer",
     });
-    const app = createApp(
+    const app = await createApp(
       {
         type: "agent",
         agentId: "agent-1",
@@ -147,7 +170,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       companyId: "company-1",
       role: "ceo",
     });
-    const app = createApp(
+    const app = await createApp(
       {
         type: "agent",
         agentId: "agent-1",
@@ -170,7 +193,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
 
   it("includes companyName in invite summary responses", async () => {
     const db = createDbStub();
-    const app = createApp(
+    const app = await createApp(
       {
         type: "board",
         userId: "user-1",
@@ -191,7 +214,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
   it("allows board callers with invite permission", async () => {
     const db = createDbStub();
     mockAccessService.canUser.mockResolvedValue(true);
-    const app = createApp(
+    const app = await createApp(
       {
         type: "board",
         userId: "user-1",
@@ -213,7 +236,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
   it("rejects board callers without invite permission", async () => {
     const db = createDbStub();
     mockAccessService.canUser.mockResolvedValue(false);
-    const app = createApp(
+    const app = await createApp(
       {
         type: "board",
         userId: "user-1",
