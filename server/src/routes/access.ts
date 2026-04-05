@@ -54,6 +54,15 @@ import {
   inspectBoardClaimChallenge
 } from "../board-claim.js";
 
+export interface AccessRouteDependencies {
+  accessService?: ReturnType<typeof accessService>;
+  agentService?: ReturnType<typeof agentService>;
+  boardAuthService?: ReturnType<typeof boardAuthService>;
+  deduplicateAgentName?: typeof deduplicateAgentName;
+  logActivity?: typeof logActivity;
+  notifyHireApproved?: typeof notifyHireApproved;
+}
+
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -1573,12 +1582,16 @@ export function accessRoutes(
     deploymentExposure: DeploymentExposure;
     bindHost: string;
     allowedHostnames: string[];
-  }
+  },
+  deps: AccessRouteDependencies = {},
 ) {
   const router = Router();
-  const access = accessService(db);
-  const boardAuth = boardAuthService(db);
-  const agents = agentService(db);
+  const access = deps.accessService ?? accessService(db);
+  const boardAuth = deps.boardAuthService ?? boardAuthService(db);
+  const agents = deps.agentService ?? agentService(db);
+  const writeActivity = deps.logActivity ?? logActivity;
+  const normalizeAgentName = deps.deduplicateAgentName ?? deduplicateAgentName;
+  const sendHireApprovedNotification = deps.notifyHireApproved ?? notifyHireApproved;
 
   async function assertInstanceAdmin(req: Request) {
     if (req.actor.type !== "board") throw unauthorized();
@@ -1710,7 +1723,7 @@ export function accessRoutes(
           boardApiKeyId: approved.challenge.boardApiKeyId,
         });
         for (const companyId of companyIds) {
-          await logActivity(db, {
+          await writeActivity(db, {
             companyId,
             actorType: "user",
             actorId: userId,
@@ -1779,7 +1792,7 @@ export function accessRoutes(
       boardApiKeyId: key.id,
     });
     for (const companyId of companyIds) {
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: "user",
         actorId: key.userId,
@@ -1948,7 +1961,7 @@ export function accessRoutes(
           agentMessage: req.body.agentMessage ?? null
         });
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: req.actor.type === "agent" ? "agent" : "user",
         actorId:
@@ -2000,7 +2013,7 @@ export function accessRoutes(
           agentMessage: req.body.agentMessage ?? null
         });
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: req.actor.type === "agent" ? "agent" : "user",
         actorId:
@@ -2409,7 +2422,7 @@ export function accessRoutes(
         if (!updatedAgent) {
           throw conflict("Approved join request agent not found");
         }
-        await logActivity(db, {
+        await writeActivity(db, {
           companyId,
           actorType: req.actor.type === "agent" ? "agent" : "user",
           actorId:
@@ -2485,7 +2498,7 @@ export function accessRoutes(
         }
       }
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: req.actor.type === "agent" ? "agent" : "user",
         actorId:
@@ -2560,7 +2573,7 @@ export function accessRoutes(
       .then((rows) => rows[0]);
 
     if (invite.companyId) {
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId: invite.companyId,
         actorType: req.actor.type === "agent" ? "agent" : "user",
         actorId:
@@ -2653,7 +2666,7 @@ export function accessRoutes(
           );
         }
 
-        const agentName = deduplicateAgentName(
+        const agentName = normalizeAgentName(
           existing.agentName ?? "New Agent",
           existingAgents.map((a) => ({
             id: a.id,
@@ -2716,7 +2729,7 @@ export function accessRoutes(
         .returning()
         .then((rows) => rows[0]);
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: "user",
         actorId: req.actor.userId ?? "board",
@@ -2727,7 +2740,7 @@ export function accessRoutes(
       });
 
       if (createdAgentId) {
-        void notifyHireApproved(db, {
+        void sendHireApprovedNotification(db, {
           companyId,
           agentId: createdAgentId,
           source: "join_request",
@@ -2774,7 +2787,7 @@ export function accessRoutes(
         .returning()
         .then((rows) => rows[0]);
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId,
         actorType: "user",
         actorId: req.actor.userId ?? "board",
@@ -2847,7 +2860,7 @@ export function accessRoutes(
         "initial-join-key"
       );
 
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId: joinRequest.companyId,
         actorType: "system",
         actorId: "join-claim",

@@ -13,10 +13,17 @@ import { accessService, logActivity, routineService } from "../services/index.js
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
 import { forbidden, unauthorized } from "../errors.js";
 
-export function routineRoutes(db: Db) {
+export interface RoutineRouteDependencies {
+  routineService?: ReturnType<typeof routineService>;
+  accessService?: ReturnType<typeof accessService>;
+  logActivity?: typeof logActivity;
+}
+
+export function routineRoutes(db: Db, deps: RoutineRouteDependencies = {}) {
   const router = Router();
-  const svc = routineService(db);
-  const access = accessService(db);
+  const svc = deps.routineService ?? routineService(db);
+  const access = deps.accessService ?? accessService(db);
+  const writeActivity = deps.logActivity ?? logActivity;
 
   async function assertBoardCanAssignTasks(req: Request, companyId: string) {
     assertCompanyAccess(req, companyId);
@@ -65,7 +72,7 @@ export function routineRoutes(db: Db) {
       userId: req.actor.type === "board" ? req.actor.userId ?? "board" : null,
     });
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -116,7 +123,7 @@ export function routineRoutes(db: Db) {
       userId: req.actor.type === "board" ? req.actor.userId ?? "board" : null,
     });
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: routine.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -154,7 +161,7 @@ export function routineRoutes(db: Db) {
       userId: req.actor.type === "board" ? req.actor.userId ?? "board" : null,
     });
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: routine.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -185,7 +192,7 @@ export function routineRoutes(db: Db) {
       userId: req.actor.type === "board" ? req.actor.userId ?? "board" : null,
     });
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: routine.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -212,7 +219,7 @@ export function routineRoutes(db: Db) {
     }
     await svc.deleteTrigger(trigger.id);
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: routine.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -245,7 +252,7 @@ export function routineRoutes(db: Db) {
         userId: req.actor.type === "board" ? req.actor.userId ?? "board" : null,
       });
       const actor = getActorInfo(req);
-      await logActivity(db, {
+      await writeActivity(db, {
         companyId: routine.companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -269,7 +276,7 @@ export function routineRoutes(db: Db) {
     await assertBoardCanAssignTasks(req, routine.companyId);
     const run = await svc.runRoutine(routine.id, req.body);
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await writeActivity(db, {
       companyId: routine.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,

@@ -2,8 +2,6 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { INBOX_MINE_ISSUE_STATUS_FILTER } from "@papierklammer/shared";
-import { agentRoutes } from "../routes/agents.js";
-import { errorHandler } from "../middleware/index.js";
 
 const agentId = "11111111-1111-4111-8111-111111111111";
 const companyId = "22222222-2222-4222-8222-222222222222";
@@ -33,75 +31,67 @@ const baseAgent = {
   updatedAt: new Date("2026-03-19T00:00:00.000Z"),
 };
 
-const mockAgentService = vi.hoisted(() => ({
+const mockAgentService = {
   getById: vi.fn(),
   create: vi.fn(),
   updatePermissions: vi.fn(),
   getChainOfCommand: vi.fn(),
   resolveByReference: vi.fn(),
-}));
+};
 
-const mockAccessService = vi.hoisted(() => ({
+const mockAccessService = {
   canUser: vi.fn(),
   hasPermission: vi.fn(),
   getMembership: vi.fn(),
   ensureMembership: vi.fn(),
   listPrincipalGrants: vi.fn(),
   setPrincipalPermission: vi.fn(),
-}));
+};
 
-const mockApprovalService = vi.hoisted(() => ({
+const mockApprovalService = {
   create: vi.fn(),
   getById: vi.fn(),
-}));
+};
 
-const mockBudgetService = vi.hoisted(() => ({
+const mockBudgetService = {
   upsertPolicy: vi.fn(),
-}));
+};
 
-const mockHeartbeatService = vi.hoisted(() => ({
+const mockHeartbeatService = {
   listTaskSessions: vi.fn(),
   resetRuntimeSession: vi.fn(),
-}));
+};
 
-const mockIssueApprovalService = vi.hoisted(() => ({
+const mockIssueApprovalService = {
   linkManyForApproval: vi.fn(),
-}));
+};
 
-const mockIssueService = vi.hoisted(() => ({
+const mockIssueService = {
   list: vi.fn(),
-}));
+};
 
-const mockSecretService = vi.hoisted(() => ({
+const mockSecretService = {
   normalizeAdapterConfigForPersistence: vi.fn(),
   resolveAdapterConfigForRuntime: vi.fn(),
-}));
+};
 
-const mockAgentInstructionsService = vi.hoisted(() => ({
+const mockAgentInstructionsService = {
   materializeManagedBundle: vi.fn(),
-}));
-const mockCompanySkillService = vi.hoisted(() => ({
+};
+const mockCompanySkillService = {
   listRuntimeSkillEntries: vi.fn(),
   resolveRequestedSkillKeys: vi.fn(),
-}));
-const mockWorkspaceOperationService = vi.hoisted(() => ({}));
-const mockLogActivity = vi.hoisted(() => vi.fn());
-
-vi.mock("../services/index.js", () => ({
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => mockAgentInstructionsService,
-  accessService: () => mockAccessService,
-  approvalService: () => mockApprovalService,
-  companySkillService: () => mockCompanySkillService,
-  budgetService: () => mockBudgetService,
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => mockIssueApprovalService,
-  issueService: () => mockIssueService,
-  logActivity: mockLogActivity,
-  secretService: () => mockSecretService,
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => mockWorkspaceOperationService,
-}));
+};
+const mockWorkspaceOperationService = {};
+const mockLogActivity = vi.fn();
+const mockSyncInstructionsBundleConfigFromFilePath = vi.fn((_agent, config) => config);
+const mockInstanceSettingsService = {
+  getGeneral: vi.fn(),
+};
+const mockLeaseManagerService = {};
+const mockFindServerAdapter = vi.fn();
+const mockListAdapterModels = vi.fn();
+const mockDetectAdapterModel = vi.fn();
 
 function createDbStub() {
   return {
@@ -119,14 +109,41 @@ function createDbStub() {
   };
 }
 
-function createApp(actor: Record<string, unknown>) {
+async function createApp(actor: Record<string, unknown>) {
+  vi.resetModules();
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
     (req as any).actor = actor;
     next();
   });
-  app.use("/api", agentRoutes(createDbStub() as any));
+  const [{ agentRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/agents.js"),
+    import("../middleware/index.js"),
+  ]);
+  app.use(
+    "/api",
+    agentRoutes(createDbStub() as any, {
+      agentService: mockAgentService as any,
+      agentInstructionsService: mockAgentInstructionsService as any,
+      accessService: mockAccessService as any,
+      approvalService: mockApprovalService as any,
+      companySkillService: mockCompanySkillService as any,
+      budgetService: mockBudgetService as any,
+      heartbeatService: mockHeartbeatService as any,
+      issueApprovalService: mockIssueApprovalService as any,
+      issueService: mockIssueService as any,
+      instanceSettingsService: mockInstanceSettingsService as any,
+      leaseManagerService: mockLeaseManagerService as any,
+      logActivity: mockLogActivity,
+      secretService: mockSecretService as any,
+      syncInstructionsBundleConfigFromFilePath: mockSyncInstructionsBundleConfigFromFilePath,
+      workspaceOperationService: mockWorkspaceOperationService as any,
+      findServerAdapter: mockFindServerAdapter,
+      listAdapterModels: mockListAdapterModels,
+      detectAdapterModel: mockDetectAdapterModel,
+    }),
+  );
   app.use(errorHandler);
   return app;
 }
@@ -174,11 +191,14 @@ describe("agent permission routes", () => {
     );
     mockSecretService.normalizeAdapterConfigForPersistence.mockImplementation(async (_companyId, config) => config);
     mockSecretService.resolveAdapterConfigForRuntime.mockImplementation(async (_companyId, config) => ({ config }));
+    mockInstanceSettingsService.getGeneral.mockResolvedValue({
+      censorUsernameInLogs: false,
+    });
     mockLogActivity.mockResolvedValue(undefined);
   });
 
   it("grants tasks:assign by default when board creates a new agent", async () => {
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -228,7 +248,7 @@ describe("agent permission routes", () => {
       },
     ]);
 
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -249,7 +269,7 @@ describe("agent permission routes", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const app = createApp({
+    const app = await createApp({
       type: "board",
       userId: "board-user",
       source: "local_implicit",
@@ -284,7 +304,7 @@ describe("agent permission routes", () => {
       },
     ]);
 
-    const app = createApp({
+    const app = await createApp({
       type: "agent",
       agentId,
       companyId,

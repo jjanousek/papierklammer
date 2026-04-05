@@ -80,6 +80,7 @@ type AgentRouteDependencies = {
   budgetService?: ReturnType<typeof budgetService>;
   heartbeatService?: ReturnType<typeof heartbeatService>;
   issueApprovalService?: ReturnType<typeof issueApprovalService>;
+  issueService?: ReturnType<typeof issueService>;
   secretService?: ReturnType<typeof secretService>;
   workspaceOperationService?: ReturnType<typeof workspaceOperationService>;
   instanceSettingsService?: ReturnType<typeof instanceSettingsService>;
@@ -117,6 +118,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   const budgets = deps.budgetService ?? budgetService(db);
   const heartbeat = deps.heartbeatService ?? heartbeatService(db);
   const issueApprovalsSvc = deps.issueApprovalService ?? issueApprovalService(db);
+  const issuesSvc = deps.issueService ?? issueService(db);
   const secretsSvc = deps.secretService ?? secretService(db);
   const instructions = deps.agentInstructionsService ?? agentInstructionsService();
   const companySkills = deps.companySkillService ?? companySkillService(db);
@@ -1020,7 +1022,6 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
       return;
     }
 
-    const issuesSvc = issueService(db);
     const rows = await issuesSvc.list(req.actor.companyId, {
       assigneeAgentId: req.actor.agentId,
       status: "todo,in_progress,blocked",
@@ -1049,7 +1050,6 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
     }
 
     const query = agentMineInboxQuerySchema.parse(req.query);
-    const issuesSvc = issueService(db);
     const rows = await issuesSvc.list(req.actor.companyId, {
       touchedByUserId: query.userId,
       inboxArchivedByUserId: query.userId,
@@ -2345,9 +2345,8 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
 
   router.get("/issues/:issueId/live-runs", async (req, res) => {
     const rawId = req.params.issueId as string;
-    const issueSvc = issueService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
+    const issue = isIdentifier ? await issuesSvc.getByIdentifier(rawId) : await issuesSvc.getById(rawId);
     if (!issue) {
       res.status(404).json({ error: "Issue not found" });
       return;
@@ -2383,9 +2382,8 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
 
   router.get("/issues/:issueId/active-run", async (req, res) => {
     const rawId = req.params.issueId as string;
-    const issueSvc = issueService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const rawIssue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
+    const rawIssue = isIdentifier ? await issuesSvc.getByIdentifier(rawId) : await issuesSvc.getById(rawId);
     if (!rawIssue) {
       res.status(404).json({ error: "Issue not found" });
       return;
@@ -2393,8 +2391,8 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
     assertCompanyAccess(req, rawIssue.companyId);
 
     const convergence =
-      typeof issueSvc.convergeExecutionState === "function"
-        ? await issueSvc.convergeExecutionState(rawIssue.id)
+      typeof issuesSvc.convergeExecutionState === "function"
+        ? await issuesSvc.convergeExecutionState(rawIssue.id)
         : null;
     const issue = convergence?.issue ?? rawIssue;
 

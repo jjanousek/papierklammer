@@ -35,15 +35,8 @@ const mockBoardAuthService = vi.hoisted(() => ({
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
-
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  boardAuthService: () => mockBoardAuthService,
-  deduplicateAgentName: vi.fn(),
-  logActivity: mockLogActivity,
-  notifyHireApproved: vi.fn(),
-}));
+const mockDeduplicateAgentName = vi.hoisted(() => vi.fn((name?: string) => name ?? ""));
+const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 
 function createDbStub() {
   const createdInvite = {
@@ -93,12 +86,23 @@ function createApp(actor: Record<string, unknown>, db: Record<string, unknown>) 
   });
   app.use(
     "/api",
-    accessRoutes(db as any, {
-      deploymentMode: "local_trusted",
-      deploymentExposure: "private",
-      bindHost: "127.0.0.1",
-      allowedHostnames: [],
-    }),
+    accessRoutes(
+      db as any,
+      {
+        deploymentMode: "local_trusted",
+        deploymentExposure: "private",
+        bindHost: "127.0.0.1",
+        allowedHostnames: [],
+      },
+      {
+        accessService: mockAccessService as any,
+        agentService: mockAgentService as any,
+        boardAuthService: mockBoardAuthService as any,
+        deduplicateAgentName: mockDeduplicateAgentName,
+        logActivity: mockLogActivity,
+        notifyHireApproved: mockNotifyHireApproved,
+      },
+    ),
   );
   app.use(errorHandler);
   return app;

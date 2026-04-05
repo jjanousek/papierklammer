@@ -9,69 +9,56 @@ const AGENT_ID = "00000000-0000-0000-0000-000000000020";
 const OPERATION_ID = "00000000-0000-0000-0000-000000000030";
 const EXECUTION_WORKSPACE_ID = "00000000-0000-0000-0000-000000000040";
 
-const mockHeartbeatService = vi.hoisted(() => ({
+const mockHeartbeatService = {
   getRun: vi.fn(),
   readLog: vi.fn(),
   listEvents: vi.fn(),
   cancelRun: vi.fn(),
-}));
+};
 
-const mockInstanceSettingsService = vi.hoisted(() => ({
+const mockInstanceSettingsService = {
   getGeneral: vi.fn(),
-}));
+};
 
-const mockWorkspaceOperationService = vi.hoisted(() => ({
+const mockWorkspaceOperationService = {
   listForRun: vi.fn(),
   getById: vi.fn(),
   readLog: vi.fn(),
-}));
+};
 
-const mockLogActivity = vi.hoisted(() => vi.fn());
-
-vi.mock("../services/index.js", () => ({
-  agentService: () => ({}),
-  agentInstructionsService: () => ({}),
-  accessService: () => ({}),
-  approvalService: () => ({}),
-  companySkillService: () => ({}),
-  budgetService: () => ({}),
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => ({}),
-  issueService: () => ({}),
-  logActivity: mockLogActivity,
-  secretService: () => ({}),
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => mockWorkspaceOperationService,
-}));
-
-vi.mock("../services/instance-settings.js", () => ({
-  instanceSettingsService: () => mockInstanceSettingsService,
-}));
-
-vi.mock("../services/lease-manager.js", () => ({
-  leaseManagerService: () => ({}),
-}));
-
-vi.mock("../adapters/index.js", () => ({
-  findServerAdapter: vi.fn(),
-  listAdapterModels: vi.fn(),
-  detectAdapterModel: vi.fn(),
-}));
+const mockLogActivity = vi.fn();
+const mockSyncInstructionsBundleConfigFromFilePath = vi.fn((_agent, config) => config);
+const mockFindServerAdapter = vi.fn();
+const mockListAdapterModels = vi.fn();
+const mockDetectAdapterModel = vi.fn();
+const mockLeaseManagerService = {};
 
 async function createApp(actor: Record<string, unknown>) {
+  vi.resetModules();
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
     (req as any).actor = actor;
     next();
   });
-
   const [{ agentRoutes }, { errorHandler }] = await Promise.all([
     import("../routes/agents.js"),
     import("../middleware/index.js"),
   ]);
-
-  app.use("/api", agentRoutes({} as any));
+  app.use(
+    "/api",
+    agentRoutes({} as any, {
+      heartbeatService: mockHeartbeatService as any,
+      instanceSettingsService: mockInstanceSettingsService as any,
+      logActivity: mockLogActivity,
+      workspaceOperationService: mockWorkspaceOperationService as any,
+      leaseManagerService: mockLeaseManagerService as any,
+      syncInstructionsBundleConfigFromFilePath: mockSyncInstructionsBundleConfigFromFilePath,
+      findServerAdapter: mockFindServerAdapter,
+      listAdapterModels: mockListAdapterModels,
+      detectAdapterModel: mockDetectAdapterModel,
+    }),
+  );
   app.use(errorHandler);
   return app;
 }

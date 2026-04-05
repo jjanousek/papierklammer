@@ -1,6 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { accessRoutes } from "../routes/access.js";
+import { errorHandler } from "../middleware/index.js";
 
 const mockAccessService = vi.hoisted(() => ({
   isInstanceAdmin: vi.fn(),
@@ -24,15 +26,8 @@ const mockBoardAuthService = vi.hoisted(() => ({
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
-
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  boardAuthService: () => mockBoardAuthService,
-  logActivity: mockLogActivity,
-  notifyHireApproved: vi.fn(),
-  deduplicateAgentName: vi.fn((name: string) => name),
-}));
+const mockDeduplicateAgentName = vi.hoisted(() => vi.fn((name: string) => name));
+const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 
 function createApp(actor: any) {
   const app = express();
@@ -41,21 +36,28 @@ function createApp(actor: any) {
     req.actor = actor;
     next();
   });
-  return import("../routes/access.js").then(({ accessRoutes }) =>
-    import("../middleware/index.js").then(({ errorHandler }) => {
-      app.use(
-        "/api",
-        accessRoutes({} as any, {
-          deploymentMode: "authenticated",
-          deploymentExposure: "private",
-          bindHost: "127.0.0.1",
-          allowedHostnames: [],
-        }),
-      );
-      app.use(errorHandler);
-      return app;
-    })
+  app.use(
+    "/api",
+    accessRoutes(
+      {} as any,
+      {
+        deploymentMode: "authenticated",
+        deploymentExposure: "private",
+        bindHost: "127.0.0.1",
+        allowedHostnames: [],
+      },
+      {
+        accessService: mockAccessService as any,
+        agentService: mockAgentService as any,
+        boardAuthService: mockBoardAuthService as any,
+        deduplicateAgentName: mockDeduplicateAgentName,
+        logActivity: mockLogActivity,
+        notifyHireApproved: mockNotifyHireApproved,
+      },
+    ),
   );
+  app.use(errorHandler);
+  return Promise.resolve(app);
 }
 
 describe("cli auth routes", () => {

@@ -1,6 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { routineRoutes } from "../routes/routines.js";
+import { errorHandler } from "../middleware/index.js";
 
 const companyId = "22222222-2222-4222-8222-222222222222";
 const agentId = "11111111-1111-4111-8111-111111111111";
@@ -81,12 +83,6 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  logActivity: mockLogActivity,
-  routineService: () => mockRoutineService,
-}));
-
 async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
@@ -94,11 +90,14 @@ async function createApp(actor: Record<string, unknown>) {
     (req as any).actor = actor;
     next();
   });
-  const [{ routineRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/routines.js"),
-    import("../middleware/index.js"),
-  ]);
-  app.use("/api", routineRoutes({} as any));
+  app.use(
+    "/api",
+    routineRoutes({} as any, {
+      accessService: mockAccessService as any,
+      logActivity: mockLogActivity,
+      routineService: mockRoutineService as any,
+    }),
+  );
   app.use(errorHandler);
   return app;
 }
