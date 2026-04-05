@@ -210,6 +210,13 @@ describe("agent instructions bundle routes", () => {
   });
 
   it("writes a bundle file and persists compatibility config", async () => {
+    mockSecretService.normalizeAdapterConfigForPersistence.mockImplementationOnce(
+      async (_companyId: string, config: Record<string, unknown>) => ({
+        ...config,
+        normalizedForPersistence: true,
+      }),
+    );
+
     const res = await request(await createApp())
       .put("/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle/file?companyId=company-1")
       .send({
@@ -225,6 +232,27 @@ describe("agent instructions bundle routes", () => {
         path: "AGENTS.md",
         content: "# Updated Agent\n",
         options: { clearLegacyPromptTemplate: true },
+      },
+    ]);
+    expect(agentUpdateCalls).toEqual([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        patch: {
+          adapterConfig: {
+            instructionsBundleMode: "managed",
+            instructionsRootPath: "/tmp/agent-1",
+            instructionsEntryFile: "AGENTS.md",
+            instructionsFilePath: "/tmp/agent-1/AGENTS.md",
+            normalizedForPersistence: true,
+          },
+        },
+        options: {
+          recordRevision: {
+            createdByAgentId: null,
+            createdByUserId: "local-board",
+            source: "instructions_bundle_file_put",
+          },
+        },
       },
     ]);
   });
