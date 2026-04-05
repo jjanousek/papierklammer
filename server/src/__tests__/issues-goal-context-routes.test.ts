@@ -1,6 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { issueRoutes } from "../routes/issues.js";
 
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -20,63 +22,7 @@ const mockGoalService = vi.hoisted(() => ({
   getDefaultCompanyGoal: vi.fn(),
 }));
 
-vi.mock("../services/projections.js", () => ({
-  projectionService: () => ({
-    getIssueProjection: vi.fn(async () => ({
-      projectedStatus: "todo",
-      activeRunId: null,
-      activeLeaseId: null,
-      pickupFailCount: 0,
-      lastReconciledAt: null,
-    })),
-    projectIssuesList: vi.fn(async (issues: any[]) => issues.map((i: any) => ({
-      ...i,
-      projectedStatus: i.status,
-      activeRunId: null,
-      activeLeaseId: null,
-      pickupFailCount: 0,
-      lastReconciledAt: null,
-    }))),
-    invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
-  }),
-}));
-
-vi.mock("../services/index.js", () => ({
-  accessService: () => ({
-    canUser: vi.fn(),
-    hasPermission: vi.fn(),
-  }),
-  agentService: () => ({
-    getById: vi.fn(),
-  }),
-  documentService: () => ({
-    getIssueDocumentPayload: vi.fn(async () => ({})),
-  }),
-  executionWorkspaceService: () => ({
-    getById: vi.fn(),
-  }),
-  goalService: () => mockGoalService,
-  heartbeatService: () => ({
-    wakeup: vi.fn(async () => undefined),
-    reportRunActivity: vi.fn(async () => undefined),
-  }),
-  issueApprovalService: () => ({}),
-  issueService: () => mockIssueService,
-  logActivity: vi.fn(async () => undefined),
-  projectService: () => mockProjectService,
-  routineService: () => ({
-    syncRunStatusForIssue: vi.fn(async () => undefined),
-  }),
-  workProductService: () => ({
-    listForIssue: vi.fn(async () => []),
-  }),
-}));
-
-async function createApp() {
-  const [{ issueRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/issues.js"),
-    import("../middleware/index.js"),
-  ]);
+function createApp() {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -89,7 +35,54 @@ async function createApp() {
     };
     next();
   });
-  app.use("/api", issueRoutes({} as any, {} as any));
+  app.use("/api", issueRoutes({} as any, {} as any, {
+    accessService: {
+      canUser: vi.fn(),
+      hasPermission: vi.fn(),
+    } as any,
+    agentService: {
+      getById: vi.fn(),
+    } as any,
+    documentService: {
+      getIssueDocumentPayload: vi.fn(async () => ({})),
+    } as any,
+    executionWorkspaceService: {
+      getById: vi.fn(),
+    } as any,
+    goalService: mockGoalService as any,
+    heartbeatService: {
+      wakeup: vi.fn(async () => undefined),
+      reportRunActivity: vi.fn(async () => undefined),
+    } as any,
+    issueApprovalService: {} as any,
+    issueService: mockIssueService as any,
+    logActivity: vi.fn(async () => undefined),
+    projectService: mockProjectService as any,
+    routineService: {
+      syncRunStatusForIssue: vi.fn(async () => undefined),
+    } as any,
+    workProductService: {
+      listForIssue: vi.fn(async () => []),
+    } as any,
+    projectionService: {
+      getIssueProjection: vi.fn(async () => ({
+        projectedStatus: "todo",
+        activeRunId: null,
+        activeLeaseId: null,
+        pickupFailCount: 0,
+        lastReconciledAt: null,
+      })),
+      projectIssuesList: vi.fn(async (issues: any[]) => issues.map((i: any) => ({
+        ...i,
+        projectedStatus: i.status,
+        activeRunId: null,
+        activeLeaseId: null,
+        pickupFailCount: 0,
+        lastReconciledAt: null,
+      }))),
+      invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
+    } as any,
+  }));
   app.use(errorHandler);
   return app;
 }
@@ -128,7 +121,6 @@ const projectGoal = {
 
 describe("issue goal context routes", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     mockIssueService.getById.mockResolvedValue(legacyProjectLinkedIssue);
     mockIssueService.getAncestors.mockResolvedValue([]);
@@ -180,7 +172,7 @@ describe("issue goal context routes", () => {
   });
 
   it("surfaces the project goal from GET /issues/:id when the issue has no direct goal", async () => {
-    const res = await request(await createApp()).get("/api/issues/11111111-1111-4111-8111-111111111111");
+    const res = await request(createApp()).get("/api/issues/11111111-1111-4111-8111-111111111111");
 
     expect(res.status).toBe(200);
     expect(res.body.goalId).toBe(projectGoal.id);
@@ -194,7 +186,7 @@ describe("issue goal context routes", () => {
   });
 
   it("surfaces the project goal from GET /issues/:id/heartbeat-context", async () => {
-    const res = await request(await createApp()).get(
+    const res = await request(createApp()).get(
       "/api/issues/11111111-1111-4111-8111-111111111111/heartbeat-context",
     );
 

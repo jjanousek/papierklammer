@@ -1,6 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { issueRoutes } from "../routes/issues.js";
 
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -30,67 +32,9 @@ const mockAgentService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn(async () => undefined));
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  documentService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  goalService: () => ({}),
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => ({}),
-  issueService: () => mockIssueService,
-  logActivity: mockLogActivity,
-  projectService: () => ({}),
-  routineService: () => ({
-    syncRunStatusForIssue: vi.fn(async () => undefined),
-  }),
-  workProductService: () => ({}),
-}));
-
-vi.mock("../services/event-log.js", () => ({
-  eventLogService: () => ({ emit: mockEventLogEmit }),
-}));
-
-vi.mock("../services/intent-queue.js", () => ({
-  intentQueueService: () => ({
-    createIntent: vi.fn(async () => ({})),
-    invalidateForClosedIssue: vi.fn(async () => 0),
-  }),
-}));
-
-vi.mock("../services/lease-manager.js", () => ({
-  leaseManagerService: () => ({
-    renewLeaseForIssueActivity: vi.fn(async () => undefined),
-  }),
-}));
-
-vi.mock("../services/projections.js", () => ({
-  projectionService: () => ({
-    invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
-    getIssueProjection: vi.fn(async () => null),
-    projectIssuesList: vi.fn(async (rows: unknown[]) => rows),
-  }),
-}));
-
-vi.mock("../services/issue-assignment-wakeup.js", () => ({
-  queueIssueAssignmentIntent: vi.fn(async () => undefined),
-}));
-
-vi.mock("../services/dependency.js", () => ({
-  dependencyService: () => ({
-    listForIssue: vi.fn(async () => []),
-    create: vi.fn(),
-    remove: vi.fn(),
-  }),
-}));
-
 const issueId = "11111111-1111-4111-8111-111111111111";
 
-async function createApp() {
-  const [{ issueRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/issues.js"),
-    import("../middleware/index.js"),
-  ]);
+function createApp() {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -103,7 +47,43 @@ async function createApp() {
     };
     next();
   });
-  app.use("/api", issueRoutes({} as any, {} as any));
+  app.use("/api", issueRoutes({} as any, {} as any, {
+    accessService: mockAccessService as any,
+    agentService: mockAgentService as any,
+    documentService: {} as any,
+    executionWorkspaceService: {} as any,
+    goalService: {} as any,
+    heartbeatService: mockHeartbeatService as any,
+    issueApprovalService: {} as any,
+    issueService: mockIssueService as any,
+    logActivity: mockLogActivity,
+    projectService: {} as any,
+    routineService: {
+      syncRunStatusForIssue: vi.fn(async () => undefined),
+    } as any,
+    workProductService: {} as any,
+    intentQueueService: {
+      createIntent: vi.fn(async () => ({})),
+      invalidateForClosedIssue: vi.fn(async () => 0),
+    } as any,
+    leaseManagerService: {
+      renewLeaseForIssueActivity: vi.fn(async () => undefined),
+    } as any,
+    eventLogService: {
+      emit: mockEventLogEmit,
+    } as any,
+    projectionService: {
+      invalidateOnDone: vi.fn(async () => ({ rejectedIntents: 0, releasedLeases: 0 })),
+      getIssueProjection: vi.fn(async () => null),
+      projectIssuesList: vi.fn(async (rows: unknown[]) => rows),
+    } as any,
+    dependencyService: {
+      listForIssue: vi.fn(async () => []),
+      create: vi.fn(),
+      remove: vi.fn(),
+    } as any,
+    queueIssueAssignmentIntent: vi.fn(async () => undefined),
+  }));
   app.use(errorHandler);
   return app;
 }
@@ -117,7 +97,7 @@ async function invokeRoute({
   path: string;
   body?: Record<string, unknown>;
 }) {
-  return request(await createApp())[method](path).send(body);
+  return request(createApp())[method](path).send(body);
 }
 
 function makeIssue(status: "todo" | "done") {
@@ -135,7 +115,6 @@ function makeIssue(status: "todo" | "done") {
 
 describe("issue comment reopen routes", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     mockIssueService.getById.mockReset();
     mockIssueService.update.mockReset();

@@ -49,24 +49,47 @@ const updateIssueRouteSchema = updateIssueSchema.extend({
   interrupt: z.boolean().optional(),
 });
 
-export function issueRoutes(db: Db, storage: StorageService) {
+type IssueRouteDependencies = {
+  accessService?: ReturnType<typeof accessService>;
+  agentService?: ReturnType<typeof agentService>;
+  documentService?: ReturnType<typeof documentService>;
+  executionWorkspaceService?: ReturnType<typeof executionWorkspaceService>;
+  goalService?: ReturnType<typeof goalService>;
+  heartbeatService?: ReturnType<typeof heartbeatService>;
+  issueApprovalService?: ReturnType<typeof issueApprovalService>;
+  issueService?: ReturnType<typeof issueService>;
+  projectService?: ReturnType<typeof projectService>;
+  routineService?: ReturnType<typeof routineService>;
+  workProductService?: ReturnType<typeof workProductService>;
+  intentQueueService?: ReturnType<typeof intentQueueService>;
+  leaseManagerService?: ReturnType<typeof leaseManagerService>;
+  eventLogService?: ReturnType<typeof eventLogService>;
+  projectionService?: ReturnType<typeof projectionService>;
+  dependencyService?: ReturnType<typeof dependencyService>;
+  logActivity?: typeof logActivity;
+  queueIssueAssignmentIntent?: typeof queueIssueAssignmentIntent;
+};
+
+export function issueRoutes(db: Db, storage: StorageService, deps: IssueRouteDependencies = {}) {
   const router = Router();
-  const svc = issueService(db);
-  const access = accessService(db);
-  const heartbeat = heartbeatService(db);
-  const intentQueue = intentQueueService(db);
-  const agentsSvc = agentService(db);
-  const projectsSvc = projectService(db);
-  const goalsSvc = goalService(db);
-  const issueApprovalsSvc = issueApprovalService(db);
-  const executionWorkspacesSvc = executionWorkspaceService(db);
-  const workProductsSvc = workProductService(db);
-  const documentsSvc = documentService(db);
-  const routinesSvc = routineService(db);
-  const leaseMgr = leaseManagerService(db);
-  const eventLog = eventLogService(db);
-  const projections = projectionService(db);
-  const depSvc = dependencyService(db);
+  const svc = deps.issueService ?? issueService(db);
+  const access = deps.accessService ?? accessService(db);
+  const heartbeat = deps.heartbeatService ?? heartbeatService(db);
+  const intentQueue = deps.intentQueueService ?? intentQueueService(db);
+  const agentsSvc = deps.agentService ?? agentService(db);
+  const projectsSvc = deps.projectService ?? projectService(db);
+  const goalsSvc = deps.goalService ?? goalService(db);
+  const issueApprovalsSvc = deps.issueApprovalService ?? issueApprovalService(db);
+  const executionWorkspacesSvc = deps.executionWorkspaceService ?? executionWorkspaceService(db);
+  const workProductsSvc = deps.workProductService ?? workProductService(db);
+  const documentsSvc = deps.documentService ?? documentService(db);
+  const routinesSvc = deps.routineService ?? routineService(db);
+  const leaseMgr = deps.leaseManagerService ?? leaseManagerService(db);
+  const eventLog = deps.eventLogService ?? eventLogService(db);
+  const projections = deps.projectionService ?? projectionService(db);
+  const depSvc = deps.dependencyService ?? dependencyService(db);
+  const logActivityFn = deps.logActivity ?? logActivity;
+  const queueIssueAssignmentIntentFn = deps.queueIssueAssignmentIntent ?? queueIssueAssignmentIntent;
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 },
@@ -157,7 +180,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     const ownership = await svc.assertCheckoutOwner(issue.id, actorAgentId, runId);
     if (ownership.adoptedFromRunId) {
       const actor = getActorInfo(req);
-      await logActivity(db, {
+      await logActivityFn(db, {
         companyId: issue.companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -340,7 +363,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     assertCompanyAccess(req, companyId);
     const label = await svc.createLabel(companyId, req.body);
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -368,7 +391,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: removed.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -565,7 +588,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     });
     const doc = result.document;
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -630,7 +653,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
         createdByUserId: actor.actorType === "user" ? actor.actorId : null,
       });
 
-      await logActivity(db, {
+      await logActivityFn(db, {
         companyId: issue.companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -677,7 +700,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -712,7 +735,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -740,7 +763,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: existing.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -768,7 +791,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       return;
     }
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: existing.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -800,7 +823,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
     const readState = await svc.markRead(issue.companyId, issue.id, req.actor.userId, new Date());
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -832,7 +855,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
     const removed = await svc.markUnread(issue.companyId, issue.id, req.actor.userId);
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -864,7 +887,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
     const archiveState = await svc.archiveInbox(issue.companyId, issue.id, req.actor.userId, new Date());
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -896,7 +919,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
     const removed = await svc.unarchiveInbox(issue.companyId, issue.id, req.actor.userId);
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -937,7 +960,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       userId: actor.actorType === "user" ? actor.actorId : null,
     });
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -966,7 +989,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     await issueApprovalsSvc.unlink(id, approvalId);
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -995,7 +1018,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       createdByUserId: actor.actorType === "user" ? actor.actorId : null,
     });
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1007,7 +1030,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       details: { title: issue.title, identifier: issue.identifier },
     });
 
-    void queueIssueAssignmentIntent({
+    void queueIssueAssignmentIntentFn({
       db,
       intentQueue,
       issue,
@@ -1071,7 +1094,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
         const cancelled = await heartbeat.cancelRun(runToInterrupt.id);
         if (cancelled) {
           interruptedRunId = cancelled.id;
-          await logActivity(db, {
+          await logActivityFn(db, {
             companyId: cancelled.companyId,
             actorType: actor.actorType,
             actorId: actor.actorId,
@@ -1180,7 +1203,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       previous.status !== undefined &&
       issue.status === "todo";
     const reopenFromStatus = reopened ? existing.status : null;
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1206,7 +1229,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
         userId: actor.actorType === "user" ? actor.actorId : undefined,
       });
 
-      await logActivity(db, {
+      await logActivityFn(db, {
         companyId: issue.companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -1343,7 +1366,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1424,7 +1447,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
     const actor = getActorInfo(req);
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: issue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1483,7 +1506,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: released.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1577,7 +1600,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       reopenFromStatus = issue.status;
       currentIssue = reopenedIssue;
 
-      await logActivity(db, {
+      await logActivityFn(db, {
         companyId: currentIssue.companyId,
         actorType: actor.actorType,
         actorId: actor.actorId,
@@ -1621,7 +1644,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
         const cancelled = await heartbeat.cancelRun(runToInterrupt.id);
         if (cancelled) {
           interruptedRunId = cancelled.id;
-          await logActivity(db, {
+          await logActivityFn(db, {
             companyId: cancelled.companyId,
             actorType: actor.actorType,
             actorId: actor.actorId,
@@ -1650,7 +1673,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
         logger.warn({ err, runId: actor.runId }, "failed to clear detached run warning after issue comment"));
     }
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: currentIssue.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1847,7 +1870,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       createdByUserId: actor.actorType === "user" ? actor.actorId : null,
     });
 
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
@@ -1911,7 +1934,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     }
 
     const actor = getActorInfo(req);
-    await logActivity(db, {
+    await logActivityFn(db, {
       companyId: removed.companyId,
       actorType: actor.actorType,
       actorId: actor.actorId,
