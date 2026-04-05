@@ -11,6 +11,9 @@ export interface HelpOverlayProps {
 const SHORTCUTS: Array<{ key: string; description: string }> = [
   { key: "Tab", description: "Switch panels (sidebar ↔ input)" },
   { key: "Enter", description: "Send message" },
+  { key: "v / w", description: "Invoke or wake selected agent (sidebar)" },
+  { key: "a / x", description: "Approve or reject selected approval (sidebar)" },
+  { key: "[ / ]", description: "Cycle pending approvals (sidebar)" },
   { key: "r", description: "Cycle reasoning effort (low→med→high)" },
   { key: "f", description: "Toggle fast mode (2× cost)" },
   { key: "s", description: "Open settings overlay" },

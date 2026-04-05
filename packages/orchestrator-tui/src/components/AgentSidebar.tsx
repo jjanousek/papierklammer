@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import type { AgentOverview, RunReviewEntry } from "../hooks/useOrchestratorStatus.js";
+import type { PendingApprovalSummary } from "../lib/managementApi.js";
 import { getAgentOverviewDisplayStatus } from "../lib/agentStatus.js";
 
 const STATUS_DOT: Record<string, { symbol: string; color: string }> = {
@@ -26,6 +27,7 @@ export interface AgentSidebarProps {
   agents: AgentOverview[];
   activeRuns?: RunReviewEntry[];
   recentRuns?: RunReviewEntry[];
+  pendingApprovals?: PendingApprovalSummary[];
   /** Override max visible agents for testing */
   maxVisible?: number;
   /** Whether the sidebar is currently focused for keyboard navigation */
@@ -34,22 +36,41 @@ export interface AgentSidebarProps {
   connected?: boolean;
   /** Error message from the last failed poll */
   error?: string | null;
+  onInvokeSelectedAgent?: (agent: AgentOverview) => void;
+  onWakeSelectedAgent?: (agent: AgentOverview) => void;
+  onApproveSelectedApproval?: (approval: PendingApprovalSummary) => void;
+  onRejectSelectedApproval?: (approval: PendingApprovalSummary) => void;
 }
 
 export function AgentSidebar({
   agents,
   activeRuns = [],
   recentRuns = [],
+  pendingApprovals = [],
   maxVisible = DEFAULT_MAX_VISIBLE,
   focused = false,
   connected = true,
   error = null,
+  onInvokeSelectedAgent,
+  onWakeSelectedAgent,
+  onApproveSelectedApproval,
+  onRejectSelectedApproval,
 }: AgentSidebarProps): React.ReactElement {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
+  const [selectedApprovalIndex, setSelectedApprovalIndex] = useState(0);
+
+  useEffect(() => {
+    setSelectedIndex((current) => Math.max(0, Math.min(current, agents.length - 1)));
+    setScrollOffset((current) => Math.max(0, Math.min(current, Math.max(0, agents.length - maxVisible))));
+  }, [agents.length, maxVisible]);
+
+  useEffect(() => {
+    setSelectedApprovalIndex((current) => Math.max(0, Math.min(current, pendingApprovals.length - 1)));
+  }, [pendingApprovals.length]);
 
   useInput(
-    (_input, key) => {
+    (input, key) => {
       if (!focused) return;
       if (key.downArrow) {
         setSelectedIndex((prev) => {
@@ -71,6 +92,24 @@ export function AgentSidebar({
           return next;
         });
       }
+      if (input === "v" && agents[selectedIndex]) {
+        onInvokeSelectedAgent?.(agents[selectedIndex]!);
+      }
+      if (input === "w" && agents[selectedIndex]) {
+        onWakeSelectedAgent?.(agents[selectedIndex]!);
+      }
+      if (input === "[" && pendingApprovals.length > 0) {
+        setSelectedApprovalIndex((prev) => (prev - 1 + pendingApprovals.length) % pendingApprovals.length);
+      }
+      if (input === "]" && pendingApprovals.length > 0) {
+        setSelectedApprovalIndex((prev) => (prev + 1) % pendingApprovals.length);
+      }
+      if (input === "a" && pendingApprovals[selectedApprovalIndex]) {
+        onApproveSelectedApproval?.(pendingApprovals[selectedApprovalIndex]!);
+      }
+      if (input === "x" && pendingApprovals[selectedApprovalIndex]) {
+        onRejectSelectedApproval?.(pendingApprovals[selectedApprovalIndex]!);
+      }
     },
     { isActive: focused },
   );
@@ -83,6 +122,7 @@ export function AgentSidebar({
   const selectedAgentId = agents[selectedIndex]?.agentId ?? null;
   const selectedAgentName = agents[selectedIndex]?.name ?? selectedAgentId ?? "selected agent";
   const hasInspectableRuns = activeRuns.length > 0 || recentRuns.length > 0;
+  const selectedApproval = pendingApprovals[selectedApprovalIndex] ?? null;
   const inspectedRun =
     [...activeRuns, ...recentRuns].find((run) => run.agentId === selectedAgentId)
     ?? null;
@@ -97,6 +137,7 @@ export function AgentSidebar({
       ?? "—"
     : null;
   const runLabel = inspectedRun ? inspectedRun.runId.slice(0, 8) : null;
+  const approvalLabel = selectedApproval ? selectedApproval.id.slice(0, 8) : null;
 
   return (
     <Box
@@ -175,6 +216,31 @@ export function AgentSidebar({
               )}
             </Box>
           ) : null}
+          <Box marginTop={1} flexDirection="column">
+            <Text bold underline>
+              Management
+            </Text>
+            <Text dimColor>v invoke · w wake selected agent</Text>
+            <Text dimColor>a approve · x reject · [ / ] cycle approvals</Text>
+            <Text>
+              Agent: {selectedAgentName}
+            </Text>
+            <Text bold underline>
+              Pending approvals
+            </Text>
+            {selectedApproval ? (
+              <>
+                <Text>
+                  {approvalLabel} · {selectedApproval.type}
+                </Text>
+                <Text dimColor>
+                  {selectedApprovalIndex + 1}/{pendingApprovals.length} · status {selectedApproval.status}
+                </Text>
+              </>
+            ) : (
+              <Text dimColor>No pending approvals</Text>
+            )}
+          </Box>
         </>
       )}
     </Box>

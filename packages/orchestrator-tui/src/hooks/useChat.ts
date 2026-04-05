@@ -31,6 +31,8 @@ export interface UseChatResult {
   onCommandExecution: (command: string, output: string) => void;
   /** Surface an assistant-visible error without crashing the TUI. */
   onError: (message: string) => void;
+  /** Append an assistant-visible message for local shortcut results. */
+  appendAssistantMessage: (message: string) => void;
   /**
    * Recover a still-pending turn from a send failure without duplicating an
    * error that was already surfaced through another callback path.
@@ -127,6 +129,17 @@ export function useChat(): UseChatResult {
     setPendingCommandItems([]);
   }, []);
 
+  const appendAssistantMessage = useCallback((message: string): void => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        text: message,
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
+
   const recoverFromPendingError = useCallback((message: string): void => {
     if (!pendingTurnRef.current) {
       return;
@@ -160,6 +173,7 @@ export function useChat(): UseChatResult {
     onTurnCompleted,
     onCommandExecution,
     onError,
+    appendAssistantMessage,
     recoverFromPendingError,
     setIsThinking,
   };

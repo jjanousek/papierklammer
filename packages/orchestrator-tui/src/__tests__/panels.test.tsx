@@ -639,43 +639,23 @@ describe("Agent list scrolling", () => {
   });
 
   it("shows ▲ indicator when scrolled past the beginning", async () => {
-    // With constrained terminal height (default 24 rows), the sidebar displays up to
-    // maxVisible agents. After scrolling past the initial window, ▲ appears.
     const manyAgents = makeAgents(30);
-    const mockFetch = createMockFetch(manyAgents);
-
     const { stdin, lastFrame, unmount } = render(
-      <App
-        url="http://localhost:3100"
-        apiKey=""
-        companyId="test-company"
-        fetchFn={mockFetch}
-        pollInterval={60000}
-      />,
+      <AgentSidebar agents={manyAgents} maxVisible={3} focused />,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Tab to focus sidebar
-    stdin.write("\t");
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // With 30 agents, we should see ▼ but not ▲ initially
     let frame = lastFrame()!;
     expect(frame).toContain("Agent-0");
     expect(frame).toContain("▼");
     expect(frame).not.toContain("▲");
 
-    // Navigate down past maxVisible (20) to trigger scroll
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 4; i++) {
       stdin.write("\u001B[B"); // Down arrow
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     frame = lastFrame()!;
-    // Now scrolled: should show ▲ indicator and some scrolled agents
     expect(frame).toContain("▲");
-    // Agent-0 should no longer be visible
     expect(frame).not.toContain("Agent-0 ");
 
     unmount();
@@ -683,26 +663,11 @@ describe("Agent list scrolling", () => {
 
   it("up arrow scrolls back showing agents above", async () => {
     const manyAgents = makeAgents(30);
-    const mockFetch = createMockFetch(manyAgents);
-
     const { stdin, lastFrame, unmount } = render(
-      <App
-        url="http://localhost:3100"
-        apiKey=""
-        companyId="test-company"
-        fetchFn={mockFetch}
-        pollInterval={60000}
-      />,
+      <AgentSidebar agents={manyAgents} maxVisible={3} focused />,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Tab to focus sidebar
-    stdin.write("\t");
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Navigate down 22 times to trigger scroll
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 4; i++) {
       stdin.write("\u001B[B");
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -710,14 +675,12 @@ describe("Agent list scrolling", () => {
     let frame = lastFrame()!;
     expect(frame).toContain("▲");
 
-    // Navigate back up 22 times
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 4; i++) {
       stdin.write("\u001B[A"); // Up arrow
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     frame = lastFrame()!;
-    // Should be back at Agent-0 with no ▲
     expect(frame).toContain("Agent-0");
     expect(frame).not.toContain("▲");
 

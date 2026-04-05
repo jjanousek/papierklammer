@@ -40,6 +40,7 @@ export interface OrchestratorStatusResult {
   error: string | null;
   activeRuns: RunReviewEntry[];
   recentRuns: RunReviewEntry[];
+  refresh: () => Promise<void>;
 }
 
 /**
@@ -141,5 +142,6 @@ export function useOrchestratorStatus(
     error,
     activeRuns,
     recentRuns,
+    refresh: poll,
   };
 }

@@ -11,6 +11,7 @@ import { SettingsOverlay } from "./SettingsOverlay.js";
 import { CompanyPicker, type CompanyOption } from "./CompanyPicker.js";
 import type { CodexState } from "./StatusBar.js";
 import { useOrchestratorStatus } from "../hooks/useOrchestratorStatus.js";
+import { usePendingApprovals } from "../hooks/usePendingApprovals.js";
 import { useChat } from "../hooks/useChat.js";
 import { useCodex } from "../hooks/useCodex.js";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
@@ -26,6 +27,14 @@ import {
   buildOrchestratorInstructions,
   buildOrchestratorTurnInput,
 } from "../codex/base-instructions.js";
+import {
+  approveApproval,
+  invokeAgentHeartbeat,
+  rejectApproval,
+  wakeAgent,
+  type PendingApprovalSummary,
+} from "../lib/managementApi.js";
+import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
 const REASONING_CYCLE: ReasoningEffort[] = ["low", "medium", "high"];
 
@@ -114,8 +123,16 @@ function CompanySession({
     pollInterval,
     fetchFn,
   );
+  const approvals = usePendingApprovals(
+    url,
+    apiKey,
+    companyId,
+    pollInterval,
+    fetchFn,
+  );
 
   const chat = useChat();
+  const managementActionInFlightRef = useRef(false);
 
   const handleDelta = useCallback(
     (params: DeltaParams) => {
@@ -220,6 +237,90 @@ function CompanySession({
     [chat.sendMessage, chat.recoverFromPendingError, enableCodex, codex, companyId, companyName],
   );
 
+  const runManagementAction = useCallback(
+    async (
+      action: () => Promise<string>,
+      onFinally?: () => Promise<void> | void,
+    ) => {
+      if (managementActionInFlightRef.current) {
+        return;
+      }
+
+      managementActionInFlightRef.current = true;
+      try {
+        chat.appendAssistantMessage(await action());
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Management action failed";
+        chat.appendAssistantMessage(`Error: ${message}`);
+      } finally {
+        managementActionInFlightRef.current = false;
+        await onFinally?.();
+      }
+    },
+    [chat],
+  );
+
+  const refreshManagementState = useCallback(async () => {
+    await Promise.all([
+      status.refresh(),
+      approvals.refresh(),
+    ]);
+  }, [approvals, status]);
+
+  const handleInvokeSelectedAgent = useCallback(
+    (agent: AgentOverview) => {
+      void runManagementAction(
+        async () => {
+          const run = await invokeAgentHeartbeat(url, apiKey, agent.agentId, fetchFn);
+          const runSuffix = run.id ? ` (run ${run.id.slice(0, 8)})` : "";
+          return `Invoked heartbeat for ${agent.name || agent.agentId}${runSuffix}.`;
+        },
+        refreshManagementState,
+      );
+    },
+    [apiKey, fetchFn, refreshManagementState, runManagementAction, url],
+  );
+
+  const handleWakeSelectedAgent = useCallback(
+    (agent: AgentOverview) => {
+      void runManagementAction(
+        async () => {
+          const run = await wakeAgent(url, apiKey, agent.agentId, fetchFn);
+          const runSuffix = run.id ? ` (run ${run.id.slice(0, 8)})` : "";
+          return `Queued wakeup for ${agent.name || agent.agentId}${runSuffix}.`;
+        },
+        refreshManagementState,
+      );
+    },
+    [apiKey, fetchFn, refreshManagementState, runManagementAction, url],
+  );
+
+  const handleApproveSelectedApproval = useCallback(
+    (approval: PendingApprovalSummary) => {
+      void runManagementAction(
+        async () => {
+          const updated = await approveApproval(url, apiKey, approval.id, fetchFn);
+          return `Approved ${updated.type} approval ${updated.id.slice(0, 8)}.`;
+        },
+        refreshManagementState,
+      );
+    },
+    [apiKey, fetchFn, refreshManagementState, runManagementAction, url],
+  );
+
+  const handleRejectSelectedApproval = useCallback(
+    (approval: PendingApprovalSummary) => {
+      void runManagementAction(
+        async () => {
+          const updated = await rejectApproval(url, apiKey, approval.id, fetchFn);
+          return `Rejected ${updated.type} approval ${updated.id.slice(0, 8)}.`;
+        },
+        refreshManagementState,
+      );
+    },
+    [apiKey, fetchFn, refreshManagementState, runManagementAction, url],
+  );
+
   return (
     <ErrorBoundary>
       <Box flexDirection="column" width="100%" height="100%">
@@ -235,9 +336,14 @@ function CompanySession({
             agents={status.agents}
             activeRuns={status.activeRuns}
             recentRuns={status.recentRuns}
+            pendingApprovals={approvals.approvals}
             focused={focusTarget === "sidebar"}
             connected={status.connected}
-            error={status.error}
+            error={status.error ?? approvals.error}
+            onInvokeSelectedAgent={handleInvokeSelectedAgent}
+            onWakeSelectedAgent={handleWakeSelectedAgent}
+            onApproveSelectedApproval={handleApproveSelectedApproval}
+            onRejectSelectedApproval={handleRejectSelectedApproval}
           />
           {helpVisible ? (
             <Box flexGrow={1} justifyContent="center" alignItems="center">
