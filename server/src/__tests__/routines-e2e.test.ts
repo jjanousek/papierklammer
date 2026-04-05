@@ -28,6 +28,9 @@ import {
 } from "./helpers/embedded-postgres.js";
 import { errorHandler } from "../middleware/index.js";
 import { accessService } from "../services/access.js";
+import { logActivity } from "../services/activity-log.js";
+import { routineService } from "../services/routines.js";
+import { routineRoutes } from "../routes/routines.js";
 
 // routineService no longer needs a heartbeat mock — it uses the intent queue
 // (DB-backed) for assignment wakeups instead of heartbeat.wakeup().
@@ -74,17 +77,6 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
   });
 
   async function createApp(actor: Record<string, unknown>) {
-    const [
-      { routineRoutes },
-      { routineService },
-      { accessService: createAccessService },
-      { logActivity },
-    ] = await Promise.all([
-      import("../routes/routines.js"),
-      import("../services/routines.js"),
-      import("../services/access.js"),
-      import("../services/activity-log.js"),
-    ]);
     const app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
@@ -95,7 +87,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
       "/api",
       routineRoutes(db, {
         routineService: routineService(db),
-        accessService: createAccessService(db),
+        accessService: accessService(db),
         logActivity,
       }),
     );

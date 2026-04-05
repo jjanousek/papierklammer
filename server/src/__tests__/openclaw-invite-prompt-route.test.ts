@@ -1,6 +1,7 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { accessRoutes } from "../routes/access.js";
 
 const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(),
@@ -70,44 +71,119 @@ function createDbStub() {
   };
 }
 
-async function createApp(actor: Record<string, unknown>, db: Record<string, unknown>) {
-  const [{ accessRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/access.js"),
-    import("../middleware/index.js"),
-  ]);
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = actor;
-    next();
-  });
-  app.use(
-    "/api",
-    accessRoutes(
-      db as any,
-      {
-        deploymentMode: "local_trusted",
-        deploymentExposure: "private",
-        bindHost: "127.0.0.1",
-        allowedHostnames: [],
-      },
-      {
-        accessService: mockAccessService as any,
-        agentService: mockAgentService as any,
-        boardAuthService: mockBoardAuthService as any,
-        deduplicateAgentName: mockDeduplicateAgentName,
-        logActivity: mockLogActivity,
-        notifyHireApproved: mockNotifyHireApproved,
-      },
-    ),
+function getRouteHandlers(method: "get" | "post", path: string, db: Record<string, unknown>) {
+  const router = accessRoutes(
+    db as any,
+    {
+      deploymentMode: "local_trusted",
+      deploymentExposure: "private",
+      bindHost: "127.0.0.1",
+      allowedHostnames: [],
+    },
+    {
+      accessService: mockAccessService as any,
+      agentService: mockAgentService as any,
+      boardAuthService: mockBoardAuthService as any,
+      deduplicateAgentName: mockDeduplicateAgentName,
+      logActivity: mockLogActivity,
+      notifyHireApproved: mockNotifyHireApproved,
+    },
   );
-  app.use(errorHandler);
-  return app;
+  const layer = (router as any).stack.find(
+    (entry: any) => entry.route?.path === path && entry.route.methods?.[method],
+  );
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) return;
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function callRoute(options: {
+  method: "get" | "post";
+  path: string;
+  actor: Record<string, unknown>;
+  db: Record<string, unknown>;
+  params?: Record<string, string>;
+  body?: unknown;
+}) {
+  const req = {
+    actor: options.actor,
+    body: options.body ?? {},
+    params: options.params ?? {},
+    query: {},
+    method: options.method.toUpperCase(),
+    originalUrl: `/api${options.path}`,
+    protocol: "http",
+    ip: "127.0.0.1",
+    header: () => undefined,
+    get: () => undefined,
+  } as any;
+  let statusCode = 200;
+  let body: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      body = payload;
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(
+      getRouteHandlers(options.method, options.path, options.db),
+      req,
+      res,
+    );
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
+  }
+
+  return { status: statusCode, body };
 }
 
 describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
   beforeEach(() => {
-    vi.resetModules();
     mockAccessService.canUser.mockResolvedValue(false);
     mockAccessService.hasPermission.mockReset();
     mockAccessService.isInstanceAdmin.mockReset();
@@ -141,22 +217,22 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       companyId: "company-1",
       role: "engineer",
     });
-    const app = await createApp(
-      {
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/openclaw/invite-prompt",
+      actor: {
         type: "agent",
         agentId: "agent-1",
         companyId: "company-1",
         source: "agent_key",
       },
       db,
-    );
-
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+      params: { companyId: "company-1" },
+      body: {},
+    });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toContain("Only CEO agents");
+    expect((res.body as any).error).toContain("Only CEO agents");
   });
 
   it("allows CEO agent callers and creates an agent-only invite", async () => {
@@ -166,31 +242,33 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       companyId: "company-1",
       role: "ceo",
     });
-    const app = await createApp(
-      {
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/openclaw/invite-prompt",
+      actor: {
         type: "agent",
         agentId: "agent-1",
         companyId: "company-1",
         source: "agent_key",
       },
       db,
-    );
-
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({ agentMessage: "Join and configure OpenClaw gateway." });
+      params: { companyId: "company-1" },
+      body: { agentMessage: "Join and configure OpenClaw gateway." },
+    });
 
     expect(res.status).toBe(201);
-    expect(res.body.allowedJoinTypes).toBe("agent");
-    expect(typeof res.body.token).toBe("string");
-    expect(res.body.companyName).toBe("Acme AI");
-    expect(res.body.onboardingTextPath).toContain("/api/invites/");
+    expect((res.body as any).allowedJoinTypes).toBe("agent");
+    expect(typeof (res.body as any).token).toBe("string");
+    expect((res.body as any).companyName).toBe("Acme AI");
+    expect((res.body as any).onboardingTextPath).toContain("/api/invites/");
   });
 
   it("includes companyName in invite summary responses", async () => {
     const db = createDbStub();
-    const app = await createApp(
-      {
+    const res = await callRoute({
+      method: "get",
+      path: "/invites/:token",
+      actor: {
         type: "board",
         userId: "user-1",
         companyIds: ["company-1"],
@@ -198,20 +276,21 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
         isInstanceAdmin: false,
       },
       db,
-    );
-
-    const res = await request(app).get("/api/invites/pcp_invite_test");
+      params: { token: "pcp_invite_test" },
+    });
 
     expect(res.status).toBe(200);
-    expect(res.body.companyId).toBe("company-1");
-    expect(res.body.companyName).toBe("Acme AI");
+    expect((res.body as any).companyId).toBe("company-1");
+    expect((res.body as any).companyName).toBe("Acme AI");
   });
 
   it("allows board callers with invite permission", async () => {
     const db = createDbStub();
     mockAccessService.canUser.mockResolvedValue(true);
-    const app = await createApp(
-      {
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/openclaw/invite-prompt",
+      actor: {
         type: "board",
         userId: "user-1",
         companyIds: ["company-1"],
@@ -219,21 +298,21 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
         isInstanceAdmin: false,
       },
       db,
-    );
-
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+      params: { companyId: "company-1" },
+      body: {},
+    });
 
     expect(res.status).toBe(201);
-    expect(res.body.allowedJoinTypes).toBe("agent");
+    expect((res.body as any).allowedJoinTypes).toBe("agent");
   });
 
   it("rejects board callers without invite permission", async () => {
     const db = createDbStub();
     mockAccessService.canUser.mockResolvedValue(false);
-    const app = await createApp(
-      {
+    const res = await callRoute({
+      method: "post",
+      path: "/companies/:companyId/openclaw/invite-prompt",
+      actor: {
         type: "board",
         userId: "user-1",
         companyIds: ["company-1"],
@@ -241,13 +320,11 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
         isInstanceAdmin: false,
       },
       db,
-    );
-
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+      params: { companyId: "company-1" },
+      body: {},
+    });
 
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Permission denied");
+    expect((res.body as any).error).toBe("Permission denied");
   });
 });
