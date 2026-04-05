@@ -52,6 +52,10 @@ import {
   assertInstanceAdmin,
   getActorInfo,
 } from "./authz.js";
+import {
+  assertHeartbeatRunBoardAccess,
+  assertHeartbeatRunStreamAccess,
+} from "./heartbeat-run-auth.js";
 import { findServerAdapter, listAdapterModels, detectAdapterModel } from "../adapters/index.js";
 import { redactEventPayload } from "../redaction.js";
 import { redactCurrentUserValue } from "../log-redaction.js";
@@ -2196,26 +2200,24 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   });
 
   router.get("/heartbeat-runs/:runId", async (req, res) => {
-    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
       res.status(404).json({ error: "Heartbeat run not found" });
       return;
     }
-    assertCompanyAccess(req, run.companyId);
+    assertHeartbeatRunBoardAccess(req, run.companyId);
     res.json(redactCurrentUserValue(run, await getCurrentUserRedactionOptions()));
   });
 
   router.post("/heartbeat-runs/:runId/cancel", async (req, res) => {
-    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const existingRun = await heartbeat.getRun(runId);
     if (!existingRun) {
       res.status(404).json({ error: "Heartbeat run not found" });
       return;
     }
-    assertCompanyAccess(req, existingRun.companyId);
+    assertHeartbeatRunBoardAccess(req, existingRun.companyId);
     const run = await heartbeat.cancelRun(runId);
 
     if (run) {
@@ -2265,14 +2267,13 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   });
 
   router.get("/heartbeat-runs/:runId/events", async (req, res) => {
-    assertAuthenticated(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
       res.status(404).json({ error: "Heartbeat run not found" });
       return;
     }
-    assertCompanyAccess(req, run.companyId);
+    assertHeartbeatRunStreamAccess(req, run.companyId);
 
     const afterSeq = Number(req.query.afterSeq ?? 0);
     const limit = Number(req.query.limit ?? 200);
@@ -2288,14 +2289,13 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   });
 
   router.get("/heartbeat-runs/:runId/log", async (req, res) => {
-    assertAuthenticated(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
       res.status(404).json({ error: "Heartbeat run not found" });
       return;
     }
-    assertCompanyAccess(req, run.companyId);
+    assertHeartbeatRunStreamAccess(req, run.companyId);
 
     const offset = Number(req.query.offset ?? 0);
     const limitBytes = Number(req.query.limitBytes ?? 256000);
@@ -2308,14 +2308,13 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   });
 
   router.get("/heartbeat-runs/:runId/workspace-operations", async (req, res) => {
-    assertAuthenticatedBoard(req);
     const runId = req.params.runId as string;
     const run = await heartbeat.getRun(runId);
     if (!run) {
       res.status(404).json({ error: "Heartbeat run not found" });
       return;
     }
-    assertCompanyAccess(req, run.companyId);
+    assertHeartbeatRunBoardAccess(req, run.companyId);
 
     const context = asRecord(run.contextSnapshot);
     const executionWorkspaceId = asNonEmptyString(context?.executionWorkspaceId);
@@ -2324,14 +2323,13 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
   });
 
   router.get("/workspace-operations/:operationId/log", async (req, res) => {
-    assertAuthenticatedBoard(req);
     const operationId = req.params.operationId as string;
     const operation = await workspaceOperations.getById(operationId);
     if (!operation) {
       res.status(404).json({ error: "Workspace operation not found" });
       return;
     }
-    assertCompanyAccess(req, operation.companyId);
+    assertHeartbeatRunBoardAccess(req, operation.companyId);
 
     const offset = Number(req.query.offset ?? 0);
     const limitBytes = Number(req.query.limitBytes ?? 256000);

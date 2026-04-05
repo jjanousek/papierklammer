@@ -74,14 +74,31 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
   });
 
   async function createApp(actor: Record<string, unknown>) {
-    const { routineRoutes } = await import("../routes/routines.js");
+    const [
+      { routineRoutes },
+      { routineService },
+      { accessService: createAccessService },
+      { logActivity },
+    ] = await Promise.all([
+      import("../routes/routines.js"),
+      import("../services/routines.js"),
+      import("../services/access.js"),
+      import("../services/activity-log.js"),
+    ]);
     const app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
       (req as any).actor = actor;
       next();
     });
-    app.use("/api", routineRoutes(db));
+    app.use(
+      "/api",
+      routineRoutes(db, {
+        routineService: routineService(db),
+        accessService: createAccessService(db),
+        logActivity,
+      }),
+    );
     app.use(errorHandler);
     return app;
   }
