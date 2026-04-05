@@ -19,6 +19,46 @@ interface FetchCall {
   body: string | null;
 }
 
+async function waitForFrame(
+  lastFrame: () => string | undefined,
+  predicate: (frame: string) => boolean,
+  timeoutMs = 1000,
+): Promise<string> {
+  const start = Date.now();
+  let frame = lastFrame() ?? "";
+
+  while (!predicate(frame)) {
+    if (Date.now() - start >= timeoutMs) {
+      throw new Error(`Timed out waiting for frame.\nLast frame:\n${frame}`);
+    }
+    await tick(20);
+    frame = lastFrame() ?? "";
+  }
+
+  return frame;
+}
+
+async function waitForCall(
+  calls: FetchCall[],
+  predicate: (call: FetchCall) => boolean,
+  timeoutMs = 1000,
+): Promise<FetchCall> {
+  const start = Date.now();
+  let call = calls.find(predicate);
+
+  while (!call) {
+    if (Date.now() - start >= timeoutMs) {
+      throw new Error(
+        `Timed out waiting for fetch call.\nRecorded calls:\n${JSON.stringify(calls, null, 2)}`,
+      );
+    }
+    await tick(20);
+    call = calls.find(predicate);
+  }
+
+  return call;
+}
+
 function createManagementFetch(options?: {
   approvals?: Array<{
     id: string;
@@ -158,15 +198,23 @@ describe("management shortcuts", () => {
     stdin.write("\t");
     await tick(50);
     stdin.write("v");
-    await tick(100);
 
-    expect(calls).toContainEqual({
+    const invokeCall = await waitForCall(
+      calls,
+      (call) =>
+        call.url.endsWith("/api/agents/agent-1/heartbeat/invoke")
+        && call.method === "POST",
+    );
+    expect(invokeCall).toEqual({
       url: "http://localhost:3100/api/agents/agent-1/heartbeat/invoke",
       method: "POST",
       body: "{}",
     });
 
-    const frame = lastFrame()!;
+    const frame = await waitForFrame(
+      lastFrame,
+      (current) => current.includes("Invoked heartbeat for CEO (run 12345678)."),
+    );
     expect(frame).toContain("Management");
     expect(frame).toContain("Invoked heartbeat for CEO (run 12345678).");
 
@@ -192,9 +240,12 @@ describe("management shortcuts", () => {
     stdin.write("\t");
     await tick(50);
     stdin.write("w");
-    await tick(100);
 
-    expect(calls).toContainEqual({
+    const wakeupCall = await waitForCall(
+      calls,
+      (call) => call.url.endsWith("/api/agents/agent-1/wakeup") && call.method === "POST",
+    );
+    expect(wakeupCall).toEqual({
       url: "http://localhost:3100/api/agents/agent-1/wakeup",
       method: "POST",
       body: JSON.stringify({
@@ -204,7 +255,11 @@ describe("management shortcuts", () => {
       }),
     });
 
-    expect(lastFrame()).toContain("Queued wakeup for CEO (run 87654321).");
+    const frame = await waitForFrame(
+      lastFrame,
+      (current) => current.includes("Queued wakeup for CEO (run 87654321)."),
+    );
+    expect(frame).toContain("Queued wakeup for CEO (run 87654321).");
 
     unmount();
   });
@@ -246,14 +301,21 @@ describe("management shortcuts", () => {
     expect(lastFrame()).toContain("cccccccc");
 
     stdin.write("a");
-    await tick(100);
 
-    expect(calls).toContainEqual({
+    const approveCall = await waitForCall(
+      calls,
+      (call) => call.url.includes("/api/approvals/") && call.method === "POST",
+    );
+    expect(approveCall).toEqual({
       url: "http://localhost:3100/api/approvals/cccccccc-2222-2222-2222-222222222222/approve",
       method: "POST",
       body: "{}",
     });
-    expect(lastFrame()).toContain("Approved hire_agent approval cccccccc.");
+    const frame = await waitForFrame(
+      lastFrame,
+      (current) => current.includes("Approved hire_agent approval cccccccc."),
+    );
+    expect(frame).toContain("Approved hire_agent approval cccccccc.");
 
     unmount();
   });
