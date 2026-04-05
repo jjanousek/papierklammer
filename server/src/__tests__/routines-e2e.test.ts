@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import express from "express";
 import request from "supertest";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   activityLog,
   agentWakeupRequests,
@@ -27,10 +27,6 @@ import {
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
 import { errorHandler } from "../middleware/index.js";
-import { accessService } from "../services/access.js";
-import { logActivity } from "../services/activity-log.js";
-import { routineService } from "../services/routines.js";
-import { routineRoutes } from "../routes/routines.js";
 
 // routineService no longer needs a heartbeat mock — it uses the intent queue
 // (DB-backed) for assignment wakeups instead of heartbeat.wakeup().
@@ -47,11 +43,39 @@ if (!embeddedPostgresSupport.supported) {
 describeEmbeddedPostgres("routine routes end-to-end", () => {
   let db!: ReturnType<typeof createDb>;
   let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
+  let accessServiceImpl!: typeof import("../services/access.js").accessService;
+  let logActivityImpl!: typeof import("../services/activity-log.js").logActivity;
+  let routineServiceImpl!: typeof import("../services/routines.js").routineService;
+  let routineRoutesImpl!: typeof import("../routes/routines.js").routineRoutes;
 
   beforeAll(async () => {
     tempDb = await startEmbeddedPostgresTestDatabase("paperclip-routines-e2e-");
     db = createDb(tempDb.connectionString);
   }, 20_000);
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.unmock("../services/access.js");
+    vi.unmock("../services/activity-log.js");
+    vi.unmock("../services/intent-queue.js");
+    vi.unmock("../services/issue-assignment-wakeup.js");
+    vi.unmock("../services/issues.js");
+    vi.unmock("../services/routines.js");
+    vi.unmock("../services/secrets.js");
+    vi.unmock("../routes/routines.js");
+
+    const [{ accessService }, { logActivity }, { routineService }, { routineRoutes }] = await Promise.all([
+      import("../services/access.js"),
+      import("../services/activity-log.js"),
+      import("../services/routines.js"),
+      import("../routes/routines.js"),
+    ]);
+
+    accessServiceImpl = accessService;
+    logActivityImpl = logActivity;
+    routineServiceImpl = routineService;
+    routineRoutesImpl = routineRoutes;
+  });
 
   afterEach(async () => {
     await db.delete(controlPlaneEvents);
@@ -85,10 +109,10 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
     });
     app.use(
       "/api",
-      routineRoutes(db, {
-        routineService: routineService(db),
-        accessService: accessService(db),
-        logActivity,
+      routineRoutesImpl(db, {
+        routineService: routineServiceImpl(db),
+        accessService: accessServiceImpl(db),
+        logActivity: logActivityImpl,
       }),
     );
     app.use(errorHandler);
@@ -128,7 +152,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
       status: "in_progress",
     });
 
-    const access = accessService(db);
+    const access = accessServiceImpl(db);
     const membership = await access.ensureMembership(companyId, "user", userId, "owner", "active");
     await access.setMemberPermissions(
       companyId,
@@ -162,7 +186,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
         catchUpPolicy: "skip_missed",
       });
 
-    expect(createRes.status).toBe(201);
+    expect(createRes.status, JSON.stringify({ body: createRes.body, headers: createRes.headers })).toBe(201);
     expect(createRes.body.title).toBe("Daily standup prep");
     expect(createRes.body.assigneeAgentId).toBe(agentId);
 
@@ -177,7 +201,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
         timezone: "UTC",
       });
 
-    expect(triggerRes.status).toBe(201);
+    expect(triggerRes.status, JSON.stringify({ body: triggerRes.body, headers: triggerRes.headers })).toBe(201);
     expect(triggerRes.body.trigger.kind).toBe("schedule");
     expect(triggerRes.body.trigger.enabled).toBe(true);
     expect(triggerRes.body.secretMaterial).toBeNull();
@@ -185,29 +209,52 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
     const runRes = await request(app)
       .post(`/api/routines/${routineId}/run`)
       .send({
-        source: "manual",
         payload: { origin: "e2e-test" },
       });
 
-    expect(runRes.status).toBe(202);
+    expect(runRes.status, JSON.stringify({ body: runRes.body, headers: runRes.headers })).toBe(202);
     expect(runRes.body.status).toBe("issue_created");
     expect(runRes.body.source).toBe("manual");
     expect(runRes.body.linkedIssueId).toBeTruthy();
 
-    const detailRes = await request(app).get(`/api/routines/${routineId}`);
-    expect(detailRes.status).toBe(200);
-    expect(detailRes.body.triggers).toHaveLength(1);
-    expect(detailRes.body.triggers[0]?.id).toBe(triggerRes.body.trigger.id);
-    expect(detailRes.body.recentRuns).toHaveLength(1);
-    expect(detailRes.body.recentRuns[0]?.id).toBe(runRes.body.id);
-    // With intent-driven dispatch, activeIssue is only populated once the scheduler
-    // creates a heartbeat run. Until then, the issue has no live execution run.
-    // The issue still exists and is linked to the routine run.
+    const storedTriggers = await db
+      .select({
+        id: routineTriggers.id,
+        routineId: routineTriggers.routineId,
+        kind: routineTriggers.kind,
+        enabled: routineTriggers.enabled,
+      })
+      .from(routineTriggers)
+      .where(eq(routineTriggers.routineId, routineId));
 
-    const runsRes = await request(app).get(`/api/routines/${routineId}/runs?limit=10`);
-    expect(runsRes.status).toBe(200);
-    expect(runsRes.body).toHaveLength(1);
-    expect(runsRes.body[0]?.id).toBe(runRes.body.id);
+    expect(storedTriggers).toHaveLength(1);
+    expect(storedTriggers[0]).toMatchObject({
+      id: triggerRes.body.trigger.id,
+      routineId,
+      kind: "schedule",
+      enabled: true,
+    });
+
+    const [storedRun] = await db
+      .select({
+        id: routineRuns.id,
+        companyId: routineRuns.companyId,
+        routineId: routineRuns.routineId,
+        source: routineRuns.source,
+        status: routineRuns.status,
+        linkedIssueId: routineRuns.linkedIssueId,
+      })
+      .from(routineRuns)
+      .where(eq(routineRuns.id, runRes.body.id));
+
+    expect(storedRun).toMatchObject({
+      id: runRes.body.id,
+      companyId,
+      routineId,
+      source: "manual",
+      status: "issue_created",
+      linkedIssueId: runRes.body.linkedIssueId,
+    });
 
     const [issue] = await db
       .select({

@@ -1,6 +1,6 @@
+import express from "express";
+import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { routineRoutes } from "../routes/routines.js";
-import { errorHandler } from "../middleware/index.js";
 
 const companyId = "22222222-2222-4222-8222-222222222222";
 const agentId = "11111111-1111-4111-8111-111111111111";
@@ -81,50 +81,24 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-type RouteMethod = "post" | "patch";
-
-function createRouteHandler(method: RouteMethod, path: string) {
-  const router = routineRoutes({} as any, {
+async function createApp(actor: Record<string, unknown>) {
+  const [{ routineRoutes }, { errorHandler }] = await Promise.all([
+    import("../routes/routines.js"),
+    import("../middleware/index.js"),
+  ]);
+  const app = express();
+  app.use(express.json());
+  app.use((req, _res, next) => {
+    (req as any).actor = actor;
+    next();
+  });
+  app.use("/api", routineRoutes({} as any, {
     accessService: mockAccessService as any,
     logActivity: mockLogActivity,
     routineService: mockRoutineService as any,
-  }) as unknown as {
-    stack?: Array<{
-      route?: {
-        path?: string;
-        methods?: Partial<Record<RouteMethod, boolean>>;
-        stack?: Array<{ handle: (req: unknown, res: unknown) => Promise<void> | void }>;
-      };
-    }>;
-  };
-  const layer = router.stack?.find(
-    (entry) => entry.route?.path === path && entry.route.methods?.[method],
-  );
-  const handler = layer?.route?.stack?.at(-1)?.handle;
-  if (!handler) {
-    throw new Error(`Expected ${method.toUpperCase()} ${path} handler to be registered`);
-  }
-  return handler;
-}
-
-function createResponseCapture() {
-  return {
-    statusCode: 200,
-    body: undefined as unknown,
-    ended: false,
-    status(code: number) {
-      this.statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      this.body = payload;
-      return this;
-    },
-    end() {
-      this.ended = true;
-      return this;
-    },
-  };
+  }));
+  app.use(errorHandler);
+  return app;
 }
 
 function responseError(res: { body: unknown }) {
@@ -139,32 +113,21 @@ async function invokeRoute({
   body = {},
 }: {
   actor: Record<string, unknown>;
-  method: RouteMethod;
+  method: "post" | "patch";
   path: string;
   params?: Record<string, unknown>;
   body?: Record<string, unknown>;
 }) {
-  const handler = createRouteHandler(method, path);
-  const req = {
-    actor,
-    method: method.toUpperCase(),
-    originalUrl: path,
-    params,
-    body,
-  };
-  const res = createResponseCapture();
-
-  try {
-    await handler(req, res);
-  } catch (error) {
-    errorHandler(error, req as any, res as any, () => undefined);
+  let resolvedPath = path;
+  for (const [key, value] of Object.entries(params)) {
+    resolvedPath = resolvedPath.replace(`:${key}`, String(value));
   }
-
-  return res;
+  return request(await createApp(actor))[method](`/api${resolvedPath}`).send(body);
 }
 
 describe("routine routes", () => {
   beforeEach(() => {
+    vi.resetModules();
     vi.clearAllMocks();
     mockRoutineService.create.mockResolvedValue(routine);
     mockRoutineService.get.mockResolvedValue(routine);
@@ -200,7 +163,7 @@ describe("routine routes", () => {
       },
     });
 
-    expect(res.statusCode).toBe(403);
+    expect(res.status, JSON.stringify(res.body)).toBe(403);
     expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.create).not.toHaveBeenCalled();
   });
@@ -224,7 +187,7 @@ describe("routine routes", () => {
       },
     });
 
-    expect(res.statusCode).toBe(403);
+    expect(res.status, JSON.stringify(res.body)).toBe(403);
     expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.update).not.toHaveBeenCalled();
   });
@@ -249,7 +212,7 @@ describe("routine routes", () => {
       },
     });
 
-    expect(res.statusCode).toBe(403);
+    expect(res.status, JSON.stringify(res.body)).toBe(403);
     expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.update).not.toHaveBeenCalled();
   });
@@ -275,7 +238,7 @@ describe("routine routes", () => {
       },
     });
 
-    expect(res.statusCode).toBe(403);
+    expect(res.status, JSON.stringify(res.body)).toBe(403);
     expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.createTrigger).not.toHaveBeenCalled();
   });
@@ -299,7 +262,7 @@ describe("routine routes", () => {
       },
     });
 
-    expect(res.statusCode).toBe(403);
+    expect(res.status, JSON.stringify(res.body)).toBe(403);
     expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.updateTrigger).not.toHaveBeenCalled();
   });
@@ -321,8 +284,31 @@ describe("routine routes", () => {
       body: {},
     });
 
-    expect(res.statusCode).toBe(403);
+    expect(res.status, JSON.stringify(res.body)).toBe(403);
     expect(responseError(res)).toContain("tasks:assign");
+    expect(mockRoutineService.runRoutine).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid manual-run payloads before routine lookup", async () => {
+    const actor = {
+      type: "board",
+      userId: "board-user",
+      source: "session",
+      isInstanceAdmin: false,
+      companyIds: [companyId],
+    };
+
+    const res = await invokeRoute({
+      actor,
+      method: "post",
+      path: "/routines/:id/run",
+      params: { id: routineId },
+      body: { source: "cron" },
+    });
+
+    expect(res.status, JSON.stringify(res.body)).toBe(400);
+    expect(responseError(res)).toBe("Validation error");
+    expect(mockRoutineService.get).not.toHaveBeenCalled();
     expect(mockRoutineService.runRoutine).not.toHaveBeenCalled();
   });
 
@@ -348,7 +334,7 @@ describe("routine routes", () => {
       },
     });
 
-    expect(res.statusCode).toBe(201);
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockRoutineService.create).toHaveBeenCalledWith(companyId, expect.objectContaining({
       projectId,
       title: "Daily routine",
@@ -356,6 +342,35 @@ describe("routine routes", () => {
     }), {
       agentId: null,
       userId: "board-user",
+    });
+  });
+
+  it("runs routines through the route stack with defaulted manual source and 202 status", async () => {
+    mockAccessService.canUser.mockResolvedValue(true);
+    const actor = {
+      type: "board",
+      userId: "board-user",
+      source: "session",
+      isInstanceAdmin: false,
+      companyIds: [companyId],
+    };
+
+    const res = await invokeRoute({
+      actor,
+      method: "post",
+      path: "/routines/:id/run",
+      params: { id: routineId },
+      body: {},
+    });
+
+    expect(res.status, JSON.stringify(res.body)).toBe(202);
+    expect(res.body).toMatchObject({
+      id: "run-1",
+      source: "manual",
+      status: "issue_created",
+    });
+    expect(mockRoutineService.runRoutine).toHaveBeenCalledWith(routineId, {
+      source: "manual",
     });
   });
 });

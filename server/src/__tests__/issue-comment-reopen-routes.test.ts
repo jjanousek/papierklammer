@@ -1,3 +1,5 @@
+import express from "express";
+import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockIssueService = vi.hoisted(() => ({
@@ -74,90 +76,45 @@ vi.mock("../services/issue-assignment-wakeup.js", () => ({
   queueIssueAssignmentIntent: vi.fn(async () => undefined),
 }));
 
-type RouteMethod = "patch" | "post";
+const issueId = "11111111-1111-4111-8111-111111111111";
 
-async function createRouteHandler(method: RouteMethod, path: string) {
-  const [{ issueRoutes }] = await Promise.all([
+async function createApp() {
+  const [{ issueRoutes }, { errorHandler }] = await Promise.all([
     import("../routes/issues.js"),
     import("../middleware/index.js"),
   ]);
-  const router = issueRoutes({} as any, {} as any) as unknown as {
-    stack?: Array<{
-      route?: {
-        path?: string;
-        methods?: Partial<Record<RouteMethod, boolean>>;
-        stack?: Array<{ handle: (req: unknown, res: unknown) => Promise<void> | void }>;
-      };
-    }>;
-  };
-  const layer = router.stack?.find(
-    (entry) => entry.route?.path === path && entry.route.methods?.[method],
-  );
-  const handler = layer?.route?.stack?.at(-1)?.handle;
-  if (!handler) {
-    throw new Error(`Expected ${method.toUpperCase()} ${path} handler to be registered`);
-  }
-  return handler;
-}
-
-function createResponseCapture() {
-  return {
-    statusCode: 200,
-    body: undefined as unknown,
-    status(code: number) {
-      this.statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      this.body = payload;
-      return this;
-    },
-  };
-}
-
-async function invokeRoute({
-  method,
-  path,
-  params = {},
-  body = {},
-}: {
-  method: RouteMethod;
-  path: string;
-  params?: Record<string, unknown>;
-  body?: Record<string, unknown>;
-}) {
-  const [{ errorHandler }] = await Promise.all([
-    import("../routes/issues.js"),
-    import("../middleware/index.js"),
-  ]);
-  const handler = await createRouteHandler(method, path);
-  const req = {
-    actor: {
+  const app = express();
+  app.use(express.json());
+  app.use((req, _res, next) => {
+    (req as any).actor = {
       type: "board",
       userId: "local-board",
       companyIds: ["company-1"],
       source: "local_implicit",
       isInstanceAdmin: false,
-    },
-    method: method.toUpperCase(),
-    originalUrl: path,
-    params,
-    body,
-  };
-  const res = createResponseCapture();
+    };
+    next();
+  });
+  app.use("/api", issueRoutes({} as any, {} as any));
+  app.use(errorHandler);
+  return app;
+}
 
-  try {
-    await handler(req, res);
-  } catch (error) {
-    errorHandler(error, req as any, res as any, () => undefined);
-  }
-
-  return res;
+async function invokeRoute({
+  method,
+  path,
+  body = {},
+}: {
+  method: "patch" | "post";
+  path: string;
+  body?: Record<string, unknown>;
+}) {
+  return request(await createApp())[method](path).send(body);
 }
 
 function makeIssue(status: "todo" | "done") {
   return {
-    id: "11111111-1111-4111-8111-111111111111",
+    id: issueId,
     companyId: "company-1",
     status,
     assigneeAgentId: "22222222-2222-4222-8222-222222222222",
@@ -170,6 +127,7 @@ function makeIssue(status: "todo" | "done") {
 
 describe("issue comment reopen routes", () => {
   beforeEach(() => {
+    vi.resetModules();
     mockIssueService.getById.mockReset();
     mockIssueService.update.mockReset();
     mockIssueService.addComment.mockReset();
@@ -197,6 +155,32 @@ describe("issue comment reopen routes", () => {
     mockIssueService.findMentionedAgents.mockResolvedValue([]);
   });
 
+  it("rejects invalid PATCH payloads before issue lookup", async () => {
+    const res = await invokeRoute({
+      method: "patch",
+      path: `/api/issues/${issueId}`,
+      body: { comment: "" },
+    });
+
+    expect(res.status, JSON.stringify(res.body)).toBe(400);
+    expect(res.body).toMatchObject({ error: "Validation error" });
+    expect(mockIssueService.getById).not.toHaveBeenCalled();
+    expect(mockIssueService.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid POST comment payloads before issue lookup", async () => {
+    const res = await invokeRoute({
+      method: "post",
+      path: `/api/issues/${issueId}/comments`,
+      body: { body: "" },
+    });
+
+    expect(res.status, JSON.stringify(res.body)).toBe(400);
+    expect(res.body).toMatchObject({ error: "Validation error" });
+    expect(mockIssueService.getById).not.toHaveBeenCalled();
+    expect(mockIssueService.addComment).not.toHaveBeenCalled();
+  });
+
   it("treats reopen=true as a no-op when the issue is already open", async () => {
     mockIssueService.getById.mockResolvedValue(makeIssue("todo"));
     mockIssueService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => ({
@@ -206,13 +190,12 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: "/issues/:id",
-      params: { id: "11111111-1111-4111-8111-111111111111" },
+      path: `/api/issues/${issueId}`,
       body: { comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
     });
 
-    expect(res.statusCode).toBe(200);
-    expect(mockIssueService.update).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", {
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(mockIssueService.update).toHaveBeenCalledWith(issueId, {
       assigneeAgentId: "33333333-3333-4333-8333-333333333333",
     });
     expect(mockLogActivity).toHaveBeenCalledWith(
@@ -233,13 +216,12 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: "/issues/:id",
-      params: { id: "11111111-1111-4111-8111-111111111111" },
+      path: `/api/issues/${issueId}`,
       body: { comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
     });
 
-    expect(res.statusCode).toBe(200);
-    expect(mockIssueService.update).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", {
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(mockIssueService.update).toHaveBeenCalledWith(issueId, {
       assigneeAgentId: "33333333-3333-4333-8333-333333333333",
       status: "todo",
     });
@@ -281,12 +263,11 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: "/issues/:id",
-      params: { id: "11111111-1111-4111-8111-111111111111" },
+      path: `/api/issues/${issueId}`,
       body: { comment: "hello", interrupt: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
     });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockHeartbeatService.getRun).toHaveBeenCalledWith("run-1");
     expect(mockHeartbeatService.cancelRun).toHaveBeenCalledWith("run-1");
     expect(mockLogActivity).toHaveBeenCalledWith(
@@ -310,12 +291,11 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: "/issues/:id",
-      params: { id: "11111111-1111-4111-8111-111111111111" },
+      path: `/api/issues/${issueId}`,
       body: { comment: "reopen please", reopen: true },
     });
 
-    expect(res.statusCode).toBe(200);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockEventLogEmit).toHaveBeenCalledWith(
       expect.objectContaining({
         entityType: "issue",
@@ -337,12 +317,11 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "post",
-      path: "/issues/:id/comments",
-      params: { id: "11111111-1111-4111-8111-111111111111" },
+      path: `/api/issues/${issueId}/comments`,
       body: { body: "reopening this", reopen: true },
     });
 
-    expect(res.statusCode).toBe(201);
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockEventLogEmit).toHaveBeenCalledWith(
       expect.objectContaining({
         entityType: "issue",
