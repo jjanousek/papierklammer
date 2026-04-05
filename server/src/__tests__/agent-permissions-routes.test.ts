@@ -1,8 +1,8 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { INBOX_MINE_ISSUE_STATUS_FILTER } from "@papierklammer/shared";
 import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
 const agentId = "11111111-1111-4111-8111-111111111111";
 const companyId = "22222222-2222-4222-8222-222222222222";
@@ -32,67 +32,67 @@ const baseAgent = {
   updatedAt: new Date("2026-03-19T00:00:00.000Z"),
 };
 
-const mockAgentService = {
-  getById: vi.fn(),
-  create: vi.fn(),
-  updatePermissions: vi.fn(),
-  getChainOfCommand: vi.fn(),
-  resolveByReference: vi.fn(),
+let mockAgentService: {
+  getById: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+  updatePermissions: ReturnType<typeof vi.fn>;
+  getChainOfCommand: ReturnType<typeof vi.fn>;
+  resolveByReference: ReturnType<typeof vi.fn>;
 };
 
-const mockAccessService = {
-  canUser: vi.fn(),
-  hasPermission: vi.fn(),
-  getMembership: vi.fn(),
-  ensureMembership: vi.fn(),
-  listPrincipalGrants: vi.fn(),
-  setPrincipalPermission: vi.fn(),
+let mockAccessService: {
+  canUser: ReturnType<typeof vi.fn>;
+  hasPermission: ReturnType<typeof vi.fn>;
+  getMembership: ReturnType<typeof vi.fn>;
+  ensureMembership: ReturnType<typeof vi.fn>;
+  listPrincipalGrants: ReturnType<typeof vi.fn>;
+  setPrincipalPermission: ReturnType<typeof vi.fn>;
 };
 
-const mockApprovalService = {
-  create: vi.fn(),
-  getById: vi.fn(),
+let mockApprovalService: {
+  create: ReturnType<typeof vi.fn>;
+  getById: ReturnType<typeof vi.fn>;
 };
 
-const mockBudgetService = {
-  upsertPolicy: vi.fn(),
+let mockBudgetService: {
+  upsertPolicy: ReturnType<typeof vi.fn>;
 };
 
-const mockHeartbeatService = {
-  listTaskSessions: vi.fn(),
-  resetRuntimeSession: vi.fn(),
+let mockHeartbeatService: {
+  listTaskSessions: ReturnType<typeof vi.fn>;
+  resetRuntimeSession: ReturnType<typeof vi.fn>;
 };
 
-const mockIssueApprovalService = {
-  linkManyForApproval: vi.fn(),
+let mockIssueApprovalService: {
+  linkManyForApproval: ReturnType<typeof vi.fn>;
 };
 
-const mockIssueService = {
-  list: vi.fn(),
+let mockIssueService: {
+  list: ReturnType<typeof vi.fn>;
 };
 
-const mockSecretService = {
-  normalizeAdapterConfigForPersistence: vi.fn(),
-  resolveAdapterConfigForRuntime: vi.fn(),
+let mockSecretService: {
+  normalizeAdapterConfigForPersistence: ReturnType<typeof vi.fn>;
+  resolveAdapterConfigForRuntime: ReturnType<typeof vi.fn>;
 };
 
-const mockAgentInstructionsService = {
-  materializeManagedBundle: vi.fn(),
+let mockAgentInstructionsService: {
+  materializeManagedBundle: ReturnType<typeof vi.fn>;
 };
-const mockCompanySkillService = {
-  listRuntimeSkillEntries: vi.fn(),
-  resolveRequestedSkillKeys: vi.fn(),
+let mockCompanySkillService: {
+  listRuntimeSkillEntries: ReturnType<typeof vi.fn>;
+  resolveRequestedSkillKeys: ReturnType<typeof vi.fn>;
 };
 const mockWorkspaceOperationService = {};
-const mockLogActivity = vi.fn();
+let mockLogActivity: ReturnType<typeof vi.fn>;
 const mockSyncInstructionsBundleConfigFromFilePath = vi.fn((_agent, config) => config);
-const mockInstanceSettingsService = {
-  getGeneral: vi.fn(),
+let mockInstanceSettingsService: {
+  getGeneral: ReturnType<typeof vi.fn>;
 };
 const mockLeaseManagerService = {};
-const mockFindServerAdapter = vi.fn();
-const mockListAdapterModels = vi.fn();
-const mockDetectAdapterModel = vi.fn();
+let mockFindServerAdapter: ReturnType<typeof vi.fn>;
+let mockListAdapterModels: ReturnType<typeof vi.fn>;
+let mockDetectAdapterModel: ReturnType<typeof vi.fn>;
 let principalPermissionCalls: Array<{
   companyId: string;
   principalType: string;
@@ -130,17 +130,11 @@ function createDbStub() {
   };
 }
 
-async function createApp(actor: Record<string, unknown>) {
-  const { agentRoutes } = await vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js");
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = actor;
-    next();
-  });
-  app.use(
-    "/api",
-    agentRoutes(createDbStub() as any, {
+function getRouteHandlers(
+  method: "get" | "post" | "patch",
+  path: string,
+) {
+  const router = agentRoutes(createDbStub() as any, {
       agentService: mockAgentService as any,
       agentInstructionsService: mockAgentInstructionsService as any,
       accessService: mockAccessService as any,
@@ -159,47 +153,153 @@ async function createApp(actor: Record<string, unknown>) {
       findServerAdapter: mockFindServerAdapter,
       listAdapterModels: mockListAdapterModels,
       detectAdapterModel: mockDetectAdapterModel,
-    }),
+    });
+  const layer = (router as any).stack.find(
+    (entry: any) => entry.route?.path === path && entry.route.methods?.[method],
   );
-  app.use(errorHandler);
-  return app;
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) return;
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function callRoute(options: {
+  actor: Record<string, unknown>;
+  method: "get" | "post" | "patch";
+  path: string;
+  body?: unknown;
+  query?: Record<string, unknown>;
+  params?: Record<string, string>;
+}) {
+  const req = {
+    actor: options.actor,
+    body: options.body ?? {},
+    query: options.query ?? {},
+    params: options.params ?? {},
+    method: options.method.toUpperCase(),
+    originalUrl: `/api${options.path}`,
+  } as any;
+  let statusCode = 200;
+  let body: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      body = payload;
+      return this;
+    },
+    end() {
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(getRouteHandlers(options.method, options.path), req, res);
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
+  }
+
+  return { status: statusCode, body };
 }
 
 describe("agent permission routes", () => {
   beforeEach(() => {
+    vi.resetModules();
     principalPermissionCalls = [];
     ensureMembershipCalls = [];
     issueListCalls = [];
     issueListResult = [];
-    mockAgentService.getById.mockReset();
-    mockAgentService.create.mockReset();
-    mockAgentService.updatePermissions.mockReset();
-    mockAgentService.getChainOfCommand.mockReset();
-    mockAgentService.resolveByReference.mockReset();
-    mockAccessService.canUser.mockReset();
-    mockAccessService.hasPermission.mockReset();
-    mockAccessService.getMembership.mockReset();
-    mockAccessService.ensureMembership.mockReset();
-    mockAccessService.listPrincipalGrants.mockReset();
-    mockAccessService.setPrincipalPermission.mockReset();
-    mockApprovalService.create.mockReset();
-    mockApprovalService.getById.mockReset();
-    mockBudgetService.upsertPolicy.mockReset();
-    mockHeartbeatService.listTaskSessions.mockReset();
-    mockHeartbeatService.resetRuntimeSession.mockReset();
-    mockIssueApprovalService.linkManyForApproval.mockReset();
-    mockIssueService.list.mockReset();
-    mockSecretService.normalizeAdapterConfigForPersistence.mockReset();
-    mockSecretService.resolveAdapterConfigForRuntime.mockReset();
-    mockAgentInstructionsService.materializeManagedBundle.mockReset();
-    mockCompanySkillService.listRuntimeSkillEntries.mockReset();
-    mockCompanySkillService.resolveRequestedSkillKeys.mockReset();
-    mockLogActivity.mockReset();
+    mockAgentService = {
+      getById: vi.fn(),
+      create: vi.fn(),
+      updatePermissions: vi.fn(),
+      getChainOfCommand: vi.fn(),
+      resolveByReference: vi.fn(),
+    };
+    mockAccessService = {
+      canUser: vi.fn(),
+      hasPermission: vi.fn(),
+      getMembership: vi.fn(),
+      ensureMembership: vi.fn(),
+      listPrincipalGrants: vi.fn(),
+      setPrincipalPermission: vi.fn(),
+    };
+    mockApprovalService = {
+      create: vi.fn(),
+      getById: vi.fn(),
+    };
+    mockBudgetService = {
+      upsertPolicy: vi.fn(),
+    };
+    mockHeartbeatService = {
+      listTaskSessions: vi.fn(),
+      resetRuntimeSession: vi.fn(),
+    };
+    mockIssueApprovalService = {
+      linkManyForApproval: vi.fn(),
+    };
+    mockIssueService = {
+      list: vi.fn(),
+    };
+    mockSecretService = {
+      normalizeAdapterConfigForPersistence: vi.fn(),
+      resolveAdapterConfigForRuntime: vi.fn(),
+    };
+    mockAgentInstructionsService = {
+      materializeManagedBundle: vi.fn(),
+    };
+    mockCompanySkillService = {
+      listRuntimeSkillEntries: vi.fn(),
+      resolveRequestedSkillKeys: vi.fn(),
+    };
+    mockLogActivity = vi.fn();
     mockSyncInstructionsBundleConfigFromFilePath.mockClear();
-    mockInstanceSettingsService.getGeneral.mockReset();
-    mockFindServerAdapter.mockReset();
-    mockListAdapterModels.mockReset();
-    mockDetectAdapterModel.mockReset();
+    mockInstanceSettingsService = {
+      getGeneral: vi.fn(),
+    };
+    mockFindServerAdapter = vi.fn();
+    mockListAdapterModels = vi.fn();
+    mockDetectAdapterModel = vi.fn();
     mockAgentService.getById.mockResolvedValue(baseAgent);
     mockAgentService.getChainOfCommand.mockResolvedValue([]);
     mockAgentService.resolveByReference.mockResolvedValue({ ambiguous: false, agent: baseAgent });
@@ -279,22 +379,24 @@ describe("agent permission routes", () => {
   });
 
   it("grants tasks:assign by default when board creates a new agent", async () => {
-    const app = await createApp({
+    const res = await callRoute({
+      actor: {
       type: "board",
       userId: "board-user",
       source: "local_implicit",
       isInstanceAdmin: true,
       companyIds: [companyId],
-    });
-
-    const res = await request(app)
-      .post(`/api/companies/${companyId}/agents`)
-      .send({
+    },
+      method: "post",
+      path: "/companies/:companyId/agents",
+      params: { companyId },
+      body: {
         name: "Builder",
         role: "engineer",
         adapterType: "process",
         adapterConfig: {},
-      });
+      },
+    });
 
     expect(res.status).toBe(201);
     expect(ensureMembershipCalls).toContainEqual({
@@ -329,19 +431,22 @@ describe("agent permission routes", () => {
       },
     ]);
 
-    const app = await createApp({
+    const res = await callRoute({
+      actor: {
       type: "board",
       userId: "board-user",
       source: "local_implicit",
       isInstanceAdmin: true,
       companyIds: [companyId],
+    },
+      method: "get",
+      path: "/agents/:id",
+      params: { id: agentId },
     });
 
-    const res = await request(app).get(`/api/agents/${agentId}`);
-
     expect(res.status).toBe(200);
-    expect(res.body.access.canAssignTasks).toBe(true);
-    expect(res.body.access.taskAssignSource).toBe("explicit_grant");
+    expect((res.body as any).access.canAssignTasks).toBe(true);
+    expect((res.body as any).access.taskAssignSource).toBe("explicit_grant");
   });
 
   it("keeps task assignment enabled when agent creation privilege is enabled", async () => {
@@ -350,17 +455,19 @@ describe("agent permission routes", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const app = await createApp({
+    const res = await callRoute({
+      actor: {
       type: "board",
       userId: "board-user",
       source: "local_implicit",
       isInstanceAdmin: true,
       companyIds: [companyId],
+    },
+      method: "patch",
+      path: "/agents/:id/permissions",
+      params: { id: agentId },
+      body: { canCreateAgents: true, canAssignTasks: false },
     });
-
-    const res = await request(app)
-      .patch(`/api/agents/${agentId}/permissions`)
-      .send({ canCreateAgents: true, canAssignTasks: false });
 
     expect(res.status).toBe(200);
     expect(principalPermissionCalls).toContainEqual({
@@ -371,8 +478,8 @@ describe("agent permission routes", () => {
       enabled: true,
       grantedByUserId: "board-user",
     });
-    expect(res.body.access.canAssignTasks).toBe(true);
-    expect(res.body.access.taskAssignSource).toBe("agent_creator");
+    expect((res.body as any).access.canAssignTasks).toBe(true);
+    expect((res.body as any).access.taskAssignSource).toBe("agent_creator");
   });
 
   it("exposes a dedicated agent route for the inbox mine view", async () => {
@@ -385,17 +492,18 @@ describe("agent permission routes", () => {
       },
     ];
 
-    const app = await createApp({
+    const res = await callRoute({
+      actor: {
       type: "agent",
       agentId,
       companyId,
       runId: "run-1",
       source: "agent_key",
+    },
+      method: "get",
+      path: "/agents/me/inbox/mine",
+      query: { userId: "board-user" },
     });
-
-    const res = await request(app)
-      .get("/api/agents/me/inbox/mine")
-      .query({ userId: "board-user" });
 
     expect(res.status).toBe(200);
     expect(issueListCalls).toContainEqual({

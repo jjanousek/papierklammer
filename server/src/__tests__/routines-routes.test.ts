@@ -1,5 +1,4 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../middleware/index.js";
 import { routineRoutes } from "../routes/routines.js";
@@ -61,42 +60,79 @@ const trigger = {
   updatedAt: new Date("2026-03-20T00:00:00.000Z"),
 };
 
-const mockRoutineService = vi.hoisted(() => ({
-  list: vi.fn(),
-  get: vi.fn(),
-  getDetail: vi.fn(),
-  update: vi.fn(),
-  create: vi.fn(),
-  listRuns: vi.fn(),
-  createTrigger: vi.fn(),
-  getTrigger: vi.fn(),
-  updateTrigger: vi.fn(),
-  deleteTrigger: vi.fn(),
-  rotateTriggerSecret: vi.fn(),
-  runRoutine: vi.fn(),
-  firePublicTrigger: vi.fn(),
-}));
+let mockRoutineService: {
+  list: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
+  getDetail: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+  listRuns: ReturnType<typeof vi.fn>;
+  createTrigger: ReturnType<typeof vi.fn>;
+  getTrigger: ReturnType<typeof vi.fn>;
+  updateTrigger: ReturnType<typeof vi.fn>;
+  deleteTrigger: ReturnType<typeof vi.fn>;
+  rotateTriggerSecret: ReturnType<typeof vi.fn>;
+  runRoutine: ReturnType<typeof vi.fn>;
+  firePublicTrigger: ReturnType<typeof vi.fn>;
+};
 
-const mockAccessService = vi.hoisted(() => ({
-  canUser: vi.fn(),
-}));
+let mockAccessService: {
+  canUser: ReturnType<typeof vi.fn>;
+};
 
-const mockLogActivity = vi.hoisted(() => vi.fn());
+let mockLogActivity: ReturnType<typeof vi.fn>;
 
-async function createApp(actor: Record<string, unknown>) {
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = actor;
-    next();
-  });
-  app.use("/api", routineRoutes({} as any, {
+function getRouteHandlers(method: "post" | "patch", path: string) {
+  const router = routineRoutes({} as any, {
     accessService: mockAccessService as any,
     logActivity: mockLogActivity,
     routineService: mockRoutineService as any,
-  }));
-  app.use(errorHandler);
-  return app;
+  });
+  const layer = (router as any).stack.find(
+    (entry: any) => entry.route?.path === path && entry.route.methods?.[method],
+  );
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) return;
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 function responseError(res: { body: unknown }) {
@@ -116,16 +152,64 @@ async function invokeRoute({
   params?: Record<string, unknown>;
   body?: Record<string, unknown>;
 }) {
-  let resolvedPath = path;
-  for (const [key, value] of Object.entries(params)) {
-    resolvedPath = resolvedPath.replace(`:${key}`, String(value));
+  const req = {
+    actor,
+    body,
+    query: {},
+    params,
+    method: method.toUpperCase(),
+    originalUrl: `/api${path}`,
+  } as any;
+  let statusCode = 200;
+  let responseBody: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      responseBody = payload;
+      return this;
+    },
+    end() {
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(getRouteHandlers(method, path), req, res);
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
   }
-  return request(await createApp(actor))[method](`/api${resolvedPath}`).send(body);
+
+  return {
+    status: statusCode,
+    body: responseBody,
+  };
 }
 
 describe("routine routes", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetModules();
+    mockRoutineService = {
+      list: vi.fn(),
+      get: vi.fn(),
+      getDetail: vi.fn(),
+      update: vi.fn(),
+      create: vi.fn(),
+      listRuns: vi.fn(),
+      createTrigger: vi.fn(),
+      getTrigger: vi.fn(),
+      updateTrigger: vi.fn(),
+      deleteTrigger: vi.fn(),
+      rotateTriggerSecret: vi.fn(),
+      runRoutine: vi.fn(),
+      firePublicTrigger: vi.fn(),
+    };
+    mockAccessService = {
+      canUser: vi.fn(),
+    };
+    mockLogActivity = vi.fn();
     mockRoutineService.create.mockResolvedValue(routine);
     mockRoutineService.get.mockResolvedValue(routine);
     mockRoutineService.getTrigger.mockResolvedValue(trigger);
