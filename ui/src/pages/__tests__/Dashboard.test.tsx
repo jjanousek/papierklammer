@@ -237,6 +237,26 @@ describe("Dashboard tier-column layout", () => {
     expect(container.textContent).toContain("run-3");
   });
 
+  it("does not keep stale raw running agents in the active dashboard count once live runs clear", () => {
+    const originalAgents = mockAgents.map((agent) => ({ ...agent }));
+    const originalLiveRuns = mockLiveRuns.map((run) => ({ ...run }));
+
+    mockAgents.splice(0, mockAgents.length, ...originalAgents.map((agent) => ({
+      ...agent,
+      status: agent.id === "a-eng1" ? "running" : agent.status,
+    })));
+    mockLiveRuns.splice(0, mockLiveRuns.length);
+
+    try {
+      renderDashboard();
+      expect(container.textContent).toContain("0 active");
+      expect(container.textContent).toContain("6 idle");
+    } finally {
+      mockAgents.splice(0, mockAgents.length, ...originalAgents);
+      mockLiveRuns.splice(0, mockLiveRuns.length, ...originalLiveRuns);
+    }
+  });
+
   it("has MAX_STREAM_ENTRIES_PER_AGENT >= 20", () => {
     expect(MAX_STREAM_ENTRIES_PER_AGENT).toBeGreaterThanOrEqual(20);
   });

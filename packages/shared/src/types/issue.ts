@@ -144,6 +144,11 @@ export interface Issue {
   myLastTouchAt?: Date | null;
   lastExternalCommentAt?: Date | null;
   isUnreadForMe?: boolean;
+  projectedStatus?: string;
+  activeRunId?: string | null;
+  activeLeaseId?: string | null;
+  pickupFailCount?: number;
+  lastReconciledAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

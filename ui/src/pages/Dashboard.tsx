@@ -9,6 +9,7 @@ import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { formatCents, formatTokens } from "../lib/utils";
+import { dashboardActivityPriority, isDashboardAgentCountedActive } from "../lib/agentActivity";
 import { LayoutDashboard } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { TopBar } from "../components/TopBar";
@@ -102,21 +103,14 @@ function sortAgentsByActivity(
   return [...agents].sort((a, b) => {
     const runA = runs.get(a.id);
     const runB = runs.get(b.id);
-    const prioA = activityPriority(a, runA);
-    const prioB = activityPriority(b, runB);
+    const prioA = dashboardActivityPriority(a, runA);
+    const prioB = dashboardActivityPriority(b, runB);
     if (prioA !== prioB) return prioA - prioB;
     // Within same priority, sort by elapsed time (longest first)
     const elapsedA = runA?.startedAt ? Date.now() - new Date(runA.startedAt).getTime() : 0;
     const elapsedB = runB?.startedAt ? Date.now() - new Date(runB.startedAt).getTime() : 0;
     return elapsedB - elapsedA;
   });
-}
-
-function activityPriority(agent: Agent, run?: LiveRunForIssue): number {
-  if (run?.status === "running" || run?.status === "queued") return 0;
-  if (agent.status === "active" || agent.status === "running") return 0;
-  if (agent.status === "paused" || agent.status === "pending_approval") return 1;
-  return 2;
 }
 
 export function Dashboard() {
@@ -280,10 +274,7 @@ export function Dashboard() {
   // Metrics
   const activeCount = useMemo(() => {
     if (!agents) return 0;
-    return agents.filter((a) => {
-      const run = runByAgentId.get(a.id);
-      return run?.status === "running" || run?.status === "queued" || a.status === "running";
-    }).length;
+    return agents.filter((agent) => isDashboardAgentCountedActive(agent, runByAgentId.get(agent.id))).length;
   }, [agents, runByAgentId]);
 
   const idleCount = useMemo(() => {

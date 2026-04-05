@@ -241,9 +241,31 @@ describe("AgentSidebar", () => {
 
     const frame = lastFrame()!;
     expect(frame).toContain("CEO");
-    expect(frame).toContain("(idle");
-    expect(frame).toContain("2 live");
-    expect(frame).toContain("runs)");
+    expect(frame).toContain("(running");
+    expect(frame).toContain("2");
+    expect(frame).toContain("live runs");
+    unmount();
+  });
+
+  it("clears stale raw running labels after recovery when no live runs remain", () => {
+    const { lastFrame, unmount } = render(
+      <AgentSidebar
+        agents={[
+          {
+            agentId: "a1",
+            name: "CEO",
+            status: "running",
+            activeRunCount: 0,
+            queuedIntentCount: 0,
+          },
+        ]}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("CEO");
+    expect(frame).toContain("(idle)");
+    expect(frame).not.toContain("(running");
     unmount();
   });
 });

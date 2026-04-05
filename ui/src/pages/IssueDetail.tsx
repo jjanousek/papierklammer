@@ -16,6 +16,7 @@ import { assigneeValueFromSelection, suggestedCommentAssigneeValue } from "../li
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import { queryKeys } from "../lib/queryKeys";
 import { createIssueDetailPath, readIssueDetailBreadcrumb } from "../lib/issueDetailBreadcrumb";
+import { getIssueDisplayStatus, isRecentlyRecoveredIssue } from "../lib/issueExecutionState";
 import {
   applyOptimisticIssueCommentUpdate,
   createOptimisticIssueComment,
@@ -289,7 +290,10 @@ export function IssueDetail() {
     refetchInterval: 3000,
   });
 
-  const hasLiveRuns = (liveRuns ?? []).length > 0 || !!activeRun;
+  const hasLiveRuns =
+    (liveRuns ?? []).length > 0
+    || !!activeRun
+    || Boolean(issue?.activeRunId || issue?.activeLeaseId);
   const { data: workProducts } = useQuery({
     queryKey: queryKeys.issues.workProducts(issueId!),
     queryFn: () => issuesApi.listWorkProducts(issueId!),
@@ -857,6 +861,8 @@ export function IssueDetail() {
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading...</p>;
   if (error) return <p className="text-sm text-destructive">{error.message}</p>;
   if (!issue) return null;
+  const displayStatus = getIssueDisplayStatus(issue);
+  const showRecoveredBadge = isRecentlyRecoveredIssue(issue, hasLiveRuns);
 
   // Ancestors are returned oldest-first from the server (root at end, immediate parent at start)
   const ancestors = issue.ancestors ?? [];
@@ -956,7 +962,7 @@ export function IssueDetail() {
       <div className="space-y-3">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon
-            status={issue.status}
+            status={displayStatus}
             onChange={(status) => updateIssue.mutate({ status })}
           />
           <PriorityIcon
@@ -971,6 +977,11 @@ export function IssueDetail() {
                 <span className="relative inline-flex h-1.5 w-1.5 bg-cyan-400" />
               </span>
               Live
+            </span>
+          )}
+          {!hasLiveRuns && showRecoveredBadge && (
+            <span className="inline-flex items-center gap-1.5 border border-[var(--alive)]/25 bg-[var(--alive)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--alive)] shrink-0">
+              Recovered
             </span>
           )}
 

@@ -20,6 +20,7 @@ import {
 import { StatusIcon } from "./StatusIcon";
 import { PriorityIcon } from "./PriorityIcon";
 import { Identity } from "./Identity";
+import { getIssueDisplayStatus, hasIssueLiveOperatorState, isRecentlyRecoveredIssue } from "../lib/issueExecutionState";
 import type { Issue } from "@papierklammer/shared";
 
 const boardStatuses = [
@@ -129,6 +130,9 @@ function KanbanCard({
     if (!id || !agents) return null;
     return agents.find((a) => a.id === id)?.name ?? null;
   };
+  const issueIsLive = hasIssueLiveOperatorState(issue, Boolean(isLive));
+  const issueIsRecovered = isRecentlyRecoveredIssue(issue, issueIsLive);
+  const displayStatus = getIssueDisplayStatus(issue);
 
   return (
     <div
@@ -152,14 +156,20 @@ function KanbanCard({
           <span className="text-[10px] text-[var(--fg-dim)] font-mono shrink-0">
             {issue.identifier ?? issue.id.slice(0, 8)}
           </span>
-          {isLive && (
+          {issueIsLive && (
             <span className="relative flex h-2 w-2 shrink-0 mt-0.5">
               <span className="relative inline-flex h-1.5 w-1.5 bg-[var(--alive)]" />
+            </span>
+          )}
+          {!issueIsLive && issueIsRecovered && (
+            <span className="inline-flex items-center border border-[var(--alive)]/25 bg-[var(--alive)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--alive)]">
+              Recovered
             </span>
           )}
         </div>
         <p className="text-[11px] font-mono leading-snug line-clamp-2 mb-2 text-[var(--fg)]">{issue.title}</p>
         <div className="flex items-center gap-2">
+          <StatusIcon status={displayStatus} />
           <PriorityIcon priority={issue.priority} />
           {issue.assigneeAgentId && (() => {
             const name = agentName(issue.assigneeAgentId);
@@ -197,8 +207,9 @@ export function KanbanBoard({
       grouped[status] = [];
     }
     for (const issue of issues) {
-      if (grouped[issue.status]) {
-        grouped[issue.status].push(issue);
+      const displayStatus = getIssueDisplayStatus(issue);
+      if (grouped[displayStatus]) {
+        grouped[displayStatus].push(issue);
       }
     }
     return grouped;

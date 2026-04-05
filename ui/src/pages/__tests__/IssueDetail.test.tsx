@@ -644,6 +644,24 @@ describe("IssueDetail", () => {
     expect(container.textContent).toContain("Inspect run");
   });
 
+  it("shows a recovered badge after stale ownership is cleared", async () => {
+    mocks.issuesGet.mockReturnValue({
+      ...mocks.issue,
+      projectedStatus: "todo",
+      lastReconciledAt: new Date("2026-04-05T12:00:00.000Z"),
+      executionRunId: null,
+      checkoutRunId: null,
+    });
+
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(container.textContent).toContain("Recovered");
+    expect(container.textContent).not.toContain("Live");
+  });
+
   it("falls back to run-linked comments when completed runs lack persisted summaries", async () => {
     const completedRun: RunForIssue = {
       runId: "run-23456789",

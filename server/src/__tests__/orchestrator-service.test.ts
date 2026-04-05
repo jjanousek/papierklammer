@@ -654,6 +654,7 @@ describeDB("orchestratorService", () => {
     expect(recoveredIssue.checkoutRunId).toBeNull();
     expect(recoveredIssue.pickupFailCount).toBe(0);
     expect(recoveredIssue.lastPickupFailureAt).toBeNull();
+    expect(recoveredIssue.lastReconciledAt).toBeInstanceOf(Date);
 
     const [otherIssue] = await db
       .select()

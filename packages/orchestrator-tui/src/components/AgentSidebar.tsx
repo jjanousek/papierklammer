@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import type { AgentOverview, RunReviewEntry } from "../hooks/useOrchestratorStatus.js";
+import { getAgentOverviewDisplayStatus } from "../lib/agentStatus.js";
 
 const STATUS_DOT: Record<string, { symbol: string; color: string }> = {
   idle: { symbol: "●", color: "green" },
@@ -120,10 +121,11 @@ export function AgentSidebar({
           {hasMoreAbove && <Text dimColor>▲ more above</Text>}
           {visibleAgents.map((agent, visIdx) => {
             const idx = scrollOffset + visIdx;
+            const displayStatus = getAgentOverviewDisplayStatus(agent);
             const dot =
               agent.activeRunCount > 0
                 ? { symbol: "●", color: "blue" }
-                : statusDot(agent.status);
+                : statusDot(displayStatus);
             const isSelected = idx === selectedIndex;
             const isRunning = agent.activeRunCount > 0;
             const liveRunSuffix =
@@ -140,7 +142,7 @@ export function AgentSidebar({
                 ) : (
                   <Text color={dot.color}>{dot.symbol}</Text>
                 )}{" "}
-                {agent.name || agent.agentId} ({agent.status}{liveRunSuffix})
+                {agent.name || agent.agentId} ({displayStatus}{liveRunSuffix})
               </Text>
             );
           })}

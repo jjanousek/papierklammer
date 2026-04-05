@@ -144,6 +144,7 @@ function buildRecoveredIssuePatch(now: Date) {
     executionLockedAt: null,
     pickupFailCount: 0,
     lastPickupFailureAt: null,
+    lastReconciledAt: now,
     updatedAt: now,
   };
 }

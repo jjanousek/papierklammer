@@ -3,6 +3,7 @@ import type { Agent } from "@papierklammer/shared";
 import type { LiveRunForIssue } from "../api/heartbeats";
 import { Link } from "../lib/router";
 import { useCompany } from "../context/CompanyContext";
+import { getDashboardAgentDisplayStatus } from "../lib/agentActivity";
 import { RunIdentityGrid } from "./RunIdentityGrid";
 import { agentRouteRef, agentUrl } from "../lib/utils";
 
@@ -26,10 +27,6 @@ function isActiveRun(run?: LiveRunForIssue | null): boolean {
   return run?.status === "running" || run?.status === "queued";
 }
 
-function isActiveAgent(agent: Agent): boolean {
-  return agent.status === "active" || agent.status === "running";
-}
-
 export function AgentBlock({
   agent,
   run,
@@ -41,7 +38,8 @@ export function AgentBlock({
 }: AgentBlockProps) {
   const { selectedCompany } = useCompany();
   const activeRun = isActiveRun(run);
-  const activeAgent = isActiveAgent(agent);
+  const displayStatus = getDashboardAgentDisplayStatus(agent, run);
+  const activeAgent = displayStatus === "active";
   const mustStayExpanded = activeRun || activeAgent;
   const hasRecentRun = Boolean(run);
   const [expanded, setExpanded] = useState(mustStayExpanded || hasRecentRun);
@@ -62,7 +60,7 @@ export function AgentBlock({
   const isExpanded = mustStayExpanded || expanded;
 
   // Status color for the 6x6 square
-  const statusStyle = getStatusStyle(agent.status, activeRun);
+  const statusStyle = getStatusStyle(displayStatus, activeRun);
 
   if (!isExpanded) {
     // Collapsed (idle) - single line ~28px
@@ -94,7 +92,7 @@ export function AgentBlock({
           }}
         />
         <span style={{ fontSize: "10px", color: "var(--fg-dim)", marginRight: "8px" }}>
-          {agent.status}
+          {displayStatus}
         </span>
         {elapsed && (
           <span style={{ fontSize: "10px", color: "var(--fg-dim)", marginRight: "8px" }}>
