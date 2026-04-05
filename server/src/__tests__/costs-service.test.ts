@@ -1,6 +1,6 @@
-import express from "express";
-import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { costRoutes } from "../routes/costs.js";
+import { errorHandler } from "../middleware/index.js";
 
 function makeDb(overrides: Record<string, unknown> = {}) {
   const selectChain = {
@@ -71,65 +71,120 @@ const mockBudgetService = vi.hoisted(() => ({
   resolveIncident: vi.fn(),
 }));
 
-async function createApp() {
-  const [{ costRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/costs.js"),
-    import("../middleware/index.js"),
-  ]);
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    req.actor = { type: "board", userId: "board-user", source: "local_implicit" };
-    next();
-  });
-  app.use(
-    "/api",
-    costRoutes(makeDb() as any, {
-      budgetService: mockBudgetService as any,
-      costService: mockCostService as any,
-      financeService: mockFinanceService as any,
-      companyService: mockCompanyService as any,
-      agentService: mockAgentService as any,
-      heartbeatService: mockHeartbeatService as any,
-      logActivity: mockLogActivity,
-      fetchAllQuotaWindows: mockFetchAllQuotaWindows,
-    }),
+type RouteMethod = "get" | "patch";
+
+function createRouteHandler(method: RouteMethod, path: string) {
+  const router = costRoutes(makeDb() as any, {
+    budgetService: mockBudgetService as any,
+    costService: mockCostService as any,
+    financeService: mockFinanceService as any,
+    companyService: mockCompanyService as any,
+    agentService: mockAgentService as any,
+    heartbeatService: mockHeartbeatService as any,
+    logActivity: mockLogActivity,
+    fetchAllQuotaWindows: mockFetchAllQuotaWindows,
+  }) as unknown as {
+    stack?: Array<{
+      route?: {
+        path?: string;
+        methods?: Partial<Record<RouteMethod, boolean>>;
+        stack?: Array<{ handle: (req: unknown, res: unknown) => Promise<void> | void }>;
+      };
+    }>;
+  };
+  const layer = router.stack?.find(
+    (entry) => entry.route?.path === path && entry.route.methods?.[method],
   );
-  app.use(errorHandler);
-  return app;
+  const handler = layer?.route?.stack?.at(-1)?.handle;
+  if (!handler) {
+    throw new Error(`Expected ${method.toUpperCase()} ${path} handler to be registered`);
+  }
+  return handler;
 }
 
-async function createAppWithActor(actor: any) {
-  const [{ costRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/costs.js"),
-    import("../middleware/index.js"),
-  ]);
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    req.actor = actor;
-    next();
-  });
-  app.use(
-    "/api",
-    costRoutes(makeDb() as any, {
-      budgetService: mockBudgetService as any,
-      costService: mockCostService as any,
-      financeService: mockFinanceService as any,
-      companyService: mockCompanyService as any,
-      agentService: mockAgentService as any,
-      heartbeatService: mockHeartbeatService as any,
-      logActivity: mockLogActivity,
-      fetchAllQuotaWindows: mockFetchAllQuotaWindows,
-    }),
-  );
-  app.use(errorHandler);
-  return app;
+function createResponseCapture() {
+  return {
+    statusCode: 200,
+    body: undefined as unknown,
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      this.body = payload;
+      return this;
+    },
+  };
+}
+
+async function invokeRoute({
+  actor = { type: "board", userId: "board-user", source: "local_implicit" },
+  method,
+  path,
+  params = {},
+  query = {},
+  body = {},
+}: {
+  actor?: any;
+  method: RouteMethod;
+  path: string;
+  params?: Record<string, unknown>;
+  query?: Record<string, unknown>;
+  body?: Record<string, unknown>;
+}) {
+  const handler = createRouteHandler(method, path);
+  const req = {
+    actor,
+    method: method.toUpperCase(),
+    originalUrl: path,
+    params,
+    query,
+    body,
+  };
+  const res = createResponseCapture();
+
+  try {
+    await handler(req, res);
+  } catch (error) {
+    errorHandler(error, req as any, res as any, () => undefined);
+  }
+
+  return res;
 }
 
 beforeEach(() => {
-  vi.resetModules();
-  vi.clearAllMocks();
+  mockCompanyService.getById.mockReset();
+  mockCompanyService.update.mockReset();
+  mockAgentService.getById.mockReset();
+  mockAgentService.update.mockReset();
+  mockHeartbeatService.cancelBudgetScopeWork.mockReset().mockResolvedValue(undefined);
+  mockLogActivity.mockReset();
+  mockFetchAllQuotaWindows.mockReset();
+  mockCostService.createEvent.mockReset();
+  mockCostService.summary.mockReset().mockResolvedValue({ spendCents: 0 });
+  mockCostService.byAgent.mockReset().mockResolvedValue([]);
+  mockCostService.byAgentModel.mockReset().mockResolvedValue([]);
+  mockCostService.byProvider.mockReset().mockResolvedValue([]);
+  mockCostService.byBiller.mockReset().mockResolvedValue([]);
+  mockCostService.windowSpend.mockReset().mockResolvedValue([]);
+  mockCostService.byProject.mockReset().mockResolvedValue([]);
+  mockFinanceService.createEvent.mockReset();
+  mockFinanceService.summary
+    .mockReset()
+    .mockResolvedValue({ debitCents: 0, creditCents: 0, netCents: 0, estimatedDebitCents: 0, eventCount: 0 });
+  mockFinanceService.byBiller.mockReset().mockResolvedValue([]);
+  mockFinanceService.byKind.mockReset().mockResolvedValue([]);
+  mockFinanceService.list.mockReset().mockResolvedValue([]);
+  mockBudgetService.overview.mockReset().mockResolvedValue({
+    companyId: "company-1",
+    policies: [],
+    activeIncidents: [],
+    pausedAgentCount: 0,
+    pausedProjectCount: 0,
+    pendingApprovalCount: 0,
+  });
+  mockBudgetService.upsertPolicy.mockReset();
+  mockBudgetService.resolveIncident.mockReset();
   mockCompanyService.update.mockResolvedValue({
     id: "company-1",
     name: "Paperclip",
@@ -148,72 +203,90 @@ beforeEach(() => {
 
 describe("cost routes", () => {
   it("accepts valid ISO date strings and passes them to cost summary routes", async () => {
-    const app = await createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/summary")
-      .query({ from: "2026-01-01T00:00:00.000Z", to: "2026-01-31T23:59:59.999Z" });
-    expect(res.status).toBe(200);
+    const res = await invokeRoute({
+      method: "get",
+      path: "/companies/:companyId/costs/summary",
+      params: { companyId: "company-1" },
+      query: { from: "2026-01-01T00:00:00.000Z", to: "2026-01-31T23:59:59.999Z" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(mockCostService.summary).toHaveBeenCalledWith("company-1", {
+      from: new Date("2026-01-01T00:00:00.000Z"),
+      to: new Date("2026-01-31T23:59:59.999Z"),
+    });
   });
 
   it("returns 400 for an invalid 'from' date string", async () => {
-    const app = await createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/summary")
-      .query({ from: "not-a-date" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/invalid 'from' date/i);
+    const res = await invokeRoute({
+      method: "get",
+      path: "/companies/:companyId/costs/summary",
+      params: { companyId: "company-1" },
+      query: { from: "not-a-date" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect((res.body as any).error).toMatch(/invalid 'from' date/i);
   });
 
   it("returns 400 for an invalid 'to' date string", async () => {
-    const app = await createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/summary")
-      .query({ to: "banana" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/invalid 'to' date/i);
+    const res = await invokeRoute({
+      method: "get",
+      path: "/companies/:companyId/costs/summary",
+      params: { companyId: "company-1" },
+      query: { to: "banana" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect((res.body as any).error).toMatch(/invalid 'to' date/i);
   });
 
   it("returns finance summary rows for valid requests", async () => {
-    const app = await createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/finance-summary")
-      .query({ from: "2026-02-01T00:00:00.000Z", to: "2026-02-28T23:59:59.999Z" });
-    expect(res.status).toBe(200);
+    const res = await invokeRoute({
+      method: "get",
+      path: "/companies/:companyId/costs/finance-summary",
+      params: { companyId: "company-1" },
+      query: { from: "2026-02-01T00:00:00.000Z", to: "2026-02-28T23:59:59.999Z" },
+    });
+    expect(res.statusCode).toBe(200);
     expect(mockFinanceService.summary).toHaveBeenCalled();
   });
 
   it("returns 400 for invalid finance event list limits", async () => {
-    const app = await createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/finance-events")
-      .query({ limit: "0" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/invalid 'limit'/i);
+    const res = await invokeRoute({
+      method: "get",
+      path: "/companies/:companyId/costs/finance-events",
+      params: { companyId: "company-1" },
+      query: { limit: "0" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect((res.body as any).error).toMatch(/invalid 'limit'/i);
   });
 
   it("accepts valid finance event list limits", async () => {
-    const app = await createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/finance-events")
-      .query({ limit: "25" });
-    expect(res.status).toBe(200);
+    const res = await invokeRoute({
+      method: "get",
+      path: "/companies/:companyId/costs/finance-events",
+      params: { companyId: "company-1" },
+      query: { limit: "25" },
+    });
+    expect(res.statusCode).toBe(200);
     expect(mockFinanceService.list).toHaveBeenCalledWith("company-1", undefined, 25);
   });
 
   it("rejects company budget updates for board users outside the company", async () => {
-    const app = await createAppWithActor({
-      type: "board",
-      userId: "board-user",
-      source: "session",
-      isInstanceAdmin: false,
-      companyIds: ["company-2"],
+    const res = await invokeRoute({
+      actor: {
+        type: "board",
+        userId: "board-user",
+        source: "session",
+        isInstanceAdmin: false,
+        companyIds: ["company-2"],
+      },
+      method: "patch",
+      path: "/companies/:companyId/budgets",
+      params: { companyId: "company-1" },
+      body: { budgetMonthlyCents: 2500 },
     });
 
-    const res = await request(app)
-      .patch("/api/companies/company-1/budgets")
-      .send({ budgetMonthlyCents: 2500 });
-
-    expect(res.status).toBe(403);
+    expect(res.statusCode).toBe(403);
     expect(mockCompanyService.update).not.toHaveBeenCalled();
   });
 
@@ -225,19 +298,21 @@ describe("cost routes", () => {
       budgetMonthlyCents: 100,
       spentMonthlyCents: 0,
     });
-    const app = await createAppWithActor({
-      type: "board",
-      userId: "board-user",
-      source: "session",
-      isInstanceAdmin: false,
-      companyIds: ["company-2"],
+    const res = await invokeRoute({
+      actor: {
+        type: "board",
+        userId: "board-user",
+        source: "session",
+        isInstanceAdmin: false,
+        companyIds: ["company-2"],
+      },
+      method: "patch",
+      path: "/agents/:agentId/budgets",
+      params: { agentId: "agent-1" },
+      body: { budgetMonthlyCents: 2500 },
     });
 
-    const res = await request(app)
-      .patch("/api/agents/agent-1/budgets")
-      .send({ budgetMonthlyCents: 2500 });
-
-    expect(res.status).toBe(403);
+    expect(res.statusCode).toBe(403);
     expect(mockAgentService.update).not.toHaveBeenCalled();
   });
 });
