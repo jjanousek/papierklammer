@@ -44,13 +44,15 @@ describe("privateHostnameGuard", () => {
     const app = createApp({ enabled: true, allowedHostnames: ["some-other-host"] });
     const res = await request(app).get("/api/health").set("Host", "dotta-macbook-pro:3100");
     expect(res.status).toBe(403);
+    expect(res.headers["content-type"]).toMatch(/application\/json/);
     expect(res.body?.error).toContain("please run pnpm papierklammer allowed-hostname dotta-macbook-pro");
   });
 
   it("blocks unknown hostnames on page routes with plain-text remediation command", async () => {
     const app = createApp({ enabled: true, allowedHostnames: ["some-other-host"] });
-    const res = await request(app).get("/dashboard").set("Host", "dotta-macbook-pro:3100");
+    const res = await request(app).get("/dashboard").set("Accept", "*/*").set("Host", "dotta-macbook-pro:3100");
     expect(res.status).toBe(403);
+    expect(res.headers["content-type"]).toMatch(/text\/plain/);
     expect(res.text).toContain("please run pnpm papierklammer allowed-hostname dotta-macbook-pro");
   }, 20_000);
 });

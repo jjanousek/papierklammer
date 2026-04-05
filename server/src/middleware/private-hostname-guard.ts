@@ -49,6 +49,18 @@ function blockedHostnameMessage(hostname: string): string {
   );
 }
 
+function wantsJsonResponse(req: Request): boolean {
+  if (req.path.startsWith("/api")) {
+    return true;
+  }
+
+  const acceptsHtml = req.accepts("html");
+  const acceptsText = req.accepts("text");
+  const acceptsJson = req.accepts("json");
+
+  return Boolean(acceptsJson && !acceptsHtml && !acceptsText);
+}
+
 export function privateHostnameGuard(opts: {
   enabled: boolean;
   allowedHostnames: string[];
@@ -65,7 +77,7 @@ export function privateHostnameGuard(opts: {
 
   return (req, res, next) => {
     const hostname = extractHostname(req);
-    const wantsJson = req.path.startsWith("/api") || req.accepts(["json", "html", "text"]) === "json";
+    const wantsJson = wantsJsonResponse(req);
 
     if (!hostname) {
       const error = "Missing Host header. If you want to allow a hostname, run pnpm papierklammer allowed-hostname <host>.";
