@@ -744,5 +744,87 @@ describeDB("stale run reaper (reapStaleLeaseRuns)", () => {
         .where(eq(controlPlaneEvents.eventType, "run_cancelled"));
       expect(runCancelledEvents).toHaveLength(1);
     });
+
+    it("ignores malformed expired lease rows from another company for the same run", async () => {
+      await seedTestData();
+
+      const otherCompanyId = randomUUID();
+      const otherAgentId = randomUUID();
+      const runId = randomUUID();
+
+      await db.insert(companies).values({
+        id: otherCompanyId,
+        name: "OtherCo",
+        issuePrefix: `O${otherCompanyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+        requireBoardApprovalForNewAgents: false,
+      });
+
+      await db.insert(agents).values({
+        id: otherAgentId,
+        companyId: otherCompanyId,
+        name: "OtherAgent",
+        role: "engineer",
+        status: "active",
+        adapterType: "codex_local",
+        adapterConfig: {},
+        runtimeConfig: {},
+        permissions: {},
+      });
+
+      await db.insert(heartbeatRuns).values({
+        id: runId,
+        companyId,
+        agentId,
+        invocationSource: "scheduler",
+        status: "running",
+      });
+
+      await db
+        .update(issues)
+        .set({
+          executionRunId: runId,
+          executionAgentNameKey: "testagent",
+          executionLockedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(issues.id, issueId));
+
+      await db.insert(executionLeases).values({
+        id: randomUUID(),
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId: otherAgentId,
+        runId,
+        state: "expired",
+        companyId: otherCompanyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: new Date(Date.now() - 100),
+      });
+
+      const result = await heartbeat.reapStaleLeaseRuns();
+
+      expect(result.reaped).toBe(0);
+      expect(result.runIds).toEqual([]);
+
+      const [run] = await db
+        .select({
+          status: heartbeatRuns.status,
+          errorCode: heartbeatRuns.errorCode,
+        })
+        .from(heartbeatRuns)
+        .where(eq(heartbeatRuns.id, runId));
+      expect(run.status).toBe("running");
+      expect(run.errorCode).toBeNull();
+
+      const events = await db
+        .select({
+          entityId: controlPlaneEvents.entityId,
+          companyId: controlPlaneEvents.companyId,
+          eventType: controlPlaneEvents.eventType,
+        })
+        .from(controlPlaneEvents);
+
+      expect(events).toEqual([]);
+    });
   });
 });

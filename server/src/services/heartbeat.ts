@@ -1990,7 +1990,13 @@ export function heartbeatService(db: Db) {
         lease: executionLeases,
       })
       .from(heartbeatRuns)
-      .innerJoin(executionLeases, eq(executionLeases.runId, heartbeatRuns.id))
+      .innerJoin(
+        executionLeases,
+        and(
+          eq(executionLeases.runId, heartbeatRuns.id),
+          eq(executionLeases.companyId, heartbeatRuns.companyId),
+        ),
+      )
       .where(
         and(
           eq(executionLeases.state, "expired"),
