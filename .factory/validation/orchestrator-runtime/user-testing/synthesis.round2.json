@@ -1,0 +1,28 @@
+{
+  "milestone": "orchestrator-runtime",
+  "round": 2,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 7,
+    "passed": 6,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-CROSS-005",
+    "VAL-ORCH-006",
+    "VAL-RUN-005",
+    "VAL-RUN-006",
+    "VAL-RUN-007",
+    "VAL-RUN-008"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-CROSS-007",
+      "reason": "Issue detail, run detail, agent detail, and API evidence reconcile the target completed run identity, but the company dashboard still does not visibly surface the target runId or issue identifier, so cross-surface identity remains incomplete there."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/orchestrator-runtime/user-testing/synthesis.round1.json"
+}

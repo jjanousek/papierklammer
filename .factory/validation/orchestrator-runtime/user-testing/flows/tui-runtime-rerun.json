@@ -1,0 +1,164 @@
+{
+  "groupId": "tui-runtime-rerun",
+  "testedAt": "2026-04-05T01:35:31.557453+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "appUrl": "http://localhost:3100",
+    "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+    "companyName": "TUI Recovery Audit",
+    "companyPrefix": "TUI",
+    "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+    "agentName": "Audit CEO",
+    "existingCompletedIssueId": "feba9eab-c82c-4971-bbbc-d111b84d91e8",
+    "existingCompletedIssueIdentifier": "TUI-1",
+    "existingCompletedRunId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+    "recentOnDemandRunId": "dc3b50c0-6057-4684-bc5c-34817c4f1cc2",
+    "liveRunId": "26f80af6-5519-4d7c-9c88-c58c5641363b",
+    "unexpectedIssueCreatedDuringValidation": {
+      "issueId": "dcd5ed56-1971-4353-ab35-30606ebf9027",
+      "identifier": "TUI-2"
+    }
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-ORCH-006",
+      "title": "Action failures do not leave the TUI hung",
+      "status": "pass",
+      "identifiers": {
+        "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+        "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+        "unexpectedIssueId": "dcd5ed56-1971-4353-ab35-30606ebf9027"
+      },
+      "steps": [
+        {
+          "action": "Open the shipped TUI via `pnpm dev:tui --url http://localhost:3100 --company-id 02921aac-24ac-43cb-a92e-5c8ec7bdb2bc` and confirm it is input-ready.",
+          "expected": "The console is interactive before the failure test starts.",
+          "observed": "The TUI launched into TUI Recovery Audit with `> Type a message...` and Codex connected."
+        },
+        {
+          "action": "Submit an explicit failing operator request from the TUI: `POST /api/orchestrator/agents/b92ad482-c090-4ce4-8ae9-7cd77d008b67/nudge. Don't create issues.`",
+          "expected": "The TUI shows a temporary thinking state while the request is processed.",
+          "observed": "The TUI showed both `Orchestrator: thinking...` in chat and `Waiting for response...` in the input bar."
+        },
+        {
+          "action": "Wait for the request to complete and compare the visible failure against a supporting direct nudge call.",
+          "expected": "A visible failure is rendered and the console returns to an input-ready state with no stuck thinking indicator.",
+          "observed": "The chat rendered `Failed: Agent has no active assigned issues with a project to nudge`, the footer returned to `Codex: connected`, and the prompt returned to `> Type a message...`; the supporting `curl` transcript showed the same 400 error."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/tui-runtime-rerun/VAL-ORCH-006-before-action.txt",
+          "orchestrator-runtime/tui-runtime-rerun/VAL-ORCH-006-failure-thinking.txt",
+          "orchestrator-runtime/tui-runtime-rerun/VAL-ORCH-006-failure-recovered.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/tui-runtime-rerun/VAL-ORCH-006-failure-recovered.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/tui-runtime-rerun/api-nudge-failure.txt",
+          "orchestrator-runtime/tui-runtime-rerun/company-issues-after-tui-actions.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-006",
+      "title": "TUI run state matches company-scoped API status",
+      "status": "pass",
+      "identifiers": {
+        "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+        "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+        "runId": "26f80af6-5519-4d7c-9c88-c58c5641363b"
+      },
+      "steps": [
+        {
+          "action": "Trigger a real run with `POST /api/agents/b92ad482-c090-4ce4-8ae9-7cd77d008b67/heartbeat/invoke` while the TUI session is open.",
+          "expected": "A new live run is created for the scoped company.",
+          "observed": "The invoke response returned 202 with runId `26f80af6-5519-4d7c-9c88-c58c5641363b`."
+        },
+        {
+          "action": "Observe the TUI during the live run.",
+          "expected": "The header/sidebar active-run indicators reflect the live run.",
+          "observed": "The TUI showed `Connected | 1 agent | 1 active run`, `Audit CEO (running \u00b7 1 live run)`, and a run-inspection row for `26f80af6 \u00b7 running`."
+        },
+        {
+          "action": "Compare the same moment with `/api/orchestrator/status?companyId=02921aac-24ac-43cb-a92e-5c8ec7bdb2bc`.",
+          "expected": "The company-scoped API reports the same active run identity/count seen in the TUI.",
+          "observed": "The API snapshot reported `totalActiveRuns: 1` and `activeRuns[0].runId = 26f80af6-5519-4d7c-9c88-c58c5641363b`, matching the TUI header and run-inspection panel."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/tui-runtime-rerun/VAL-RUN-006-live-tui.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/tui-runtime-rerun/VAL-RUN-006-live-tui.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/tui-runtime-rerun/heartbeat-invoke-response.json",
+          "orchestrator-runtime/tui-runtime-rerun/api-status-before-invoke.json",
+          "orchestrator-runtime/tui-runtime-rerun/api-status-during-live-run.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-008",
+      "title": "TUI exposes a concrete run-output or result inspection path",
+      "status": "pass",
+      "identifiers": {
+        "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+        "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+        "runId": "26f80af6-5519-4d7c-9c88-c58c5641363b",
+        "existingCompletedRunId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d"
+      },
+      "steps": [
+        {
+          "action": "Use the TUI sidebar `Run inspection` section while the live run is in progress.",
+          "expected": "A concrete run row is visible from the TUI alone, not just an aggregate count.",
+          "observed": "During execution the sidebar showed `26f80af6 \u00b7 running` with `Result/output` and the placeholder `Waiting for persisted output\u2026`."
+        },
+        {
+          "action": "Wait for run `26f80af6-5519-4d7c-9c88-c58c5641363b` to finish and re-check the same in-TUI inspection area.",
+          "expected": "The TUI surfaces concrete result/output text for the finished run without leaving the TUI.",
+          "observed": "The same `Run inspection` panel updated to `26f80af6 \u00b7 succeeded` and displayed the persisted summary beginning `Running another heartbeat cycle now...` directly in the sidebar."
+        },
+        {
+          "action": "Cross-check the completed run through the company-scoped API.",
+          "expected": "The API recent-runs view contains the same run and result summary seen in the TUI.",
+          "observed": "The post-run status snapshot showed `recentRuns` containing run `26f80af6-5519-4d7c-9c88-c58c5641363b` with a matching `resultSummaryText` excerpt."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "orchestrator-runtime/tui-runtime-rerun/VAL-RUN-006-live-tui.txt",
+          "orchestrator-runtime/tui-runtime-rerun/VAL-RUN-008-result-inspection.txt"
+        ],
+        "screenshots": [
+          "orchestrator-runtime/tui-runtime-rerun/VAL-RUN-008-result-inspection.png"
+        ],
+        "apiEvidence": [
+          "orchestrator-runtime/tui-runtime-rerun/api-status-after-run-finished.json"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "tuistory text entry dropped several characters on the first attempt to induce the nudge failure, and the orchestrator interpreted the garbled request as vague new work instead of a direct failing action.",
+      "resolved": true,
+      "resolution": "Retried with an explicit endpoint-level nudge instruction and verified the visible 400 failure plus recovered input-ready state; recorded the unintended issue creation as trace evidence.",
+      "affectedAssertions": [
+        "VAL-ORCH-006"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assertions for the TUI Recovery Audit company. VAL-RUN-006 passed because the shipped TUI matched `/api/orchestrator/status` for live run `26f80af6-5519-4d7c-9c88-c58c5641363b`; VAL-RUN-008 passed because the sidebar exposed concrete result text for that run; VAL-ORCH-006 passed because an explicit failing nudge request surfaced the 400 error and returned the console to an input-ready state."
+}

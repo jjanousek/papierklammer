@@ -1,0 +1,208 @@
+{
+  "groupId": "cross-005-rerun",
+  "testedAt": "2026-04-05T01:22:51.948736+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "deploymentMode": "local_trusted",
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "company": {
+      "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+      "companyName": "TUI Recovery Audit",
+      "companyPrefix": "TUI"
+    },
+    "run": {
+      "runId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+      "issueId": "feba9eab-c82c-4971-bbbc-d111b84d91e8",
+      "issueIdentifier": "TUI-1",
+      "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+      "agentName": "Audit CEO",
+      "observedStatus": "succeeded"
+    },
+    "wrongCompany": {
+      "companyId": "030188ab-bcd7-434f-ab63-e8392a07f5ea",
+      "companyName": "TUI Recovery Isolation",
+      "companyPrefix": "TUIA",
+      "agentId": "89a802e9-0ee3-4151-a225-7ea3f5ae6382",
+      "agentName": "Isolation CEO"
+    }
+  },
+  "toolsUsed": [
+    "curl"
+  ],
+  "endpointsExercised": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "auth": "headerless local_trusted loopback",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/health.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+      "auth": "headerless local_trusted loopback",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/board-run-detail.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/log?offset=0&limitBytes=1024",
+      "auth": "headerless local_trusted loopback",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/board-run-log.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/events?afterSeq=0&limit=5",
+      "auth": "headerless local_trusted loopback",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/board-run-events.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/workspace-operations",
+      "auth": "headerless local_trusted loopback",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/board-workspace-operations.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/log?offset=0&limitBytes=1024",
+      "auth": "same-company agent API key",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/same-agent-run-log.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/events?afterSeq=0&limit=5",
+      "auth": "same-company agent API key",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "evidence": "orchestrator-runtime/cross-005-rerun/same-agent-run-events.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+      "auth": "same-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/same-agent-run-detail.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/workspace-operations",
+      "auth": "same-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/same-agent-workspace-operations.txt"
+    },
+    {
+      "method": "POST",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/cancel",
+      "auth": "same-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/same-agent-run-cancel.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/log?offset=0&limitBytes=1024",
+      "auth": "wrong-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/wrong-agent-run-log.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/events?afterSeq=0&limit=5",
+      "auth": "wrong-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/wrong-agent-run-events.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+      "auth": "wrong-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/wrong-agent-run-detail.txt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/workspace-operations",
+      "auth": "wrong-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/wrong-agent-workspace-operations.txt"
+    },
+    {
+      "method": "POST",
+      "path": "/api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/cancel",
+      "auth": "wrong-company agent API key",
+      "expectedStatus": 403,
+      "observedStatus": 403,
+      "evidence": "orchestrator-runtime/cross-005-rerun/wrong-agent-run-cancel.txt"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-005",
+      "title": "Run-detail and run-mutation endpoints enforce company isolation",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Check the local audit instance health before probing the assigned run endpoints",
+          "expected": "GET /api/health returns 200 with {\"status\":\"ok\"}",
+          "observed": "GET /api/health returned 200 with status='ok'"
+        },
+        {
+          "action": "Read run detail, log, events, and workspace-operation fan-out for the completed main-company run with no Authorization header in local_trusted mode",
+          "expected": "Headerless loopback requests are treated as board-authenticated and succeed for the same-company run surfaces",
+          "observed": "Run detail/log/events/workspace-operations returned 200/200/200/200; run companyId=02921aac-24ac-43cb-a92e-5c8ec7bdb2bc, agentId=b92ad482-c090-4ce4-8ae9-7cd77d008b67, eventCount=3, workspaceOperationCount=0"
+        },
+        {
+          "action": "Repeat the shipped heartbeat-flow reads with the same-company agent API key",
+          "expected": "Same-company agent access stays allowed only for /log and /events",
+          "observed": "Same-company agent received 200 for /log and 200 for /events; /heartbeat-runs/:runId, /workspace-operations, and /cancel returned 403/403/403"
+        },
+        {
+          "action": "Probe the same main-company run endpoints with the wrong-company agent API key",
+          "expected": "Wrong-company agent access is denied for both read and mutation surfaces",
+          "observed": "Wrong-company agent received 403/403/403/403/403 for log/events/detail/workspace-operations/cancel respectively"
+        }
+      ],
+      "evidence": {
+        "transcripts": [
+          "orchestrator-runtime/cross-005-rerun/health.txt",
+          "orchestrator-runtime/cross-005-rerun/board-run-detail.txt",
+          "orchestrator-runtime/cross-005-rerun/board-run-log.txt",
+          "orchestrator-runtime/cross-005-rerun/board-run-events.txt",
+          "orchestrator-runtime/cross-005-rerun/board-workspace-operations.txt",
+          "orchestrator-runtime/cross-005-rerun/same-agent-run-log.txt",
+          "orchestrator-runtime/cross-005-rerun/same-agent-run-events.txt",
+          "orchestrator-runtime/cross-005-rerun/same-agent-run-detail.txt",
+          "orchestrator-runtime/cross-005-rerun/same-agent-workspace-operations.txt",
+          "orchestrator-runtime/cross-005-rerun/same-agent-run-cancel.txt",
+          "orchestrator-runtime/cross-005-rerun/wrong-agent-run-log.txt",
+          "orchestrator-runtime/cross-005-rerun/wrong-agent-run-events.txt",
+          "orchestrator-runtime/cross-005-rerun/wrong-agent-run-detail.txt",
+          "orchestrator-runtime/cross-005-rerun/wrong-agent-workspace-operations.txt",
+          "orchestrator-runtime/cross-005-rerun/wrong-agent-run-cancel.txt",
+          "orchestrator-runtime/cross-005-rerun/request-summary.json"
+        ],
+        "network": "Headerless local_trusted loopback GETs to /api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d, /log, /events, and /workspace-operations all returned 200. Same-company agent GET /log and /events returned 200 while same-company agent GET /heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d, GET /workspace-operations, and POST /cancel returned 403. Wrong-company agent received 403 on all probed run endpoints and mutation attempts."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion (VAL-CROSS-005): pass. Local_trusted headerless loopback access behaved as expected for the main-company run detail/log fan-out surfaces, same-company agent auth remained limited to log/events, and wrong-company agent auth was denied across the exercised run endpoints. Workspace-operation fan-out returned an empty list for this completed run."
+}

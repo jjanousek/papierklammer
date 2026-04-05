@@ -1,0 +1,169 @@
+{
+  "groupId": "web-review-rerun",
+  "testedAt": "2026-04-05T01:44:17.075854+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "appUrl": "http://localhost:3100",
+    "companyName": "TUI Recovery Audit",
+    "companyPrefix": "TUI",
+    "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+    "agentName": "Audit CEO",
+    "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+    "agentUrlKey": "audit-ceo",
+    "issueIdentifier": "TUI-1",
+    "issueId": "feba9eab-c82c-4971-bbbc-d111b84d91e8",
+    "targetRunId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+    "comparisonRunId": "26f80af6-5519-4d7c-9c88-c58c5641363b"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "python3 urllib.request"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-RUN-005",
+      "title": "Issue-centric review preserves an obvious path to the result",
+      "status": "pass",
+      "identifiers": {
+        "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+        "issueId": "feba9eab-c82c-4971-bbbc-d111b84d91e8",
+        "issueIdentifier": "TUI-1",
+        "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+        "runId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d"
+      },
+      "steps": [
+        {
+          "action": "Open /TUI/issues/TUI-1 in the browser",
+          "expected": "Completed issue detail keeps a concrete result-review path",
+          "observed": "Issue detail showed a Review surfaces section, a completed run 41f7252a card, and inline completed-result text including the smoke output and artifact confirmation."
+        },
+        {
+          "action": "Inspect the visible completed-run content on the issue page",
+          "expected": "Operator can read substantive output without leaving the issue flow",
+          "observed": "The issue page exposed 'Validation Complete', the exact `pnpm smoke` output (`AUDIT_DEMO_OK`, artifact path, sha256, tasks=3), and a direct Inspect run link for deeper review."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/web-review-rerun/VAL-RUN-005-issue-detail-result-content.png"
+        ],
+        "text": [
+          "orchestrator-runtime/web-review-rerun/issue-detail-text.txt"
+        ],
+        "consoleErrors": "none",
+        "console": "orchestrator-runtime/web-review-rerun/browser-console-final.txt",
+        "network": "GET /api/issues/TUI-1/runs -> 200, GET /api/issues/TUI-1/work-products -> 200, GET /api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d/log?... -> 200 (captured via browser network and corroborated in api-corroboration.json)",
+        "api": [
+          "orchestrator-runtime/web-review-rerun/api-corroboration.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUN-007",
+      "title": "Issue detail surfaces work products for completed work",
+      "status": "pass",
+      "identifiers": {
+        "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+        "issueId": "feba9eab-c82c-4971-bbbc-d111b84d91e8",
+        "issueIdentifier": "TUI-1",
+        "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+        "runId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d"
+      },
+      "steps": [
+        {
+          "action": "Review the work-product area on /TUI/issues/TUI-1",
+          "expected": "Completed issue detail surfaces produced artifacts directly",
+          "observed": "The issue page showed a Work products card for 'Smoke report artifact' with Primary/Artifact/Ready For Review/Needs Board Review badges."
+        },
+        {
+          "action": "Inspect artifact metadata visible on the issue page",
+          "expected": "Artifact metadata is directly visible from the issue page",
+          "observed": "The issue page displayed summary and metadata inline: health Healthy, tasks 3, sha256 0dab1df3..., workspace /Users/aischool/work/papierklammer-audit-demo, provider Paperclip, and timestamp Apr 5, 2026, 9:02 AM."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/web-review-rerun/VAL-RUN-007-issue-detail-work-products.png"
+        ],
+        "text": [
+          "orchestrator-runtime/web-review-rerun/issue-detail-text.txt"
+        ],
+        "consoleErrors": "none",
+        "console": "orchestrator-runtime/web-review-rerun/browser-console-final.txt",
+        "network": "GET /api/issues/TUI-1/work-products -> 200",
+        "api": [
+          "orchestrator-runtime/web-review-rerun/api-corroboration.json"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-007",
+      "title": "One live run keeps the same identity across operator surfaces",
+      "status": "fail",
+      "identifiers": {
+        "companyId": "02921aac-24ac-43cb-a92e-5c8ec7bdb2bc",
+        "issueId": "feba9eab-c82c-4971-bbbc-d111b84d91e8",
+        "issueIdentifier": "TUI-1",
+        "agentId": "b92ad482-c090-4ce4-8ae9-7cd77d008b67",
+        "runId": "41f7252a-595a-483d-a9b7-9d9fbc08f62d"
+      },
+      "steps": [
+        {
+          "action": "Open the company dashboard at /TUI/dashboard",
+          "expected": "Dashboard exposes enough identity to reconcile the target completed run",
+          "observed": "The company dashboard showed company context (TUI Recovery Audit) and the Audit CEO card, but no visible target runId 41f7252a or issue identifier TUI-1."
+        },
+        {
+          "action": "Open the agent detail at /TUI/agents/audit-ceo/dashboard",
+          "expected": "Agent detail exposes company/agent identity and links the target issue-linked run",
+          "observed": "Agent detail showed company id 02921aac-24ac-43cb-a92e-5c8ec7bdb2bc, agent id b92ad482-c090-4ce4-8ae9-7cd77d008b67, recent issue TUI-1, and a run/cost row for 41f7252a."
+        },
+        {
+          "action": "Open issue detail /TUI/issues/TUI-1 and run detail /TUI/agents/audit-ceo/runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d",
+          "expected": "Issue detail and run detail agree on the same run/issue/agent/company identity",
+          "observed": "Issue detail showed completed run 41f7252a for TUI-1, while run detail showed TUI-1 as Issues Touched and exposed PAPIERKLAMMER_RUN_ID=41f7252a..., PAPIERKLAMMER_TASK_ID=feba9eab..., PAPIERKLAMMER_AGENT_ID=b92ad482..., and PAPIERKLAMMER_COMPANY_ID=02921aac...."
+        },
+        {
+          "action": "Corroborate browser-visible identifiers with local API reads",
+          "expected": "API agrees with the same companyId/issueId/agentId/runId tuple",
+          "observed": "API matched the tuple: /api/issues/TUI-1/runs returned runId 41f7252a with agentId b92ad482..., /api/issues/TUI-1/work-products tied the primary artifact to issueId feba9eab... and createdByRunId 41f7252a..., and /api/heartbeat-runs/41f7252a... returned companyId 02921aac... plus agentId b92ad482...."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/web-review-rerun/VAL-CROSS-007-dashboard.png",
+          "orchestrator-runtime/web-review-rerun/VAL-CROSS-007-agent-detail.png",
+          "orchestrator-runtime/web-review-rerun/VAL-CROSS-007-issue-detail.png",
+          "orchestrator-runtime/web-review-rerun/VAL-CROSS-007-run-detail.png"
+        ],
+        "text": [
+          "orchestrator-runtime/web-review-rerun/dashboard-text.txt",
+          "orchestrator-runtime/web-review-rerun/agent-detail-text.txt",
+          "orchestrator-runtime/web-review-rerun/issue-detail-cross-text.txt",
+          "orchestrator-runtime/web-review-rerun/run-detail-text.txt"
+        ],
+        "consoleErrors": "none",
+        "console": "orchestrator-runtime/web-review-rerun/browser-console-final.txt",
+        "network": "Dashboard: GET /api/companies/02921aac-24ac-43cb-a92e-5c8ec7bdb2bc/dashboard and live-runs queries. Issue detail: GET /api/issues/TUI-1/runs, /active-run, /work-products. Agent detail: GET /api/agents/b92ad482-c090-4ce4-8ae9-7cd77d008b67/runtime-state?companyId=02921aac..., GET /api/companies/02921aac.../heartbeat-runs?agentId=b92ad482.... Run detail: GET /api/heartbeat-runs/41f7252a-595a-483d-a9b7-9d9fbc08f62d and /issues.",
+        "api": [
+          "orchestrator-runtime/web-review-rerun/api-corroboration.json"
+        ]
+      },
+      "issues": "Issue detail, run detail, agent detail, and API evidence now reconcile the target run identity, but the company dashboard still does not visibly surface the target runId or issue identifier. Full cross-surface identity is therefore still incomplete for the dashboard surface."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The company dashboard did not expose the target completed run identifier directly, so I had to reconcile the run through agent detail, run detail, and supporting API reads.",
+      "resolved": true,
+      "resolution": "Used the Audit CEO agent detail plus the 41f7252a run detail and local API reads to confirm the same company/agent/issue/run tuple and document the dashboard gap.",
+      "affectedAssertions": [
+        "VAL-CROSS-007"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assertions: VAL-RUN-005 passed, VAL-RUN-007 passed, and VAL-CROSS-007 failed because the completed issue-linked run identity now reconciles across issue detail, run detail, agent detail, and API, but not the top-level company dashboard."
+}

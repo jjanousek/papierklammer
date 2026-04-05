@@ -1,0 +1,90 @@
+{
+  "groupId": "cross-007-dashboard-rerun",
+  "testedAt": "2026-04-05T02:37:40.254126+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "deploymentMode": "local_trusted",
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "company": {
+      "companyId": "0e383629-ce3d-4c23-a167-68fb5a913cf6",
+      "companyName": "Audit Demo Co",
+      "companyPrefix": "AUD"
+    },
+    "run": {
+      "runId": "73dd4af0-52b5-4052-a566-139361b55848",
+      "issueId": "476aec6a-531c-4d2c-8e8d-ec20c53cddc1",
+      "issueIdentifier": "AUD-1",
+      "agentId": "4a710445-34ee-406a-a710-dcde1a0d42c4",
+      "agentName": "CEO",
+      "agentUrlKey": "ceo",
+      "observedStatus": "succeeded"
+    }
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-007",
+      "title": "One live run keeps the same identity across operator surfaces",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open /AUD/dashboard and inspect the run card shown on the operator dashboard.",
+          "expected": "The dashboard exposes enough visible identity to tie the completed run back to the same company, issue, agent, and run.",
+          "observed": "Dashboard text showed company 'AUD \u00b7 0e383629-ce3d-4c23-a167-68fb5a913cf6', issue 'AUD-1', agent '4a710445-34ee-406a-a710-dcde1a0d42c4', and run '73dd4af0-52b5-4052-a566-139361b55848'."
+        },
+        {
+          "action": "Open /AUD/agents/ceo/dashboard and inspect the agent surface for the latest run.",
+          "expected": "The agent detail/dashboard shows the same latest run and linked issue identity for CEO.",
+          "observed": "Agent dashboard 'Latest Run' card showed companyId 0e383629-ce3d-4c23-a167-68fb5a913cf6, issueId 476aec6a-531c-4d2c-8e8d-ec20c53cddc1, agentId 4a710445-34ee-406a-a710-dcde1a0d42c4, and runId 73dd4af0-52b5-4052-a566-139361b55848."
+        },
+        {
+          "action": "Open /AUD/issues/AUD-1 and inspect the issue detail history for the completed run.",
+          "expected": "Issue detail preserves an obvious link back to the same issue and completed run on the operator surface.",
+          "observed": "Issue detail showed issue identifier AUD-1, assignee CEO, completed run 73dd4af0, and an 'Inspect run' path tied to the same completed execution history."
+        },
+        {
+          "action": "Open /AUD/agents/ceo/runs/73dd4af0-52b5-4052-a566-139361b55848 and inspect the run detail surface.",
+          "expected": "Run detail preserves the same run identity and links it back to the same issue/agent/company context.",
+          "observed": "Run detail loaded for run 73dd4af0-52b5-4052-a566-139361b55848, showed issue AUD-1 under 'Issues Touched', and rendered transcript/context text containing companyId 0e383629-ce3d-4c23-a167-68fb5a913cf6, issueId 476aec6a-531c-4d2c-8e8d-ec20c53cddc1, agentId 4a710445-34ee-406a-a710-dcde1a0d42c4, and the same runId."
+        },
+        {
+          "action": "Corroborate the browser-visible identifiers with local API reads for heartbeat runs, issue detail, issue runs, agent detail, run detail, and run-linked issues.",
+          "expected": "Raw API feeds agree on the same companyId, issueId, agentId, and runId seen in the operator surfaces.",
+          "observed": "Saved API transcripts and the derived summary JSON all matched the expected identifiers: companyId 0e383629-ce3d-4c23-a167-68fb5a913cf6, issueId 476aec6a-531c-4d2c-8e8d-ec20c53cddc1/AUD-1, agentId 4a710445-34ee-406a-a710-dcde1a0d42c4 (CEO), and runId 73dd4af0-52b5-4052-a566-139361b55848."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-dashboard.png",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-agent-dashboard.png",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-issue-detail.png",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-run-detail.png"
+        ],
+        "textFiles": [
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-dashboard.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-agent-dashboard.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-issue-detail.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-run-detail.txt"
+        ],
+        "apiFiles": [
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-heartbeat-runs.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-issue-detail.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-issue-runs.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-agent-detail.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-run-detail.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-run-issues.txt",
+          "orchestrator-runtime/cross-007-dashboard-rerun/VAL-CROSS-007-api-summary.json"
+        ],
+        "consoleErrors": "none; the dashboard, agent dashboard, issue detail, and run detail console capture files were all empty (VAL-CROSS-007-*-console.txt).",
+        "network": "Browser network captures showed the operator surfaces querying /api/companies/0e383629-ce3d-4c23-a167-68fb5a913cf6/dashboard, /api/companies/0e383629-ce3d-4c23-a167-68fb5a913cf6/heartbeat-runs, /api/issues/AUD-1, /api/issues/AUD-1/runs, /api/issues/AUD-1/active-run, /api/agents/ceo?companyId=0e383629-ce3d-4c23-a167-68fb5a913cf6, /api/heartbeat-runs/73dd4af0-52b5-4052-a566-139361b55848, and /api/heartbeat-runs/73dd4af0-52b5-4052-a566-139361b55848/issues; corresponding evidence was saved in VAL-CROSS-007-issue-detail-network.txt and VAL-CROSS-007-run-detail-network.txt."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion (VAL-CROSS-007): pass. The dashboard now visibly exposes the completed run's company, issue, agent, and run identifiers, the issue/agent/run detail surfaces reconcile to the same execution, and the saved API transcripts confirm the same companyId 0e383629-ce3d-4c23-a167-68fb5a913cf6, issueId 476aec6a-531c-4d2c-8e8d-ec20c53cddc1 (AUD-1), agentId 4a710445-34ee-406a-a710-dcde1a0d42c4, and runId 73dd4af0-52b5-4052-a566-139361b55848."
+}
