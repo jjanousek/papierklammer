@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, lte, not, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, lte, not, or, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import {
   agents,
@@ -13,11 +13,13 @@ import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
  * Active run statuses for counting purposes.
  */
 const ACTIVE_RUN_STATUSES = ["queued", "running"];
+const ORPHANED_RUN_STATUSES = ["running"];
 
 /**
  * Active lease states for counting purposes.
  */
 const ACTIVE_LEASE_STATES = ["granted", "renewed"];
+const STALE_LEASE_STATES = ["granted", "renewed", "expired"];
 
 /**
  * Default stale intent threshold: 1 hour in milliseconds.
@@ -111,7 +113,8 @@ export interface OrphanedLease {
 
 export interface StaleRunForCleanup {
   runId: string;
-  leaseId: string;
+  leaseId: string | null;
+  leaseState: string | null;
 }
 
 export interface StaleIntentForCleanup {
@@ -127,6 +130,22 @@ export interface AgentWithCompany {
 export interface AgentAssignedIssue {
   id: string;
   projectId: string | null;
+}
+
+function buildRecoveredIssuePatch(now: Date) {
+  return {
+    status: sql`case
+      when ${issues.status} in ('in_progress', 'blocked') then 'todo'
+      else ${issues.status}
+    end`,
+    checkoutRunId: null,
+    executionRunId: null,
+    executionAgentNameKey: null,
+    executionLockedAt: null,
+    pickupFailCount: 0,
+    lastPickupFailureAt: null,
+    updatedAt: now,
+  };
 }
 
 /**
@@ -328,7 +347,7 @@ export function orchestratorService(db: Db) {
     }> {
       const now = new Date();
 
-      // Stale runs: active runs whose associated lease is expired
+      // Stale runs: active runs whose associated lease is expired/past expiry.
       const staleRunRows = await db
         .select({
           runId: heartbeatRuns.id,
@@ -338,24 +357,66 @@ export function orchestratorService(db: Db) {
           leaseExpiresAt: executionLeases.expiresAt,
         })
         .from(heartbeatRuns)
-        .leftJoin(
+        .innerJoin(
           executionLeases,
-          eq(heartbeatRuns.id, executionLeases.runId),
+          and(
+            eq(heartbeatRuns.id, executionLeases.runId),
+            eq(executionLeases.companyId, companyId),
+          ),
         )
         .where(
           and(
             eq(heartbeatRuns.companyId, companyId),
             inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
-            sql`(${executionLeases.expiresAt} IS NOT NULL AND ${executionLeases.expiresAt} < ${now})`,
+            lte(executionLeases.expiresAt, now),
+            inArray(executionLeases.state, STALE_LEASE_STATES),
           ),
         );
 
-      const staleRuns: StaleRun[] = staleRunRows.map((r) => ({
-        runId: r.runId,
-        agentId: r.agentId,
-        startedAt: r.startedAt,
-        reason: "lease_expired",
-      }));
+      const orphanedRunRows = await db
+        .select({
+          runId: heartbeatRuns.id,
+          agentId: heartbeatRuns.agentId,
+          startedAt: heartbeatRuns.startedAt,
+        })
+        .from(heartbeatRuns)
+        .leftJoin(
+          executionLeases,
+          and(
+            eq(heartbeatRuns.id, executionLeases.runId),
+            eq(executionLeases.companyId, companyId),
+            inArray(executionLeases.state, ACTIVE_LEASE_STATES),
+          ),
+        )
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, companyId),
+            inArray(heartbeatRuns.status, ORPHANED_RUN_STATUSES),
+            isNull(executionLeases.id),
+          ),
+        );
+
+      const staleRunMap = new Map<string, StaleRun>();
+      for (const row of staleRunRows) {
+        staleRunMap.set(row.runId, {
+          runId: row.runId,
+          agentId: row.agentId,
+          startedAt: row.startedAt,
+          reason: "lease_expired",
+        });
+      }
+      for (const row of orphanedRunRows) {
+        if (!staleRunMap.has(row.runId)) {
+          staleRunMap.set(row.runId, {
+            runId: row.runId,
+            agentId: row.agentId,
+            startedAt: row.startedAt,
+            reason: "orphaned_active_run",
+          });
+        }
+      }
+
+      const staleRuns = [...staleRunMap.values()];
 
       // Stale intents: queued for more than 1 hour
       const staleIntentThreshold = new Date(
@@ -412,32 +473,82 @@ export function orchestratorService(db: Db) {
     async findStaleRunsForCleanup(companyId: string): Promise<StaleRunForCleanup[]> {
       const now = new Date();
 
-      return db
+      const staleLeaseRows = await db
         .select({
           runId: heartbeatRuns.id,
           leaseId: executionLeases.id,
+          leaseState: executionLeases.state,
         })
         .from(heartbeatRuns)
         .innerJoin(
           executionLeases,
-          eq(heartbeatRuns.id, executionLeases.runId),
+          and(
+            eq(heartbeatRuns.id, executionLeases.runId),
+            eq(executionLeases.companyId, companyId),
+          ),
         )
         .where(
           and(
             eq(heartbeatRuns.companyId, companyId),
             inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
             lte(executionLeases.expiresAt, now),
-            inArray(executionLeases.state, ACTIVE_LEASE_STATES),
+            inArray(executionLeases.state, STALE_LEASE_STATES),
           ),
         );
+
+      const orphanedRunRows = await db
+        .select({
+          runId: heartbeatRuns.id,
+        })
+        .from(heartbeatRuns)
+        .leftJoin(
+          executionLeases,
+          and(
+            eq(heartbeatRuns.id, executionLeases.runId),
+            eq(executionLeases.companyId, companyId),
+            inArray(executionLeases.state, ACTIVE_LEASE_STATES),
+          ),
+        )
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, companyId),
+            inArray(heartbeatRuns.status, ORPHANED_RUN_STATUSES),
+            isNull(executionLeases.id),
+          ),
+        );
+
+      const staleRunMap = new Map<string, StaleRunForCleanup>();
+      for (const row of staleLeaseRows) {
+        const existing = staleRunMap.get(row.runId);
+        const existingIsReleaseable = existing ? existing.leaseState !== "expired" : false;
+        const nextIsReleaseable = row.leaseState !== "expired";
+        if (!existing || (!existingIsReleaseable && nextIsReleaseable)) {
+          staleRunMap.set(row.runId, {
+            runId: row.runId,
+            leaseId: row.leaseId,
+            leaseState: row.leaseState,
+          });
+        }
+      }
+      for (const row of orphanedRunRows) {
+        if (!staleRunMap.has(row.runId)) {
+          staleRunMap.set(row.runId, {
+            runId: row.runId,
+            leaseId: null,
+            leaseState: null,
+          });
+        }
+      }
+
+      return [...staleRunMap.values()];
     },
 
     /**
      * Cancel a run by marking it as failed.
      */
-    async cancelRun(runId: string): Promise<void> {
+    async cancelRun(runId: string): Promise<boolean> {
       const now = new Date();
-      await db
+      const cancelled = await db
         .update(heartbeatRuns)
         .set({
           status: "failed",
@@ -445,7 +556,15 @@ export function orchestratorService(db: Db) {
           finishedAt: now,
           updatedAt: now,
         })
-        .where(eq(heartbeatRuns.id, runId));
+        .where(
+          and(
+            eq(heartbeatRuns.id, runId),
+            inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+          ),
+        )
+        .returning({ id: heartbeatRuns.id });
+
+      return cancelled.length > 0;
     },
 
     /**
@@ -527,15 +646,40 @@ export function orchestratorService(db: Db) {
     /**
      * Clear execution lock on an issue.
      */
-    async clearIssueLock(issueId: string): Promise<void> {
+    async clearIssueLock(issueId: string, companyId?: string): Promise<void> {
+      const now = new Date();
+      const conditions = [eq(issues.id, issueId)];
+      if (companyId) {
+        conditions.push(eq(issues.companyId, companyId));
+      }
+
       await db
         .update(issues)
-        .set({
-          executionRunId: null,
-          executionLockedAt: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(issues.id, issueId));
+        .set(buildRecoveredIssuePatch(now))
+        .where(and(...conditions));
+    },
+
+    /**
+     * Recover issues linked to a stale run by clearing execution ownership,
+     * restoring them to a schedulable state, and resetting stale pickup state.
+     */
+    async recoverIssueForRun(companyId: string, runId: string): Promise<string[]> {
+      const now = new Date();
+      const recovered = await db
+        .update(issues)
+        .set(buildRecoveredIssuePatch(now))
+        .where(
+          and(
+            eq(issues.companyId, companyId),
+            or(
+              eq(issues.executionRunId, runId),
+              eq(issues.checkoutRunId, runId),
+            ),
+          ),
+        )
+        .returning({ id: issues.id });
+
+      return recovered.map((row) => row.id);
     },
   };
 }

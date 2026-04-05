@@ -1,7 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { agents, companies, createDb, heartbeatRuns, issues, projects } from "@papierklammer/db";
-import { sql } from "drizzle-orm";
+import {
+  agents,
+  companies,
+  createDb,
+  dispatchIntents,
+  executionLeases,
+  heartbeatRuns,
+  issues,
+  projects,
+} from "@papierklammer/db";
+import { eq, sql } from "drizzle-orm";
 import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
@@ -29,7 +38,9 @@ describeDB("orchestratorService", () => {
   }, 20_000);
 
   afterEach(async () => {
-    await db.execute(sql`TRUNCATE TABLE issues, projects, agents, companies CASCADE`);
+    await db.execute(
+      sql`TRUNCATE TABLE dispatch_intents, execution_leases, heartbeat_runs, issues, projects, agents, companies CASCADE`,
+    );
   });
 
   afterAll(async () => {
@@ -294,5 +305,405 @@ describeDB("orchestratorService", () => {
       status: "succeeded",
       resultSummaryText: "Created a concise operator-facing result summary.",
     });
+  });
+
+  it("returns company-scoped stale inventory with orphaned active runs and excludes completed runs", async () => {
+    const primary = await seedAgentContext();
+    const secondary = await seedAgentContext();
+    const staleIssueId = randomUUID();
+    const orphanIssueId = randomUUID();
+    const completedIssueId = randomUUID();
+    const otherIssueId = randomUUID();
+    const leaseExpiredRunId = randomUUID();
+    const orphanRunId = randomUUID();
+    const completedRunId = randomUUID();
+    const otherRunId = randomUUID();
+    const staleLeaseId = randomUUID();
+    const orphanedLeaseId = randomUUID();
+    const otherLeaseId = randomUUID();
+    const staleIntentId = randomUUID();
+    const otherIntentId = randomUUID();
+    const staleCreatedAt = new Date(Date.now() - (2 * 60 * 60 * 1000));
+    const expiredAt = new Date(Date.now() - 60_000);
+
+    await db.insert(issues).values([
+      {
+        id: staleIssueId,
+        companyId: primary.companyId,
+        projectId: primary.projectId,
+        title: "Expired lease issue",
+        status: "in_progress",
+        priority: "medium",
+        assigneeAgentId: primary.agentId,
+      },
+      {
+        id: orphanIssueId,
+        companyId: primary.companyId,
+        projectId: primary.projectId,
+        title: "Orphaned run issue",
+        status: "in_progress",
+        priority: "medium",
+        assigneeAgentId: primary.agentId,
+      },
+      {
+        id: completedIssueId,
+        companyId: primary.companyId,
+        projectId: primary.projectId,
+        title: "Completed issue",
+        status: "done",
+        priority: "medium",
+        assigneeAgentId: primary.agentId,
+      },
+      {
+        id: otherIssueId,
+        companyId: secondary.companyId,
+        projectId: secondary.projectId,
+        title: "Other company stale issue",
+        status: "in_progress",
+        priority: "medium",
+        assigneeAgentId: secondary.agentId,
+      },
+    ]);
+
+    await db.insert(heartbeatRuns).values([
+      {
+        id: leaseExpiredRunId,
+        companyId: primary.companyId,
+        agentId: primary.agentId,
+        invocationSource: "manual",
+        status: "running",
+      },
+      {
+        id: orphanRunId,
+        companyId: primary.companyId,
+        agentId: primary.agentId,
+        invocationSource: "manual",
+        status: "running",
+      },
+      {
+        id: completedRunId,
+        companyId: primary.companyId,
+        agentId: primary.agentId,
+        invocationSource: "manual",
+        status: "succeeded",
+        finishedAt: new Date(),
+        contextSnapshot: { issueId: completedIssueId },
+      },
+      {
+        id: otherRunId,
+        companyId: secondary.companyId,
+        agentId: secondary.agentId,
+        invocationSource: "manual",
+        status: "running",
+      },
+    ]);
+
+    await db
+      .update(issues)
+      .set({ executionRunId: leaseExpiredRunId, updatedAt: new Date() })
+      .where(eq(issues.id, staleIssueId));
+    await db
+      .update(issues)
+      .set({
+        executionRunId: orphanRunId,
+        checkoutRunId: orphanRunId,
+        updatedAt: new Date(),
+      })
+      .where(eq(issues.id, orphanIssueId));
+    await db
+      .update(issues)
+      .set({ executionRunId: otherRunId, updatedAt: new Date() })
+      .where(eq(issues.id, otherIssueId));
+
+    await db.insert(executionLeases).values([
+      {
+        id: staleLeaseId,
+        leaseType: "issue_execution_lease",
+        issueId: staleIssueId,
+        agentId: primary.agentId,
+        runId: leaseExpiredRunId,
+        state: "expired",
+        companyId: primary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: expiredAt,
+      },
+      {
+        id: orphanedLeaseId,
+        leaseType: "issue_execution_lease",
+        issueId: staleIssueId,
+        agentId: primary.agentId,
+        runId: leaseExpiredRunId,
+        state: "granted",
+        companyId: primary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: expiredAt,
+      },
+      {
+        id: randomUUID(),
+        leaseType: "issue_execution_lease",
+        issueId: completedIssueId,
+        agentId: primary.agentId,
+        runId: completedRunId,
+        state: "expired",
+        companyId: primary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: expiredAt,
+      },
+      {
+        id: otherLeaseId,
+        leaseType: "issue_execution_lease",
+        issueId: otherIssueId,
+        agentId: secondary.agentId,
+        runId: otherRunId,
+        state: "granted",
+        companyId: secondary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: expiredAt,
+      },
+    ]);
+
+    await db.insert(dispatchIntents).values([
+      {
+        id: staleIntentId,
+        companyId: primary.companyId,
+        issueId: staleIssueId,
+        projectId: primary.projectId,
+        targetAgentId: primary.agentId,
+        intentType: "issue_assigned",
+        priority: 10,
+        status: "queued",
+        createdAt: staleCreatedAt,
+        updatedAt: staleCreatedAt,
+      },
+      {
+        id: otherIntentId,
+        companyId: secondary.companyId,
+        issueId: otherIssueId,
+        projectId: secondary.projectId,
+        targetAgentId: secondary.agentId,
+        intentType: "issue_assigned",
+        priority: 10,
+        status: "queued",
+        createdAt: staleCreatedAt,
+        updatedAt: staleCreatedAt,
+      },
+    ]);
+
+    const staleItems = await svc.getStaleItems(primary.companyId);
+    const staleRunsById = new Map(
+      staleItems.staleRuns.map((row) => [row.runId, row.reason]),
+    );
+
+    expect(staleItems.staleRuns).toHaveLength(2);
+    expect(staleRunsById.get(leaseExpiredRunId)).toBe("lease_expired");
+    expect(staleRunsById.get(orphanRunId)).toBe("orphaned_active_run");
+    expect(staleRunsById.has(completedRunId)).toBe(false);
+    expect(staleRunsById.has(otherRunId)).toBe(false);
+    expect(staleItems.staleIntents).toEqual([
+      expect.objectContaining({ intentId: staleIntentId, reason: "queued_too_long" }),
+    ]);
+    expect(staleItems.orphanedLeases).toEqual([
+      expect.objectContaining({ leaseId: orphanedLeaseId, issueId: staleIssueId }),
+    ]);
+  });
+
+  it("dedupes stale cleanup targets and ignores cross-company lease rows for the same run", async () => {
+    const primary = await seedAgentContext();
+    const secondary = await seedAgentContext();
+    const issueId = randomUUID();
+    const runId = randomUUID();
+    const primaryExpiredLeaseId = randomUUID();
+    const primaryActiveLeaseId = randomUUID();
+    const foreignLeaseId = randomUUID();
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId: primary.companyId,
+      projectId: primary.projectId,
+      title: "Cleanup target",
+      status: "in_progress",
+      priority: "medium",
+      assigneeAgentId: primary.agentId,
+    });
+
+    await db.insert(heartbeatRuns).values({
+      id: runId,
+      companyId: primary.companyId,
+      agentId: primary.agentId,
+      invocationSource: "manual",
+      status: "running",
+    });
+
+    await db
+      .update(issues)
+      .set({ executionRunId: runId, updatedAt: new Date() })
+      .where(eq(issues.id, issueId));
+
+    await db.insert(executionLeases).values([
+      {
+        id: primaryExpiredLeaseId,
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId: primary.agentId,
+        runId,
+        state: "expired",
+        companyId: primary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: new Date(Date.now() - 60_000),
+      },
+      {
+        id: primaryActiveLeaseId,
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId: primary.agentId,
+        runId,
+        state: "granted",
+        companyId: primary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: new Date(Date.now() - 30_000),
+      },
+      {
+        id: foreignLeaseId,
+        leaseType: "issue_execution_lease",
+        issueId,
+        agentId: secondary.agentId,
+        runId,
+        state: "granted",
+        companyId: secondary.companyId,
+        grantedAt: new Date(Date.now() - 600_000),
+        expiresAt: new Date(Date.now() - 30_000),
+      },
+    ]);
+
+    const staleRuns = await svc.findStaleRunsForCleanup(primary.companyId);
+
+    expect(staleRuns).toEqual([
+      {
+        runId,
+        leaseId: primaryActiveLeaseId,
+        leaseState: "granted",
+      },
+    ]);
+  });
+
+  it("recovers a stale issue for the target run without mutating another company", async () => {
+    const primary = await seedAgentContext();
+    const secondary = await seedAgentContext();
+    const primaryIssueId = randomUUID();
+    const secondaryIssueId = randomUUID();
+    const primaryRunId = randomUUID();
+    const secondaryRunId = randomUUID();
+    const failureAt = new Date(Date.now() - 60_000);
+
+    await db.insert(heartbeatRuns).values([
+      {
+        id: primaryRunId,
+        companyId: primary.companyId,
+        agentId: primary.agentId,
+        invocationSource: "manual",
+        status: "failed",
+      },
+      {
+        id: secondaryRunId,
+        companyId: secondary.companyId,
+        agentId: secondary.agentId,
+        invocationSource: "manual",
+        status: "running",
+      },
+    ]);
+
+    await db.insert(issues).values([
+      {
+        id: primaryIssueId,
+        companyId: primary.companyId,
+        projectId: primary.projectId,
+        title: "Recover me",
+        status: "blocked",
+        priority: "medium",
+        assigneeAgentId: primary.agentId,
+        executionRunId: primaryRunId,
+        checkoutRunId: primaryRunId,
+        pickupFailCount: 6,
+        lastPickupFailureAt: failureAt,
+      },
+      {
+        id: secondaryIssueId,
+        companyId: secondary.companyId,
+        projectId: secondary.projectId,
+        title: "Leave me alone",
+        status: "in_progress",
+        priority: "medium",
+        assigneeAgentId: secondary.agentId,
+        executionRunId: secondaryRunId,
+        checkoutRunId: secondaryRunId,
+        pickupFailCount: 4,
+        lastPickupFailureAt: failureAt,
+      },
+    ]);
+
+    const recoveredIds = await svc.recoverIssueForRun(primary.companyId, primaryRunId);
+
+    expect(recoveredIds).toEqual([primaryIssueId]);
+
+    const [recoveredIssue] = await db
+      .select()
+      .from(issues)
+      .where(eq(issues.id, primaryIssueId));
+    expect(recoveredIssue.status).toBe("todo");
+    expect(recoveredIssue.executionRunId).toBeNull();
+    expect(recoveredIssue.checkoutRunId).toBeNull();
+    expect(recoveredIssue.pickupFailCount).toBe(0);
+    expect(recoveredIssue.lastPickupFailureAt).toBeNull();
+
+    const [otherIssue] = await db
+      .select()
+      .from(issues)
+      .where(eq(issues.id, secondaryIssueId));
+    expect(otherIssue.status).toBe("in_progress");
+    expect(otherIssue.executionRunId).toBe(secondaryRunId);
+    expect(otherIssue.checkoutRunId).toBe(secondaryRunId);
+    expect(otherIssue.pickupFailCount).toBe(4);
+    expect(otherIssue.lastPickupFailureAt).toBeInstanceOf(Date);
+  });
+
+  it("clears issue stale ownership and restores schedulability for manual unblock", async () => {
+    const { companyId, agentId, projectId } = await seedAgentContext();
+    const issueId = randomUUID();
+    const runId = randomUUID();
+
+    await db.insert(heartbeatRuns).values({
+      id: runId,
+      companyId,
+      agentId,
+      invocationSource: "manual",
+      status: "failed",
+    });
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId,
+      projectId,
+      title: "Manually unblock me",
+      status: "blocked",
+      priority: "medium",
+      assigneeAgentId: agentId,
+      executionRunId: runId,
+      checkoutRunId: runId,
+      pickupFailCount: 5,
+      lastPickupFailureAt: new Date(Date.now() - 30_000),
+    });
+
+    await svc.clearIssueLock(issueId, companyId);
+
+    const [issue] = await db
+      .select()
+      .from(issues)
+      .where(eq(issues.id, issueId));
+    expect(issue.status).toBe("todo");
+    expect(issue.executionRunId).toBeNull();
+    expect(issue.checkoutRunId).toBeNull();
+    expect(issue.executionLockedAt).toBeNull();
+    expect(issue.pickupFailCount).toBe(0);
+    expect(issue.lastPickupFailureAt).toBeNull();
   });
 });

@@ -194,7 +194,7 @@ export function orchestratorRoutes(
     }
 
     // Clear execution lock on the issue
-    await orchSvc.clearIssueLock(issueId);
+    await orchSvc.clearIssueLock(issueId, existing.companyId);
 
     // Reject stale queued intents for this issue
     const rejectedIntents = await intentQueue.invalidateForClosedIssue(
@@ -239,15 +239,20 @@ export function orchestratorRoutes(
 
     let cancelled = 0;
     for (const row of staleRuns) {
-      await orchSvc.cancelRun(row.runId);
+      const wasCancelled = await orchSvc.cancelRun(row.runId);
+      await orchSvc.recoverIssueForRun(companyId, row.runId);
 
-      try {
-        await leaseMgr.releaseLease(row.leaseId, "stale_run_cleanup");
-      } catch {
-        // Lease may have been concurrently modified
+      if (row.leaseId) {
+        try {
+          await leaseMgr.releaseLease(row.leaseId, "stale_run_cleanup");
+        } catch {
+          // Lease may have been concurrently modified
+        }
       }
 
-      cancelled++;
+      if (wasCancelled) {
+        cancelled++;
+      }
     }
 
     res.json({ cancelled });

@@ -31,6 +31,7 @@ let mockOrchestratorService: {
   getAgent: ReturnType<typeof vi.fn>;
   findAgentAssignedIssue: ReturnType<typeof vi.fn>;
   clearIssueLock: ReturnType<typeof vi.fn>;
+  recoverIssueForRun: ReturnType<typeof vi.fn>;
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -185,6 +186,7 @@ describe.sequential("orchestrator routes", () => {
       getAgent: vi.fn(),
       findAgentAssignedIssue: vi.fn(),
       clearIssueLock: vi.fn(),
+      recoverIssueForRun: vi.fn(),
     };
   });
 
@@ -676,7 +678,10 @@ describe.sequential("orchestrator routes", () => {
         LEASE_ID,
         "force_unblock",
       );
-      expect(mockOrchestratorService.clearIssueLock).toHaveBeenCalledWith(ISSUE_ID);
+      expect(mockOrchestratorService.clearIssueLock).toHaveBeenCalledWith(
+        ISSUE_ID,
+        COMPANY_ID,
+      );
       expect(mockIntentQueueService.invalidateForClosedIssue).toHaveBeenCalledWith(
         ISSUE_ID,
         COMPANY_ID,
@@ -808,11 +813,12 @@ describe.sequential("orchestrator routes", () => {
   describe("DELETE /api/orchestrator/stale/runs", () => {
     it("cancels stale runs and releases leases", async () => {
       mockOrchestratorService.findStaleRunsForCleanup.mockResolvedValue([
-        { runId: "run-1", leaseId: "lease-1" },
-        { runId: "run-2", leaseId: "lease-2" },
+        { runId: "run-1", leaseId: "lease-1", leaseState: "granted" },
+        { runId: "run-2", leaseId: "lease-2", leaseState: "expired" },
       ]);
-      mockOrchestratorService.cancelRun.mockResolvedValue(undefined);
+      mockOrchestratorService.cancelRun.mockResolvedValue(true);
       mockLeaseManagerService.releaseLease.mockResolvedValue({});
+      mockOrchestratorService.recoverIssueForRun.mockResolvedValue([]);
 
       const res = await callRoute({
         method: "delete",
@@ -823,6 +829,15 @@ describe.sequential("orchestrator routes", () => {
       expect(res.status).toBe(200);
       expect(res.body.cancelled).toBe(2);
       expect(mockOrchestratorService.cancelRun).toHaveBeenCalledTimes(2);
+      expect(mockOrchestratorService.recoverIssueForRun).toHaveBeenCalledTimes(2);
+      expect(mockOrchestratorService.recoverIssueForRun).toHaveBeenCalledWith(
+        COMPANY_ID,
+        "run-1",
+      );
+      expect(mockOrchestratorService.recoverIssueForRun).toHaveBeenCalledWith(
+        COMPANY_ID,
+        "run-2",
+      );
       expect(mockLeaseManagerService.releaseLease).toHaveBeenCalledTimes(2);
       expect(mockLeaseManagerService.releaseLease).toHaveBeenCalledWith("lease-1", "stale_run_cleanup");
       expect(mockLeaseManagerService.releaseLease).toHaveBeenCalledWith("lease-2", "stale_run_cleanup");
@@ -851,10 +866,11 @@ describe.sequential("orchestrator routes", () => {
 
     it("handles lease release failure gracefully", async () => {
       mockOrchestratorService.findStaleRunsForCleanup.mockResolvedValue([
-        { runId: "run-1", leaseId: "lease-1" },
+        { runId: "run-1", leaseId: "lease-1", leaseState: "granted" },
       ]);
-      mockOrchestratorService.cancelRun.mockResolvedValue(undefined);
+      mockOrchestratorService.cancelRun.mockResolvedValue(true);
       mockLeaseManagerService.releaseLease.mockRejectedValue(new Error("conflict"));
+      mockOrchestratorService.recoverIssueForRun.mockResolvedValue([]);
 
       const res = await callRoute({
         method: "delete",
@@ -864,6 +880,28 @@ describe.sequential("orchestrator routes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.cancelled).toBe(1);
+    });
+
+    it("does not count runs already cancelled concurrently", async () => {
+      mockOrchestratorService.findStaleRunsForCleanup.mockResolvedValue([
+        { runId: "run-1", leaseId: null, leaseState: null },
+      ]);
+      mockOrchestratorService.cancelRun.mockResolvedValue(false);
+      mockOrchestratorService.recoverIssueForRun.mockResolvedValue([ISSUE_ID]);
+
+      const res = await callRoute({
+        method: "delete",
+        path: "/orchestrator/stale/runs",
+        query: { companyId: COMPANY_ID },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.cancelled).toBe(0);
+      expect(mockLeaseManagerService.releaseLease).not.toHaveBeenCalled();
+      expect(mockOrchestratorService.recoverIssueForRun).toHaveBeenCalledWith(
+        COMPANY_ID,
+        "run-1",
+      );
     });
   });
 

@@ -1997,7 +1997,13 @@ export function heartbeatService(db: Db) {
         ),
       );
 
+    const processedRunIds = new Set<string>();
     for (const { run, lease } of staleRuns) {
+      if (processedRunIds.has(run.id)) {
+        continue;
+      }
+      processedRunIds.add(run.id);
+
       // Determine if this run never checked out the issue
       // A run that checked out has an issue with checkoutRunId = run.id
       const issueRow = await db
@@ -2025,7 +2031,12 @@ export function heartbeatService(db: Db) {
               executionRunId: issues.executionRunId,
             })
             .from(issues)
-            .where(eq(issues.id, lease.issueId))
+            .where(
+              and(
+                eq(issues.id, lease.issueId),
+                eq(issues.companyId, run.companyId),
+              ),
+            )
             .then((rows) => rows[0] ?? null)
         : null;
 

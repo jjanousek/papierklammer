@@ -681,5 +681,68 @@ describeDB("stale run reaper (reapStaleLeaseRuns)", () => {
       const result2 = await heartbeat.reapStaleLeaseRuns();
       expect(result2.reaped).toBe(0);
     });
+
+    it("processes duplicate expired lease rows for one run only once", async () => {
+      await seedTestData();
+
+      const runId = randomUUID();
+      await db.insert(heartbeatRuns).values({
+        id: runId,
+        companyId,
+        agentId,
+        invocationSource: "scheduler",
+        status: "running",
+      });
+      await db
+        .update(issues)
+        .set({
+          executionRunId: runId,
+          executionAgentNameKey: "testagent",
+          executionLockedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(issues.id, issueId));
+
+      await db.insert(executionLeases).values([
+        {
+          id: randomUUID(),
+          leaseType: "issue_execution_lease",
+          issueId,
+          agentId,
+          runId,
+          state: "expired",
+          companyId,
+          grantedAt: new Date(Date.now() - 600_000),
+          expiresAt: new Date(Date.now() - 100),
+        },
+        {
+          id: randomUUID(),
+          leaseType: "issue_execution_lease",
+          issueId,
+          agentId,
+          runId,
+          state: "expired",
+          companyId,
+          grantedAt: new Date(Date.now() - 600_000),
+          expiresAt: new Date(Date.now() - 100),
+        },
+      ]);
+
+      const result = await heartbeat.reapStaleLeaseRuns();
+      expect(result.reaped).toBe(1);
+      expect(result.runIds).toEqual([runId]);
+
+      const [issue] = await db
+        .select({ pickupFailCount: issues.pickupFailCount })
+        .from(issues)
+        .where(eq(issues.id, issueId));
+      expect(issue.pickupFailCount).toBe(1);
+
+      const runCancelledEvents = await db
+        .select()
+        .from(controlPlaneEvents)
+        .where(eq(controlPlaneEvents.eventType, "run_cancelled"));
+      expect(runCancelledEvents).toHaveLength(1);
+    });
   });
 });
