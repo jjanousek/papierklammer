@@ -1,5 +1,3 @@
-import express from "express";
-import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { routineRoutes } from "../routes/routines.js";
 import { errorHandler } from "../middleware/index.js";
@@ -83,23 +81,86 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-async function createApp(actor: Record<string, unknown>) {
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = actor;
-    next();
-  });
-  app.use(
-    "/api",
-    routineRoutes({} as any, {
-      accessService: mockAccessService as any,
-      logActivity: mockLogActivity,
-      routineService: mockRoutineService as any,
-    }),
+type RouteMethod = "post" | "patch";
+
+function createRouteHandler(method: RouteMethod, path: string) {
+  const router = routineRoutes({} as any, {
+    accessService: mockAccessService as any,
+    logActivity: mockLogActivity,
+    routineService: mockRoutineService as any,
+  }) as unknown as {
+    stack?: Array<{
+      route?: {
+        path?: string;
+        methods?: Partial<Record<RouteMethod, boolean>>;
+        stack?: Array<{ handle: (req: unknown, res: unknown) => Promise<void> | void }>;
+      };
+    }>;
+  };
+  const layer = router.stack?.find(
+    (entry) => entry.route?.path === path && entry.route.methods?.[method],
   );
-  app.use(errorHandler);
-  return app;
+  const handler = layer?.route?.stack?.at(-1)?.handle;
+  if (!handler) {
+    throw new Error(`Expected ${method.toUpperCase()} ${path} handler to be registered`);
+  }
+  return handler;
+}
+
+function createResponseCapture() {
+  return {
+    statusCode: 200,
+    body: undefined as unknown,
+    ended: false,
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      this.body = payload;
+      return this;
+    },
+    end() {
+      this.ended = true;
+      return this;
+    },
+  };
+}
+
+function responseError(res: { body: unknown }) {
+  return (res.body as { error?: string } | undefined)?.error ?? "";
+}
+
+async function invokeRoute({
+  actor,
+  method,
+  path,
+  params = {},
+  body = {},
+}: {
+  actor: Record<string, unknown>;
+  method: RouteMethod;
+  path: string;
+  params?: Record<string, unknown>;
+  body?: Record<string, unknown>;
+}) {
+  const handler = createRouteHandler(method, path);
+  const req = {
+    actor,
+    method: method.toUpperCase(),
+    originalUrl: path,
+    params,
+    body,
+  };
+  const res = createResponseCapture();
+
+  try {
+    await handler(req, res);
+  } catch (error) {
+    errorHandler(error, req as any, res as any, () => undefined);
+  }
+
+  return res;
 }
 
 describe("routine routes", () => {
@@ -119,147 +180,175 @@ describe("routine routes", () => {
   });
 
   it("requires tasks:assign permission for non-admin board routine creation", async () => {
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
-    });
+    };
 
-    const res = await request(app)
-      .post(`/api/companies/${companyId}/routines`)
-      .send({
+    const res = await invokeRoute({
+      actor,
+      method: "post",
+      path: "/companies/:companyId/routines",
+      params: { companyId },
+      body: {
         projectId,
         title: "Daily routine",
         assigneeAgentId: agentId,
-      });
+      },
+    });
 
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("tasks:assign");
+    expect(res.statusCode).toBe(403);
+    expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.create).not.toHaveBeenCalled();
   });
 
   it("requires tasks:assign permission to retarget a routine assignee", async () => {
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
+    };
+
+    const res = await invokeRoute({
+      actor,
+      method: "patch",
+      path: "/routines/:id",
+      params: { id: routineId },
+      body: {
+        assigneeAgentId: otherAgentId,
+      },
     });
 
-    const res = await request(app)
-      .patch(`/api/routines/${routineId}`)
-      .send({
-        assigneeAgentId: otherAgentId,
-      });
-
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("tasks:assign");
+    expect(res.statusCode).toBe(403);
+    expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.update).not.toHaveBeenCalled();
   });
 
   it("requires tasks:assign permission to reactivate a routine", async () => {
     mockRoutineService.get.mockResolvedValue(pausedRoutine);
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
+    };
+
+    const res = await invokeRoute({
+      actor,
+      method: "patch",
+      path: "/routines/:id",
+      params: { id: routineId },
+      body: {
+        status: "active",
+      },
     });
 
-    const res = await request(app)
-      .patch(`/api/routines/${routineId}`)
-      .send({
-        status: "active",
-      });
-
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("tasks:assign");
+    expect(res.statusCode).toBe(403);
+    expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.update).not.toHaveBeenCalled();
   });
 
   it("requires tasks:assign permission to create a trigger", async () => {
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
-    });
+    };
 
-    const res = await request(app)
-      .post(`/api/routines/${routineId}/triggers`)
-      .send({
+    const res = await invokeRoute({
+      actor,
+      method: "post",
+      path: "/routines/:id/triggers",
+      params: { id: routineId },
+      body: {
         kind: "schedule",
         cronExpression: "0 10 * * *",
         timezone: "UTC",
-      });
+      },
+    });
 
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("tasks:assign");
+    expect(res.statusCode).toBe(403);
+    expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.createTrigger).not.toHaveBeenCalled();
   });
 
   it("requires tasks:assign permission to update a trigger", async () => {
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
+    };
+
+    const res = await invokeRoute({
+      actor,
+      method: "patch",
+      path: "/routine-triggers/:id",
+      params: { id: trigger.id },
+      body: {
+        enabled: true,
+      },
     });
 
-    const res = await request(app)
-      .patch(`/api/routine-triggers/${trigger.id}`)
-      .send({
-        enabled: true,
-      });
-
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("tasks:assign");
+    expect(res.statusCode).toBe(403);
+    expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.updateTrigger).not.toHaveBeenCalled();
   });
 
   it("requires tasks:assign permission to manually run a routine", async () => {
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
+    };
+
+    const res = await invokeRoute({
+      actor,
+      method: "post",
+      path: "/routines/:id/run",
+      params: { id: routineId },
+      body: {},
     });
 
-    const res = await request(app)
-      .post(`/api/routines/${routineId}/run`)
-      .send({});
-
-    expect(res.status).toBe(403);
-    expect(res.body.error).toContain("tasks:assign");
+    expect(res.statusCode).toBe(403);
+    expect(responseError(res)).toContain("tasks:assign");
     expect(mockRoutineService.runRoutine).not.toHaveBeenCalled();
   });
 
   it("allows routine creation when the board user has tasks:assign", async () => {
     mockAccessService.canUser.mockResolvedValue(true);
-    const app = await createApp({
+    const actor = {
       type: "board",
       userId: "board-user",
       source: "session",
       isInstanceAdmin: false,
       companyIds: [companyId],
-    });
+    };
 
-    const res = await request(app)
-      .post(`/api/companies/${companyId}/routines`)
-      .send({
+    const res = await invokeRoute({
+      actor,
+      method: "post",
+      path: "/companies/:companyId/routines",
+      params: { companyId },
+      body: {
         projectId,
         title: "Daily routine",
         assigneeAgentId: agentId,
-      });
+      },
+    });
 
-    expect(res.status).toBe(201);
+    expect(res.statusCode).toBe(201);
     expect(mockRoutineService.create).toHaveBeenCalledWith(companyId, expect.objectContaining({
       projectId,
       title: "Daily routine",

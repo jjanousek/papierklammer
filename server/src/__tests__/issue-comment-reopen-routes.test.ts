@@ -1,5 +1,3 @@
-import express from "express";
-import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockIssueService = vi.hoisted(() => ({
@@ -76,26 +74,85 @@ vi.mock("../services/issue-assignment-wakeup.js", () => ({
   queueIssueAssignmentIntent: vi.fn(async () => undefined),
 }));
 
-async function createApp() {
-  const [{ issueRoutes }, { errorHandler }] = await Promise.all([
+type RouteMethod = "patch" | "post";
+
+async function createRouteHandler(method: RouteMethod, path: string) {
+  const [{ issueRoutes }] = await Promise.all([
     import("../routes/issues.js"),
     import("../middleware/index.js"),
   ]);
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = {
+  const router = issueRoutes({} as any, {} as any) as unknown as {
+    stack?: Array<{
+      route?: {
+        path?: string;
+        methods?: Partial<Record<RouteMethod, boolean>>;
+        stack?: Array<{ handle: (req: unknown, res: unknown) => Promise<void> | void }>;
+      };
+    }>;
+  };
+  const layer = router.stack?.find(
+    (entry) => entry.route?.path === path && entry.route.methods?.[method],
+  );
+  const handler = layer?.route?.stack?.at(-1)?.handle;
+  if (!handler) {
+    throw new Error(`Expected ${method.toUpperCase()} ${path} handler to be registered`);
+  }
+  return handler;
+}
+
+function createResponseCapture() {
+  return {
+    statusCode: 200,
+    body: undefined as unknown,
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      this.body = payload;
+      return this;
+    },
+  };
+}
+
+async function invokeRoute({
+  method,
+  path,
+  params = {},
+  body = {},
+}: {
+  method: RouteMethod;
+  path: string;
+  params?: Record<string, unknown>;
+  body?: Record<string, unknown>;
+}) {
+  const [{ errorHandler }] = await Promise.all([
+    import("../routes/issues.js"),
+    import("../middleware/index.js"),
+  ]);
+  const handler = await createRouteHandler(method, path);
+  const req = {
+    actor: {
       type: "board",
       userId: "local-board",
       companyIds: ["company-1"],
       source: "local_implicit",
       isInstanceAdmin: false,
-    };
-    next();
-  });
-  app.use("/api", issueRoutes({} as any, {} as any));
-  app.use(errorHandler);
-  return app;
+    },
+    method: method.toUpperCase(),
+    originalUrl: path,
+    params,
+    body,
+  };
+  const res = createResponseCapture();
+
+  try {
+    await handler(req, res);
+  } catch (error) {
+    errorHandler(error, req as any, res as any, () => undefined);
+  }
+
+  return res;
 }
 
 function makeIssue(status: "todo" | "done") {
@@ -113,8 +170,20 @@ function makeIssue(status: "todo" | "done") {
 
 describe("issue comment reopen routes", () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
+    mockIssueService.getById.mockReset();
+    mockIssueService.update.mockReset();
+    mockIssueService.addComment.mockReset();
+    mockIssueService.findMentionedAgents.mockReset();
+    mockAccessService.canUser.mockReset();
+    mockAccessService.hasPermission.mockReset();
+    mockHeartbeatService.wakeup.mockReset().mockResolvedValue(undefined);
+    mockHeartbeatService.reportRunActivity.mockReset().mockResolvedValue(undefined);
+    mockHeartbeatService.getRun.mockReset().mockResolvedValue(null);
+    mockHeartbeatService.getActiveRunForAgent.mockReset().mockResolvedValue(null);
+    mockHeartbeatService.cancelRun.mockReset().mockResolvedValue(null);
+    mockEventLogEmit.mockReset().mockResolvedValue(undefined);
+    mockAgentService.getById.mockReset();
+    mockLogActivity.mockReset().mockResolvedValue(undefined);
     mockIssueService.addComment.mockResolvedValue({
       id: "comment-1",
       issueId: "11111111-1111-4111-8111-111111111111",
@@ -135,11 +204,14 @@ describe("issue comment reopen routes", () => {
       ...patch,
     }));
 
-    const res = await request(await createApp())
-      .patch("/api/issues/11111111-1111-4111-8111-111111111111")
-      .send({ comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" });
+    const res = await invokeRoute({
+      method: "patch",
+      path: "/issues/:id",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      body: { comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
+    });
 
-    expect(res.status).toBe(200);
+    expect(res.statusCode).toBe(200);
     expect(mockIssueService.update).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", {
       assigneeAgentId: "33333333-3333-4333-8333-333333333333",
     });
@@ -159,11 +231,14 @@ describe("issue comment reopen routes", () => {
       ...patch,
     }));
 
-    const res = await request(await createApp())
-      .patch("/api/issues/11111111-1111-4111-8111-111111111111")
-      .send({ comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" });
+    const res = await invokeRoute({
+      method: "patch",
+      path: "/issues/:id",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      body: { comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
+    });
 
-    expect(res.status).toBe(200);
+    expect(res.statusCode).toBe(200);
     expect(mockIssueService.update).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111", {
       assigneeAgentId: "33333333-3333-4333-8333-333333333333",
       status: "todo",
@@ -204,11 +279,14 @@ describe("issue comment reopen routes", () => {
       status: "cancelled",
     });
 
-    const res = await request(await createApp())
-      .patch("/api/issues/11111111-1111-4111-8111-111111111111")
-      .send({ comment: "hello", interrupt: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" });
+    const res = await invokeRoute({
+      method: "patch",
+      path: "/issues/:id",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      body: { comment: "hello", interrupt: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
+    });
 
-    expect(res.status).toBe(200);
+    expect(res.statusCode).toBe(200);
     expect(mockHeartbeatService.getRun).toHaveBeenCalledWith("run-1");
     expect(mockHeartbeatService.cancelRun).toHaveBeenCalledWith("run-1");
     expect(mockLogActivity).toHaveBeenCalledWith(
@@ -230,16 +308,14 @@ describe("issue comment reopen routes", () => {
       ...patch,
     }));
 
-    const res = await request(await createApp())
-      .patch("/api/issues/11111111-1111-4111-8111-111111111111")
-      .send({ comment: "reopen please", reopen: true });
+    const res = await invokeRoute({
+      method: "patch",
+      path: "/issues/:id",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      body: { comment: "reopen please", reopen: true },
+    });
 
-    expect(res.status).toBe(200);
-
-    // Wait for fire-and-forget event emission to settle
-    await new Promise((r) => setTimeout(r, 50));
-
-    // The status changed from done → todo, so issue_status_changed should be emitted
+    expect(res.statusCode).toBe(200);
     expect(mockEventLogEmit).toHaveBeenCalledWith(
       expect.objectContaining({
         entityType: "issue",
@@ -259,16 +335,14 @@ describe("issue comment reopen routes", () => {
       ...patch,
     }));
 
-    const res = await request(await createApp())
-      .post("/api/issues/11111111-1111-4111-8111-111111111111/comments")
-      .send({ body: "reopening this", reopen: true });
+    const res = await invokeRoute({
+      method: "post",
+      path: "/issues/:id/comments",
+      params: { id: "11111111-1111-4111-8111-111111111111" },
+      body: { body: "reopening this", reopen: true },
+    });
 
-    expect(res.status).toBe(201);
-
-    // Wait for fire-and-forget event emission to settle
-    await new Promise((r) => setTimeout(r, 50));
-
-    // The status changed from done → todo via the comment reopen path
+    expect(res.statusCode).toBe(201);
     expect(mockEventLogEmit).toHaveBeenCalledWith(
       expect.objectContaining({
         entityType: "issue",
