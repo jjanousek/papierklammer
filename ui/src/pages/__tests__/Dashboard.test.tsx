@@ -66,7 +66,14 @@ const mockOrgNodes = [
 
 const mockLiveRuns = [
   { id: "run-1", status: "running", agentId: "a-eng1", agentName: "eng-alpha", adapterType: "claude_local", createdAt: new Date(Date.now() - 30000).toISOString(), startedAt: new Date(Date.now() - 25000).toISOString(), finishedAt: null, invocationSource: "assignment", triggerDetail: null, issueId: "issue-101" },
+  { id: "run-3", status: "succeeded", agentId: "a-eng2", agentName: "eng-beta", adapterType: "claude_local", createdAt: new Date(Date.now() - 20000).toISOString(), startedAt: new Date(Date.now() - 18000).toISOString(), finishedAt: new Date(Date.now() - 12000).toISOString(), invocationSource: "assignment", triggerDetail: null, issueId: "issue-202" },
   { id: "run-2", status: "queued", agentId: "a-eng3", agentName: "eng-gamma", adapterType: "claude_local", createdAt: new Date(Date.now() - 10000).toISOString(), startedAt: new Date(Date.now() - 5000).toISOString(), finishedAt: null, invocationSource: "assignment", triggerDetail: null, issueId: "issue-303" },
+];
+
+const mockIssues = [
+  { id: "issue-101", identifier: "TST-101" },
+  { id: "issue-202", identifier: "TST-202" },
+  { id: "issue-303", identifier: "TST-303" },
 ];
 
 const mockSummary = {
@@ -87,6 +94,8 @@ vi.mock("@tanstack/react-query", () => ({
     if (key0 === "agents" && key2 === "org") return { data: mockOrgNodes, isLoading: false, error: null };
     // agents list query: ["agents", "company-1"]
     if (key0 === "agents") return { data: mockAgents, isLoading: false, error: null };
+    // issues list query: ["issues", "company-1"]
+    if (key0 === "issues") return { data: mockIssues, isLoading: false, error: null };
     // dashboard summary: ["dashboard", "company-1"]
     if (key0 === "dashboard") return { data: mockSummary, isLoading: false, error: null };
     // live runs: ["live-runs", "company-1", "dashboard"]
@@ -217,9 +226,15 @@ describe("Dashboard tier-column layout", () => {
   it("renders stable run identity fields for active dashboard agents", () => {
     renderDashboard();
     expect(container.textContent).toContain("TST · company-1");
-    expect(container.textContent).toContain("issue-101");
+    expect(container.textContent).toContain("TST-101");
     expect(container.textContent).toContain("a-eng1");
     expect(container.textContent).toContain("run-1");
+  });
+
+  it("renders recent completed run identity fields for idle dashboard agents", () => {
+    renderDashboard();
+    expect(container.textContent).toContain("TST-202");
+    expect(container.textContent).toContain("run-3");
   });
 
   it("has MAX_STREAM_ENTRIES_PER_AGENT >= 20", () => {

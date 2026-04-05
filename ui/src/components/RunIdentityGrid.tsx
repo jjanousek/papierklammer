@@ -29,6 +29,7 @@ interface RunIdentityGridProps {
   companyId: string;
   companyIssuePrefix?: string | null;
   issueId?: string | null;
+  issueValue?: string | null;
   agentId: string;
   runId: string;
   companyHref?: string | null;
@@ -42,6 +43,7 @@ export function RunIdentityGrid({
   companyId,
   companyIssuePrefix,
   issueId,
+  issueValue,
   agentId,
   runId,
   companyHref,
@@ -50,6 +52,8 @@ export function RunIdentityGrid({
   runHref,
   className,
 }: RunIdentityGridProps) {
+  const visibleIssueValue = issueValue ?? issueId;
+
   return (
     <div className={cn("grid gap-1.5", className)} data-testid="run-identity-grid">
       <RunIdentityValueRow
@@ -57,7 +61,7 @@ export function RunIdentityGrid({
         value={formatCompanyIdentity(companyId, companyIssuePrefix)}
         href={companyHref}
       />
-      {issueId ? <RunIdentityValueRow label="issue" value={issueId} href={issueHref} /> : null}
+      {visibleIssueValue ? <RunIdentityValueRow label="issue" value={visibleIssueValue} href={issueHref} /> : null}
       <RunIdentityValueRow label="agent" value={agentId} href={agentHref} />
       <RunIdentityValueRow label="run" value={runId} href={runHref} />
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Agent } from "@papierklammer/shared";
 import type { LiveRunForIssue } from "../api/heartbeats";
 import { Link } from "../lib/router";
@@ -15,6 +15,8 @@ export interface StreamEntry {
 interface AgentBlockProps {
   agent: Agent;
   run?: LiveRunForIssue | null;
+  issueReference?: string | null;
+  issueHref?: string | null;
   elapsed?: string;
   result?: string;
   streamEntries?: StreamEntry[];
@@ -28,22 +30,36 @@ function isActiveAgent(agent: Agent): boolean {
   return agent.status === "active" || agent.status === "running";
 }
 
-export function AgentBlock({ agent, run, elapsed, result, streamEntries }: AgentBlockProps) {
+export function AgentBlock({
+  agent,
+  run,
+  issueReference,
+  issueHref,
+  elapsed,
+  result,
+  streamEntries,
+}: AgentBlockProps) {
   const { selectedCompany } = useCompany();
   const activeRun = isActiveRun(run);
   const activeAgent = isActiveAgent(agent);
-  // Default to expanded if the agent has an active run OR an active/running status
-  const defaultExpanded = activeRun || activeAgent;
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const mustStayExpanded = activeRun || activeAgent;
+  const hasRecentRun = Boolean(run);
+  const [expanded, setExpanded] = useState(mustStayExpanded || hasRecentRun);
+
+  useEffect(() => {
+    if (mustStayExpanded || hasRecentRun) {
+      setExpanded(true);
+    }
+  }, [mustStayExpanded, hasRecentRun]);
 
   const handleClick = () => {
-    if (!defaultExpanded) {
+    if (!mustStayExpanded) {
       setExpanded((prev) => !prev);
     }
   };
 
-  // Force active agents to always be expanded
-  const isExpanded = defaultExpanded || expanded;
+  // Force active agents to always be expanded; recent completed runs start expanded too.
+  const isExpanded = mustStayExpanded || expanded;
 
   // Status color for the 6x6 square
   const statusStyle = getStatusStyle(agent.status, activeRun);
@@ -98,8 +114,8 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
   return (
     <div
       className="border-b border-[var(--border)]"
-      onClick={!defaultExpanded ? handleClick : undefined}
-      style={{ cursor: defaultExpanded ? "default" : "pointer" }}
+      onClick={!mustStayExpanded ? handleClick : undefined}
+      style={{ cursor: mustStayExpanded ? "default" : "pointer" }}
       data-testid="agent-block-expanded"
     >
       {/* Header: name + status square */}
@@ -139,7 +155,8 @@ export function AgentBlock({ agent, run, elapsed, result, streamEntries }: Agent
             companyId={agent.companyId}
             companyIssuePrefix={selectedCompany?.id === agent.companyId ? selectedCompany.issuePrefix : null}
             issueId={run.issueId ?? null}
-            issueHref={run.issueId ? `/issues/${run.issueId}` : null}
+            issueValue={issueReference ?? run.issueId ?? null}
+            issueHref={issueHref ?? (run.issueId ? `/issues/${run.issueId}` : null)}
             agentId={agent.id}
             agentHref={agentUrl(agent)}
             runId={run.id}

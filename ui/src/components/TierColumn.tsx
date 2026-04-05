@@ -12,11 +12,19 @@ export interface TierInfo {
 
 interface TierColumnProps {
   tier: TierInfo;
+  issueReferences?: Map<string, string>;
+  issueHrefs?: Map<string, string>;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export function TierColumn({ tier, className, style }: TierColumnProps) {
+export function TierColumn({
+  tier,
+  issueReferences,
+  issueHrefs,
+  className,
+  style,
+}: TierColumnProps) {
   return (
     <div
       className={className}
@@ -58,14 +66,22 @@ export function TierColumn({ tier, className, style }: TierColumnProps) {
 
       {/* Agent blocks */}
       <div className="flex-1 overflow-y-auto">
-        {tier.agents.map((agent) => (
-          <AgentBlock
-            key={agent.id}
-            agent={agent}
-            run={tier.runs?.get(agent.id) ?? null}
-            streamEntries={tier.streams?.get(agent.id)}
-          />
-        ))}
+        {tier.agents.map((agent) => {
+          const run = tier.runs?.get(agent.id) ?? null;
+          const issueReference = run?.issueId ? issueReferences?.get(run.issueId) ?? run.issueId : null;
+          const issueHref = run?.issueId ? issueHrefs?.get(run.issueId) ?? `/issues/${run.issueId}` : null;
+
+          return (
+            <AgentBlock
+              key={agent.id}
+              agent={agent}
+              run={run}
+              issueReference={issueReference}
+              issueHref={issueHref}
+              streamEntries={tier.streams?.get(agent.id)}
+            />
+          );
+        })}
         {tier.agents.length === 0 && (
           <div
             className="px-3 py-4"

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboard";
 import { agentsApi, type OrgNode } from "../api/agents";
 import { heartbeatsApi, type LiveRunForIssue } from "../api/heartbeats";
+import { issuesApi } from "../api/issues";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -153,6 +154,12 @@ export function Dashboard() {
     refetchInterval: 5000,
   });
 
+  const { data: issues } = useQuery({
+    queryKey: queryKeys.issues.list(selectedCompanyId!),
+    queryFn: () => issuesApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  });
+
   // Fetch live transcripts for running agents
   const { transcriptByRun } = useLiveRunTranscripts({
     runs: liveRuns ?? [],
@@ -194,6 +201,22 @@ export function Dashboard() {
     }
     return map;
   }, [orgNodes]);
+
+  const issueReferenceById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const issue of issues ?? []) {
+      map.set(issue.id, issue.identifier ?? issue.id);
+    }
+    return map;
+  }, [issues]);
+
+  const issueHrefById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const issue of issues ?? []) {
+      map.set(issue.id, `/issues/${issue.identifier ?? issue.id}`);
+    }
+    return map;
+  }, [issues]);
 
   // Group agents into tiers
   const tiers = useMemo((): TierInfo[] => {
@@ -323,6 +346,8 @@ export function Dashboard() {
           <TierColumn
             key={tier.rank}
             tier={tier}
+            issueReferences={issueReferenceById}
+            issueHrefs={issueHrefById}
             style={{ flex: tierFlex(tier.rank) }}
           />
         ))}
