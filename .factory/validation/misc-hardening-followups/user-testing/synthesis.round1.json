@@ -1,0 +1,22 @@
+{
+  "milestone": "misc-hardening-followups",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "flowReports": [],
+  "notes": [
+    "Round 1 found no misc-hardening-followups assertions to test.",
+    "All completed non-validator misc-hardening-followups features have an empty fulfills list, so there were no pending validation-contract assertions to schedule.",
+    "Because there were no testable assertions, no services were started and no flow-validator subagents were spawned."
+  ]
+}
