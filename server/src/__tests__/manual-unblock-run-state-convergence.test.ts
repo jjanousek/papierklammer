@@ -82,6 +82,13 @@ describeDB("manual unblock run-state convergence", () => {
     return app;
   }
 
+  function readJsonBody<T>(response: { text?: string; body: T }): T {
+    if (typeof response.text === "string" && response.text.length > 0) {
+      return JSON.parse(response.text) as T;
+    }
+    return response.body;
+  }
+
   async function seedFixture() {
     const companyId = randomUUID();
     const agentId = randomUUID();
@@ -211,14 +218,27 @@ describeDB("manual unblock run-state convergence", () => {
     const unblockRes = await request(app)
       .post(`/api/orchestrator/issues/${issueId}/unblock`)
       .send({});
+    const unblockBody = readJsonBody<{
+      issue: { executionRunId: string | null; checkoutRunId: string | null; status: string };
+      leaseReleased: boolean;
+      rejectedIntents: number;
+      recovery: {
+        issueId: string;
+        companyId: string;
+        releasedLeaseId: string | null;
+        clearedExecutionRunId: string | null;
+        clearedCheckoutRunId: string | null;
+        rejectedIntentCount: number;
+      };
+    }>(unblockRes);
 
     expect(unblockRes.status).toBe(200);
-    expect(unblockRes.body.issue.executionRunId).toBeNull();
-    expect(unblockRes.body.issue.checkoutRunId).toBeNull();
-    expect(unblockRes.body.issue.status).toBe("todo");
-    expect(unblockRes.body.leaseReleased).toBe(true);
-    expect(unblockRes.body.rejectedIntents).toBe(1);
-    expect(unblockRes.body.recovery).toEqual({
+    expect(unblockBody.issue.executionRunId).toBeNull();
+    expect(unblockBody.issue.checkoutRunId).toBeNull();
+    expect(unblockBody.issue.status).toBe("todo");
+    expect(unblockBody.leaseReleased).toBe(true);
+    expect(unblockBody.rejectedIntents).toBe(1);
+    expect(unblockBody.recovery).toEqual({
       issueId,
       companyId,
       releasedLeaseId: leaseId,
@@ -228,14 +248,34 @@ describeDB("manual unblock run-state convergence", () => {
     });
 
     const issueRes = await request(app).get(`/api/issues/${issueId}`);
+    const issueBody = readJsonBody<{
+      executionRunId: string | null;
+      checkoutRunId: string | null;
+      executionAgentNameKey: string | null;
+      executionLockedAt: string | null;
+      status: string;
+      projectedStatus: string;
+      activeRunId: string | null;
+      pickupFailCount: number;
+      lastPickupFailureAt: string | null;
+    }>(issueRes);
     expect(issueRes.status).toBe(200);
-    expect(issueRes.body.executionRunId).toBeNull();
-    expect(issueRes.body.checkoutRunId).toBeNull();
-    expect(issueRes.body.status).toBe("todo");
-    expect(issueRes.body.projectedStatus).toBe("todo");
-    expect(issueRes.body.activeRunId).toBeNull();
-    expect(issueRes.body.pickupFailCount).toBe(0);
-    expect(issueRes.body.lastPickupFailureAt).toBeNull();
+    expect({
+      executionRunId: issueBody.executionRunId,
+      checkoutRunId: issueBody.checkoutRunId,
+      executionAgentNameKey: issueBody.executionAgentNameKey,
+      executionLockedAt: issueBody.executionLockedAt,
+    }).toEqual({
+      executionRunId: null,
+      checkoutRunId: null,
+      executionAgentNameKey: null,
+      executionLockedAt: null,
+    });
+    expect(issueBody.status).toBe("todo");
+    expect(issueBody.projectedStatus).toBe("todo");
+    expect(issueBody.activeRunId).toBeNull();
+    expect(issueBody.pickupFailCount).toBe(0);
+    expect(issueBody.lastPickupFailureAt).toBeNull();
 
     const activeRunRes = await request(app).get(`/api/issues/${issueId}/active-run`);
     expect(activeRunRes.status).toBe(200);
@@ -246,10 +286,15 @@ describeDB("manual unblock run-state convergence", () => {
     expect(liveAfter.body).toEqual([]);
 
     const statusAfter = await request(app).get("/api/orchestrator/status").query({ companyId });
+    const statusBody = readJsonBody<{
+      totalActiveRuns: number;
+      activeRuns: Array<unknown>;
+      agents: Array<{ agentId: string; activeRunCount: number }>;
+    }>(statusAfter);
     expect(statusAfter.status).toBe(200);
-    expect(statusAfter.body.totalActiveRuns).toBe(0);
-    expect(statusAfter.body.activeRuns).toEqual([]);
-    expect(statusAfter.body.agents).toEqual([
+    expect(statusBody.totalActiveRuns).toBe(0);
+    expect(statusBody.activeRuns).toEqual([]);
+    expect(statusBody.agents).toEqual([
       expect.objectContaining({
         agentId,
         activeRunCount: 0,
