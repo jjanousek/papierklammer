@@ -434,6 +434,10 @@ export function issueRoutes(db: Db, storage: StorageService, deps: IssueRouteDep
     const workProducts = await workProductsSvc.listForIssue(issue);
     res.json({
       ...issue,
+      executionRunId: issue.executionRunId ?? null,
+      checkoutRunId: issue.checkoutRunId ?? null,
+      executionAgentNameKey: issue.executionAgentNameKey ?? null,
+      executionLockedAt: issue.executionLockedAt ?? null,
       goalId: goal?.id ?? issue.goalId,
       ancestors,
       ...documentPayload,
