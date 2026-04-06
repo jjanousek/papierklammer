@@ -1,0 +1,29 @@
+{
+  "milestone": "hardening-regression",
+  "round": 2,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-STALE-003",
+    "VAL-STALE-005",
+    "VAL-STALE-008"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-06T01-56-17-809Z__user-testing-validator-hardening-regression__ec769a84-fc5e-4488-a484-1036b6b6f968.json",
+  "flowReports": [
+    "/Users/aischool/work/papierklammer_droid/.factory/validation/hardening-regression/user-testing/flows/stale-api-rerun.json",
+    "/Users/aischool/work/papierklammer_droid/.factory/validation/hardening-regression/user-testing/flows/stale-visibility-rerun.json"
+  ],
+  "notes": [
+    "Rerun targeted the previously failing assertions after fix-manual-unblock-run-state-convergence completed.",
+    "VAL-STALE-008 passed because the recovered run disappeared from active company status surfaces; an unrelated orphan run remained visible and was not treated as a failure for the recovered issue.",
+    "VAL-STALE-005 passed on the rerun state because the Web UI already rendered the target issue as Recovered before unblock and remained non-live after unblock, matching the converged API state."
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "groupId": "stale-api-rerun",
+  "testedAt": "2026-04-06T03:10:22Z",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "companyId": "761adb53-1b5c-4776-a051-90e46b999326",
+    "issueId": "dffcf9e8-e8fc-4bb1-8c31-799b9412cd1b",
+    "issueIdentifier": "STA-3",
+    "runId": "a297d15f-6eae-433c-8df5-5938edbbbbbf"
+  },
+  "toolsUsed": [
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-STALE-003",
+      "title": "Manual unblock fully clears stale issue ownership",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Review the pre-unblock issue detail transcript for STA-3.",
+          "expected": "The stale issue should still show execution ownership before recovery.",
+          "observed": "The issue was blocked with `checkoutRunId` and `executionRunId` both set to `a297d15f-6eae-433c-8df5-5938edbbbbbf`, plus `activeRunId` on the same run and `activeLeaseId` `e0f3cccf-846c-4e24-8b8e-e602ca775d3d`."
+        },
+        {
+          "action": "Review the unblock response transcript.",
+          "expected": "Manual unblock should clear stale execution ownership and reject stale queued work.",
+          "observed": "The unblock response returned `issue.status=\"todo\"`, `leaseReleased=true`, `rejectedIntents=1`, and recovery metadata showing `clearedExecutionRunId` and `clearedCheckoutRunId` for run `a297d15f-6eae-433c-8df5-5938edbbbbbf`."
+        },
+        {
+          "action": "Review the immediate follow-up issue detail transcript after unblock.",
+          "expected": "The issue should remain clear of execution ownership with no rebound on the immediate reread.",
+          "observed": "The follow-up issue detail kept `checkoutRunId=null`, `executionRunId=null`, `activeRunId=null`, and `activeLeaseId=null`, with `projectedStatus=\"todo\"` and no rebound of the recovered run."
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "not applicable (API synthesis from saved curl transcripts)",
+        "network": "hardening-regression/stale-api-rerun/VAL-STALE-003-before-issue.json, hardening-regression/stale-api-rerun/VAL-STALE-003-unblock-response.json, hardening-regression/stale-api-rerun/VAL-STALE-003-after-issue.json"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-STALE-008",
+      "title": "Recovery converges across status surfaces after cleanup",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Review the pre-recovery active-run, live-runs, status, and stale-inventory transcripts for the recovered run.",
+          "expected": "Before recovery, the target run should still appear as active/queued work somewhere in the status surfaces.",
+          "observed": "Before unblock, run `a297d15f-6eae-433c-8df5-5938edbbbbbf` showed `status=\"running\"`, company live-runs listed it alongside unrelated run `79107ab9-794e-449e-b25f-404916a7ceba`, company status reported `totalActiveRuns=2` and `totalQueuedIntents=1`, and stale inventory still exposed queued intent `6560af2b-ad9f-43b2-96ee-fa8a7d60eca3`."
+        },
+        {
+          "action": "Review the post-recovery issue detail and active-run transcripts for STA-3.",
+          "expected": "After recovery, the affected issue should be non-running and the recovered run should no longer present as active work.",
+          "observed": "The post-unblock issue detail showed `projectedStatus=\"todo\"` with `activeRunId=null`, and the saved post-recovery active-run transcript for run `a297d15f-6eae-433c-8df5-5938edbbbbbf` was `null`."
+        },
+        {
+          "action": "Review the post-recovery live-runs, company status, and stale-inventory transcripts.",
+          "expected": "Status surfaces should stop exposing the recovered run as active or queued work, while unrelated work may remain.",
+          "observed": "After recovery, company live-runs and company status removed run `a297d15f-6eae-433c-8df5-5938edbbbbbf` from `activeRuns`, `recentRuns` recorded it as `cancelled`, `totalQueuedIntents` dropped to `0`, and stale inventory retained only unrelated orphan run `79107ab9-794e-449e-b25f-404916a7ceba`."
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "not applicable (API synthesis from saved curl transcripts)",
+        "network": "hardening-regression/stale-api-rerun/VAL-STALE-003-after-issue.json, hardening-regression/stale-api-rerun/VAL-STALE-008-before-active-run.json, hardening-regression/stale-api-rerun/VAL-STALE-008-before-live-runs.json, hardening-regression/stale-api-rerun/VAL-STALE-008-before-status.json, hardening-regression/stale-api-rerun/VAL-STALE-008-before-stale.json, hardening-regression/stale-api-rerun/VAL-STALE-008-after-active-run.json, hardening-regression/stale-api-rerun/VAL-STALE-008-after-live-runs.json, hardening-regression/stale-api-rerun/VAL-STALE-008-after-status.json, hardening-regression/stale-api-rerun/VAL-STALE-008-after-stale.json"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions from saved fresh rerun evidence: VAL-STALE-003 passed because manual unblock cleared both stale ownership ids with no immediate rebound, and VAL-STALE-008 passed because the recovered issue became non-running and company status surfaces no longer exposed its run as active or queued work, while an unrelated orphan run remained visible."
+}

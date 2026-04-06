@@ -1,0 +1,61 @@
+{
+  "groupId": "stale-visibility-rerun",
+  "testedAt": "2026-04-06T03:07:33.647899+00:00",
+  "isolation": {
+    "appUrl": "http://localhost:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607",
+    "companyId": "e4a84ee9-ede6-456b-9bef-4e1b582f90d2",
+    "issueId": "5987492a-ac80-4f24-8e35-db99d0c6d69b",
+    "issueIdentifier": "STAA-1"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-STALE-005",
+      "title": "Recovery is visible in the Web UI after cleanup",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open the target company issue list at /STAA/issues before unblock and inspect STAA-1.",
+          "expected": "Before recovery, determine whether the board presents STAA-1 as live/actively running stale work.",
+          "observed": "The board already rendered STAA-1 with a visible 'Recovered' badge and no live-run indicator, even though the pre-unblock issue API still reported status=in_progress/projectedStatus=in_progress with checkoutRunId set and active-run null."
+        },
+        {
+          "action": "POST /api/orchestrator/issues/5987492a-ac80-4f24-8e35-db99d0c6d69b/unblock and re-read the issue/live-run APIs.",
+          "expected": "Manual unblock should clear stale ownership and converge the issue into a non-live follow-up state.",
+          "observed": "The unblock response returned issue.status='todo', and the follow-up issue read showed projectedStatus='todo', checkoutRunId/executionRunId null, active-run null, and company live-runs []."
+        },
+        {
+          "action": "Refresh /STAA/issues after unblock and inspect STAA-1 again.",
+          "expected": "The Web UI should no longer present the issue as live/active and should show recovered follow-up work.",
+          "observed": "After refresh, STAA-1 remained visible in the issue list with the 'Recovered' badge and without any active/live run indicator, matching the recovered non-live API state."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "hardening-regression/stale-visibility-rerun/VAL-STALE-005-before-target-list-annotated.png",
+          "hardening-regression/stale-visibility-rerun/VAL-STALE-005-after-target-list-annotated.png"
+        ],
+        "consoleErrors": "Observed non-blocking React console error on list/deep-link loads: 'Maximum update depth exceeded'. Validation remained possible on the company-scoped issue list.",
+        "network": "Saved API/text evidence: hardening-regression/stale-visibility-rerun/VAL-STALE-005-issue-before.json, VAL-STALE-005-active-run-before.json, VAL-STALE-005-live-runs-before.json, VAL-STALE-005-unblock-response.json, VAL-STALE-005-issue-after.json, VAL-STALE-005-active-run-after.json, VAL-STALE-005-live-runs-after.json"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Opening the unprefixed deep link first caused the app to resolve to /STA/issues/STAA-1 and render a blank broken page with a React 'Maximum update depth exceeded' error while stale company context synced.",
+      "resolved": true,
+      "resolution": "Switched to the explicit company-scoped route /STAA/issues and validated the stale-recovery state from the issue list there.",
+      "affectedAssertions": [
+        "VAL-STALE-005"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 1 assertion (VAL-STALE-005): pass. After manual unblock, the board still showed STAA-1 as recovered/non-live rather than actively running, and the API converged to todo with no active/live runs."
+}
