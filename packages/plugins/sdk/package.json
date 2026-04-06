@@ -103,7 +103,7 @@
   "scripts": {
     "build": "pnpm --filter @papierklammer/shared build && tsc",
     "clean": "rm -rf dist",
-    "typecheck": "pnpm --filter @papierklammer/shared build && tsc --noEmit",
+    "typecheck": "pnpm --filter @papierklammer/shared build && tsc",
     "dev:server": "tsx src/dev-cli.ts"
   },
   "dependencies": {
