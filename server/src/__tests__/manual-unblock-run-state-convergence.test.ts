@@ -1,0 +1,288 @@
+import { randomUUID } from "node:crypto";
+import express from "express";
+import request from "supertest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  agents,
+  companies,
+  createDb,
+  dispatchIntents,
+  executionLeases,
+  heartbeatRuns,
+  issues,
+  projects,
+} from "@papierklammer/db";
+import { eq, inArray, sql } from "drizzle-orm";
+import {
+  getEmbeddedPostgresTestSupport,
+  startEmbeddedPostgresTestDatabase,
+} from "./helpers/embedded-postgres.js";
+import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
+import { issueRoutes } from "../routes/issues.js";
+import { orchestratorRoutes } from "../routes/orchestrator.js";
+
+const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
+const describeDB = embeddedPostgresSupport.supported ? describe : describe.skip;
+
+if (!embeddedPostgresSupport.supported) {
+  console.warn(
+    `Skipping manual unblock convergence tests: ${embeddedPostgresSupport.reason ?? "unsupported environment"}`,
+  );
+}
+
+const storageStub = {
+  provider: "local_disk",
+  putFile: async () => {
+    throw new Error("storage not used in this test");
+  },
+  getObject: async () => {
+    throw new Error("storage not used in this test");
+  },
+  headObject: async () => ({ exists: false }),
+  deleteObject: async () => undefined,
+} as any;
+
+describeDB("manual unblock run-state convergence", () => {
+  let db!: ReturnType<typeof createDb>;
+  let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
+
+  beforeAll(async () => {
+    tempDb = await startEmbeddedPostgresTestDatabase("manual-unblock-run-state-");
+    db = createDb(tempDb.connectionString);
+  }, 30_000);
+
+  afterEach(async () => {
+    await db.execute(
+      sql`TRUNCATE TABLE dispatch_intents, execution_leases, heartbeat_runs, issues, projects, agents, companies CASCADE`,
+    );
+  });
+
+  afterAll(async () => {
+    await tempDb?.cleanup();
+  });
+
+  function createApp(companyId: string) {
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => {
+      (req as any).actor = {
+        type: "board",
+        userId: "local-board",
+        source: "local_implicit",
+        companyIds: [companyId],
+        isInstanceAdmin: false,
+      };
+      next();
+    });
+    app.use("/api", orchestratorRoutes(db));
+    app.use("/api", agentRoutes(db));
+    app.use("/api", issueRoutes(db, storageStub));
+    app.use(errorHandler);
+    return app;
+  }
+
+  async function seedFixture() {
+    const companyId = randomUUID();
+    const agentId = randomUUID();
+    const projectId = randomUUID();
+    const issueId = randomUUID();
+    const leasedRunId = randomUUID();
+    const orphanedRunId = randomUUID();
+    const queuedRunId = randomUUID();
+    const intentId = randomUUID();
+    const leaseId = randomUUID();
+    const now = new Date("2026-04-06T10:00:00.000Z");
+
+    await db.insert(companies).values({
+      id: companyId,
+      name: "Paperclip",
+      issuePrefix: `T${companyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+      requireBoardApprovalForNewAgents: false,
+    });
+
+    await db.insert(agents).values({
+      id: agentId,
+      companyId,
+      name: "Agent Alpha",
+      role: "engineer",
+      status: "active",
+      adapterType: "codex_local",
+      adapterConfig: {},
+      runtimeConfig: {},
+      permissions: {},
+    });
+
+    await db.insert(projects).values({
+      id: projectId,
+      companyId,
+      name: "Recovery Project",
+      status: "planned",
+    });
+
+    await db.insert(heartbeatRuns).values([
+      {
+        id: leasedRunId,
+        companyId,
+        agentId,
+        invocationSource: "manual",
+        status: "running",
+        createdAt: new Date("2026-04-06T09:55:00.000Z"),
+        startedAt: new Date("2026-04-06T09:56:00.000Z"),
+        contextSnapshot: { issueId },
+      },
+      {
+        id: orphanedRunId,
+        companyId,
+        agentId,
+        invocationSource: "manual",
+        status: "running",
+        createdAt: new Date("2026-04-06T09:57:00.000Z"),
+        startedAt: new Date("2026-04-06T09:58:00.000Z"),
+        contextSnapshot: { issueId },
+      },
+      {
+        id: queuedRunId,
+        companyId,
+        agentId,
+        invocationSource: "manual",
+        status: "queued",
+        createdAt: new Date("2026-04-06T09:59:00.000Z"),
+        contextSnapshot: { issueId },
+      },
+    ]);
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId,
+      projectId,
+      title: "Recover stale work",
+      status: "blocked",
+      priority: "medium",
+      assigneeAgentId: agentId,
+      executionRunId: leasedRunId,
+      checkoutRunId: leasedRunId,
+      executionAgentNameKey: "agent alpha",
+      executionLockedAt: now,
+      pickupFailCount: 4,
+      lastPickupFailureAt: now,
+    });
+
+    await db.insert(executionLeases).values({
+      id: leaseId,
+      leaseType: "issue_execution_lease",
+      issueId,
+      agentId,
+      runId: leasedRunId,
+      state: "granted",
+      companyId,
+      grantedAt: new Date("2026-04-06T09:56:00.000Z"),
+      renewedAt: new Date("2026-04-06T09:59:30.000Z"),
+      expiresAt: new Date("2026-04-06T10:05:00.000Z"),
+    });
+
+    await db.insert(dispatchIntents).values({
+      id: intentId,
+      companyId,
+      issueId,
+      projectId,
+      targetAgentId: agentId,
+      intentType: "issue_assigned",
+      priority: 10,
+      status: "queued",
+      createdAt: new Date("2026-04-06T09:54:00.000Z"),
+      updatedAt: new Date("2026-04-06T09:54:00.000Z"),
+    });
+
+    return { companyId, agentId, issueId, leasedRunId, orphanedRunId, queuedRunId, leaseId };
+  }
+
+  it("unblock cancels linked active work and keeps API status surfaces converged", async () => {
+    const { companyId, agentId, issueId, leasedRunId, orphanedRunId, queuedRunId, leaseId } =
+      await seedFixture();
+    const app = createApp(companyId);
+
+    const liveBefore = await request(app).get(`/api/companies/${companyId}/live-runs`);
+    expect(liveBefore.status).toBe(200);
+    expect(liveBefore.body.map((run: { id: string }) => run.id).sort()).toEqual(
+      [leasedRunId, orphanedRunId, queuedRunId].sort(),
+    );
+
+    const unblockRes = await request(app)
+      .post(`/api/orchestrator/issues/${issueId}/unblock`)
+      .send({});
+
+    expect(unblockRes.status).toBe(200);
+    expect(unblockRes.body.issue.executionRunId).toBeNull();
+    expect(unblockRes.body.issue.checkoutRunId).toBeNull();
+    expect(unblockRes.body.issue.status).toBe("todo");
+    expect(unblockRes.body.leaseReleased).toBe(true);
+    expect(unblockRes.body.rejectedIntents).toBe(1);
+    expect(unblockRes.body.recovery).toEqual({
+      issueId,
+      companyId,
+      releasedLeaseId: leaseId,
+      clearedExecutionRunId: leasedRunId,
+      clearedCheckoutRunId: leasedRunId,
+      rejectedIntentCount: 1,
+    });
+
+    const issueRes = await request(app).get(`/api/issues/${issueId}`);
+    expect(issueRes.status).toBe(200);
+    expect(issueRes.body.executionRunId).toBeNull();
+    expect(issueRes.body.checkoutRunId).toBeNull();
+    expect(issueRes.body.status).toBe("todo");
+    expect(issueRes.body.projectedStatus).toBe("todo");
+    expect(issueRes.body.activeRunId).toBeNull();
+    expect(issueRes.body.pickupFailCount).toBe(0);
+    expect(issueRes.body.lastPickupFailureAt).toBeNull();
+
+    const activeRunRes = await request(app).get(`/api/issues/${issueId}/active-run`);
+    expect(activeRunRes.status).toBe(200);
+    expect(activeRunRes.body).toBeNull();
+
+    const liveAfter = await request(app).get(`/api/companies/${companyId}/live-runs`);
+    expect(liveAfter.status).toBe(200);
+    expect(liveAfter.body).toEqual([]);
+
+    const statusAfter = await request(app).get("/api/orchestrator/status").query({ companyId });
+    expect(statusAfter.status).toBe(200);
+    expect(statusAfter.body.totalActiveRuns).toBe(0);
+    expect(statusAfter.body.activeRuns).toEqual([]);
+    expect(statusAfter.body.agents).toEqual([
+      expect.objectContaining({
+        agentId,
+        activeRunCount: 0,
+      }),
+    ]);
+
+    const staleAfter = await request(app).get("/api/orchestrator/stale").query({ companyId });
+    expect(staleAfter.status).toBe(200);
+    expect(staleAfter.body.staleRuns).toEqual([]);
+    expect(staleAfter.body.orphanedLeases).toEqual([]);
+
+    const storedRuns = await db
+      .select({
+        id: heartbeatRuns.id,
+        status: heartbeatRuns.status,
+        finishedAt: heartbeatRuns.finishedAt,
+      })
+      .from(heartbeatRuns)
+      .where(inArray(heartbeatRuns.id, [leasedRunId, orphanedRunId, queuedRunId]));
+
+    expect(storedRuns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: leasedRunId, status: "cancelled", finishedAt: expect.any(Date) }),
+        expect.objectContaining({ id: orphanedRunId, status: "cancelled", finishedAt: expect.any(Date) }),
+        expect.objectContaining({ id: queuedRunId, status: "cancelled", finishedAt: expect.any(Date) }),
+      ]),
+    );
+
+    const queuedIntents = await db
+      .select({ status: dispatchIntents.status })
+      .from(dispatchIntents)
+      .where(eq(dispatchIntents.issueId, issueId));
+
+    expect(queuedIntents).toEqual([expect.objectContaining({ status: "rejected" })]);
+  });
+});

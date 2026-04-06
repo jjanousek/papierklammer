@@ -31,6 +31,7 @@ let mockOrchestratorService: {
   getAgent: ReturnType<typeof vi.fn>;
   findAgentAssignedIssue: ReturnType<typeof vi.fn>;
   clearIssueLock: ReturnType<typeof vi.fn>;
+  recoverIssueForManualUnblock: ReturnType<typeof vi.fn>;
   recoverIssueForRun: ReturnType<typeof vi.fn>;
 };
 
@@ -186,6 +187,7 @@ describe.sequential("orchestrator routes", () => {
       getAgent: vi.fn(),
       findAgentAssignedIssue: vi.fn(),
       clearIssueLock: vi.fn(),
+      recoverIssueForManualUnblock: vi.fn(),
       recoverIssueForRun: vi.fn(),
     };
   });
@@ -651,7 +653,9 @@ describe.sequential("orchestrator routes", () => {
         id: LEASE_ID,
         state: "released",
       });
-      mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
+      mockOrchestratorService.recoverIssueForManualUnblock.mockResolvedValue([
+        "run-1",
+      ]);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(2);
 
       const res = await callRoute({
@@ -678,10 +682,13 @@ describe.sequential("orchestrator routes", () => {
         LEASE_ID,
         "force_unblock",
       );
-      expect(mockOrchestratorService.clearIssueLock).toHaveBeenCalledWith(
+      expect(mockOrchestratorService.recoverIssueForManualUnblock).toHaveBeenCalledWith(
         ISSUE_ID,
         COMPANY_ID,
+        "run-1",
+        "checkout-1",
       );
+      expect(mockOrchestratorService.clearIssueLock).not.toHaveBeenCalled();
       expect(mockIntentQueueService.invalidateForClosedIssue).toHaveBeenCalledWith(
         ISSUE_ID,
         COMPANY_ID,
@@ -699,7 +706,7 @@ describe.sequential("orchestrator routes", () => {
         .mockResolvedValueOnce(existing)
         .mockResolvedValueOnce(updatedIssue);
       mockLeaseManagerService.getActiveLease.mockResolvedValue(null);
-      mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
+      mockOrchestratorService.recoverIssueForManualUnblock.mockResolvedValue([]);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(0);
 
       const res = await callRoute({
@@ -745,7 +752,7 @@ describe.sequential("orchestrator routes", () => {
       mockLeaseManagerService.releaseLease.mockRejectedValue(
         new Error("Already released"),
       );
-      mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
+      mockOrchestratorService.recoverIssueForManualUnblock.mockResolvedValue([]);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(0);
 
       const res = await callRoute({
@@ -771,7 +778,7 @@ describe.sequential("orchestrator routes", () => {
         .mockResolvedValueOnce(existing)
         .mockResolvedValueOnce(existing);
       mockLeaseManagerService.getActiveLease.mockResolvedValue(null);
-      mockOrchestratorService.clearIssueLock.mockResolvedValue(undefined);
+      mockOrchestratorService.recoverIssueForManualUnblock.mockResolvedValue([]);
       mockIntentQueueService.invalidateForClosedIssue.mockResolvedValue(0);
 
       const res = await callRoute({
@@ -803,7 +810,7 @@ describe.sequential("orchestrator routes", () => {
 
       expect(res.status).toBe(400);
       expect(mockLeaseManagerService.getActiveLease).not.toHaveBeenCalled();
-      expect(mockOrchestratorService.clearIssueLock).not.toHaveBeenCalled();
+      expect(mockOrchestratorService.recoverIssueForManualUnblock).not.toHaveBeenCalled();
     });
   });
 

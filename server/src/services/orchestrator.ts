@@ -7,6 +7,7 @@ import {
   executionLeases,
   issues,
 } from "@papierklammer/db";
+import { heartbeatService } from "./heartbeat.js";
 import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 
 /**
@@ -158,6 +159,21 @@ function buildRecoveredIssuePatch(now: Date) {
  * Factory function following the project's service pattern.
  */
 export function orchestratorService(db: Db) {
+  const heartbeat = heartbeatService(db);
+
+  async function clearIssueLockInternal(issueId: string, companyId?: string): Promise<void> {
+    const now = new Date();
+    const conditions = [eq(issues.id, issueId)];
+    if (companyId) {
+      conditions.push(eq(issues.companyId, companyId));
+    }
+
+    await db
+      .update(issues)
+      .set(buildRecoveredIssuePatch(now))
+      .where(and(...conditions));
+  }
+
   return {
     /**
      * Get all agents for a company with their active run and queued intent counts.
@@ -648,16 +664,46 @@ export function orchestratorService(db: Db) {
      * Clear execution lock on an issue.
      */
     async clearIssueLock(issueId: string, companyId?: string): Promise<void> {
-      const now = new Date();
-      const conditions = [eq(issues.id, issueId)];
-      if (companyId) {
-        conditions.push(eq(issues.companyId, companyId));
+      await clearIssueLockInternal(issueId, companyId);
+    },
+
+    /**
+     * Manual unblock must also resolve any still-active run linked to the issue,
+     * otherwise convergeExecutionState can immediately rebind the recovered issue
+     * back onto queued/running work on the next read.
+     */
+    async recoverIssueForManualUnblock(
+      issueId: string,
+      companyId: string,
+      executionRunId: string | null,
+      checkoutRunId: string | null,
+    ): Promise<string[]> {
+      const linkConditions = [sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issueId}`];
+      if (executionRunId) {
+        linkConditions.push(eq(heartbeatRuns.id, executionRunId));
+      }
+      if (checkoutRunId) {
+        linkConditions.push(eq(heartbeatRuns.id, checkoutRunId));
       }
 
-      await db
-        .update(issues)
-        .set(buildRecoveredIssuePatch(now))
-        .where(and(...conditions));
+      const linkedRuns = await db
+        .select({ id: heartbeatRuns.id })
+        .from(heartbeatRuns)
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, companyId),
+            inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
+            or(...linkConditions),
+          ),
+        );
+
+      const activeRunIds = [...new Set(linkedRuns.map((row) => row.id))];
+      for (const runId of activeRunIds) {
+        await heartbeat.cancelRun(runId);
+      }
+
+      await clearIssueLockInternal(issueId, companyId);
+      return activeRunIds;
     },
 
     /**

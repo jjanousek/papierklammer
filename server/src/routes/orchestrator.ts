@@ -193,8 +193,13 @@ export function orchestratorRoutes(
       }
     }
 
-    // Clear execution lock on the issue
-    await orchSvc.clearIssueLock(issueId, existing.companyId);
+    // Clear execution lock on the issue and cancel any still-linked active runs
+    await orchSvc.recoverIssueForManualUnblock(
+      issueId,
+      existing.companyId,
+      existing.executionRunId ?? null,
+      existing.checkoutRunId ?? null,
+    );
 
     // Reject stale queued intents for this issue
     const rejectedIntents = await intentQueue.invalidateForClosedIssue(
