@@ -1,6 +1,7 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../middleware/index.js";
+import { accessRoutes } from "../routes/access.js";
 
 const mockAccessService = vi.hoisted(() => ({
   isInstanceAdmin: vi.fn(),
@@ -27,44 +28,122 @@ const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockDeduplicateAgentName = vi.hoisted(() => vi.fn((name: string) => name));
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 
-async function createApp(actor: any) {
-  const [{ accessRoutes }, { errorHandler }] = await Promise.all([
-    import("../routes/access.js"),
-    import("../middleware/index.js"),
-  ]);
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    req.actor = actor;
-    next();
-  });
-  app.use(
-    "/api",
-    accessRoutes(
-      {} as any,
-      {
-        deploymentMode: "authenticated",
-        deploymentExposure: "private",
-        bindHost: "127.0.0.1",
-        allowedHostnames: [],
-      },
-      {
-        accessService: mockAccessService as any,
-        agentService: mockAgentService as any,
-        boardAuthService: mockBoardAuthService as any,
-        deduplicateAgentName: mockDeduplicateAgentName,
-        logActivity: mockLogActivity,
-        notifyHireApproved: mockNotifyHireApproved,
-      },
-    ),
+function getRouteHandlers(method: "get" | "post", path: string) {
+  const router = accessRoutes(
+    {} as any,
+    {
+      deploymentMode: "authenticated",
+      deploymentExposure: "private",
+      bindHost: "127.0.0.1",
+      allowedHostnames: [],
+    },
+    {
+      accessService: mockAccessService as any,
+      agentService: mockAgentService as any,
+      boardAuthService: mockBoardAuthService as any,
+      deduplicateAgentName: mockDeduplicateAgentName,
+      logActivity: mockLogActivity,
+      notifyHireApproved: mockNotifyHireApproved,
+    },
   );
-  app.use(errorHandler);
-  return Promise.resolve(app);
+  const layer = (router as any).stack.find(
+    (entry: any) => entry.route?.path === path && entry.route.methods?.[method],
+  );
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) return;
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function callRoute(options: {
+  method: "get" | "post";
+  path: string;
+  actor?: Record<string, unknown>;
+  body?: unknown;
+  params?: Record<string, string>;
+  query?: Record<string, string>;
+}) {
+  const headers = {
+    host: "localhost:3100",
+  };
+  const req = {
+    actor: options.actor ?? { type: "none", source: "none" },
+    body: options.body ?? {},
+    params: options.params ?? {},
+    query: options.query ?? {},
+    method: options.method.toUpperCase(),
+    originalUrl: `/api${options.path}`,
+    protocol: "http",
+    ip: "127.0.0.1",
+    header(name: string) {
+      return headers[name.toLowerCase() as keyof typeof headers];
+    },
+    get(name: string) {
+      return headers[name.toLowerCase() as keyof typeof headers];
+    },
+  } as any;
+  let statusCode = 200;
+  let body: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      body = payload;
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(getRouteHandlers(options.method, options.path), req, res);
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
+  }
+
+  return { status: statusCode, body };
 }
 
 describe("cli auth routes", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
     mockAccessService.isInstanceAdmin.mockReset();
     mockAccessService.hasPermission.mockReset();
@@ -94,14 +173,15 @@ describe("cli auth routes", () => {
       pendingBoardToken: "pcp_board_token",
     });
 
-    const app = await createApp({ type: "none", source: "none" });
-    const res = await request(app)
-      .post("/api/cli-auth/challenges")
-      .send({
+    const res = await callRoute({
+      method: "post",
+      path: "/cli-auth/challenges",
+      body: {
         command: "paperclipai company import",
         clientName: "paperclipai cli",
         requestedAccess: "board",
-      });
+      },
+    });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
@@ -112,7 +192,7 @@ describe("cli auth routes", () => {
       pollPath: "/cli-auth/challenges/challenge-1",
       expiresAt: "2026-03-23T13:00:00.000Z",
     });
-    expect(res.body.approvalUrl).toContain("/cli-auth/challenge-1?token=pcp_cli_auth_secret");
+    expect((res.body as any).approvalUrl).toContain("/cli-auth/challenge-1?token=pcp_cli_auth_secret");
   });
 
   it("marks challenge status as requiring sign-in for anonymous viewers", async () => {
@@ -130,12 +210,16 @@ describe("cli auth routes", () => {
       approvedByUser: null,
     });
 
-    const app = await createApp({ type: "none", source: "none" });
-    const res = await request(app).get("/api/cli-auth/challenges/challenge-1?token=pcp_cli_auth_secret");
+    const res = await callRoute({
+      method: "get",
+      path: "/cli-auth/challenges/:id",
+      params: { id: "challenge-1" },
+      query: { token: "pcp_cli_auth_secret" },
+    });
 
     expect(res.status).toBe(200);
-    expect(res.body.requiresSignIn).toBe(true);
-    expect(res.body.canApprove).toBe(false);
+    expect((res.body as any).requiresSignIn).toBe(true);
+    expect((res.body as any).canApprove).toBe(false);
   });
 
   it("approves a CLI auth challenge for a signed-in board user", async () => {
@@ -156,16 +240,19 @@ describe("cli auth routes", () => {
     });
     mockBoardAuthService.resolveBoardActivityCompanyIds.mockResolvedValue(["company-1"]);
 
-    const app = await createApp({
-      type: "board",
-      userId: "user-1",
-      source: "session",
-      isInstanceAdmin: false,
-      companyIds: ["company-1"],
+    const res = await callRoute({
+      method: "post",
+      path: "/cli-auth/challenges/:id/approve",
+      params: { id: "challenge-1" },
+      actor: {
+        type: "board",
+        userId: "user-1",
+        source: "session",
+        isInstanceAdmin: false,
+        companyIds: ["company-1"],
+      },
+      body: { token: "pcp_cli_auth_secret" },
     });
-    const res = await request(app)
-      .post("/api/cli-auth/challenges/challenge-1/approve")
-      .send({ token: "pcp_cli_auth_secret" });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
@@ -198,16 +285,19 @@ describe("cli auth routes", () => {
     });
     mockBoardAuthService.resolveBoardActivityCompanyIds.mockResolvedValue(["company-a", "company-b"]);
 
-    const app = await createApp({
-      type: "board",
-      userId: "admin-1",
-      source: "session",
-      isInstanceAdmin: true,
-      companyIds: [],
+    const res = await callRoute({
+      method: "post",
+      path: "/cli-auth/challenges/:id/approve",
+      params: { id: "challenge-2" },
+      actor: {
+        type: "board",
+        userId: "admin-1",
+        source: "session",
+        isInstanceAdmin: true,
+        companyIds: [],
+      },
+      body: { token: "pcp_cli_auth_secret" },
     });
-    const res = await request(app)
-      .post("/api/cli-auth/challenges/challenge-2/approve")
-      .send({ token: "pcp_cli_auth_secret" });
 
     expect(res.status).toBe(200);
     expect(mockBoardAuthService.resolveBoardActivityCompanyIds).toHaveBeenCalledWith({
@@ -216,6 +306,9 @@ describe("cli auth routes", () => {
       boardApiKeyId: "board-key-2",
     });
     expect(mockLogActivity).toHaveBeenCalledTimes(2);
+    expect(
+      mockLogActivity.mock.calls.map(([, activity]) => activity.companyId),
+    ).toEqual(["company-a", "company-b"]);
   });
 
   it("logs revoke activity with resolved audit company ids", async () => {
@@ -225,15 +318,18 @@ describe("cli auth routes", () => {
     });
     mockBoardAuthService.resolveBoardActivityCompanyIds.mockResolvedValue(["company-z"]);
 
-    const app = await createApp({
-      type: "board",
-      userId: "admin-2",
-      keyId: "board-key-3",
-      source: "board_key",
-      isInstanceAdmin: true,
-      companyIds: [],
+    const res = await callRoute({
+      method: "post",
+      path: "/cli-auth/revoke-current",
+      actor: {
+        type: "board",
+        userId: "admin-2",
+        keyId: "board-key-3",
+        source: "board_key",
+        isInstanceAdmin: true,
+        companyIds: [],
+      },
     });
-    const res = await request(app).post("/api/cli-auth/revoke-current").send({});
 
     expect(res.status).toBe(200);
     expect(mockBoardAuthService.resolveBoardActivityCompanyIds).toHaveBeenCalledWith({
