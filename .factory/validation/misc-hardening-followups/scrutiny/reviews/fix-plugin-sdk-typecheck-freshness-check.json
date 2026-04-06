@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-plugin-sdk-typecheck-freshness-check",
+  "reviewedAt": "2026-04-06T06:58:08Z",
+  "commitId": "55dc0eb1016a27382433fc1d73e0f126ec244268",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "This fix adequately closes the blocker from `stabilize-plugin-sdk-typecheck-ordering`. The original feature kept standalone example-package `typecheck` wired through `scripts/ensure-plugin-build-deps.mjs` (`packages/plugins/examples/plugin-hello-world-example/package.json:19`) while switching recursive workspace ordering to an emitting SDK typecheck (`packages/plugins/sdk/package.json:106`), but the helper then only ensured dependency outputs existed. Commit `55dc0eb1016a27382433fc1d73e0f126ec244268` repairs that gap in the right place: `scripts/ensure-plugin-build-deps.mjs:70-168` now tracks shared and plugin-sdk source/package/tsconfig inputs plus dependency output mtimes, rebuilds stale targets before example-package checks, and throws if refreshed outputs are still missing. Focused regression coverage exercises the fresh no-op path, stale plugin-sdk rebuilds, and shared-triggered plugin-sdk rebuilds (`cli/src/__tests__/ensure-plugin-build-deps.test.ts:31-130`). Relative to the prior failure in `/Users/aischool/work/papierklammer_droid/.factory/validation/misc-hardening-followups/scrutiny/reviews/stabilize-plugin-sdk-typecheck-ordering.json`, I did not find any remaining blocking or non-blocking correctness issues in scope.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill still does not cleanly fit script-entrypoint fixes that need a tiny export/testability refactor before a meaningful focused test can be written.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md:32` requires 'Write tests first', but `/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-06T06-46-58-569Z__fix-plugin-sdk-typecheck-freshness-check__7df9dfdc-5232-4fd2-952b-893e09c0ce22.json:82-91` records `followedProcedure: false` because the worker had to refactor `scripts/ensure-plugin-build-deps.mjs` into an importable helper before adding the focused regression tests."
+    }
+  ],
+  "addressesFailureFrom": "/Users/aischool/work/papierklammer_droid/.factory/validation/misc-hardening-followups/scrutiny/reviews/stabilize-plugin-sdk-typecheck-ordering.json",
+  "summary": "Review passed: I checked the mission guidance, feature metadata, prior failed review, both relevant handoffs, the fix transcript skeleton, the `backend-worker` skill, and commits `1bf430abbc655dcb82f942b0b22cfde1630a2b8d` and `55dc0eb1016a27382433fc1d73e0f126ec244268`. The fix now refreshes stale shared/plugin-sdk build outputs before standalone plugin-example typechecks, preserves the recursive workspace-ordering behavior from the original feature, and resolves the prior scrutiny blocker without introducing a new in-scope defect."
+}

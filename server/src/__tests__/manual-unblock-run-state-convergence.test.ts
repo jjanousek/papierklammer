@@ -210,8 +210,9 @@ describeDB("manual unblock run-state convergence", () => {
     const app = createApp(companyId);
 
     const liveBefore = await request(app).get(`/api/companies/${companyId}/live-runs`);
+    const liveBeforeBody = readJsonBody<Array<{ id: string }>>(liveBefore);
     expect(liveBefore.status).toBe(200);
-    expect(liveBefore.body.map((run: { id: string }) => run.id).sort()).toEqual(
+    expect(liveBeforeBody.map((run) => run.id).sort()).toEqual(
       [leasedRunId, orphanedRunId, queuedRunId].sort(),
     );
 
@@ -282,8 +283,9 @@ describeDB("manual unblock run-state convergence", () => {
     expect(activeRunRes.body).toBeNull();
 
     const liveAfter = await request(app).get(`/api/companies/${companyId}/live-runs`);
+    const liveAfterBody = readJsonBody<Array<{ id: string }>>(liveAfter);
     expect(liveAfter.status).toBe(200);
-    expect(liveAfter.body).toEqual([]);
+    expect(liveAfterBody).toEqual([]);
 
     const statusAfter = await request(app).get("/api/orchestrator/status").query({ companyId });
     const statusBody = readJsonBody<{
