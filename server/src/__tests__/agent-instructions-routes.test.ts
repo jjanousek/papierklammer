@@ -1,7 +1,6 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { errorHandler } from "../middleware/index.js";
 
 let mockAgentService: {
   getById: ReturnType<typeof vi.fn>;
@@ -40,7 +39,10 @@ let writeFileCalls: Array<{
 }>;
 
 async function createApp() {
-  const { agentRoutes } = await vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js");
+  const [{ agentRoutes }, { errorHandler }] = await Promise.all([
+    vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js"),
+    vi.importActual<typeof import("../middleware/index.js")>("../middleware/index.js"),
+  ]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {

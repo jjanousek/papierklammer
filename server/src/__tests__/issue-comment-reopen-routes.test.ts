@@ -1,5 +1,4 @@
-import express from "express";
-import request from "supertest";
+import type { RequestHandler } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../middleware/index.js";
 import { issueRoutes } from "../routes/issues.js";
@@ -34,20 +33,11 @@ const mockLogActivity = vi.hoisted(() => vi.fn(async () => undefined));
 
 const issueId = "11111111-1111-4111-8111-111111111111";
 
-function createApp() {
-  const app = express();
-  app.use(express.json());
-  app.use((req, _res, next) => {
-    (req as any).actor = {
-      type: "board",
-      userId: "local-board",
-      companyIds: ["company-1"],
-      source: "local_implicit",
-      isInstanceAdmin: false,
-    };
-    next();
-  });
-  app.use("/api", issueRoutes({} as any, {} as any, {
+function getRouteHandlers(
+  method: "patch" | "post",
+  path: "/issues/:id" | "/issues/:id/comments",
+) {
+  const router = issueRoutes({} as any, {} as any, {
     accessService: mockAccessService as any,
     agentService: mockAgentService as any,
     documentService: {} as any,
@@ -83,21 +73,99 @@ function createApp() {
       remove: vi.fn(),
     } as any,
     queueIssueAssignmentIntent: vi.fn(async () => undefined),
-  }));
-  app.use(errorHandler);
-  return app;
+  });
+  const layer = (router as any).stack.find(
+    (entry: any) => entry.route?.path === path && entry.route.methods?.[method],
+  );
+  if (!layer) {
+    throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
+  }
+  return layer.route.stack.map((entry: any) => entry.handle as RequestHandler);
+}
+
+async function runHandlers(
+  handlers: RequestHandler[],
+  req: any,
+  res: any,
+  index = 0,
+): Promise<void> {
+  const handler = handlers[index];
+  if (!handler) return;
+
+  await new Promise<void>((resolve, reject) => {
+    let nextCalled = false;
+    const next = (err?: unknown) => {
+      nextCalled = true;
+      if (err) {
+        reject(err);
+        return;
+      }
+      runHandlers(handlers, req, res, index + 1).then(resolve).catch(reject);
+    };
+
+    try {
+      const result = handler(req, res, next as any);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).then(
+          () => {
+            if (!nextCalled) resolve();
+          },
+          reject,
+        );
+        return;
+      }
+      if (!nextCalled) resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 async function invokeRoute({
   method,
-  path,
+  routePath,
+  params,
   body = {},
 }: {
   method: "patch" | "post";
-  path: string;
+  routePath: "/issues/:id" | "/issues/:id/comments";
+  params: Record<string, string>;
   body?: Record<string, unknown>;
 }) {
-  return request(createApp())[method](path).send(body);
+  const req = {
+    actor: {
+      type: "board",
+      userId: "local-board",
+      companyIds: ["company-1"],
+      source: "local_implicit",
+      isInstanceAdmin: false,
+    },
+    body,
+    query: {},
+    params,
+    method: method.toUpperCase(),
+    originalUrl: `/api${routePath}`,
+  } as any;
+  let statusCode = 200;
+  let responseBody: unknown;
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      responseBody = payload;
+      return this;
+    },
+  } as any;
+
+  try {
+    await runHandlers(getRouteHandlers(method, routePath), req, res);
+  } catch (error) {
+    errorHandler(error, req, res, (() => undefined) as any);
+  }
+
+  return { status: statusCode, body: responseBody };
 }
 
 function makeIssue(status: "todo" | "done") {
@@ -146,7 +214,8 @@ describe("issue comment reopen routes", () => {
   it("rejects invalid PATCH payloads before issue lookup", async () => {
     const res = await invokeRoute({
       method: "patch",
-      path: `/api/issues/${issueId}`,
+      routePath: "/issues/:id",
+      params: { id: issueId },
       body: { comment: "" },
     });
 
@@ -159,7 +228,8 @@ describe("issue comment reopen routes", () => {
   it("rejects invalid POST comment payloads before issue lookup", async () => {
     const res = await invokeRoute({
       method: "post",
-      path: `/api/issues/${issueId}/comments`,
+      routePath: "/issues/:id/comments",
+      params: { id: issueId },
       body: { body: "" },
     });
 
@@ -178,7 +248,8 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: `/api/issues/${issueId}`,
+      routePath: "/issues/:id",
+      params: { id: issueId },
       body: { comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
     });
 
@@ -204,7 +275,8 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: `/api/issues/${issueId}`,
+      routePath: "/issues/:id",
+      params: { id: issueId },
       body: { comment: "hello", reopen: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
     });
 
@@ -251,7 +323,8 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: `/api/issues/${issueId}`,
+      routePath: "/issues/:id",
+      params: { id: issueId },
       body: { comment: "hello", interrupt: true, assigneeAgentId: "33333333-3333-4333-8333-333333333333" },
     });
 
@@ -279,7 +352,8 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "patch",
-      path: `/api/issues/${issueId}`,
+      routePath: "/issues/:id",
+      params: { id: issueId },
       body: { comment: "reopen please", reopen: true },
     });
 
@@ -307,7 +381,8 @@ describe("issue comment reopen routes", () => {
 
     const res = await invokeRoute({
       method: "post",
-      path: `/api/issues/${issueId}/comments`,
+      routePath: "/issues/:id/comments",
+      params: { id: issueId },
       body: { body: "reopening this", reopen: true },
     });
 
