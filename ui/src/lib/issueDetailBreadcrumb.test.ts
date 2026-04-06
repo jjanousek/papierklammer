@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createIssueDetailLocationState,
   createIssueDetailPath,
+  createScopedIssueDetailPath,
   readIssueDetailBreadcrumb,
 } from "./issueDetailBreadcrumb";
 
@@ -30,5 +31,23 @@ describe("issueDetailBreadcrumb", () => {
 
   it("reuses the current source query param when state has been dropped", () => {
     expect(createIssueDetailPath("PAP-465", null, "?from=issues")).toBe("/issues/PAP-465?from=issues");
+  });
+
+  it("preserves unprefixed issue paths when the current route is unprefixed", () => {
+    expect(
+      createScopedIssueDetailPath({
+        issuePathId: "PAP-465",
+        companyPrefix: null,
+      }),
+    ).toBe("/issues/PAP-465");
+  });
+
+  it("preserves the explicit company prefix when the current route is company-scoped", () => {
+    expect(
+      createScopedIssueDetailPath({
+        issuePathId: "PAP-465",
+        companyPrefix: "pap",
+      }),
+    ).toBe("/PAP/issues/PAP-465");
   });
 });

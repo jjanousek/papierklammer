@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { pickTextColorForPillBg } from "@/lib/color-contrast";
 import { Link, useLocation, useNavigate, useParams } from "@/lib/router";
+import { useNavigate as useRawNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { issuesApi } from "../api/issues";
 import { activityApi } from "../api/activity";
@@ -15,7 +16,11 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { assigneeValueFromSelection, suggestedCommentAssigneeValue } from "../lib/assignees";
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import { queryKeys } from "../lib/queryKeys";
-import { createIssueDetailPath, readIssueDetailBreadcrumb } from "../lib/issueDetailBreadcrumb";
+import {
+  createIssueDetailPath,
+  createScopedIssueDetailPath,
+  readIssueDetailBreadcrumb,
+} from "../lib/issueDetailBreadcrumb";
 import { getIssueDisplayStatus, isRecentlyRecoveredIssue } from "../lib/issueExecutionState";
 import {
   applyOptimisticIssueCommentUpdate,
@@ -218,6 +223,7 @@ export function IssueDetail() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const rawNavigate = useRawNavigate();
   const location = useLocation();
   const { pushToast } = useToast();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -819,12 +825,17 @@ export function IssueDetail() {
   // Redirect to identifier-based URL if navigated via UUID
   useEffect(() => {
     if (issue?.identifier && issueId !== issue.identifier) {
-      navigate(createIssueDetailPath(issue.identifier, location.state, location.search), {
+      rawNavigate(createScopedIssueDetailPath({
+        issuePathId: issue.identifier,
+        state: location.state,
+        search: location.search,
+        companyPrefix,
+      }), {
         replace: true,
         state: location.state,
       });
     }
-  }, [issue, issueId, navigate, location.state, location.search]);
+  }, [companyPrefix, issue, issueId, rawNavigate, location.state, location.search]);
 
   useEffect(() => {
     if (!issue?.id) return;

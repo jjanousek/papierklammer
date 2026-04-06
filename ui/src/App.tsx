@@ -43,11 +43,13 @@ import { BoardClaimPage } from "./pages/BoardClaim";
 import { CliAuthPage } from "./pages/CliAuth";
 import { InviteLandingPage } from "./pages/InviteLanding";
 import { NotFoundPage } from "./pages/NotFound";
+import { issuesApi } from "./api/issues";
 import { queryKeys } from "./lib/queryKeys";
 import { useCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
 import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
+import { findCompanyForIssuePathId, resolveUnprefixedBoardTargetCompany } from "./lib/unprefixed-board-route";
 
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
   return (
@@ -256,13 +258,30 @@ function CompanyRootRedirect() {
 
 function UnprefixedBoardRedirect() {
   const location = useLocation();
+  const { issueId } = useParams<{ issueId?: string }>();
   const { companies, selectedCompany, loading } = useCompany();
+  const companyFromIssuePath = findCompanyForIssuePathId({
+    companies,
+    issueId,
+  });
+  const shouldLookupIssueCompany = Boolean(issueId && !companyFromIssuePath);
+  const issueQuery = useQuery({
+    queryKey: shouldLookupIssueCompany ? queryKeys.issues.detail(issueId!) : ["issues", "__unprefixed_redirect__"],
+    queryFn: () => issuesApi.get(issueId!),
+    enabled: shouldLookupIssueCompany,
+    retry: false,
+  });
 
-  if (loading) {
+  if (loading || (shouldLookupIssueCompany && issueQuery.isLoading)) {
     return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
   }
 
-  const targetCompany = selectedCompany ?? companies[0] ?? null;
+  const targetCompany = resolveUnprefixedBoardTargetCompany({
+    companies,
+    selectedCompanyId: selectedCompany?.id ?? null,
+    routeIssueId: issueId,
+    issueCompanyId: issueQuery.data?.companyId ?? null,
+  });
   if (!targetCompany) {
     if (
       shouldRedirectCompanylessRouteToOnboarding({

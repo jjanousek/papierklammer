@@ -151,6 +151,9 @@ const mocks = vi.hoisted(() => {
 
   return {
     companies,
+    routeCompanyPrefix: "BET" as string | undefined,
+    routeIssueId: "BET-7",
+    locationPathname: "/BET/issues/BET-7",
     issue,
     agents,
     projects,
@@ -158,6 +161,7 @@ const mocks = vi.hoisted(() => {
     selectionSource: "route_sync" as "manual" | "route_sync" | "bootstrap",
     setSelectedCompanyId: vi.fn(),
     navigate: vi.fn(),
+    rawNavigate: vi.fn(),
     setBreadcrumbs: vi.fn(),
     openPanel: vi.fn(),
     closePanel: vi.fn(),
@@ -260,13 +264,17 @@ vi.mock("@/lib/router", () => ({
     <a href={typeof to === "string" ? to : undefined} {...props}>{children}</a>
   ),
   useLocation: () => ({
-    pathname: "/BET/issues/BET-7",
+    pathname: mocks.locationPathname,
     search: "",
     hash: "",
     state: null,
   }),
   useNavigate: () => mocks.navigate,
-  useParams: () => ({ companyPrefix: "BET", issueId: "BET-7" }),
+  useParams: () => ({ companyPrefix: mocks.routeCompanyPrefix, issueId: mocks.routeIssueId }),
+}));
+
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => mocks.rawNavigate,
 }));
 
 vi.mock("../../context/CompanyContext", () => ({
@@ -495,10 +503,14 @@ async function flush() {
 }
 
 beforeEach(() => {
+  mocks.routeCompanyPrefix = "BET";
+  mocks.routeIssueId = "BET-7";
+  mocks.locationPathname = "/BET/issues/BET-7";
   mocks.selectedCompanyId = "company-a";
   mocks.selectionSource = "route_sync";
   mocks.setSelectedCompanyId.mockReset();
   mocks.navigate.mockReset();
+  mocks.rawNavigate.mockReset();
   mocks.setBreadcrumbs.mockReset();
   mocks.openPanel.mockReset();
   mocks.closePanel.mockReset();
@@ -535,6 +547,38 @@ afterEach(() => {
 });
 
 describe("IssueDetail", () => {
+  it("keeps canonical redirects unprefixed when the deep link was opened unprefixed", async () => {
+    mocks.routeCompanyPrefix = undefined;
+    mocks.routeIssueId = "issue-1";
+    mocks.locationPathname = "/issues/issue-1";
+
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(mocks.rawNavigate).toHaveBeenCalledWith("/issues/BET-7", {
+      replace: true,
+      state: null,
+    });
+  });
+
+  it("preserves the explicit company prefix when redirecting a company-scoped issue route", async () => {
+    mocks.routeCompanyPrefix = "BET";
+    mocks.routeIssueId = "issue-1";
+    mocks.locationPathname = "/BET/issues/issue-1";
+
+    await act(async () => {
+      root.render(<IssueDetail />);
+    });
+    await flush();
+
+    expect(mocks.rawNavigate).toHaveBeenCalledWith("/BET/issues/BET-7", {
+      replace: true,
+      state: null,
+    });
+  });
+
   it("uses the deep-linked company for secondary queries and attachments", async () => {
     await act(async () => {
       root.render(<IssueDetail />);

@@ -1,3 +1,5 @@
+import { applyCompanyPrefix } from "./company-routes";
+
 type IssueDetailSource = "issues" | "inbox";
 
 type IssueDetailBreadcrumb = {
@@ -57,6 +59,16 @@ export function createIssueDetailPath(issuePathId: string, state?: unknown, sear
   const params = new URLSearchParams();
   params.set(ISSUE_DETAIL_SOURCE_QUERY_PARAM, source);
   return `/issues/${issuePathId}?${params.toString()}`;
+}
+
+export function createScopedIssueDetailPath(params: {
+  issuePathId: string;
+  state?: unknown;
+  search?: string;
+  companyPrefix?: string | null;
+}): string {
+  const path = createIssueDetailPath(params.issuePathId, params.state, params.search);
+  return params.companyPrefix ? applyCompanyPrefix(path, params.companyPrefix) : path;
 }
 
 export function readIssueDetailBreadcrumb(state: unknown, search?: string): IssueDetailBreadcrumb | null {
