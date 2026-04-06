@@ -14,6 +14,67 @@ afterEach(() => {
 
 const tick = (ms = 50) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function waitForFrame(
+  lastFrame: () => string | undefined,
+  predicate: (frame: string) => boolean,
+  timeoutMs = 1000,
+): Promise<string> {
+  const start = Date.now();
+  let frame = lastFrame() ?? "";
+
+  while (!predicate(frame)) {
+    if (Date.now() - start >= timeoutMs) {
+      throw new Error(`Timed out waiting for frame.\nLast frame:\n${frame}`);
+    }
+    await tick(20);
+    frame = lastFrame() ?? "";
+  }
+
+  return frame;
+}
+
+async function waitForRequest<T>(
+  requests: unknown[],
+  predicate: (request: unknown) => boolean,
+  timeoutMs = 1000,
+): Promise<T> {
+  const start = Date.now();
+  let request = requests.find(predicate);
+
+  while (!request) {
+    if (Date.now() - start >= timeoutMs) {
+      throw new Error(
+        `Timed out waiting for request.\nRecorded requests:\n${JSON.stringify(requests, null, 2)}`,
+      );
+    }
+    await tick(20);
+    request = requests.find(predicate);
+  }
+
+  return request as T;
+}
+
+async function waitForCall(
+  calls: string[],
+  predicate: (call: string) => boolean,
+  timeoutMs = 1000,
+): Promise<string> {
+  const start = Date.now();
+  let call = calls.find(predicate);
+
+  while (!call) {
+    if (Date.now() - start >= timeoutMs) {
+      throw new Error(
+        `Timed out waiting for fetch call.\nRecorded calls:\n${JSON.stringify(calls, null, 2)}`,
+      );
+    }
+    await tick(20);
+    call = calls.find(predicate);
+  }
+
+  return call;
+}
+
 function createMockProcess() {
   const stdin = new PassThrough();
   const stdout = new PassThrough();
@@ -92,7 +153,7 @@ describe("company-scoped orchestrator behavior", () => {
     const mockSpawn = vi.fn().mockReturnValue(mockProc);
     const { fetchFn, calls } = createFetchWithCompanies();
 
-    const { stdin, unmount } = render(
+    const { stdin, lastFrame, unmount } = render(
       <App
         url="http://localhost:3100"
         apiKey="board-key"
@@ -105,47 +166,57 @@ describe("company-scoped orchestrator behavior", () => {
       />,
     );
 
-    await tick(100);
+    const pickerFrame = await waitForFrame(
+      lastFrame,
+      (frame) =>
+        frame.includes("Select a company") &&
+        frame.includes("Beta Company") &&
+        frame.includes("Alpha Company"),
+    );
+    expect(pickerFrame.indexOf("Beta Company")).toBeLessThan(
+      pickerFrame.indexOf("Alpha Company"),
+    );
+    expect(pickerFrame).toContain("› Beta Company");
 
     stdin.write("\r");
-    await tick(50);
 
+    await waitForCall(
+      calls,
+      (call) => call === "http://localhost:3100/api/orchestrator/status?companyId=company-b",
+    );
     expect(calls).toContain(
       "http://localhost:3100/api/orchestrator/status?companyId=company-b",
     );
     expect(mockSpawn).toHaveBeenCalledTimes(1);
 
+    await waitForRequest(requests, (request: any) => request.method === "initialize");
+
     respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
-    await tick(50);
 
     stdin.write("Please sort out our onboarding confusion");
-    await tick(50);
+    await tick(20);
     stdin.write("\r");
-    await tick(100);
 
-    const threadStart = requests.find(
+    const threadStart = await waitForRequest<{ params: { baseInstructions?: string } }>(
+      requests,
       (request: any) => request.method === "thread/start",
-    ) as { params: { baseInstructions?: string } } | undefined;
-
-    expect(threadStart).toBeDefined();
-    expect(threadStart?.params.baseInstructions).toContain("Currently selected company:");
-    expect(threadStart?.params.baseInstructions).toContain("company-b");
-    expect(threadStart?.params.baseInstructions).toContain("Beta Company");
-    expect(threadStart?.params.baseInstructions).toContain(
+    );
+    expect(threadStart.params.baseInstructions).toContain("Currently selected company:");
+    expect(threadStart.params.baseInstructions).toContain("company-b");
+    expect(threadStart.params.baseInstructions).toContain("Beta Company");
+    expect(threadStart.params.baseInstructions).toContain(
       "create a normal issue in the selected company",
     );
 
     respond(mockProc, { id: 1, result: { thread: { id: "thr_company_b" } } });
-    await tick(100);
 
-    const turnStart = requests.find(
+    const turnStart = await waitForRequest<{ params: { input: Array<{ text: string }> } }>(
+      requests,
       (request: any) => request.method === "turn/start",
-    ) as { params: { input: Array<{ text: string }> } } | undefined;
-
-    expect(turnStart).toBeDefined();
-    expect(turnStart?.params.input[0]?.text).toContain("Selected company ID: company-b");
-    expect(turnStart?.params.input[0]?.text).toContain("Selected company name: Beta Company");
-    expect(turnStart?.params.input[0]?.text).toContain(
+    );
+    expect(turnStart.params.input[0]?.text).toContain("Selected company ID: company-b");
+    expect(turnStart.params.input[0]?.text).toContain("Selected company name: Beta Company");
+    expect(turnStart.params.input[0]?.text).toContain(
       "Please sort out our onboarding confusion",
     );
 
@@ -173,22 +244,20 @@ describe("company-scoped orchestrator behavior", () => {
       />,
     );
 
-    await tick(50);
+    await waitForRequest(requestsA, (request: any) => request.method === "initialize");
     respond(procA, { id: 0, result: { userAgent: "codex/0.117.0" } });
-    await tick(50);
 
     stdin.write("Review Alpha progress");
-    await tick(50);
+    await tick(20);
     stdin.write("\r");
-    await tick(100);
 
+    await waitForRequest(requestsA, (request: any) => request.method === "thread/start");
     respond(procA, { id: 1, result: { thread: { id: "thr_alpha" } } });
-    await tick(50);
+    await waitForRequest(requestsA, (request: any) => request.method === "turn/start");
     respond(procA, {
       id: 2,
       result: { turn: { id: "turn_alpha", status: "inProgress", items: [], error: null } },
     });
-    await tick(50);
     respond(procA, {
       method: "item/agentMessage/delta",
       params: {
@@ -198,7 +267,6 @@ describe("company-scoped orchestrator behavior", () => {
         delta: "Alpha update ready.",
       },
     });
-    await tick(50);
     respond(procA, {
       method: "turn/completed",
       params: {
@@ -206,12 +274,19 @@ describe("company-scoped orchestrator behavior", () => {
         turn: { id: "turn_alpha", status: "completed", items: [], error: null },
       },
     });
-    await tick(100);
 
-    expect(lastFrame()).toContain("Alpha Company");
-    expect(lastFrame()).toContain("Review Alpha progress");
-    expect(lastFrame()).toContain("Alpha update ready.");
-    expect(lastFrame()).toContain("thr_alpha");
+    const alphaFrame = await waitForFrame(
+      lastFrame,
+      (frame) =>
+        frame.includes("Alpha Company") &&
+        frame.includes("Review Alpha progress") &&
+        frame.includes("Alpha update ready.") &&
+        frame.includes("thr_alpha"),
+    );
+    expect(alphaFrame).toContain("Alpha Company");
+    expect(alphaFrame).toContain("Review Alpha progress");
+    expect(alphaFrame).toContain("Alpha update ready.");
+    expect(alphaFrame).toContain("thr_alpha");
 
     rerender(
       <App
@@ -226,14 +301,20 @@ describe("company-scoped orchestrator behavior", () => {
       />,
     );
 
-    await tick(100);
-
+    await waitForRequest(requestsB, (request: any) => request.method === "initialize");
     expect(mockSpawn).toHaveBeenCalledTimes(2);
 
     respond(procB, { id: 0, result: { userAgent: "codex/0.117.0" } });
-    await tick(100);
 
-    const switchedFrame = lastFrame()!;
+    const switchedFrame = await waitForFrame(
+      lastFrame,
+      (frame) =>
+        frame.includes("Beta Company") &&
+        !frame.includes("Alpha Company") &&
+        !frame.includes("Review Alpha progress") &&
+        !frame.includes("Alpha update ready.") &&
+        !frame.includes("thr_alpha"),
+    );
     expect(switchedFrame).toContain("Beta Company");
     expect(switchedFrame).not.toContain("Alpha Company");
     expect(switchedFrame).not.toContain("Review Alpha progress");
@@ -241,26 +322,26 @@ describe("company-scoped orchestrator behavior", () => {
     expect(switchedFrame).not.toContain("thr_alpha");
 
     stdin.write("Create work for Beta");
-    await tick(50);
+    await tick(20);
     stdin.write("\r");
-    await tick(100);
 
-    const threadStartB = requestsB.find(
+    const threadStartB = await waitForRequest<{ params: { baseInstructions?: string } }>(
+      requestsB,
       (request: any) => request.method === "thread/start",
-    ) as { params: { baseInstructions?: string } } | undefined;
-    expect(threadStartB?.params.baseInstructions).toContain("company-b");
+    );
+    expect(threadStartB.params.baseInstructions).toContain("company-b");
 
     respond(procB, { id: 1, result: { thread: { id: "thr_beta" } } });
-    await tick(100);
 
-    const turnStartB = requestsB.find(
+    const turnStartB = await waitForRequest<
+      { params: { threadId: string; input: Array<{ text: string }> } }
+    >(
+      requestsB,
       (request: any) => request.method === "turn/start",
-    ) as { params: { threadId: string; input: Array<{ text: string }> } } | undefined;
-
-    expect(turnStartB).toBeDefined();
-    expect(turnStartB?.params.threadId).toBe("thr_beta");
-    expect(turnStartB?.params.input[0]?.text).toContain("Selected company ID: company-b");
-    expect(turnStartB?.params.input[0]?.text).toContain("Create work for Beta");
+    );
+    expect(turnStartB.params.threadId).toBe("thr_beta");
+    expect(turnStartB.params.input[0]?.text).toContain("Selected company ID: company-b");
+    expect(turnStartB.params.input[0]?.text).toContain("Create work for Beta");
     expect(requestsA.filter((request: any) => request.method === "turn/start")).toHaveLength(1);
 
     unmount();
