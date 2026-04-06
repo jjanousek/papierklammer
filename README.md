@@ -6,6 +6,19 @@ Papierklammer is an open-source control plane for AI-agent companies. It combine
 >
 > Papierklammer is a fork of [Paperclip](https://github.com/paperclipai/paperclip). This repository builds on the upstream Paperclip codebase under the same MIT license and preserves upstream attribution. Papierklammer is an evolving fork, not a ground-up reimplementation.
 
+## Why Papierklammer is different
+
+Papierklammer is not just a renamed Paperclip build. This fork adds substantive operator-facing control surfaces and orchestration behavior for running AI-agent companies in day-to-day use.
+
+- **Operator-first terminal control plane.** The repo ships both the orchestrator console CLI and a full-screen orchestrator TUI, and `pnpm dev` is wired to bring up the dev server and open the TUI in a second terminal when possible.
+- **Interactive terminal management.** The TUI is not only a status screen: it supports approvals, heartbeat invocation, recent/live run inspection, and recovery paths for stuck or failed operator actions.
+- **Free-form operator intent becomes company-scoped work.** The orchestrator's base instructions push vague management requests into normal issues in the active company instead of leaving them as chat-only output.
+- **Stronger company-scoped orchestration API.** Dedicated operator routes expose status, stale detection and cleanup, issue creation, priority changes, nudges, and unblock/recovery actions around active company work.
+- **Richer web review surfaces.** Issue pages show completed-run previews, result text, work products/artifacts, and direct inspect-run links so operators can review outcomes without digging through raw logs first.
+- **Deterministic audit/demo workflow.** The repo includes a real tiny CLI demo project, isolated audit instances, and a documented regression loop for repeatable end-to-end orchestration checks.
+
+The fork also carries Papierklammer naming, package-scope, config-path, and environment-variable changes, but those are not the main differentiator.
+
 ## What Papierklammer does
 
 Papierklammer is designed for running and supervising teams of AI agents as a company, not just as isolated chat sessions.
@@ -15,16 +28,6 @@ Papierklammer is designed for running and supervising teams of AI agents as a co
 - Track activity, budgets, and audit trails
 - Coordinate recurring work with heartbeats and scheduled routines
 - Run locally with embedded database support for development
-
-## What is different in Papierklammer?
-
-This fork currently carries these repo-visible differences from upstream Paperclip:
-
-- Public naming is rewritten around `Papierklammer`, including the `papierklammer` CLI and workspace packages under `@papierklammer/*`
-- Local config and worktree paths use `.papierklammer` / `~/.papierklammer`, with fork-specific `PAPIERKLAMMER_*` environment variables
-- The repository includes dedicated terminal operator surfaces in [`packages/orchestrator-console`](packages/orchestrator-console) and [`packages/orchestrator-tui`](packages/orchestrator-tui)
-- `pnpm dev` is set up to start the dev server and open the orchestrator TUI when possible
-- The UI includes Papierklammer-specific branding and design-system styling
 
 ## Quickstart
 
