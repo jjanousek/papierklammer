@@ -1,0 +1,28 @@
+{
+  "featureId": "stabilize-gemini-and-manual-unblock-baseline-tests",
+  "reviewedAt": "2026-04-06T05:09:22Z",
+  "commitId": "bc15c9ee36986eb4d9e6f7654d24449dbfdca292",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "I reviewed the mission feature entry, handoff, transcript skeleton, backend-worker skill, shared-state docs, and commit `bc15c9ee36986eb4d9e6f7654d24449dbfdca292`. The patch is tightly scoped to `server/src/routes/issues.ts:437-440`, where the issue detail route now forces `executionRunId`, `checkoutRunId`, `executionAgentNameKey`, and `executionLockedAt` to serialize as explicit `null` values instead of disappearing from the JSON payload when recovery clears them. That behavior matches the shared `Issue` contract in `packages/shared/src/types/issue.ts:113-116` and directly addresses the manual-unblock convergence scenario exercised in `server/src/__tests__/manual-unblock-run-state-convergence.test.ts`. I did not find a blocking correctness or regression issue in the implementation.",
+    "issues": [
+      {
+        "file": "server/src/__tests__/manual-unblock-run-state-convergence.test.ts",
+        "line": 232,
+        "severity": "non_blocking",
+        "description": "The stabilization now normalizes four nullable ownership fields on `GET /api/issues/:id`, but this regression test still asserts only `executionRunId` and `checkoutRunId` on the post-unblock issue detail response (`server/src/routes/issues.ts:437-440`). `executionAgentNameKey` and `executionLockedAt` are not asserted here, so a future partial regression of the remaining ownership-shape fields could slip by without this suite catching it."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's mandatory tests-first red-step is too rigid for baseline-stabilization features that start from an already failing suite. This worker had to deviate so they could diagnose and repair the assigned failing baseline before rerunning the full suite.",
+      "evidence": ".factory/skills/backend-worker/SKILL.md:32-41 requires writing tests first and expecting `pnpm test:run` to fail, while the handoff at /Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-06T04-00-16-913Z__stabilize-gemini-and-manual-unblock-baseline-tests__baffe19b-9710-4a4a-8936-b2e3075e898a.json:69-77 records `followedProcedure: false` for that exact baseline-validation step and explains why the deviation was necessary."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The feature is narrowly scoped and the route fix correctly restores explicit null ownership fields on issue detail responses after manual unblock, which is consistent with the shared Issue contract and sufficient for this scrutiny pass. I noted one non-blocking regression-coverage gap in the manual-unblock test and one skill-procedure observation for baseline-fix work."
+}

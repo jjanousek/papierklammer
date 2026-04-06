@@ -52,6 +52,7 @@
 
 ## Known risk concentrations
 - Company-context drift between prefixed Web UI routes, stored selected-company state, and TUI company selection.
+- The custom UI router wrapper in `ui/src/lib/router.tsx` auto-prefixes absolute `useNavigate()` targets with the active/selected company, so route-sync fixes sometimes need raw `react-router-dom` navigation to avoid reintroducing stale company prefixes during canonical redirects.
 - Onboarding or adapter-validation paths reporting `codex_local` readiness incorrectly before real work starts.
 - Stale run, lease, and intent cleanup leaving an issue half-locked or causing UI/TUI/API status disagreement.
 - Output-visibility failures where work runs exist but operators cannot inspect transcript, logs, or results from issue-centric review flows.

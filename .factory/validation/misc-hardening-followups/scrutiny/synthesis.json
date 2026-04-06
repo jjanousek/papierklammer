@@ -1,0 +1,54 @@
+{
+  "milestone": "misc-hardening-followups",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run -- --maxWorkers=5",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 4,
+    "passed": 3,
+    "failed": 1,
+    "failedFeatures": [
+      "stabilize-plugin-sdk-typecheck-ordering"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "stabilize-plugin-sdk-typecheck-ordering",
+      "severity": "blocking",
+      "description": "Example plugin package `typecheck` scripts now call `scripts/ensure-plugin-build-deps.mjs`, which skips rebuilding `@papierklammer/shared` and `@papierklammer/plugin-sdk` whenever their `dist` outputs already exist. That lets standalone example-package typechecks succeed against stale generated declarations after local SDK/shared source edits, weakening the direct example validation the feature said it would preserve."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Documented that the UI router wrapper auto-prefixes absolute `useNavigate()` targets with the active company, so route-sync fixes may need raw router navigation to avoid stale company prefixes during canonical redirects.",
+      "sourceFeature": "fix-unprefixed-issue-deeplink-company-sync-loop"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": ".factory/skills/backend-worker/SKILL.md",
+      "suggestion": "Relax the mandatory tests-first step for baseline-stabilization and build-ordering features so workers may begin with command-level reproduction when the assigned task is to repair an already failing baseline or package-ordering validator.",
+      "evidence": "Both `stabilize-gemini-and-manual-unblock-baseline-tests` and `stabilize-plugin-sdk-typecheck-ordering` recorded justified deviations because the current backend-worker procedure requires writing tests first even when the assignment is to restore an already failing validator or diagnose a build-ordering issue.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

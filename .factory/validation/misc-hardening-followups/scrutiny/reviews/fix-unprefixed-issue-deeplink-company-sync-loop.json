@@ -1,0 +1,21 @@
+{
+  "featureId": "fix-unprefixed-issue-deeplink-company-sync-loop",
+  "reviewedAt": "2026-04-06T05:10:04Z",
+  "commitId": "02b6cc7c033e6b5ffb94c72f6933ca8782a93913",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature addresses the reported loop without introducing a correctness regression in scope. `UnprefixedBoardRedirect` now resolves the owning company from the issue identifier or fetched issue record before adding a company prefix (`ui/src/App.tsx:259-286`), while `IssueDetail` preserves the current route scope during UUID->identifier canonicalization via `createScopedIssueDetailPath` and raw router navigation (`ui/src/lib/issueDetailBreadcrumb.ts:64-73`, `ui/src/pages/IssueDetail.tsx:4,828-836`). Focused tests cover both the UUID/company-resolution path and the canonical redirect behavior (`ui/src/lib/unprefixed-board-route.test.ts:43-51`, `ui/src/pages/__tests__/IssueDetail.test.tsx:550-596`). I did not find any blocking or non-blocking code defects in the reviewed change set.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "The UI router wrapper auto-prefixes absolute navigations with the active/selected company, which is subtle but directly relevant to route-sync fixes. This feature had to bypass that behavior with raw `react-router-dom` navigation to keep UUID canonicalization from reintroducing a stale company prefix.",
+      "evidence": "`ui/src/lib/router.tsx:62-74` auto-prefixes `useNavigate()` targets via `resolveTo(...)`; the reviewed fix switches `IssueDetail` to `useNavigate as useRawNavigate` and calls `createScopedIssueDetailPath(...)` instead (`ui/src/pages/IssueDetail.tsx:4,21,828-836`). `.factory/library/architecture.md` mentions company-context drift generally but does not record this helper-specific behavior."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review passed: I checked the mission guidance, feature metadata, handoff, worker transcript skeleton, `web-runtime-worker` skill, and commit `02b6cc7c033e6b5ffb94c72f6933ca8782a93913`. The fix correctly resolves unprefixed issue deep links before company-route sync and preserves canonical issue redirects without reintroducing the stale-prefix loop; I did not find any blocking correctness, regression, or maintainability problems in scope."
+}

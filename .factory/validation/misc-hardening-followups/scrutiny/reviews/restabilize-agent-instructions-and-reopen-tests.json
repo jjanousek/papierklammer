@@ -1,0 +1,15 @@
+{
+  "featureId": "restabilize-agent-instructions-and-reopen-tests",
+  "reviewedAt": "2026-04-06T05:09:13Z",
+  "commitId": "ccd9e139f48c2dfa3ee56793a2306a526a8d75c2",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. Commit `ccd9e139f48c2dfa3ee56793a2306a526a8d75c2` keeps the agent-instructions suite on the real Express + Supertest harness while isolating route and middleware module loading per app creation in `server/src/__tests__/agent-instructions-routes.test.ts:41-73`, which is a targeted fix for the managed-instructions metadata flake without changing the assertions themselves. For the reopen suite, the new helper in `server/src/__tests__/issue-comment-reopen-routes.test.ts:36-169` rebuilds `issueRoutes`, extracts the full `route.stack`, and executes every handler sequentially before falling through the shared `errorHandler`, so the tests still exercise the shipped `validate(updateIssueSchema)` and `validate(addIssueCommentSchema)` middleware plus the real reopen/event-emission logic in `server/src/routes/issues.ts:1158-1218` and `server/src/routes/issues.ts:1578-1666`. I did not find a new blocking correctness, regression, or maintainability problem in the reviewed feature.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, worker handoff, transcript skeleton, backend-worker skill, mission shared-state docs, and commit `ccd9e139f48c2dfa3ee56793a2306a526a8d75c2`. The patch narrows itself to deterministic test-harness stabilization for the two targeted route suites while preserving route-stack validation coverage and the expected reopen/event assertions, so this feature passes scrutiny."
+}

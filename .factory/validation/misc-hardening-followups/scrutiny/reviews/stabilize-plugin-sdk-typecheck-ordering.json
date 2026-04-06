@@ -1,0 +1,28 @@
+{
+  "featureId": "stabilize-plugin-sdk-typecheck-ordering",
+  "reviewedAt": "2026-04-06T13:15:00Z",
+  "commitId": "1bf430abbc655dcb82f942b0b22cfde1630a2b8d",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Commit `1bf430abbc655dcb82f942b0b22cfde1630a2b8d` does fix the first-pass recursive workspace ordering problem by making `@papierklammer/plugin-sdk` emit `dist` during its own `typecheck`. However, the follow-up change to the example-package `typecheck` scripts weakens the direct example validation the feature said it would preserve: those scripts now delegate to `scripts/ensure-plugin-build-deps.mjs`, and that helper skips rebuilding as soon as the dependency `dist` outputs already exist. After a local `@papierklammer/plugin-sdk` or `@papierklammer/shared` source edit, a standalone example `typecheck` can therefore succeed against stale generated declarations instead of the current SDK source, which is a real regression from the previous unconditional SDK rebuild.",
+    "issues": [
+      {
+        "file": "packages/plugins/examples/plugin-hello-world-example/package.json",
+        "line": 19,
+        "severity": "blocking",
+        "description": "This new example-package `typecheck` path no longer rebuilds `@papierklammer/plugin-sdk` on every run. Instead it calls `scripts/ensure-plugin-build-deps.mjs`, whose main loop returns early once the dependency outputs already exist (`scripts/ensure-plugin-build-deps.mjs:29-30`). That means a standalone example `typecheck` after local SDK/shared source edits can silently validate against stale `dist` declarations and miss incompatibilities. Before this commit, the example `typecheck` scripts always ran `pnpm --filter @papierklammer/plugin-sdk build && tsc --noEmit`, so this change weakens the direct example-package validation the feature explicitly said it would preserve. The same regression pattern is repeated in the other three example package manifests at `packages/plugins/examples/plugin-file-browser-example/package.json:19`, `packages/plugins/examples/plugin-kitchen-sink-example/package.json:19`, and `packages/plugins/examples/plugin-authoring-smoke-example/package.json:14`."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill's mandatory tests-first step does not fit package/build-system ordering fixes like this one, where the most meaningful regression proof is command-level reproduction plus workspace validators. The worker had to record a justified procedure deviation in the handoff.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md` step 3 says to 'Write tests first', while `/Users/aischool/.factory/missions/64c225d0-fe81-47ae-baa1-eb981cb66607/handoffs/2026-04-06T04-41-15-823Z__stabilize-plugin-sdk-typecheck-ordering__b937b8d1-d50d-4b1a-b0a8-d40a867ad3e2.json` records `skillFeedback.followedProcedure: false` and recommends allowing command-level reproduction for package/build-system features."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, shared-state docs, backend-worker skill, and commit `1bf430abbc655dcb82f942b0b22cfde1630a2b8d`. The review fails because the workspace-ordering fix is coupled with a direct-example-typecheck regression: example package `typecheck` scripts now reuse stale SDK/shared build outputs whenever `dist` already exists, weakening the validation the feature said it would preserve."
+}
