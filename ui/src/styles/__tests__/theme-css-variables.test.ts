@@ -128,7 +128,7 @@ describe("Theme CSS variables", () => {
     it("has correct semantic status colors", () => {
       expect(getVar(block, "--alive")).toBe("#82E88A");
       expect(getVar(block, "--warn")).toBe("#E8D560");
-      expect(getVar(block, "--dead")).toBe("#FF6060");
+      expect(getVar(block, "--dead")).toBe("#8B1A1A");
     });
 
     it("maps all shadcn bridge variables", () => {
