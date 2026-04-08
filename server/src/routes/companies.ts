@@ -261,6 +261,19 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     assertCompanyAccess(req, companyId);
 
     const actor = getActorInfo(req);
+    const requestedLifecycleKeys = ["status", "pauseReason", "pausedAt"].filter((key) =>
+      Object.prototype.hasOwnProperty.call(req.body ?? {}, key),
+    );
+    if (requestedLifecycleKeys.length > 0) {
+      res.status(400).json({
+        error: "Validation error",
+        issues: requestedLifecycleKeys.map((key) => ({
+          path: [key],
+          message: "Use the dedicated company lifecycle endpoints instead.",
+        })),
+      });
+      return;
+    }
     let body: Record<string, unknown>;
 
     if (req.actor.type === "agent") {
