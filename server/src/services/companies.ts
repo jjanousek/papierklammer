@@ -395,7 +395,14 @@ export function companyService(db: Db) {
         return getHydratedCompanyById(id, tx);
       }),
 
-    deleteGuarded: (id: string, confirmationText?: string) =>
+    deleteGuarded: (
+      id: string,
+      confirmationText?: string,
+      beforeDelete?: (
+        tx: Pick<Db, "delete" | "insert">,
+        existing: NonNullable<Awaited<ReturnType<typeof getHydratedCompanyById>>>,
+      ) => Promise<void>,
+    ) =>
       db.transaction(async (tx) => {
         const existing = await getHydratedCompanyById(id, tx);
         if (!existing) return null;
@@ -404,6 +411,10 @@ export function companyService(db: Db) {
         }
         if (confirmationText !== existing.name) {
           throw unprocessable("Company name confirmation must match exactly");
+        }
+
+        if (beforeDelete) {
+          await beforeDelete(tx, existing);
         }
 
         await removeCompanyRecords(id, tx);

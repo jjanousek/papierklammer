@@ -16,6 +16,7 @@ import {
   agentService,
   budgetService,
   companyPortabilityService,
+  companyLifecycleService,
   companyService,
   logActivity,
 } from "../services/index.js";
@@ -28,6 +29,7 @@ export interface CompanyRouteDependencies {
   accessService?: ReturnType<typeof accessService>;
   budgetService?: ReturnType<typeof budgetService>;
   companyPortabilityService?: ReturnType<typeof companyPortabilityService>;
+  companyLifecycleService?: ReturnType<typeof companyLifecycleService>;
   logActivity?: typeof logActivity;
 }
 
@@ -36,6 +38,7 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
   const svc = deps.companyService ?? companyService(db);
   const agents = deps.agentService ?? agentService(db);
   const portability = deps.companyPortabilityService ?? companyPortabilityService(db, storage);
+  const lifecycle = deps.companyLifecycleService ?? companyLifecycleService(db);
   const access = deps.accessService ?? accessService(db);
   const budgets = deps.budgetService ?? budgetService(db);
   const writeActivity = deps.logActivity ?? logActivity;
@@ -337,80 +340,39 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const company = await svc.pause(companyId);
-    if (!company) {
+    const actor = getActorInfo(req);
+    const result = await lifecycle.pause(companyId, actor);
+    if (!result.company) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
-    const actor = getActorInfo(req);
-    await writeActivity(db, {
-      companyId,
-      actorType: actor.actorType,
-      actorId: actor.actorId,
-      agentId: actor.agentId,
-      runId: actor.runId,
-      action: "company.paused",
-      entityType: "company",
-      entityId: companyId,
-      details: {
-        status: company.status,
-        pauseReason: company.pauseReason,
-        pausedAt: company.pausedAt,
-      },
-    });
-    res.json(company);
+    res.json(result.company);
   });
 
   router.post("/:companyId/resume", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const company = await svc.resume(companyId);
-    if (!company) {
+    const actor = getActorInfo(req);
+    const result = await lifecycle.resume(companyId, actor);
+    if (!result.company) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
-    const actor = getActorInfo(req);
-    await writeActivity(db, {
-      companyId,
-      actorType: actor.actorType,
-      actorId: actor.actorId,
-      agentId: actor.agentId,
-      runId: actor.runId,
-      action: "company.resumed",
-      entityType: "company",
-      entityId: companyId,
-      details: {
-        status: company.status,
-      },
-    });
-    res.json(company);
+    res.json(result.company);
   });
 
   router.post("/:companyId/archive", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const company = await svc.archive(companyId);
-    if (!company) {
+    const actor = getActorInfo(req);
+    const result = await lifecycle.archive(companyId, actor);
+    if (!result.company) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
-    const actor = getActorInfo(req);
-    await writeActivity(db, {
-      companyId,
-      actorType: actor.actorType,
-      actorId: actor.actorId,
-      agentId: actor.agentId,
-      runId: actor.runId,
-      action: "company.archived",
-      entityType: "company",
-      entityId: companyId,
-      details: {
-        status: company.status,
-      },
-    });
-    res.json(company);
+    res.json(result.company);
   });
 
   router.post("/:companyId/delete", async (req, res) => {
@@ -418,7 +380,8 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const { confirmationText } = parseDeleteRequestBody(req);
-    const deleted = await svc.deleteGuarded(companyId, confirmationText);
+    const actor = getActorInfo(req);
+    const deleted = await lifecycle.deleteGuarded(companyId, confirmationText, actor);
     if (!deleted) {
       res.status(404).json({ error: "Company not found" });
       return;
@@ -431,7 +394,8 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const { confirmationText } = parseDeleteRequestBody(req);
-    const deleted = await svc.deleteGuarded(companyId, confirmationText);
+    const actor = getActorInfo(req);
+    const deleted = await lifecycle.deleteGuarded(companyId, confirmationText, actor);
     if (!deleted) {
       res.status(404).json({ error: "Company not found" });
       return;

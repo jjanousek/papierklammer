@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
-import { activityLog, heartbeatRuns, issues } from "@papierklammer/db";
+import { activityLog, companyLifecycleEvents, heartbeatRuns, issues } from "@papierklammer/db";
 
 export interface ActivityFilters {
   companyId: string;
@@ -12,20 +12,24 @@ export interface ActivityFilters {
 export function activityService(db: Db) {
   const issueIdAsText = sql<string>`${issues.id}::text`;
   return {
-    list: (filters: ActivityFilters) => {
+    list: async (filters: ActivityFilters) => {
       const conditions = [eq(activityLog.companyId, filters.companyId)];
+      const lifecycleConditions = [eq(companyLifecycleEvents.companyId, filters.companyId)];
 
       if (filters.agentId) {
         conditions.push(eq(activityLog.agentId, filters.agentId));
+        lifecycleConditions.push(eq(companyLifecycleEvents.agentId, filters.agentId));
       }
       if (filters.entityType) {
         conditions.push(eq(activityLog.entityType, filters.entityType));
+        lifecycleConditions.push(eq(companyLifecycleEvents.entityType, filters.entityType));
       }
       if (filters.entityId) {
         conditions.push(eq(activityLog.entityId, filters.entityId));
+        lifecycleConditions.push(eq(companyLifecycleEvents.entityId, filters.entityId));
       }
 
-      return db
+      const persistedActivity = await db
         .select({ activityLog })
         .from(activityLog)
         .leftJoin(
@@ -46,6 +50,15 @@ export function activityService(db: Db) {
         )
         .orderBy(desc(activityLog.createdAt))
         .then((rows) => rows.map((r) => r.activityLog));
+
+      const lifecycleActivity = await db
+        .select()
+        .from(companyLifecycleEvents)
+        .where(and(...lifecycleConditions))
+        .orderBy(desc(companyLifecycleEvents.createdAt));
+
+      return [...persistedActivity, ...lifecycleActivity]
+        .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
     },
 
     forIssue: (issueId: string) =>
