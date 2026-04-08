@@ -40,8 +40,8 @@ Features involving `ui/src/` behavior such as:
 10. Run automated verification:
    - focused UI tests first
    - `pnpm -r typecheck`
-   - `pnpm test:run -- --maxWorkers=5`
-   - `pnpm build` if the feature affects shipped runtime paths
+   - reserve `pnpm test:run -- --maxWorkers=1` for milestone validation or blocker triage
+   - run `pnpm build` only if the feature affects shipped runtime paths broadly or the feature explicitly requires it
 11. In the handoff, list the URLs visited, company slug/id used, any local processes started for verification, and the exact evidence that proved the web behavior changed.
 
 ## Example Handoff

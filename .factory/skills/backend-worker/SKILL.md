@@ -66,9 +66,10 @@ None
 
 6. **Run tests** (green):
    - Use the low-concurrency commands from `.factory/services.yaml` or equivalent limits so total concurrent Node.js processes never exceed 4.
-   - `pnpm test:run` — all tests pass.
+   - Run focused feature tests first.
    - `pnpm -r typecheck` — no type errors.
-   - `pnpm build` — builds successfully.
+   - Reserve `pnpm test:run` for milestone validation or when you need the broader suite to debug a blocker.
+   - Run `pnpm build` only when the feature affects shipped runtime behavior broadly or the feature description explicitly requires it.
    - For baseline-stabilization or validation-only features, it is acceptable to verify already-landed behavior and report success without new edits, as long as you clearly state that no code changes were required and all required validators passed.
 
 7. **Verify manually**:
