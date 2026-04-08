@@ -69,12 +69,14 @@ None
    - `pnpm test:run` — all tests pass.
    - `pnpm -r typecheck` — no type errors.
    - `pnpm build` — builds successfully.
+   - For baseline-stabilization or validation-only features, it is acceptable to verify already-landed behavior and report success without new edits, as long as you clearly state that no code changes were required and all required validators passed.
 
 7. **Verify manually**:
    - For services: run individual test file to verify output: `cd server && npx vitest run src/__tests__/YOUR_TEST.test.ts`
    - For schema: verify migration SQL is additive (no DROP statements unless intentional).
    - For API behavior features: run focused `curl` checks for the exact success and failure cases claimed by the feature, including company-isolation or wrong-actor negatives when relevant.
    - For lifecycle features: verify both blocked admission and converged shutdown (`active-run`, `live-runs`, orchestrator/stale surfaces) rather than only the route response.
+   - For lifecycle cleanup and company-deletion work, explicitly inspect scheduler-created artifacts such as `execution_envelopes` in addition to heartbeat runs, leases, intents, and activity logs.
    - For issue identifier features: verify every secondary issue-detail endpoint that the page uses, not just the primary issue fetch.
    - If you start a local Node service for manual API checks, stop it afterward unless the next verification step explicitly reuses it.
    - Never exceed 4 concurrent Node.js processes; if a planned validation step would exceed that, reduce concurrency first.
