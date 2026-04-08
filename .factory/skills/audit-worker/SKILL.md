@@ -31,7 +31,7 @@ Features that involve:
 3. If the feature changes code, write tests first for the repo code you are modifying. Use the narrowest existing suite that proves the new behavior.
 4. For demo-repo work, create or update the sibling CLI repo with real files and commands the agent can run. Keep it intentionally small and deterministic.
 5. For isolated-instance work, use the mission paths and ports from `.factory/services.yaml` and `.factory/library/environment.md`. Do not reuse the default Papierklammer instance.
-6. Be conservative about Node-based processes. Prefer one running app instance at a time, avoid parallel local runtime processes, and stop temporary dev/TUI processes as soon as the relevant check completes.
+6. Be conservative about Node-based processes. Prefer one running app instance at a time, avoid parallel local runtime processes, stop temporary dev/TUI processes as soon as the relevant check completes, and never exceed 4 concurrent Node.js processes total.
 7. Run the real audit flow required by the feature:
    - API health / setup with `curl`
    - Web UI checks with `agent-browser`

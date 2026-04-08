@@ -1,8 +1,8 @@
 commands:
   install: pnpm install
-  typecheck: pnpm -r typecheck
-  build: pnpm build
-  test: pnpm test:run -- --maxWorkers=5
+  typecheck: pnpm -r --workspace-concurrency=1 typecheck
+  build: pnpm -r --workspace-concurrency=1 build
+  test: pnpm test:run -- --maxWorkers=1
   lint: echo "no lint configured"
   e2e: pnpm test:e2e
   reset_audit_instance: pnpm audit:instance:audit:reset

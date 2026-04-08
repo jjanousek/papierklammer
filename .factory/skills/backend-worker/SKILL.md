@@ -65,6 +65,7 @@ None
    Review the generated SQL migration for correctness.
 
 6. **Run tests** (green):
+   - Use the low-concurrency commands from `.factory/services.yaml` or equivalent limits so total concurrent Node.js processes never exceed 4.
    - `pnpm test:run` — all tests pass.
    - `pnpm -r typecheck` — no type errors.
    - `pnpm build` — builds successfully.
@@ -76,6 +77,7 @@ None
    - For lifecycle features: verify both blocked admission and converged shutdown (`active-run`, `live-runs`, orchestrator/stale surfaces) rather than only the route response.
    - For issue identifier features: verify every secondary issue-detail endpoint that the page uses, not just the primary issue fetch.
    - If you start a local Node service for manual API checks, stop it afterward unless the next verification step explicitly reuses it.
+   - Never exceed 4 concurrent Node.js processes; if a planned validation step would exceed that, reduce concurrency first.
 
 ## Example Handoff
 

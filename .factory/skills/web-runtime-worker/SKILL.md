@@ -36,7 +36,7 @@ Features involving `ui/src/` behavior such as:
 6. For onboarding launch changes, verify the created issue/run again after a short settle window instead of stopping at the initial success toast or wakeup request.
 7. For lifecycle UI changes, verify all delete affordances and selection fallback behavior; do not assume Company Settings is the only entrypoint.
 8. For public issue-key or company-context fixes, inspect every secondary request the page issues in the browser.
-9. Keep Node-process usage low during verification. Reuse one local app instance when possible and stop any temporary server or helper process once the browser checks that need it are complete.
+9. Keep Node-process usage low during verification. Reuse one local app instance when possible, stop any temporary server or helper process once the browser checks that need it are complete, and never exceed 4 concurrent Node.js processes total.
 10. Run automated verification:
    - focused UI tests first
    - `pnpm -r typecheck`

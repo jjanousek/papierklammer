@@ -22,6 +22,7 @@
 - **TUI:** max **1** concurrent validator when used. Rationale: PTY-backed sessions are stateful and should not overlap on the same local instance.
 - **Overall bundle rule:** run only **one full validation bundle at a time**.
 - **Process hygiene rule:** keep Node-based process count low. Reuse one active app instance when possible and stop temporary processes as soon as the relevant check is done.
+- **Hard cap:** never exceed **4 concurrent Node.js processes** total during validation. This includes app servers, Vitest workers, helper scripts, and any temporary Node-based tooling.
 
 ## Validation Setup Notes
 - Use a **fresh isolated local instance** for each major validation pass; do not reuse stale prior app state.
@@ -31,6 +32,7 @@
 - Use **real `codex_local`** when validating Codex-backed onboarding or drafting. If local Codex readiness fails, mark the affected assertions blocked and return to the orchestrator.
 - In `local_trusted` mode, requests without an `Authorization` header are implicitly treated as board-authenticated. Do not use headerless requests as anonymous-denial evidence.
 - Reuse the same `companyId`, `issueId`, `agentId`, and `runId` across browser and API checks within a bundle.
+- When running validators, prefer the low-concurrency commands from `.factory/services.yaml`; do not increase worker counts unless the orchestrator updates the process limit.
 
 ## Flow Validator Guidance: Web UI
 - Start lifecycle validation from a company that has real or recently created work so pause/archive quiesce behavior can be observed.

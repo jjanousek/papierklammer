@@ -54,4 +54,5 @@ For `codex_local`, local readiness may come from existing Codex login state and/
 - Browser + API validation are the primary surfaces for this mission
 - TUI validation requires a real PTY and is only used when a feature truly touches orchestration/TUI-adjacent behavior
 - This mission validates one full bundle at a time because memory headroom is limited
+- Never exceed 4 concurrent Node.js processes during mission work; shut down Node-based helpers, app servers, and test workers as soon as they are no longer needed
 - There are existing local uncommitted changes around direct wakeup lease ownership; workers touching that area must inspect them before editing
