@@ -6,9 +6,12 @@ import {
   assets,
   agents,
   agentApiKeys,
+  agentConfigRevisions,
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
+  dispatchIntents,
+  executionLeases,
   issues,
   issueComments,
   projects,
@@ -20,7 +23,9 @@ import {
   approvalComments,
   approvals,
   activityLog,
+  companySkills,
   companySecrets,
+  controlPlaneEvents,
   joinRequests,
   invites,
   principalPermissionGrants,
@@ -165,15 +170,20 @@ export function companyService(db: Db) {
   async function removeCompanyRecords(id: string, tx: Pick<Db, "delete">) {
     await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, id));
     await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, id));
+    await tx.delete(executionLeases).where(eq(executionLeases.companyId, id));
     await tx.delete(heartbeatRuns).where(eq(heartbeatRuns.companyId, id));
     await tx.delete(agentWakeupRequests).where(eq(agentWakeupRequests.companyId, id));
+    await tx.delete(dispatchIntents).where(eq(dispatchIntents.companyId, id));
     await tx.delete(agentApiKeys).where(eq(agentApiKeys.companyId, id));
+    await tx.delete(agentConfigRevisions).where(eq(agentConfigRevisions.companyId, id));
     await tx.delete(agentRuntimeState).where(eq(agentRuntimeState.companyId, id));
     await tx.delete(issueComments).where(eq(issueComments.companyId, id));
     await tx.delete(costEvents).where(eq(costEvents.companyId, id));
     await tx.delete(financeEvents).where(eq(financeEvents.companyId, id));
+    await tx.delete(controlPlaneEvents).where(eq(controlPlaneEvents.companyId, id));
     await tx.delete(approvalComments).where(eq(approvalComments.companyId, id));
     await tx.delete(approvals).where(eq(approvals.companyId, id));
+    await tx.delete(companySkills).where(eq(companySkills.companyId, id));
     await tx.delete(companySecrets).where(eq(companySecrets.companyId, id));
     await tx.delete(joinRequests).where(eq(joinRequests.companyId, id));
     await tx.delete(invites).where(eq(invites.companyId, id));

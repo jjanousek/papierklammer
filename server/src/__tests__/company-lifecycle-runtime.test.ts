@@ -488,4 +488,27 @@ describeDB("company lifecycle runtime coordination", () => {
       },
     });
   });
+
+  it("deletes a previously quiesced company that still has released execution leases from cancelled work", async () => {
+    const { companyId, agentId, projectId } = await seedCompanyFixture("active");
+    await seedActiveWorkload(companyId, agentId, projectId);
+
+    await lifecycle.pause(companyId, actor);
+
+    const deleted = await lifecycle.deleteGuarded(companyId, "Lifecycle Runtime Co", actor);
+    expect(deleted.deletedCompanyId).toBe(companyId);
+    expect(await companiesSvc.getById(companyId)).toBeNull();
+
+    const activityEntries = await activity.list({ companyId });
+    expect(activityEntries).toHaveLength(1);
+    expect(activityEntries[0]).toMatchObject({
+      action: "company.deleted",
+      entityType: "company",
+      entityId: companyId,
+      details: {
+        previousStatus: "paused",
+        nextStatus: "deleted",
+      },
+    });
+  });
 });
