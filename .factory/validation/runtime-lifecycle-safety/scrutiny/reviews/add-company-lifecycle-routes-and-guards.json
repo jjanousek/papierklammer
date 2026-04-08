@@ -1,0 +1,34 @@
+{
+  "featureId": "add-company-lifecycle-routes-and-guards",
+  "reviewedAt": "2026-04-08T06:57:59.747240Z",
+  "commitId": "e0789079f6a8ad57026ad61395e0fa623b5fcb45",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature correctly adds board-only lifecycle routes, exact-name delete confirmation, and PATCH/legacy DELETE guards, but the canonical lifecycle endpoints still bypass coordinated runtime shutdown. Pause, archive, and delete only mutate company rows or remove records through companyService, so live runs, queued wakeups/intents, leases, and stale issue ownership are not quiesced before lifecycle transitions.",
+    "issues": [
+      {
+        "file": "server/src/routes/companies.ts",
+        "line": 327,
+        "severity": "blocking",
+        "description": "The new canonical lifecycle routes call `svc.pause`, `svc.resume`, `svc.archive`, and `svc.deleteGuarded` directly, but those service methods only update the `companies` row or delete data (`server/src/services/companies.ts:266-345`). They never cancel queued/running `heartbeat_runs`, reject pending `dispatch_intents`, release `execution_leases`, or clear issue execution locks, so an operator can 'pause' or 'archive' a company while its existing work continues or leaves stale ownership behind. That violates the feature description's requirement that legacy paths must not bypass coordinated lifecycle side effects, because the canonical paths still bypass them too."
+      },
+      {
+        "file": "server/src/routes/companies.ts",
+        "line": 403,
+        "severity": "non_blocking",
+        "description": "Delete has no surviving audit trail. The canonical and legacy delete routes return `{ ok: true }` without writing a lifecycle event, and `removeCompanyRecords()` deletes `activityLog` entries before the company row is removed (`server/src/services/companies.ts:118-142`). After a successful purge there is no remaining record of who deleted the company, which breaks the mission's lifecycle-audit expectations for a destructive control-plane action."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's strict 'write tests first (red)' procedure did not match how this route feature was actually delivered. The worker explicitly deviated to do a design/implementation pass before adding focused tests and suggested the skill should allow that for multi-endpoint route/service work.",
+      "evidence": "Handoff `skillFeedback.followedProcedure=false` with deviation: step '3. Write tests first (red)' was skipped in favor of implementing lifecycle endpoints and shared validator changes first; the worker suggested allowing an explicit design pass before red/green for this class of backend route feature."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, skill file, mission guidance, and commit `e0789079f6a8ad57026ad61395e0fa623b5fcb45`. Result: fail, because the new lifecycle routes enforce auth/confirmation correctly but do not run the coordinated quiesce side effects required for pause/archive/delete, and delete also leaves no surviving audit record."
+}

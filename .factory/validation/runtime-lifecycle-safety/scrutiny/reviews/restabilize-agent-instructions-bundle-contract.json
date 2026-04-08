@@ -1,0 +1,38 @@
+{
+  "featureId": "restabilize-agent-instructions-bundle-contract",
+  "reviewedAt": "2026-04-08T07:05:39.936715Z",
+  "commitId": "b1b6e25d037ffd249b84df1acafc50e6569d636c",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The landed commit stabilizes company lifecycle route coverage, but it does not implement the feature described in mission state. `features.json` requires restoring the managed agent-instructions bundle contract, yet the diff only touches `server/src/routes/companies.ts` and `server/src/__tests__/companies-lifecycle.test.ts`; no agent-instructions route, serializer, or regression coverage was updated.",
+    "issues": [
+      {
+        "file": "server/src/routes/companies.ts",
+        "line": 262,
+        "severity": "blocking",
+        "description": "The feature's only production change starts here and hardens generic company PATCH lifecycle handling, which is unrelated to the assigned agent-instructions contract fix. The mission metadata explicitly says this feature must restore the managed bundle metadata and adapter-field behavior for `server/src/__tests__/agent-instructions-routes.test.ts`, but the commit makes no changes under the agent-instructions route/serializer path and leaves that requested remediation unimplemented."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Mission feature metadata can go stale when the clean-workspace baseline blocker shifts, which makes it easy to land an unrelated fix under the wrong feature ID.",
+      "evidence": "`features.json` lines 472-483 define this feature as restoring the agent-instructions bundle contract, while the worker handoff lines 10-11 say the assigned suite was already green and the actual blocker had moved to `companies-lifecycle.test.ts`, so the worker shipped a lifecycle fix instead."
+    },
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill's required 'write tests first' flow does not fit baseline-stabilization features where the worker first has to identify the currently failing suite.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md` line 34 requires 'Write tests first', but the handoff lines 56-65 mark `followedProcedure: false` and explicitly request a baseline-stabilization exception that starts from current validator output."
+    },
+    {
+      "area": "services",
+      "observation": "Shared validation guidance disagrees on test-suite concurrency for this mission.",
+      "evidence": "`.factory/services.yaml` line 5 defines `test: pnpm test:run -- --maxWorkers=1`, while mission `AGENTS.md` line 53 and this feature's verification steps/handoff use `pnpm test:run -- --maxWorkers=5`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review failed: the commit is a lifecycle-route/test stabilization, not the requested managed agent-instructions bundle contract restoration. I also noted shared-state gaps around stale feature metadata, backend-worker baseline-stabilization guidance, and inconsistent test concurrency docs."
+}

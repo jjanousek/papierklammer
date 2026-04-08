@@ -1,0 +1,109 @@
+{
+  "milestone": "runtime-lifecycle-safety",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm test:run -- --maxWorkers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -r --workspace-concurrency=1 typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 9,
+    "passed": 4,
+    "failed": 5,
+    "failedFeatures": [
+      "fix-direct-assignment-wakeup-lease-ownership",
+      "add-company-lifecycle-routes-and-guards",
+      "restabilize-agent-instructions-bundle-contract",
+      "stabilize-lifecycle-admission-flaky-suites",
+      "quiesce-company-work-and-audit-transitions"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "fix-direct-assignment-wakeup-lease-ownership",
+      "severity": "blocking",
+      "description": "Deferred direct wakeups promoted by releaseIssueExecutionAndPromote still do not allocate a replacement execution lease, so reassignment-triggered follow-up runs can still be reconciled as orphaned."
+    },
+    {
+      "featureId": "add-company-lifecycle-routes-and-guards",
+      "severity": "blocking",
+      "description": "The canonical pause/archive/delete routes enforce auth and confirmation but still call simple companyService mutators that do not run coordinated quiesce side effects for heartbeat runs, wakeups, dispatch intents, execution leases, or issue execution locks."
+    },
+    {
+      "featureId": "restabilize-agent-instructions-bundle-contract",
+      "severity": "blocking",
+      "description": "The reviewed commit hardens lifecycle route behavior instead of restoring the managed agent-instructions bundle contract described by the feature metadata, so the assigned feature was not actually implemented under this feature ID."
+    },
+    {
+      "featureId": "stabilize-lifecycle-admission-flaky-suites",
+      "severity": "blocking",
+      "description": "releaseIssueExecutionAndPromote can still promote a deferred issue-execution wake into a new run after a company has been paused or archived, leaving one lifecycle restart path unguarded."
+    },
+    {
+      "featureId": "quiesce-company-work-and-audit-transitions",
+      "severity": "blocking",
+      "description": "Guarded company delete still misses execution_envelopes cleanup, so deleting a paused or archived company can still fail after normal scheduler-admitted runs that created envelopes."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": ".factory/skills/backend-worker/SKILL.md",
+      "suggestion": "Document an explicit validation-only/no-edit completion path for baseline-stabilization or dirty-worktree continuation features, including how to proceed when the assigned work is already satisfied at HEAD or when an unrelated transient full-suite flake appears before feature-specific validation.",
+      "evidence": "This gap was independently reported by stabilize-runtime-lifecycle-baseline-validators, stabilize-runtime-lifecycle-baseline-round3, gate-all-company-work-admission, stabilize-lifecycle-admission-flaky-suites, and restabilize-agent-instructions-bundle-contract review reports.",
+      "isSystemic": true
+    },
+    {
+      "target": ".factory/skills/audit-worker/SKILL.md",
+      "suggestion": "Allow a validation-only baseline-stabilization mode when an audit-worker feature is scoped to test-suite repairs rather than browser/API/TUI audit flows.",
+      "evidence": "The restabilize-runtime-lifecycle-baseline-round2 review notes that the feature only required targeted tests and validators, but the audit-worker skill still assumed real API/Web/TUI audit flows.",
+      "isSystemic": false
+    },
+    {
+      "target": "Mission feature metadata and handoff schema",
+      "suggestion": "Keep feature metadata synchronized with blocker drift and support no-edit/multi-commit evidence attribution so scrutiny can review validation-only fixes without forcing a single misleading commitId.",
+      "evidence": "The restabilize-agent-instructions-bundle-contract review found the feature metadata stale relative to the actual blocker, and both round2 and round3 reviews noted weak feature-to-commit traceability for validation-only completions.",
+      "isSystemic": true
+    },
+    {
+      "target": "Mission AGENTS.md",
+      "suggestion": "Align the documented full-suite test command with .factory/services.yaml so workers get one authoritative validator concurrency setting for the mission.",
+      "evidence": "The baseline-validator and restabilize-agent-instructions reviews both noted that mission AGENTS.md advertises pnpm test:run -- --maxWorkers=5 while .factory/services.yaml defines pnpm test:run -- --maxWorkers=1.",
+      "isSystemic": true
+    },
+    {
+      "target": ".factory/skills/backend-worker/SKILL.md",
+      "suggestion": "For lifecycle cleanup and company-deletion work, explicitly direct workers to inspect scheduler-created execution_envelopes and related schema constraints in addition to heartbeat/reconciler/activity-log code paths.",
+      "evidence": "The quiesce-company-work-and-audit-transitions review found that the landed cleanup covered runs, leases, and intents but still missed execution_envelopes created by the scheduler's normal admitted-run path.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Additional backend-worker skill observations from restabilize-runtime-lifecycle-baseline-round2 and stabilize-runtime-lifecycle-baseline-round3 about validation-only/no-edit sessions.",
+      "reason": "duplicate of the consolidated backend-worker skill recommendation above"
+    },
+    {
+      "observation": "Commit-traceability notes from round2 and round3 reviews recorded separately.",
+      "reason": "duplicate of the consolidated mission metadata and handoff schema recommendation above"
+    },
+    {
+      "observation": "Repeated services-guidance mismatch reports from multiple baseline-stabilization reviews.",
+      "reason": "duplicate of the Mission AGENTS.md concurrency-alignment recommendation above"
+    }
+  ],
+  "previousRound": null
+}

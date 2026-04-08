@@ -1,0 +1,26 @@
+{
+  "featureId": "restabilize-runtime-lifecycle-baseline-round2",
+  "reviewedAt": "2026-04-08T06:57:05Z",
+  "commitId": "e0789079f6a8ad57026ad61395e0fa623b5fcb45",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Reviewed the feature metadata, prior failed handoff for gate-all-company-work-admission, the worker transcript skeleton, and the relevant baseline-fix commits plus current code in the targeted files. The blocker fixes described by the feature are present: the orchestrator TUI company-scope regression now waits for rendered/input state before asserting request flow, GET /api/companies/issues returns the explicit malformed-path 400 response, and issue detail responses normalize cleared execution ownership fields to explicit nulls after manual unblock. I found no blocking or non-blocking code defects in the implemented behavior.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The audit-worker skill currently assumes real API/Web/TUI audit flows with agent-browser and tuistory, but this feature is explicitly a baseline-stabilization task whose verification steps are targeted tests, typecheck, and the full test suite. The worker's validation-only completion was reasonable once the fixes were already present, so the skill should document this exception.",
+      "evidence": "features.json:446-462 defines only test/route stabilization work and verification commands; .factory/skills/audit-worker/SKILL.md steps 7-8 require real API/Web/TUI audit flow; the handoff skillFeedback at lines 63-74 records the justified procedure deviation and requests exactly this allowance."
+    },
+    {
+      "area": "conventions",
+      "observation": "Validation-only stabilization features can leave scrutiny with a handoff commitId that does not uniquely identify the reviewed fix set. The pipeline should allow either a null commitId or an explicit evidenceCommitIds list when no new code is authored in the worker session.",
+      "evidence": "The handoff records commitId e0789079f6a8ad57026ad61395e0fa623b5fcb45, but handoff.whatWasImplemented says no new code changes were made and cites existing fixes across multiple commits; the verification section explicitly reviews 369d2029, bc15c9ee, e0789079, and 747f974a together."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The three blockers from the failed gate-all-company-work-admission baseline are addressed in the reviewed repo state: the TUI company-scope test is synchronized, the malformed /api/companies/issues path is guarded with a 400, and manual-unblock issue responses emit explicit null ownership fields. No code defects were found, though the mission skill/commit-attribution conventions could better support validation-only stabilization features."
+}

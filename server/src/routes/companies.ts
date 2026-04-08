@@ -75,6 +75,13 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     }
   }
 
+  // Common malformed path when companyId is empty in "/api/companies/{companyId}/issues".
+  router.get("/issues", (_req, res) => {
+    res.status(400).json({
+      error: "Missing companyId in path. Use /api/companies/{companyId}/issues.",
+    });
+  });
+
   router.get("/", async (req, res) => {
     assertBoard(req);
     const result = await svc.list();
@@ -98,13 +105,6 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     }
     const filtered = Object.fromEntries(Object.entries(stats).filter(([companyId]) => allowed.has(companyId)));
     res.json(filtered);
-  });
-
-  // Common malformed path when companyId is empty in "/api/companies/{companyId}/issues".
-  router.get("/issues", (_req, res) => {
-    res.status(400).json({
-      error: "Missing companyId in path. Use /api/companies/{companyId}/issues.",
-    });
   });
 
   router.get("/:companyId", async (req, res) => {

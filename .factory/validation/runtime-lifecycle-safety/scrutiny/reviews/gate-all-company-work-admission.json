@@ -1,0 +1,21 @@
+{
+  "featureId": "gate-all-company-work-admission",
+  "reviewedAt": "2026-04-08T07:07:04.684278Z",
+  "commitId": "71234057",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature's shared admission gate is applied at the right choke points. `heartbeat.enqueueWakeup()` now blocks manual and route-driven wakeups for paused/archived companies, `intentQueue.createIntent()` blocks fresh dispatch intents for timer/dependency/assignment/orchestrator producers, and `releaseIssueExecutionAndPromote()` now re-checks company runnability before promoting deferred execution. I did not find a feature-scope correctness gap in the reviewed implementation.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The repo-visible backend-worker skill only documents the happy-path validation flow and does not explain how a worker should proceed when a dirty-worktree continuation feature hits an apparently unrelated transient full-suite failure before feature-specific work. This feature's handoff records a justified deviation for exactly that case.",
+      "evidence": "`/Users/aischool/work/papierklammer_droid/.factory/skills/backend-worker/SKILL.md` steps 6-7 prescribe running focused tests, full `pnpm test:run`, typecheck, and build, but contain no guidance for transient baseline flakes on continuation features. The reviewed handoff for session `0a16879c-54a7-4172-b044-22d696f9a1c3` records `skillFeedback.followedProcedure=false` because an initial full-suite run failed once in `packages/orchestrator-tui/src/__tests__/message-flow.test.tsx` and the worker reasonably proceeded by rerunning focused checks and then the full suite successfully."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the mission metadata, worker transcript skeleton, backend-worker skill, shared-state docs, handoff, and commit `71234057`. Result: pass. The implementation correctly centralizes company runnability checks across wakeup-, intent-, and deferred-promotion-based admission paths, and the added regressions match the feature scope."
+}

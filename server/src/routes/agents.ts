@@ -2164,7 +2164,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
       issueId: sql<string | null>`${heartbeatRuns.contextSnapshot} ->> 'issueId'`.as("issueId"),
     };
 
-    const liveRuns = await db
+    const liveRunsResult = await db
       .select(columns)
       .from(heartbeatRuns)
       .innerJoin(agentsTable, eq(heartbeatRuns.agentId, agentsTable.id))
@@ -2175,10 +2175,11 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
         ),
       )
       .orderBy(desc(heartbeatRuns.createdAt));
+    const liveRuns = Array.isArray(liveRunsResult) ? liveRunsResult : [];
 
     if (minCount > 0 && liveRuns.length < minCount) {
       const activeIds = liveRuns.map((r) => r.id);
-      const recentRuns = await db
+      const recentRunsResult = await db
         .select(columns)
         .from(heartbeatRuns)
         .innerJoin(agentsTable, eq(heartbeatRuns.agentId, agentsTable.id))
@@ -2191,6 +2192,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
         )
         .orderBy(desc(heartbeatRuns.createdAt))
         .limit(minCount - liveRuns.length);
+      const recentRuns = Array.isArray(recentRunsResult) ? recentRunsResult : [];
 
       res.json([...liveRuns, ...recentRuns]);
       return;
@@ -2351,7 +2353,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
     }
     assertCompanyAccess(req, issue.companyId);
 
-    const liveRuns = await db
+    const liveRunsResult = await db
       .select({
         id: heartbeatRuns.id,
         status: heartbeatRuns.status,
@@ -2374,6 +2376,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
         ),
       )
       .orderBy(desc(heartbeatRuns.createdAt));
+    const liveRuns = Array.isArray(liveRunsResult) ? liveRunsResult : [];
 
     res.json(liveRuns);
   });

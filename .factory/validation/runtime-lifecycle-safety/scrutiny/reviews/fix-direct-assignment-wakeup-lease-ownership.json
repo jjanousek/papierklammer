@@ -1,0 +1,22 @@
+{
+  "featureId": "fix-direct-assignment-wakeup-lease-ownership",
+  "reviewedAt": "2026-04-08T07:05:01.353542Z",
+  "commitId": "658984a958e6fe07e8c00d6842bb2a76d215c110",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit fixes the cold-start direct assignment path by allocating an issue_execution lease and clearing stale executionLeaseId pointers during recovery, but it still leaves deferred direct wakeups without durable lease ownership. If an assignment wakeup is deferred behind an already-active execution and later promoted, the promoted run is linked onto the issue without creating a replacement execution lease, so reconciliation can still close it as orphaned.",
+    "issues": [
+      {
+        "file": "server/src/services/heartbeat.ts",
+        "line": 3398,
+        "severity": "blocking",
+        "description": "Deferred direct wakeups are still orphan-prone. When an assignment-triggered wakeup hits an issue that already has an active execution, `enqueueWakeup()` stores it as `deferred_issue_execution` (`server/src/services/heartbeat.ts:3653-3763`). Later, `releaseIssueExecutionAndPromote()` promotes that deferred wake by creating a new queued `heartbeat_run` and updating `issues.executionRunId` (`server/src/services/heartbeat.ts:3398-3419`), but it never inserts a new `execution_leases` row or sets `issues.executionLeaseId`, unlike the newly fixed immediate path at `server/src/services/heartbeat.ts:3798-3845`. The reconciler closes queued/running runs that lack an active lease as `reconciliation_orphaned` (`server/src/services/reconciler.ts:123-171`), so reassignment-triggered follow-up runs can still lose ownership during reconciliation. The new regression tests only cover the uncontended immediate wakeup path (`server/src/__tests__/heartbeat-direct-wakeup-lease.test.ts:82-287`), leaving this assignment/deferred-promotion case untested."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed feature metadata, mission guidance, the worker handoff/transcript skeleton, backend-worker skill, shared-state docs, and commit `658984a958e6fe07e8c00d6842bb2a76d215c110`. Result: fail, because the new lease allocation only covers the immediate direct wakeup branch; deferred assignment wakeups promoted after an active run still do not get a replacement execution lease and can still reconcile as orphaned."
+}

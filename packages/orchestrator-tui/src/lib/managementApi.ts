@@ -56,7 +56,7 @@ export async function listPendingApprovals(
   companyId: string,
   fetchFn: FetchLike = globalThis.fetch,
 ): Promise<PendingApprovalSummary[]> {
-  const approvals = await requestJson<PendingApprovalSummary[]>(
+  const approvals = await requestJson<unknown>(
     fetchFn,
     `${normalizeBaseUrl(baseUrl)}/api/companies/${encodeURIComponent(companyId)}/approvals?status=pending`,
     {
@@ -67,7 +67,9 @@ export async function listPendingApprovals(
     },
   );
 
-  return [...approvals].sort((left, right) => {
+  const approvalList = Array.isArray(approvals) ? approvals : [];
+
+  return [...approvalList].sort((left, right) => {
     const leftTime = left.createdAt ? Date.parse(left.createdAt) : 0;
     const rightTime = right.createdAt ? Date.parse(right.createdAt) : 0;
     return leftTime - rightTime;

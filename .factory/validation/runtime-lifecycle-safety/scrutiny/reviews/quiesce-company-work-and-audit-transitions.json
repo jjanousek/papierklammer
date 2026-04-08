@@ -1,0 +1,28 @@
+{
+  "featureId": "quiesce-company-work-and-audit-transitions",
+  "reviewedAt": "2026-04-08T06:57:59Z",
+  "commitId": "c423fa19",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The final fix improves guarded delete cleanup and adds a regression, but it still misses a runtime record type created by normal admitted runs. Because execution envelopes remain undeleted, quiesced company deletion can still fail for companies that reached the standard scheduler path.",
+    "issues": [
+      {
+        "file": "server/src/services/companies.ts",
+        "line": 174,
+        "severity": "blocking",
+        "description": "Guarded delete still leaves `execution_envelopes` behind. Normal admissions create an envelope and then backfill `heartbeat_runs.envelope_id` (`server/src/services/scheduler.ts:423,444`; see also `server/src/__tests__/scheduler.test.ts:173,199`). But `removeCompanyRecords()` deletes `heartbeat_runs` without first nulling/removing those envelopes, and the schema has reciprocal foreign keys (`packages/db/src/schema/heartbeat_runs.ts:44`, `packages/db/src/schema/execution_envelopes.ts:13`). A paused/archived company that had real admitted work can therefore still fail deletion even after this patch. The new regression at `server/src/__tests__/company-lifecycle-runtime.test.ts:492` seeds raw runs/leases only, so it does not cover the envelope-backed path that production uses."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The lifecycle cleanup guidance steers workers toward heartbeat/reconciler/activity-log code but does not explicitly call out scheduler/execution-envelope cleanup, which is part of the real admitted-run path for this mission. That omission likely contributed to this fix covering leases/intents/events but not `execution_envelopes`.",
+      "evidence": "Mission precondition in `features.json:599` says to read heartbeat/reconciler/lease/orchestrator/activity-log together; `backend-worker` only says to read services generally and especially `heartbeat.ts` (`.factory/skills/backend-worker/SKILL.md:30`). The reviewed transcript skeleton contains no read of `server/src/services/scheduler.ts` or `packages/db/src/schema/execution_envelopes.ts`, while scheduler admission creates envelopes (`server/src/services/scheduler.ts:423,444`)."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed the feature metadata, handoff, transcript skeleton, backend-worker skill, architecture/services guidance, and commit `c423fa19`. The commit usefully adds cleanup for several company-scoped runtime tables and a delete regression, but the implementation is still incomplete because it does not handle `execution_envelopes`, so guarded deletion remains broken for quiesced companies that had normal admitted runs."
+}
