@@ -19,9 +19,11 @@ export {
 export {
   createCompanySchema,
   updateCompanySchema,
+  deleteCompanySchema,
   updateCompanyBrandingSchema,
   type CreateCompany,
   type UpdateCompany,
+  type DeleteCompany,
   type UpdateCompanyBranding,
 } from "./company.js";
 export {

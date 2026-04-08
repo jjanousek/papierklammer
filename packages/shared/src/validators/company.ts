@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { COMPANY_STATUSES } from "../constants.js";
 
 const logoAssetIdSchema = z.string().uuid().nullable().optional();
 const brandColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional();
@@ -15,14 +14,22 @@ export type CreateCompany = z.infer<typeof createCompanySchema>;
 export const updateCompanySchema = createCompanySchema
   .partial()
   .extend({
-    status: z.enum(COMPANY_STATUSES).optional(),
     spentMonthlyCents: z.number().int().nonnegative().optional(),
     requireBoardApprovalForNewAgents: z.boolean().optional(),
     brandColor: brandColorSchema,
     logoAssetId: logoAssetIdSchema,
-  });
+  })
+  .strict();
 
 export type UpdateCompany = z.infer<typeof updateCompanySchema>;
+
+export const deleteCompanySchema = z
+  .object({
+    confirmationText: z.string().optional(),
+  })
+  .strict();
+
+export type DeleteCompany = z.infer<typeof deleteCompanySchema>;
 
 export const updateCompanyBrandingSchema = z
   .object({

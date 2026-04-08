@@ -5,6 +5,7 @@ import {
   companyPortabilityImportSchema,
   companyPortabilityPreviewSchema,
   createCompanySchema,
+  deleteCompanySchema,
   updateCompanyBrandingSchema,
   updateCompanySchema,
 } from "@papierklammer/shared";
@@ -38,6 +39,10 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
   const access = deps.accessService ?? accessService(db);
   const budgets = deps.budgetService ?? budgetService(db);
   const writeActivity = deps.logActivity ?? logActivity;
+
+  function parseDeleteRequestBody(req: Request) {
+    return deleteCompanySchema.parse(req.body ?? {});
+  }
 
   async function assertCanUpdateBranding(req: Request, companyId: string) {
     assertCompanyAccess(req, companyId);
@@ -315,6 +320,60 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     res.json(company);
   });
 
+  router.post("/:companyId/pause", async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const company = await svc.pause(companyId);
+    if (!company) {
+      res.status(404).json({ error: "Company not found" });
+      return;
+    }
+    const actor = getActorInfo(req);
+    await writeActivity(db, {
+      companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      action: "company.paused",
+      entityType: "company",
+      entityId: companyId,
+      details: {
+        status: company.status,
+        pauseReason: company.pauseReason,
+        pausedAt: company.pausedAt,
+      },
+    });
+    res.json(company);
+  });
+
+  router.post("/:companyId/resume", async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const company = await svc.resume(companyId);
+    if (!company) {
+      res.status(404).json({ error: "Company not found" });
+      return;
+    }
+    const actor = getActorInfo(req);
+    await writeActivity(db, {
+      companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      action: "company.resumed",
+      entityType: "company",
+      entityId: companyId,
+      details: {
+        status: company.status,
+      },
+    });
+    res.json(company);
+  });
+
   router.post("/:companyId/archive", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
@@ -324,23 +383,43 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
       res.status(404).json({ error: "Company not found" });
       return;
     }
+    const actor = getActorInfo(req);
     await writeActivity(db, {
       companyId,
-      actorType: "user",
-      actorId: req.actor.userId ?? "board",
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
       action: "company.archived",
       entityType: "company",
       entityId: companyId,
+      details: {
+        status: company.status,
+      },
     });
     res.json(company);
+  });
+
+  router.post("/:companyId/delete", async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const { confirmationText } = parseDeleteRequestBody(req);
+    const deleted = await svc.deleteGuarded(companyId, confirmationText);
+    if (!deleted) {
+      res.status(404).json({ error: "Company not found" });
+      return;
+    }
+    res.json({ ok: true });
   });
 
   router.delete("/:companyId", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const company = await svc.remove(companyId);
-    if (!company) {
+    const { confirmationText } = parseDeleteRequestBody(req);
+    const deleted = await svc.deleteGuarded(companyId, confirmationText);
+    if (!deleted) {
       res.status(404).json({ error: "Company not found" });
       return;
     }

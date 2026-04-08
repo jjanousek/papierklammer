@@ -26,7 +26,7 @@ import {
   principalPermissionGrants,
   companyMemberships,
 } from "@papierklammer/db";
-import { notFound, unprocessable } from "../errors.js";
+import { conflict, notFound, unprocessable } from "../errors.js";
 
 export function companyService(db: Db) {
   const ISSUE_PREFIX_FALLBACK = "CMP";
@@ -36,6 +36,8 @@ export function companyService(db: Db) {
     name: companies.name,
     description: companies.description,
     status: companies.status,
+    pauseReason: companies.pauseReason,
+    pausedAt: companies.pausedAt,
     issuePrefix: companies.issuePrefix,
     issueCounter: companies.issueCounter,
     budgetMonthlyCents: companies.budgetMonthlyCents,
@@ -104,6 +106,41 @@ export function companyService(db: Db) {
       .leftJoin(companyLogos, eq(companyLogos.companyId, companies.id));
   }
 
+  async function getHydratedCompanyById(id: string, database: Pick<Db, "select"> = db) {
+    const row = await getCompanyQuery(database)
+      .where(eq(companies.id, id))
+      .then((rows) => rows[0] ?? null);
+    if (!row) return null;
+    const [hydrated] = await hydrateCompanySpend([row], database);
+    return enrichCompany(hydrated);
+  }
+
+  async function removeCompanyRecords(id: string, tx: Pick<Db, "delete">) {
+    await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, id));
+    await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, id));
+    await tx.delete(heartbeatRuns).where(eq(heartbeatRuns.companyId, id));
+    await tx.delete(agentWakeupRequests).where(eq(agentWakeupRequests.companyId, id));
+    await tx.delete(agentApiKeys).where(eq(agentApiKeys.companyId, id));
+    await tx.delete(agentRuntimeState).where(eq(agentRuntimeState.companyId, id));
+    await tx.delete(issueComments).where(eq(issueComments.companyId, id));
+    await tx.delete(costEvents).where(eq(costEvents.companyId, id));
+    await tx.delete(financeEvents).where(eq(financeEvents.companyId, id));
+    await tx.delete(approvalComments).where(eq(approvalComments.companyId, id));
+    await tx.delete(approvals).where(eq(approvals.companyId, id));
+    await tx.delete(companySecrets).where(eq(companySecrets.companyId, id));
+    await tx.delete(joinRequests).where(eq(joinRequests.companyId, id));
+    await tx.delete(invites).where(eq(invites.companyId, id));
+    await tx.delete(principalPermissionGrants).where(eq(principalPermissionGrants.companyId, id));
+    await tx.delete(companyMemberships).where(eq(companyMemberships.companyId, id));
+    await tx.delete(issues).where(eq(issues.companyId, id));
+    await tx.delete(companyLogos).where(eq(companyLogos.companyId, id));
+    await tx.delete(assets).where(eq(assets.companyId, id));
+    await tx.delete(goals).where(eq(goals.companyId, id));
+    await tx.delete(projects).where(eq(projects.companyId, id));
+    await tx.delete(agents).where(eq(agents.companyId, id));
+    await tx.delete(activityLog).where(eq(activityLog.companyId, id));
+  }
+
   function deriveIssuePrefixBase(name: string) {
     const normalized = name.toUpperCase().replace(/[^A-Z]/g, "");
     return normalized.slice(0, 3) || ISSUE_PREFIX_FALLBACK;
@@ -154,22 +191,14 @@ export function companyService(db: Db) {
     },
 
     getById: async (id: string) => {
-      const row = await getCompanyQuery(db)
-        .where(eq(companies.id, id))
-        .then((rows) => rows[0] ?? null);
-      if (!row) return null;
-      const [hydrated] = await hydrateCompanySpend([row], db);
-      return enrichCompany(hydrated);
+      return getHydratedCompanyById(id, db);
     },
 
     create: async (data: typeof companies.$inferInsert) => {
       const created = await createCompanyWithUniquePrefix(data);
-      const row = await getCompanyQuery(db)
-        .where(eq(companies.id, created.id))
-        .then((rows) => rows[0] ?? null);
-      if (!row) throw notFound("Company not found after creation");
-      const [hydrated] = await hydrateCompanySpend([row], db);
-      return enrichCompany(hydrated);
+      const company = await getHydratedCompanyById(created.id, db);
+      if (!company) throw notFound("Company not found after creation");
+      return company;
     },
 
     update: (
@@ -234,49 +263,95 @@ export function companyService(db: Db) {
         return enrichCompany(hydrated);
       }),
 
+    pause: async (id: string, reason: "manual" | "budget" | "system" = "manual") =>
+      db.transaction(async (tx) => {
+        const existing = await getHydratedCompanyById(id, tx);
+        if (!existing) return null;
+        if (existing.status === "archived") {
+          throw conflict("Archived companies cannot be paused");
+        }
+        if (existing.status === "paused" && existing.pauseReason && existing.pausedAt) {
+          return existing;
+        }
+
+        await tx
+          .update(companies)
+          .set({
+            status: "paused",
+            pauseReason: reason,
+            pausedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(companies.id, id));
+
+        return getHydratedCompanyById(id, tx);
+      }),
+
+    resume: async (id: string) =>
+      db.transaction(async (tx) => {
+        const existing = await getHydratedCompanyById(id, tx);
+        if (!existing) return null;
+        if (existing.status !== "paused") {
+          throw conflict("Only paused companies can be resumed");
+        }
+
+        await tx
+          .update(companies)
+          .set({
+            status: "active",
+            pauseReason: null,
+            pausedAt: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(companies.id, id));
+
+        return getHydratedCompanyById(id, tx);
+      }),
+
     archive: (id: string) =>
       db.transaction(async (tx) => {
-        const updated = await tx
+        const existing = await getHydratedCompanyById(id, tx);
+        if (!existing) return null;
+        if (existing.status === "archived") {
+          return existing;
+        }
+
+        await tx
           .update(companies)
-          .set({ status: "archived", updatedAt: new Date() })
+          .set({
+            status: "archived",
+            pauseReason: null,
+            pausedAt: null,
+            updatedAt: new Date(),
+          })
           .where(eq(companies.id, id))
-          .returning()
-          .then((rows) => rows[0] ?? null);
-        if (!updated) return null;
-        const row = await getCompanyQuery(tx)
-          .where(eq(companies.id, id))
-          .then((rows) => rows[0] ?? null);
-        if (!row) return null;
-        const [hydrated] = await hydrateCompanySpend([row], tx);
-        return enrichCompany(hydrated);
+          .returning();
+
+        return getHydratedCompanyById(id, tx);
+      }),
+
+    deleteGuarded: (id: string, confirmationText?: string) =>
+      db.transaction(async (tx) => {
+        const existing = await getHydratedCompanyById(id, tx);
+        if (!existing) return null;
+        if (existing.status === "active") {
+          throw conflict("Active companies must be paused or archived before deletion");
+        }
+        if (confirmationText !== existing.name) {
+          throw unprocessable("Company name confirmation must match exactly");
+        }
+
+        await removeCompanyRecords(id, tx);
+        await tx
+          .delete(companies)
+          .where(eq(companies.id, id));
+
+        return existing;
       }),
 
     remove: (id: string) =>
       db.transaction(async (tx) => {
-        // Delete from child tables in dependency order
-        await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, id));
-        await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, id));
-        await tx.delete(heartbeatRuns).where(eq(heartbeatRuns.companyId, id));
-        await tx.delete(agentWakeupRequests).where(eq(agentWakeupRequests.companyId, id));
-        await tx.delete(agentApiKeys).where(eq(agentApiKeys.companyId, id));
-        await tx.delete(agentRuntimeState).where(eq(agentRuntimeState.companyId, id));
-        await tx.delete(issueComments).where(eq(issueComments.companyId, id));
-        await tx.delete(costEvents).where(eq(costEvents.companyId, id));
-        await tx.delete(financeEvents).where(eq(financeEvents.companyId, id));
-        await tx.delete(approvalComments).where(eq(approvalComments.companyId, id));
-        await tx.delete(approvals).where(eq(approvals.companyId, id));
-        await tx.delete(companySecrets).where(eq(companySecrets.companyId, id));
-        await tx.delete(joinRequests).where(eq(joinRequests.companyId, id));
-        await tx.delete(invites).where(eq(invites.companyId, id));
-        await tx.delete(principalPermissionGrants).where(eq(principalPermissionGrants.companyId, id));
-        await tx.delete(companyMemberships).where(eq(companyMemberships.companyId, id));
-        await tx.delete(issues).where(eq(issues.companyId, id));
-        await tx.delete(companyLogos).where(eq(companyLogos.companyId, id));
-        await tx.delete(assets).where(eq(assets.companyId, id));
-        await tx.delete(goals).where(eq(goals.companyId, id));
-        await tx.delete(projects).where(eq(projects.companyId, id));
-        await tx.delete(agents).where(eq(agents.companyId, id));
-        await tx.delete(activityLog).where(eq(activityLog.companyId, id));
+        await removeCompanyRecords(id, tx);
         const rows = await tx
           .delete(companies)
           .where(eq(companies.id, id))
