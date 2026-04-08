@@ -14,6 +14,8 @@ Features that involve:
 - New or modified server services (intent queue, scheduler, lease manager, dispatcher, event log, projections, reconciler)
 - New or modified Express API routes
 - Integration between control plane components
+- Company lifecycle gates, quiesce behavior, cleanup/reconciliation hardening
+- Issue identifier resolution or other shared backend contract fixes
 
 ## Required Skills
 
@@ -53,6 +55,8 @@ None
      ```
    - **Routes**: Create route file in `server/src/routes/`. Register in `server/src/app.ts`. Use Zod for request validation.
    - **Shared types**: Add to `packages/shared/src/` if types are needed by multiple packages.
+   - For lifecycle or identifier work, prefer one shared helper over duplicating logic in multiple routes or services.
+   - Preserve company scoping and board/agent authorization expectations on every new or updated endpoint.
 
 5. **Generate migrations** (if schema changed):
    ```sh
@@ -69,6 +73,8 @@ None
    - For services: run individual test file to verify output: `cd server && npx vitest run src/__tests__/YOUR_TEST.test.ts`
    - For schema: verify migration SQL is additive (no DROP statements unless intentional).
    - For API behavior features: run focused `curl` checks for the exact success and failure cases claimed by the feature, including company-isolation or wrong-actor negatives when relevant.
+   - For lifecycle features: verify both blocked admission and converged shutdown (`active-run`, `live-runs`, orchestrator/stale surfaces) rather than only the route response.
+   - For issue identifier features: verify every secondary issue-detail endpoint that the page uses, not just the primary issue fetch.
    - If you start a local Node service for manual API checks, stop it afterward unless the next verification step explicitly reuses it.
 
 ## Example Handoff
@@ -105,7 +111,7 @@ None
 ## When to Return to Orchestrator
 
 - Feature depends on a service or table that doesn't exist yet
-- Existing heartbeat.ts code is too tightly coupled to decompose without broader refactoring
+- Existing lifecycle/admission paths are too entangled to update safely within one worker session
 - Migration conflicts with existing data
 - Test infrastructure (embedded Postgres) fails to start
 - Requirements are ambiguous about behavior in edge cases

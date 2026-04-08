@@ -11,6 +11,8 @@ NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the W
 
 Features involving `ui/src/` behavior such as:
 - Onboarding flow correctness and adapter gating
+- Onboarding AI drafting and launch convergence
+- Company lifecycle controls, company navigation, and archived/paused visibility
 - Company-context synchronization in routes and detail pages
 - Issue, run, and result visibility in the board UI
 - Web UI stale-recovery and post-recovery visibility
@@ -24,18 +26,23 @@ Features involving `ui/src/` behavior such as:
 1. Read the feature description and the validation assertions it fulfills.
 2. Read the relevant existing code before editing:
    - onboarding: `ui/src/components/OnboardingWizard.tsx`
+   - lifecycle UI: `ui/src/pages/CompanySettings.tsx`, `ui/src/pages/Companies.tsx`
    - issue/run review: `ui/src/pages/IssueDetail.tsx`, `ui/src/components/LiveRunWidget.tsx`
-   - company context: `ui/src/context/CompanyContext.tsx`, detail pages, router helpers
+   - company context: `ui/src/context/CompanyContext.tsx`, company switcher/rail, detail pages, router helpers
+   - branding text surfaces: auth/dashboard/invite/export pages and agent skill-management surfaces
 3. Write tests first. Prefer the narrowest existing UI or route-level test file that can prove the behavior. Add focused component or page tests when possible.
 4. Implement the fix using existing query/state patterns. Preserve company-scoped routing and avoid introducing hidden global state.
 5. Verify with `agent-browser` against the isolated audit instance from `.factory/services.yaml`. Collect screenshots or network evidence for the exact assertions this feature fulfills.
-6. Keep Node-process usage low during verification. Reuse one local app instance when possible and stop any temporary server or helper process once the browser checks that need it are complete.
-7. Run automated verification:
+6. For onboarding launch changes, verify the created issue/run again after a short settle window instead of stopping at the initial success toast or wakeup request.
+7. For lifecycle UI changes, verify all delete affordances and selection fallback behavior; do not assume Company Settings is the only entrypoint.
+8. For public issue-key or company-context fixes, inspect every secondary request the page issues in the browser.
+9. Keep Node-process usage low during verification. Reuse one local app instance when possible and stop any temporary server or helper process once the browser checks that need it are complete.
+10. Run automated verification:
    - focused UI tests first
    - `pnpm -r typecheck`
    - `pnpm test:run -- --maxWorkers=5`
    - `pnpm build` if the feature affects shipped runtime paths
-8. In the handoff, list the URLs visited, company slug/id used, any local processes started for verification, and the exact evidence that proved the web behavior changed.
+11. In the handoff, list the URLs visited, company slug/id used, any local processes started for verification, and the exact evidence that proved the web behavior changed.
 
 ## Example Handoff
 
@@ -95,3 +102,4 @@ Features involving `ui/src/` behavior such as:
 - The required behavior depends on missing API fields or route support
 - The browser flow cannot be exercised because the isolated instance is not bootable
 - The feature requires broader shared-state changes than one worker session can safely make
+- Real Codex-backed onboarding behavior is required but local Codex readiness is unavailable

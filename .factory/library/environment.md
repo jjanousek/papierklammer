@@ -12,10 +12,10 @@ Environment variables, external dependencies, and setup notes.
 - Node.js 25.6.1 (repo requires `>=20`)
 - pnpm 9.15.4
 - macOS darwin arm64
-- `codex` CLI is required for this mission because the audit company uses `codex_local`
+- `codex` CLI is required for this mission because onboarding drafting and Codex onboarding use real `codex_local`
 - Docker is off-limits for this mission
 
-## Isolated audit instances
+## Isolated local instances
 
 Workers and validators should use fresh isolated local instance data instead of the default Papierklammer home.
 
@@ -36,12 +36,7 @@ Important env vars for this mission:
 - `PORT` — hardcoded service port for the chosen instance
 - `DATABASE_URL` — leave unset for embedded Postgres in this mission
 
-For `codex_local`, local readiness may come from existing Codex login state and/or `OPENAI_API_KEY`. Workers must never print or commit secrets.
-
-## Demo repo target
-
-- The audited project is a tiny sibling CLI repo created near `/Users/aischool/work/papierklammer_droid`
-- Use a real absolute workspace path for the demo repo; `codex_local` environment checks depend on a valid local cwd
+For `codex_local`, local readiness may come from existing Codex login state and/or `OPENAI_API_KEY`. Workers must never print or commit secrets. If Codex is unavailable, return to the orchestrator rather than substituting a mock provider silently.
 
 ## Database and migrations
 
@@ -56,5 +51,7 @@ For `codex_local`, local readiness may come from existing Codex login state and/
 
 ## Known local constraints
 
-- TUI validation requires a real PTY; raw non-interactive command execution is insufficient
-- This mission validates one full bundle at a time across Web UI + TUI + API because memory headroom is limited
+- Browser + API validation are the primary surfaces for this mission
+- TUI validation requires a real PTY and is only used when a feature truly touches orchestration/TUI-adjacent behavior
+- This mission validates one full bundle at a time because memory headroom is limited
+- There are existing local uncommitted changes around direct wakeup lease ownership; workers touching that area must inspect them before editing

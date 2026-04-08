@@ -9,7 +9,7 @@ NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the W
 
 ## When to Use This Skill
 
-Features that involve renaming package scopes, environment variables, filesystem paths, or branding across the monorepo.
+Features that involve renaming package scopes, environment variables, filesystem paths, compatibility aliases, or branding/copy alignment across the monorepo.
 
 ## Required Skills
 
@@ -31,6 +31,8 @@ None
    - Be careful with case sensitivity: `PAPERCLIP` vs `paperclip` vs `Paperclip` may all need different replacements.
    - Do NOT rename anything inside `node_modules/` or `dist/` directories.
    - After renames in package.json files, run `pnpm install` to update the lockfile.
+   - For compatibility work, preserve explicitly required legacy tokens/endpoints and change only the human-facing branding around them.
+   - Check both UI copy and server-generated text/snippets, not just static source strings.
 
 4. **For schema changes**:
    - Create new schema files in `packages/db/src/schema/`.
@@ -47,6 +49,7 @@ None
 6. **Manual verification**:
    - Run `rg 'OLD_PATTERN' . --glob '!node_modules/**' --glob '!dist/**' --glob '!.git/**'` to verify no stale references remain.
    - For env var renames, check `.env.example` is updated.
+   - For compatibility branding, curl any generated text surfaces and inspect visible UI copy to confirm that literal compatibility tokens are preserved only where required.
 
 ## Example Handoff
 
@@ -81,3 +84,4 @@ None
 - Rename would break a third-party integration or external API contract
 - Found references in binary/generated files that cannot be renamed
 - pnpm install fails after package.json renames (lockfile conflict)
+- Compatibility requirements are ambiguous and a rename may break existing agent/runtime expectations

@@ -1,70 +1,90 @@
 # Architecture
 
-## What this mission covers
-- Auditing Papierklammer end to end against a real tiny sibling CLI repository using a fresh local-only instance.
-- Verifying the operator loop across onboarding, issue creation, issue execution, output inspection, stale-work detection, and recovery.
-- Stressing the places this mission cares about most: company scoping, orchestrator behavior, stale runs/intents/issues, and operator-visible output.
-- Treating the Web UI, Orchestrator TUI, and API as one control-plane system that must agree on the same company, issue, and run state.
+## What this mission changes
+- Turns company lifecycle state into an operational control plane, not a cosmetic flag.
+- Adds coordinated lifecycle transitions for `pause`, `resume`, `archive`, and guarded `delete`.
+- Extends onboarding so agent selection drives the rest of the flow, including curated Codex choices and AI-assisted drafting.
+- Aligns fork branding so operator-facing and agent-facing text present Papierklammer while preserving explicit compatibility tokens where required.
+- Hardens issue-detail identifier handling and cleanup/concurrency behavior so runtime state stays reviewable and consistent.
 
 ## Runtime surfaces
-### Web UI
-- Board-facing React app served from the local server, used for first-company onboarding and day-to-day review.
-- After company selection, the UI operates in company context and drives issue, agent, run, and settings pages for that company.
-- This mission relies on it to confirm onboarding flow, visible work state, live/completed run review, and post-recovery state.
 
-### Orchestrator TUI
-- Ink-based terminal console in `packages/orchestrator-tui`, launched against the same local instance and requiring a real PTY.
-- Starts with a company picker when no company is preselected, then polls orchestrator status and lets the operator turn free-form intent into normal company actions.
-- Mission-critical behaviors are company selection, action reliability, failure recovery, and the operator’s ability to see that the right company is being managed.
+### Web UI
+- The React board is the operator surface for onboarding, Company Settings, company navigation, issue detail, and skill/invite flows.
+- Lifecycle controls live here as deliberate actions with confirmation, not as free-form status edits.
+- The UI must keep company selection, archived filtering, paused visibility, and issue-detail routing aligned with backend truth.
 
 ### API
-- Express API in `server/src` is the ground-truth state surface for health, companies, issues, runs, and orchestrator actions.
-- Key audit paths include health/onboarding checks plus orchestrator status, stale inventory, nudge, unblock, active-run, live-run, and heartbeat-run endpoints.
-- Board auth and company access checks are part of the mission: denial and isolation checks are first-class evidence, not secondary polish. If the API is wrong, the UI and TUI evidence do not count as trustworthy.
+- The Express API is the source of truth for company lifecycle transitions, work admission, issue/run state, invite/onboarding text, and skill metadata.
+- Company lifecycle behavior is coordinated at this layer: authorization, quiesce, audit logging, and admission blocking must all agree.
+- The API also exposes the identifier contracts the UI depends on, especially for issue detail and compatibility skill surfaces.
 
-### CLI heartbeat runner
-- The shipped CLI is also a real runtime consumer for this mission, especially `papierklammer heartbeat run`.
-- That command explicitly supports agent-authenticated usage via `--api-key`, triggers `/agents/:id/wakeup`, and then polls `/api/heartbeat-runs/:runId/events` plus `/api/heartbeat-runs/:runId/log` to stream progress.
-- Auth or contract changes on heartbeat-run detail endpoints must preserve this CLI path or reject it intentionally and explicitly; otherwise in-repo runtime validation can regress even if Web UI and TUI checks still pass.
+### Agent/runtime surfaces
+- Local agent execution and onboarding-generated instructions are part of the product surface for this mission.
+- Real Codex-backed behavior is required for onboarding AI assistance when Codex is selected and available.
+- Compatibility skill endpoints may stay stable, but any human-facing instructions emitted by the runtime must reflect fork-native branding and commands.
 
-### Demo repo audit target
-- A tiny sibling CLI repository created near this workspace and used as the real managed project for the audit.
-- Small enough for repeatable local runs, but real enough to produce actual issue execution, file changes, and inspectable outputs.
-- It is the execution target that proves Papierklammer is managing real work rather than only shuffling control-plane metadata.
+### Local validation harness
+- Validation uses isolated local instances on ports `3100` and `3101` with embedded Postgres and one active validation bundle at a time.
+- Browser and API validation are primary; TUI validation is only used when a feature truly touches orchestration/TUI-adjacent behavior.
 
-## Core control flow
-1. Start a fresh isolated local Papierklammer instance and confirm the API is healthy before any company exists.
-2. Onboard the first company in the Web UI with `codex_local`, and confirm adapter readiness before depending on execution.
-3. Seed or create work tied to the demo CLI repo through one of the main entry paths: onboarding-created starter work, board-created work in the Web UI, or TUI-created orchestrator work.
-4. Make sure the same company context is selected across UI, TUI, and API checks before mutating or reviewing that work.
-5. Let the assigned `codex_local` agent pick up that work, create a heartbeat run, and execute against the demo repo workspace.
-6. Review live progress and final results through issue/run surfaces while matching the same `companyId`, `issueId`, and `runId` across operator surfaces.
-7. Exercise stale or blocked paths, recover them through cleanup or unblock actions, and verify all surfaces converge back to a schedulable, reviewable state.
+## Core control flows
+
+### Company lifecycle flow
+1. The operator initiates a lifecycle action from a dedicated surface.
+2. The backend authorizes the actor, resolves the company, and routes the request through coordinated lifecycle logic rather than a generic update path.
+3. `pause` and `archive` quiesce current work, suppress future admission, and record an audit trail.
+4. `resume` restores future admission without replaying canceled work.
+5. `delete` requires prior quiesce plus explicit confirmation, then permanently removes the company through the guarded path only.
+
+### Work admission flow
+1. Work can be proposed from multiple entrypoints: manual wakeups, timer/routine scheduling, issue-side mutations, orchestrator actions, and direct assignment wakeups.
+2. Every admission path must pass through a shared company-runnable decision.
+3. If the company is paused, archived, or missing, new execution is blocked consistently regardless of entrypoint.
+4. If work is admitted, issue ownership, execution leases, and run identity must remain coherent across operator-visible surfaces.
+
+### Onboarding flow
+1. On a fresh instance, the operator picks the agent/provider first.
+2. That choice determines what models and AI drafting capabilities are available in later onboarding steps.
+3. Company and first-task drafts are generated through the selected real provider path when available, then remain editable.
+4. If Codex is selected, Codex-backed drafting must use the real Codex path or fail/disable visibly; it must not silently fall back to another provider.
+5. Completing onboarding creates the company, agent, initial work, and first wakeup in one coherent sequence, lands the operator on the created issue, and provides the bootstrap instruction context required for the first run to start cleanly.
+
+### Branding and compatibility flow
+1. Operators and agents may still encounter stable compatibility tokens such as `paperclip` skill IDs or legacy endpoint names.
+2. Those compatibility tokens are protocol/runtime concerns, not the primary product brand.
+3. Stable compatibility surfaces that must be preserved intentionally include `/api/skills/paperclip`, `paperclip-create-agent`, and runtime skill canonicalization paths that map compatibility requests into fork-owned namespaces.
+4. Human-facing UI, generated docs, onboarding text, and runtime instructions should present Papierklammer unless a literal compatibility token must be shown.
+
+### Issue-detail review flow
+1. Operators deep-link into issues by public issue key as often as by UUID-backed internal references.
+2. The backend must resolve identifiers consistently for every issue-detail subroute, not just the primary issue fetch.
+3. Issue detail, live-run views, company run feeds, and orchestrator status must converge on the same ownership and cleanup state after lifecycle actions or recovery actions.
 
 ## State and invariants
-- Every important record is company-scoped; no action in company A should create, reveal, or mutate work in company B.
-- The selected company in the Web UI and the selected company in the TUI must match the company used for follow-up API reads and mutations.
-- One live run should keep the same identity across issue detail, company live-run feeds, heartbeat-run feeds, and orchestrator status.
-- `codex_local` must be locally installed and authenticated enough to pass environment validation before the mission relies on it.
-- Stale recovery is explicit and observable: cleanup or unblock should clear ownership and stale queued work rather than merely hiding symptoms.
-- Completed or failed runs must remain reviewable through operator-facing output surfaces, not only via backend-only state.
-- This mission is local-only and fresh-instance oriented; do not rely on Docker, remote services, or leftover prior state.
+- Company lifecycle state is a runtime gate: `paused` and `archived` are non-runnable states.
+- Lifecycle mutations are board-only and company-scoped; agent actors and wrong-company callers must be rejected.
+- No API or UI entrypoint may bypass coordinated lifecycle side effects through generic update or legacy destructive paths.
+- Company-scoped actions stay company-scoped; no lifecycle or issue-detail action may leak across company boundaries.
+- Quiesce clears both active work and its visible ownership residue; a company is not truly quiesced if stale issue/run ownership remains.
+- Direct assignment wakeups must establish durable execution ownership; the first run after onboarding cannot collapse into orphan cleanup.
+- Onboarding-generated text is operator-editable; submitted values must reflect the final visible edits, not hidden draft state.
+- Compatibility identifiers may remain stable, but operator-facing branding should be Papierklammer-first.
 
 ## Known risk concentrations
-- Company-context drift between prefixed Web UI routes, stored selected-company state, and TUI company selection.
-- The custom UI router wrapper in `ui/src/lib/router.tsx` auto-prefixes absolute `useNavigate()` targets with the active/selected company, so route-sync fixes sometimes need raw `react-router-dom` navigation to avoid reintroducing stale company prefixes during canonical redirects.
-- Onboarding or adapter-validation paths reporting `codex_local` readiness incorrectly before real work starts.
-- Stale run, lease, and intent cleanup leaving an issue half-locked or causing UI/TUI/API status disagreement.
-- Output-visibility failures where work runs exist but operators cannot inspect transcript, logs, or results from issue-centric review flows.
-- TUI startup and action handling around no-company state, PTY requirements, failed turns, and company switching.
-- Demo-repo workspace/session reuse during repeated local runs, especially after stale failures or forced recovery.
+- Legacy lifecycle bypasses in generic company update or delete paths.
+- Missing admission checks in one-off wakeup producers outside the main scheduler path.
+- Lock ordering between quiesce, cleanup, lease release, reconciler work, and stale-run teardown.
+- Onboarding flow dependencies between provider/model readiness and AI-assisted drafting.
+- Branding drift between UI copy, server-generated text, seeded onboarding assets, and compatibility skill endpoints.
+- Public-issue-key handling drift across issue-detail subroutes when identifier resolution is duplicated instead of shared.
+- Secondary issue-detail endpoints that must remain aligned include activity, runs, live-runs, active-run, approvals, attachments, work-products, and comments when the page consumes them.
 
 ## Worker guidance
-- Think in evidence chains: company -> issue -> run -> output.
-- Use the API as the truth source first, then verify how the Web UI and TUI represent that same state.
-- Primary proof endpoints in this mission are `/api/health`, `/api/companies`, `/api/orchestrator/status`, `/api/orchestrator/stale`, `/api/issues/:issueId/active-run`, `/api/issues/:issueId/live-runs`, and `/api/companies/:companyId/heartbeat-runs`.
-- When comparing operator-facing run summaries across surfaces, keep the UI/TUI field precedence aligned with the existing server-side heartbeat-run summary behavior, including structured `error` summaries for failed runs.
-- Prioritize onboarding, company scoping, run visibility, and stale recovery over low-value implementation details.
-- Use the demo CLI repo for real execution and output review, not synthetic placeholders.
-- Prefer fresh local state over inherited state whenever behavior is ambiguous.
-- If `codex_local`, PTY access, or company scoping is broken, treat that as a mission blocker and report it clearly.
+- Inspect these touchpoints first for this mission: `server/src/routes/companies.ts`, `server/src/services/companies.ts`, `server/src/services/heartbeat.ts`, `server/src/services/reconciler.ts`, `server/src/routes/issues.ts`, `ui/src/pages/CompanySettings.tsx`, `ui/src/components/OnboardingWizard.tsx`, `ui/src/pages/IssueDetail.tsx`, `packages/adapter-utils/src/server-utils.ts`, and `server/src/routes/access.ts`.
+- Treat lifecycle coordination as a cross-cutting backend invariant first, then expose it in the UI.
+- When changing admission behavior, inspect all known work producers; do not assume the scheduler path is the only entrypoint.
+- When changing onboarding, preserve the end-to-end sequence from agent selection to first wakeup and re-check the first run after a short settle window.
+- When changing branding, separate compatibility tokens from human-facing labels and instructions.
+- When changing issue-detail behavior, verify all secondary subroutes that the page uses, not just the primary issue fetch.
+- Prefer shared resolvers/helpers over duplicated identifier or lifecycle logic.
