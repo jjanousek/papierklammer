@@ -35,6 +35,7 @@ import { parseCron, validateCron } from "./cron.js";
 import { queueIssueAssignmentIntent } from "./issue-assignment-wakeup.js";
 import { intentQueueService } from "./intent-queue.js";
 import { logActivity } from "./activity-log.js";
+import { companyService } from "./companies.js";
 
 const OPEN_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked"];
 const LIVE_HEARTBEAT_RUN_STATUSES = ["queued", "running"];
@@ -145,6 +146,7 @@ export function routineService(db: Db) {
   const issueSvc = issueService(db);
   const secretsSvc = secretService(db);
   const intentQueue = intentQueueService(db);
+  const companiesSvc = companyService(db);
 
   async function getRoutineById(id: string) {
     return db
@@ -638,6 +640,23 @@ export function routineService(db: Db) {
 
       let createdIssue: Awaited<ReturnType<typeof issueSvc.create>> | null = null;
       try {
+        const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(input.routine.companyId);
+        if (companyAdmissionBlock) {
+          const failed = await finalizeRun(createdRun.id, {
+            status: "failed",
+            failureReason: companyAdmissionBlock.reason,
+            completedAt: triggeredAt,
+          }, txDb);
+          await updateRoutineTouchedState({
+            routineId: input.routine.id,
+            triggerId: input.trigger?.id ?? null,
+            triggeredAt,
+            status: "failed",
+            nextRunAt,
+          }, txDb);
+          return failed ?? createdRun;
+        }
+
         const activeIssue = await findLiveExecutionIssue(input.routine, txDb);
         if (activeIssue && input.routine.concurrencyPolicy !== "always_enqueue") {
           const status = input.routine.concurrencyPolicy === "skip_if_active" ? "skipped" : "coalesced";

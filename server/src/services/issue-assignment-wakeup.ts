@@ -2,6 +2,7 @@ import type { Db } from "@papierklammer/db";
 import { logger } from "../middleware/logger.js";
 import type { intentQueueService } from "./intent-queue.js";
 import { INTENT_PRIORITY_MAP } from "./intent-queue.js";
+import { companyService } from "./companies.js";
 
 type WakeupTriggerDetail = "manual" | "ping" | "callback" | "system";
 type WakeupSource = "timer" | "assignment" | "on_demand" | "automation";
@@ -81,6 +82,19 @@ export async function queueIssueAssignmentIntent(input: {
   rethrowOnError?: boolean;
 }) {
   if (!input.issue.assigneeAgentId || input.issue.status === "backlog") return;
+  const companiesSvc = companyService(input.db);
+  const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(input.issue.companyId);
+  if (companyAdmissionBlock) {
+    logger.info(
+      {
+        issueId: input.issue.id,
+        companyId: input.issue.companyId,
+        reason: companyAdmissionBlock.reason,
+      },
+      "skipping issue assignment intent because company work admission is blocked",
+    );
+    return null;
+  }
 
   try {
     return await input.intentQueue.createIntent({

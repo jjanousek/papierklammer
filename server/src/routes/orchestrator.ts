@@ -7,7 +7,8 @@ import { issueService } from "../services/issues.js";
 import { intentQueueService } from "../services/intent-queue.js";
 import { leaseManagerService } from "../services/lease-manager.js";
 import { orchestratorService } from "../services/orchestrator.js";
-import { badRequest, notFound } from "../errors.js";
+import { companyService } from "../services/companies.js";
+import { badRequest, conflict, notFound } from "../errors.js";
 
 const createIssueSchema = z.object({
   companyId: z.string().uuid(),
@@ -33,6 +34,7 @@ export interface OrchestratorRouteDependencies {
   intentQueueService?: ReturnType<typeof intentQueueService>;
   leaseManagerService?: ReturnType<typeof leaseManagerService>;
   orchestratorService?: ReturnType<typeof orchestratorService>;
+  companyService?: ReturnType<typeof companyService>;
 }
 
 /**
@@ -56,6 +58,7 @@ export function orchestratorRoutes(
   const intentQueue = deps.intentQueueService ?? intentQueueService(db);
   const leaseMgr = deps.leaseManagerService ?? leaseManagerService(db);
   const orchSvc = deps.orchestratorService ?? orchestratorService(db);
+  const companiesSvc = deps.companyService ?? companyService(db);
 
   /**
    * GET /api/orchestrator/status?companyId=xxx
@@ -309,6 +312,15 @@ export function orchestratorRoutes(
       throw notFound("Agent not found");
     }
     assertCompanyAccess(req, agent.companyId);
+
+    const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(agent.companyId);
+    if (companyAdmissionBlock) {
+      throw conflict(companyAdmissionBlock.reason, {
+        scopeType: companyAdmissionBlock.scopeType,
+        scopeId: companyAdmissionBlock.scopeId,
+        status: companyAdmissionBlock.status,
+      });
+    }
 
     const assignedIssue = await orchSvc.findAgentAssignedIssue(
       agent.companyId,

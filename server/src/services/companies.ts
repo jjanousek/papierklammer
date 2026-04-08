@@ -28,6 +28,53 @@ import {
 } from "@papierklammer/db";
 import { conflict, notFound, unprocessable } from "../errors.js";
 
+export interface CompanyWorkAdmissionBlock {
+  scopeType: "company";
+  scopeId: string;
+  scopeName: string;
+  status: "paused" | "archived";
+  reasonCode: "company.paused" | "company.archived";
+  reason: string;
+}
+
+export interface CompanyAdmissionSnapshot {
+  id: string;
+  name: string;
+  status: string | null;
+  pauseReason: string | null;
+}
+
+export function buildCompanyWorkAdmissionBlock(
+  company: CompanyAdmissionSnapshot,
+): CompanyWorkAdmissionBlock | null {
+  if (company.status === "paused") {
+    return {
+      scopeType: "company",
+      scopeId: company.id,
+      scopeName: company.name,
+      status: "paused",
+      reasonCode: "company.paused",
+      reason:
+        company.pauseReason === "budget"
+          ? "Company is paused because its budget hard-stop was reached."
+          : "Company is paused and cannot start new work.",
+    };
+  }
+
+  if (company.status === "archived") {
+    return {
+      scopeType: "company",
+      scopeId: company.id,
+      scopeName: company.name,
+      status: "archived",
+      reasonCode: "company.archived",
+      reason: "Company is archived and cannot start new work.",
+    };
+  }
+
+  return null;
+}
+
 export function companyService(db: Db) {
   const ISSUE_PREFIX_FALLBACK = "CMP";
 
@@ -192,6 +239,21 @@ export function companyService(db: Db) {
 
     getById: async (id: string) => {
       return getHydratedCompanyById(id, db);
+    },
+
+    getWorkAdmissionBlock: async (id: string): Promise<CompanyWorkAdmissionBlock | null> => {
+      const company = await db
+        .select({
+          id: companies.id,
+          name: companies.name,
+          status: companies.status,
+          pauseReason: companies.pauseReason,
+        })
+        .from(companies)
+        .where(eq(companies.id, id))
+        .then((rows) => rows[0] ?? null);
+      if (!company) throw notFound("Company not found");
+      return buildCompanyWorkAdmissionBlock(company);
     },
 
     create: async (data: typeof companies.$inferInsert) => {

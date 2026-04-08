@@ -317,9 +317,13 @@ describeDB("manual unblock run-state convergence", () => {
     ]);
 
     const staleAfter = await request(app).get("/api/orchestrator/stale").query({ companyId });
+    const staleBody = readJsonBody<{
+      staleRuns: Array<unknown>;
+      orphanedLeases: Array<unknown>;
+    }>(staleAfter);
     expect(staleAfter.status).toBe(200);
-    expect(staleAfter.body.staleRuns).toEqual([]);
-    expect(staleAfter.body.orphanedLeases).toEqual([]);
+    expect(staleBody.staleRuns).toEqual([]);
+    expect(staleBody.orphanedLeases).toEqual([]);
 
     const storedRuns = await db
       .select({

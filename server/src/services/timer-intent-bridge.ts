@@ -4,6 +4,7 @@ import { agents, issues } from "@papierklammer/db";
 import type { intentQueueService } from "./intent-queue.js";
 import { INTENT_PRIORITY_MAP } from "./intent-queue.js";
 import { parseObject, asNumber, asBoolean } from "../adapters/utils.js";
+import { companyService } from "./companies.js";
 
 /**
  * Issue statuses considered "open" for timer-hint intents.
@@ -48,10 +49,19 @@ export async function tickTimers(
   intentQueue: ReturnType<typeof intentQueueService>,
   now = new Date(),
 ) {
+  const companiesSvc = companyService(db);
+  const companyAdmissionCache = new Map<string, Awaited<ReturnType<typeof companiesSvc.getWorkAdmissionBlock>>>();
   const allAgents = await db.select().from(agents);
   let checked = 0;
   let intentsCreated = 0;
   let skipped = 0;
+
+  async function getCompanyAdmissionBlock(companyId: string) {
+    if (!companyAdmissionCache.has(companyId)) {
+      companyAdmissionCache.set(companyId, await companiesSvc.getWorkAdmissionBlock(companyId));
+    }
+    return companyAdmissionCache.get(companyId) ?? null;
+  }
 
   for (const agent of allAgents) {
     // Skip non-invokable agents
@@ -60,6 +70,12 @@ export async function tickTimers(
       agent.status === "terminated" ||
       agent.status === "pending_approval"
     ) {
+      continue;
+    }
+
+    const companyAdmissionBlock = await getCompanyAdmissionBlock(agent.companyId);
+    if (companyAdmissionBlock) {
+      skipped += 1;
       continue;
     }
 

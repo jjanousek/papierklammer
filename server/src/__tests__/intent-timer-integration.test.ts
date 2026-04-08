@@ -58,6 +58,7 @@ describeDB("intent-timer-integration", () => {
 
   /** Helper: seed company + agent + project + issue */
   async function seedTestData(opts?: {
+    companyStatus?: "active" | "paused" | "archived";
     agentStatus?: string;
     heartbeatEnabled?: boolean;
     intervalSec?: number;
@@ -72,6 +73,7 @@ describeDB("intent-timer-integration", () => {
     await db.insert(companies).values({
       id: companyId,
       name: "TestCo",
+      status: opts?.companyStatus ?? "active",
       issuePrefix: `T${companyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
       requireBoardApprovalForNewAgents: false,
     });
@@ -188,6 +190,32 @@ describeDB("intent-timer-integration", () => {
 
       const { tickTimers } = await import("../services/timer-intent-bridge.js");
       const result = await tickTimers(db, svc, new Date());
+
+      const intents = await db
+        .select()
+        .from(dispatchIntents)
+        .where(eq(dispatchIntents.targetAgentId, agentId));
+      expect(intents.length).toBe(0);
+    });
+
+    it("skips paused companies", async () => {
+      await seedTestData({ companyStatus: "paused" });
+
+      const { tickTimers } = await import("../services/timer-intent-bridge.js");
+      await tickTimers(db, svc, new Date());
+
+      const intents = await db
+        .select()
+        .from(dispatchIntents)
+        .where(eq(dispatchIntents.targetAgentId, agentId));
+      expect(intents.length).toBe(0);
+    });
+
+    it("skips archived companies", async () => {
+      await seedTestData({ companyStatus: "archived" });
+
+      const { tickTimers } = await import("../services/timer-intent-bridge.js");
+      await tickTimers(db, svc, new Date());
 
       const intents = await db
         .select()
@@ -425,6 +453,48 @@ describeDB("intent-timer-integration", () => {
         .where(eq(dispatchIntents.issueId, issueId));
       expect(intents.length).toBe(1);
       expect(intents[0].dedupeKey).toBe(`issue:${issueId}`);
+    });
+
+    it("does not create issue_assigned intents for paused companies", async () => {
+      await seedTestData({ companyStatus: "paused" });
+
+      const { queueIssueAssignmentIntent } = await import(
+        "../services/issue-assignment-wakeup.js"
+      );
+
+      await queueIssueAssignmentIntent({
+        db,
+        intentQueue: svc,
+        issue: { id: issueId, assigneeAgentId: agentId, status: "todo", companyId, projectId },
+        reason: "issue_assigned",
+      });
+
+      const intents = await db
+        .select()
+        .from(dispatchIntents)
+        .where(eq(dispatchIntents.issueId, issueId));
+      expect(intents.length).toBe(0);
+    });
+
+    it("does not create issue_assigned intents for archived companies", async () => {
+      await seedTestData({ companyStatus: "archived" });
+
+      const { queueIssueAssignmentIntent } = await import(
+        "../services/issue-assignment-wakeup.js"
+      );
+
+      await queueIssueAssignmentIntent({
+        db,
+        intentQueue: svc,
+        issue: { id: issueId, assigneeAgentId: agentId, status: "todo", companyId, projectId },
+        reason: "issue_assigned",
+      });
+
+      const intents = await db
+        .select()
+        .from(dispatchIntents)
+        .where(eq(dispatchIntents.issueId, issueId));
+      expect(intents.length).toBe(0);
     });
   });
 });

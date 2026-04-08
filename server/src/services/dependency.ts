@@ -5,6 +5,7 @@ import { badRequest, conflict, notFound } from "../errors.js";
 import { intentQueueService, INTENT_PRIORITY_MAP } from "./intent-queue.js";
 import { eventLogService } from "./event-log.js";
 import { logger } from "../middleware/logger.js";
+import { companyService } from "./companies.js";
 
 /**
  * Issue statuses considered "done" for dependency resolution.
@@ -23,6 +24,7 @@ const DONE_STATUSES = ["done"];
 export function dependencyService(db: Db) {
   const intentQueue = intentQueueService(db);
   const eventLog = eventLogService(db);
+  const companiesSvc = companyService(db);
 
   /**
    * Check if adding a dependency from `issueId` → `dependsOnIssueId` would
@@ -231,6 +233,11 @@ export function dependencyService(db: Db) {
       completedIssueId: string,
       companyId: string,
     ): Promise<string[]> {
+      const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(companyId);
+      if (companyAdmissionBlock) {
+        return [];
+      }
+
       // Find all issues that depend on the completed issue
       const dependents = await db
         .select({

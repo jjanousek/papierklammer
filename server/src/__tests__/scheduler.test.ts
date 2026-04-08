@@ -494,7 +494,7 @@ describeDB("schedulerService", () => {
       const result = await scheduler.processIntent(intent.id);
 
       expect(result.admitted).toBe(false);
-      expect(result.reason).toContain("budget exhausted");
+      expect(result.reason).toBe("Company is paused because its budget hard-stop was reached.");
 
       const updatedIntent = await intentQueue.getIntent(intent.id);
       expect(updatedIntent!.status).toBe("rejected");

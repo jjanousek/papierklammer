@@ -550,6 +550,35 @@ describeDB("dependency-aware dispatch", () => {
       expect(intentIds).toHaveLength(0);
     });
 
+    it.each(["paused", "archived"] as const)(
+      "does not create dependency_unblocked intents when the company is %s",
+      async (companyStatus) => {
+        await seedBase();
+        const issueA = await createIssue();
+        const issueB = await createIssue();
+
+        await depSvc.addDependency(issueA, issueB, companyId);
+
+        await db
+          .update(issues)
+          .set({ status: "done" })
+          .where(eq(issues.id, issueB));
+        await db
+          .update(companies)
+          .set({
+            status: companyStatus,
+            pausedAt: companyStatus === "paused" ? new Date() : null,
+          })
+          .where(eq(companies.id, companyId));
+
+        const intentIds = await depSvc.onDependencyCompleted(issueB, companyId);
+        expect(intentIds).toHaveLength(0);
+
+        const intents = await intentQueue.findQueuedIntents({ companyId });
+        expect(intents).toHaveLength(0);
+      },
+    );
+
     it("creates intents for multiple dependents when they are all unblocked", async () => {
       await seedBase();
       const issueA = await createIssue(); // depends on C

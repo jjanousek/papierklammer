@@ -75,6 +75,16 @@ async function waitForCall(
   return call;
 }
 
+async function submitPrompt(input: {
+  stdin: { write: (value: string) => void };
+  lastFrame: () => string | undefined;
+  text: string;
+}) {
+  input.stdin.write(input.text);
+  await waitForFrame(input.lastFrame, (frame) => frame.includes(input.text));
+  input.stdin.write("\r");
+}
+
 function createMockProcess() {
   const stdin = new PassThrough();
   const stdout = new PassThrough();
@@ -193,9 +203,11 @@ describe("company-scoped orchestrator behavior", () => {
 
     respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
 
-    stdin.write("Please sort out our onboarding confusion");
-    await tick(20);
-    stdin.write("\r");
+    await submitPrompt({
+      stdin,
+      lastFrame,
+      text: "Please sort out our onboarding confusion",
+    });
 
     const threadStart = await waitForRequest<{ params: { baseInstructions?: string } }>(
       requests,
@@ -247,9 +259,11 @@ describe("company-scoped orchestrator behavior", () => {
     await waitForRequest(requestsA, (request: any) => request.method === "initialize");
     respond(procA, { id: 0, result: { userAgent: "codex/0.117.0" } });
 
-    stdin.write("Review Alpha progress");
-    await tick(20);
-    stdin.write("\r");
+    await submitPrompt({
+      stdin,
+      lastFrame,
+      text: "Review Alpha progress",
+    });
 
     await waitForRequest(requestsA, (request: any) => request.method === "thread/start");
     respond(procA, { id: 1, result: { thread: { id: "thr_alpha" } } });
@@ -321,9 +335,11 @@ describe("company-scoped orchestrator behavior", () => {
     expect(switchedFrame).not.toContain("Alpha update ready.");
     expect(switchedFrame).not.toContain("thr_alpha");
 
-    stdin.write("Create work for Beta");
-    await tick(20);
-    stdin.write("\r");
+    await submitPrompt({
+      stdin,
+      lastFrame,
+      text: "Create work for Beta",
+    });
 
     const threadStartB = await waitForRequest<{ params: { baseInstructions?: string } }>(
       requestsB,

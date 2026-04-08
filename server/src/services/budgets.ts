@@ -23,6 +23,7 @@ import type {
 } from "@papierklammer/shared";
 import { notFound, unprocessable } from "../errors.js";
 import { logActivity } from "./activity-log.js";
+import { buildCompanyWorkAdmissionBlock } from "./companies.js";
 
 type ScopeRecord = {
   companyId: string;
@@ -732,6 +733,7 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
 
       const company = await db
         .select({
+          id: companies.id,
           status: companies.status,
           pauseReason: companies.pauseReason,
           name: companies.name,
@@ -740,15 +742,16 @@ export function budgetService(db: Db, hooks: BudgetServiceHooks = {}) {
         .where(eq(companies.id, companyId))
         .then((rows) => rows[0] ?? null);
       if (!company) throw notFound("Company not found");
-      if (company.status === "paused") {
+      const companyAdmissionBlock = buildCompanyWorkAdmissionBlock({
+        ...company,
+        id: company.id ?? companyId,
+      });
+      if (companyAdmissionBlock) {
         return {
-          scopeType: "company" as const,
-          scopeId: companyId,
-          scopeName: company.name,
-          reason:
-            company.pauseReason === "budget"
-              ? "Company is paused because its budget hard-stop was reached."
-              : "Company is paused and cannot start new work.",
+          scopeType: companyAdmissionBlock.scopeType,
+          scopeId: companyAdmissionBlock.scopeId,
+          scopeName: companyAdmissionBlock.scopeName,
+          reason: companyAdmissionBlock.reason,
         };
       }
 

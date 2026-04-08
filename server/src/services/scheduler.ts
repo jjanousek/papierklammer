@@ -11,6 +11,7 @@ import {
 } from "@papierklammer/db";
 import { intentQueueService } from "./intent-queue.js";
 import { budgetService } from "./budgets.js";
+import { companyService } from "./companies.js";
 import { eventLogService } from "./event-log.js";
 import { dependencyService } from "./dependency.js";
 import { lookupWarmWorkspace } from "./warm-workspace-pool.js";
@@ -70,6 +71,7 @@ function normalizeMaxConcurrentRuns(value: unknown) {
 export function schedulerService(db: Db) {
   const intentQueue = intentQueueService(db);
   const budgets = budgetService(db);
+  const companiesSvc = companyService(db);
   const eventLog = eventLogService(db);
   const deps = dependencyService(db);
 
@@ -110,6 +112,11 @@ export function schedulerService(db: Db) {
     // 1. notBefore — skip if not yet due
     if (intent.notBefore && intent.notBefore.getTime() > now.getTime()) {
       return { admitted: false, reason: "notBefore is in the future" };
+    }
+
+    const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(intent.companyId);
+    if (companyAdmissionBlock) {
+      return { admitted: false, reason: companyAdmissionBlock.reason };
     }
 
     // 2. Issue still open (company-scoped)

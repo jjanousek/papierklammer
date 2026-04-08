@@ -27,6 +27,7 @@ import { createLocalAgentJwt } from "../agent-auth-jwt.js";
 import { parseObject, asBoolean, asNumber, appendWithCap, MAX_EXCERPT_BYTES } from "../adapters/utils.js";
 import { costService } from "./costs.js";
 import { companySkillService } from "./company-skills.js";
+import { companyService } from "./companies.js";
 import { budgetService, type BudgetEnforcementScope } from "./budgets.js";
 import { secretService } from "./secrets.js";
 import { tickTimers as tickTimersViaIntents } from "./timer-intent-bridge.js";
@@ -888,6 +889,7 @@ function resolveNextSessionState(input: {
 }
 
 export function heartbeatService(db: Db) {
+  const companiesSvc = companyService(db);
   const instanceSettings = instanceSettingsService(db);
   const eventLog = eventLogService(db);
   const getCurrentUserRedactionOptions = async () => ({
@@ -1633,6 +1635,11 @@ export function heartbeatService(db: Db) {
     agent: typeof agents.$inferSelect,
     now: Date,
   ) {
+    const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(run.companyId);
+    if (companyAdmissionBlock) {
+      return null;
+    }
+
     const contextSnapshot = parseObject(run.contextSnapshot);
     const issueId = readNonEmptyString(contextSnapshot.issueId);
     const taskKey = deriveTaskKeyWithHeartbeatFallback(contextSnapshot, null);
@@ -1753,6 +1760,11 @@ export function heartbeatService(db: Db) {
 
   async function claimQueuedRun(run: typeof heartbeatRuns.$inferSelect) {
     if (run.status !== "queued") return run;
+    const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(run.companyId);
+    if (companyAdmissionBlock) {
+      await cancelRunInternal(run.id, companyAdmissionBlock.reason);
+      return null;
+    }
     const agent = await getAgent(run.agentId);
     if (!agent) {
       await cancelRunInternal(run.id, "Cancelled because the agent no longer exists");
@@ -1922,6 +1934,9 @@ export function heartbeatService(db: Db) {
         const agent = await getAgent(run.agentId);
         if (agent) {
           retriedRun = await enqueueProcessLossRetry(finalizedRun, agent, now);
+        }
+        if (!retriedRun) {
+          await releaseIssueExecutionAndPromote(finalizedRun);
         }
       } else {
         await releaseIssueExecutionAndPromote(finalizedRun);
@@ -3475,6 +3490,16 @@ export function heartbeatService(db: Db) {
         .from(issues)
         .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
         .then((rows) => rows[0]?.projectId ?? null);
+    }
+
+    const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(agent.companyId);
+    if (companyAdmissionBlock) {
+      await writeSkippedRequest(companyAdmissionBlock.reasonCode);
+      throw conflict(companyAdmissionBlock.reason, {
+        scopeType: companyAdmissionBlock.scopeType,
+        scopeId: companyAdmissionBlock.scopeId,
+        status: companyAdmissionBlock.status,
+      });
     }
 
     const budgetBlock = await budgets.getInvocationBlock(agent.companyId, agentId, {

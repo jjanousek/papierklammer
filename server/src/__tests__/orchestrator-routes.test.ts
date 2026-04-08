@@ -35,6 +35,10 @@ let mockOrchestratorService: {
   recoverIssueForRun: ReturnType<typeof vi.fn>;
 };
 
+let mockCompanyService: {
+  getWorkAdmissionBlock: ReturnType<typeof vi.fn>;
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
@@ -69,6 +73,7 @@ function getRouteHandlers(
     intentQueueService: mockIntentQueueService as any,
     leaseManagerService: mockLeaseManagerService as any,
     orchestratorService: mockOrchestratorService as any,
+    companyService: mockCompanyService as any,
   });
   const layer = (router as any).stack.find(
     (entry: any) =>
@@ -189,6 +194,9 @@ describe.sequential("orchestrator routes", () => {
       clearIssueLock: vi.fn(),
       recoverIssueForManualUnblock: vi.fn(),
       recoverIssueForRun: vi.fn(),
+    };
+    mockCompanyService = {
+      getWorkAdmissionBlock: vi.fn().mockResolvedValue(null),
     };
   });
 
@@ -1053,6 +1061,33 @@ describe.sequential("orchestrator routes", () => {
       });
 
       expect(res.status).toBe(400);
+    });
+
+    it("returns 409 when the company is paused or archived", async () => {
+      mockOrchestratorService.getAgent.mockResolvedValue({
+        id: AGENT_ID,
+        companyId: COMPANY_ID,
+        name: "Alpha",
+      });
+      mockCompanyService.getWorkAdmissionBlock.mockResolvedValue({
+        scopeType: "company",
+        scopeId: COMPANY_ID,
+        scopeName: "Paperclip",
+        status: "paused",
+        reasonCode: "company.paused",
+        reason: "Company is paused and cannot start new work.",
+      });
+
+      const res = await callRoute({
+        method: "post",
+        path: "/orchestrator/agents/:id/nudge",
+        params: { id: AGENT_ID },
+        body: {},
+      });
+
+      expect(res.status).toBe(409);
+      expect(mockOrchestratorService.findAgentAssignedIssue).not.toHaveBeenCalled();
+      expect(mockIntentQueueService.createIntent).not.toHaveBeenCalled();
     });
 
     it("echoes corrective-action payloads for nudge", async () => {

@@ -207,6 +207,38 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
     expect(intents).toHaveLength(1);
   });
 
+  it.each(["paused", "archived"] as const)(
+    "does not create a routine execution issue when the company is %s",
+    async (companyStatus) => {
+      const { companyId, routine, svc } = await seedFixture();
+
+      await db
+        .update(companies)
+        .set({
+          status: companyStatus,
+          pausedAt: companyStatus === "paused" ? new Date() : null,
+        })
+        .where(eq(companies.id, companyId));
+
+      const run = await svc.runRoutine(routine.id, { source: "manual" });
+      expect(run.status).toBe("failed");
+      expect(run.linkedIssueId).toBeNull();
+      expect(run.failureReason).toContain("cannot start new work");
+
+      const routineIssues = await db
+        .select()
+        .from(issues)
+        .where(eq(issues.originId, routine.id));
+      expect(routineIssues).toHaveLength(0);
+
+      const intents = await db
+        .select()
+        .from(dispatchIntents)
+        .where(eq(dispatchIntents.companyId, companyId));
+      expect(intents).toHaveLength(0);
+    },
+  );
+
   it("coalesces only when the existing routine issue has a live execution run", async () => {
     const { agentId, companyId, issueSvc, routine, svc } = await seedFixture();
     const previousRunId = randomUUID();
