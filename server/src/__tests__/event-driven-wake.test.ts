@@ -74,6 +74,7 @@ describeDB("event-driven wake model", () => {
 
   /** Helper: seed company + agent + project + workspace + issue */
   async function seedTestData(overrides?: {
+    companyStatus?: "active" | "paused" | "archived";
     issueStatus?: string;
     pickupFailCount?: number;
     agentRuntimeConfig?: Record<string, unknown>;
@@ -87,6 +88,8 @@ describeDB("event-driven wake model", () => {
     await db.insert(companies).values({
       id: companyId,
       name: "TestCo",
+      status: overrides?.companyStatus ?? "active",
+      pausedAt: overrides?.companyStatus === "paused" ? new Date() : null,
       issuePrefix: `T${companyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
       requireBoardApprovalForNewAgents: false,
     });
@@ -219,6 +222,27 @@ describeDB("event-driven wake model", () => {
       });
       expect(intent.priority).toBe(99);
     });
+
+    it.each(["paused", "archived"] as const)(
+      "rejects direct intent creation for %s companies",
+      async (companyStatus) => {
+        await seedTestData({ companyStatus });
+
+        await expect(
+          intentQueue.createIntent({
+            companyId,
+            issueId,
+            projectId,
+            targetAgentId: agentId,
+            intentType: "issue_assigned",
+            workspaceId,
+          }),
+        ).rejects.toThrow("cannot start new work");
+
+        const intents = await db.select().from(dispatchIntents);
+        expect(intents).toHaveLength(0);
+      },
+    );
   });
 
   // ─── VAL-THRU-006: Timer hints have lowest priority ──────────────────────

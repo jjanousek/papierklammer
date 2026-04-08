@@ -241,8 +241,11 @@ export function companyService(db: Db) {
       return getHydratedCompanyById(id, db);
     },
 
-    getWorkAdmissionBlock: async (id: string): Promise<CompanyWorkAdmissionBlock | null> => {
-      const company = await db
+    getWorkAdmissionBlock: async (
+      id: string,
+      database: Pick<Db, "select"> = db,
+    ): Promise<CompanyWorkAdmissionBlock | null> => {
+      const company = await database
         .select({
           id: companies.id,
           name: companies.name,

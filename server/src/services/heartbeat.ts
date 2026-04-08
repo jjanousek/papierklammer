@@ -3339,6 +3339,21 @@ export function heartbeatService(db: Db) {
           continue;
         }
 
+        const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(issue.companyId, tx);
+        if (companyAdmissionBlock) {
+          await tx
+            .update(agentWakeupRequests)
+            .set({
+              status: "skipped",
+              reason: companyAdmissionBlock.reasonCode,
+              error: companyAdmissionBlock.reason,
+              finishedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(agentWakeupRequests.id, deferred.id));
+          continue;
+        }
+
         const deferredPayload = parseObject(deferred.payload);
         const deferredContextSeed = parseObject(deferredPayload[DEFERRED_WAKE_CONTEXT_KEY]);
         const promotedContextSeed: Record<string, unknown> = { ...deferredContextSeed };

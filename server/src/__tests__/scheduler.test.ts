@@ -479,6 +479,7 @@ describeDB("schedulerService", () => {
   describe("processIntent — budget exhausted", () => {
     it("rejects intent when company is paused for budget", async () => {
       await seedTestData();
+      const intent = await createTestIntent();
 
       // Pause the company for budget reasons
       await db
@@ -490,7 +491,6 @@ describeDB("schedulerService", () => {
         })
         .where(eq(companies.id, companyId));
 
-      const intent = await createTestIntent();
       const result = await scheduler.processIntent(intent.id);
 
       expect(result.admitted).toBe(false);

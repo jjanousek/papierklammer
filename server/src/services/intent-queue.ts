@@ -3,6 +3,7 @@ import type { Db } from "@papierklammer/db";
 import { dispatchIntents } from "@papierklammer/db";
 import { badRequest, conflict, notFound } from "../errors.js";
 import { eventLogService } from "./event-log.js";
+import { companyService } from "./companies.js";
 
 /**
  * Known dispatch intent types.
@@ -83,6 +84,7 @@ export interface FindQueuedIntentsFilters {
 
 export function intentQueueService(db: Db) {
   const eventLog = eventLogService(db);
+  const companiesSvc = companyService(db);
 
   /**
    * Validate required fields for intent creation.
@@ -135,6 +137,14 @@ export function intentQueueService(db: Db) {
      */
     async createIntent(input: CreateIntentInput) {
       validateCreateInput(input);
+      const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(input.companyId);
+      if (companyAdmissionBlock) {
+        throw conflict(companyAdmissionBlock.reason, {
+          scopeType: companyAdmissionBlock.scopeType,
+          scopeId: companyAdmissionBlock.scopeId,
+          status: companyAdmissionBlock.status,
+        });
+      }
 
       const effectivePriority = input.priority ?? getIntentPriority(input.intentType);
 
