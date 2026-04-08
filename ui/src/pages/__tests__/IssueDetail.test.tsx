@@ -692,7 +692,7 @@ describe("IssueDetail", () => {
     mocks.issuesGet.mockReturnValue({
       ...mocks.issue,
       projectedStatus: "todo",
-      lastReconciledAt: new Date("2026-04-05T12:00:00.000Z"),
+      lastReconciledAt: new Date(Date.now() - 60 * 60 * 1000),
       executionRunId: null,
       checkoutRunId: null,
     });

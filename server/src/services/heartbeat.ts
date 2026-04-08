@@ -67,6 +67,7 @@ import {
   resolveSessionCompactionPolicy,
   type SessionCompactionPolicy,
 } from "@papierklammer/adapter-utils";
+import { DEFAULT_LEASE_TTL_SEC } from "./lease-manager.js";
 
 const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
@@ -2083,6 +2084,7 @@ export function heartbeatService(db: Db) {
           .update(issues)
           .set({
             executionRunId: null,
+            executionLeaseId: null,
             executionAgentNameKey: null,
             executionLockedAt: null,
             updatedAt: now,
@@ -3273,6 +3275,7 @@ export function heartbeatService(db: Db) {
         .update(issues)
         .set({
           executionRunId: null,
+          executionLeaseId: null,
           executionAgentNameKey: null,
           executionLockedAt: null,
           updatedAt: new Date(),
@@ -3562,6 +3565,7 @@ export function heartbeatService(db: Db) {
             .update(issues)
             .set({
               executionRunId: null,
+              executionLeaseId: null,
               executionAgentNameKey: null,
               executionLockedAt: null,
               updatedAt: new Date(),
@@ -3751,6 +3755,41 @@ export function heartbeatService(db: Db) {
           .returning()
           .then((rows) => rows[0]);
 
+        // Direct issue wakeups bypass the scheduler, so they need to allocate
+        // the same execution lease that scheduler-admitted runs receive.
+        const leaseGrantedAt = new Date();
+        const leaseExpiresAt = new Date(leaseGrantedAt.getTime() + DEFAULT_LEASE_TTL_SEC * 1000);
+        await tx
+          .update(executionLeases)
+          .set({
+            state: "released",
+            releasedAt: leaseGrantedAt,
+            releaseReason: "issue_execution_replaced",
+            updatedAt: leaseGrantedAt,
+          })
+          .where(
+            and(
+              eq(executionLeases.companyId, issue.companyId),
+              eq(executionLeases.issueId, issue.id),
+              inArray(executionLeases.state, ["granted", "renewed"]),
+            ),
+          );
+
+        const [lease] = await tx
+          .insert(executionLeases)
+          .values({
+            leaseType: "issue_execution",
+            issueId: issue.id,
+            agentId,
+            runId: newRun.id,
+            state: "granted",
+            ttlSeconds: DEFAULT_LEASE_TTL_SEC,
+            companyId: issue.companyId,
+            grantedAt: leaseGrantedAt,
+            expiresAt: leaseExpiresAt,
+          })
+          .returning();
+
         await tx
           .update(agentWakeupRequests)
           .set({
@@ -3763,6 +3802,7 @@ export function heartbeatService(db: Db) {
           .update(issues)
           .set({
             executionRunId: newRun.id,
+            executionLeaseId: lease.id,
             executionAgentNameKey: agentNameKey,
             executionLockedAt: new Date(),
             updatedAt: new Date(),

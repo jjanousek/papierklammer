@@ -84,7 +84,11 @@ describeDB("manual unblock run-state convergence", () => {
 
   function readJsonBody<T>(response: { text?: string; body: T }): T {
     if (typeof response.text === "string" && response.text.length > 0) {
-      return JSON.parse(response.text) as T;
+      try {
+        return JSON.parse(response.text) as T;
+      } catch {
+        return response.body;
+      }
     }
     return response.body;
   }
@@ -277,6 +281,15 @@ describeDB("manual unblock run-state convergence", () => {
     expect(issueBody.activeRunId).toBeNull();
     expect(issueBody.pickupFailCount).toBe(0);
     expect(issueBody.lastPickupFailureAt).toBeNull();
+
+    const storedIssue = await db
+      .select({
+        executionLeaseId: issues.executionLeaseId,
+      })
+      .from(issues)
+      .where(eq(issues.id, issueId))
+      .then((rows) => rows[0] ?? null);
+    expect(storedIssue?.executionLeaseId).toBeNull();
 
     const activeRunRes = await request(app).get(`/api/issues/${issueId}/active-run`);
     expect(activeRunRes.status).toBe(200);

@@ -141,6 +141,7 @@ function buildRecoveredIssuePatch(now: Date) {
     end`,
     checkoutRunId: null,
     executionRunId: null,
+    executionLeaseId: null,
     executionAgentNameKey: null,
     executionLockedAt: null,
     pickupFailCount: 0,

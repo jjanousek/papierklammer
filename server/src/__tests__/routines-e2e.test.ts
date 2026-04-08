@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import express from "express";
 import request from "supertest";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   activityLog,
   agentWakeupRequests,
@@ -27,6 +27,10 @@ import {
   startEmbeddedPostgresTestDatabase,
 } from "./helpers/embedded-postgres.js";
 import { errorHandler } from "../middleware/index.js";
+import { accessService } from "../services/access.js";
+import { logActivity } from "../services/activity-log.js";
+import { routineService } from "../services/routines.js";
+import { routineRoutes } from "../routes/routines.js";
 
 // routineService no longer needs a heartbeat mock — it uses the intent queue
 // (DB-backed) for assignment wakeups instead of heartbeat.wakeup().
@@ -43,29 +47,11 @@ if (!embeddedPostgresSupport.supported) {
 describeEmbeddedPostgres("routine routes end-to-end", () => {
   let db!: ReturnType<typeof createDb>;
   let tempDb: Awaited<ReturnType<typeof startEmbeddedPostgresTestDatabase>> | null = null;
-  let accessServiceImpl!: typeof import("../services/access.js").accessService;
-  let logActivityImpl!: typeof import("../services/activity-log.js").logActivity;
-  let routineServiceImpl!: typeof import("../services/routines.js").routineService;
-  let routineRoutesImpl!: typeof import("../routes/routines.js").routineRoutes;
 
   beforeAll(async () => {
     tempDb = await startEmbeddedPostgresTestDatabase("paperclip-routines-e2e-");
     db = createDb(tempDb.connectionString);
   }, 20_000);
-
-  beforeEach(async () => {
-    const [{ accessService }, { logActivity }, { routineService }, { routineRoutes }] = await Promise.all([
-      vi.importActual<typeof import("../services/access.js")>("../services/access.js"),
-      vi.importActual<typeof import("../services/activity-log.js")>("../services/activity-log.js"),
-      vi.importActual<typeof import("../services/routines.js")>("../services/routines.js"),
-      vi.importActual<typeof import("../routes/routines.js")>("../routes/routines.js"),
-    ]);
-
-    accessServiceImpl = accessService;
-    logActivityImpl = logActivity;
-    routineServiceImpl = routineService;
-    routineRoutesImpl = routineRoutes;
-  });
 
   afterEach(async () => {
     await db.delete(controlPlaneEvents);
@@ -99,10 +85,10 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
     });
     app.use(
       "/api",
-      routineRoutesImpl(db, {
-        routineService: routineServiceImpl(db),
-        accessService: accessServiceImpl(db),
-        logActivity: logActivityImpl,
+      routineRoutes(db, {
+        routineService: routineService(db),
+        accessService: accessService(db),
+        logActivity,
       }),
     );
     app.use(errorHandler);
@@ -142,7 +128,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
       status: "in_progress",
     });
 
-    const access = accessServiceImpl(db);
+    const access = accessService(db);
     const membership = await access.ensureMembership(companyId, "user", userId, "owner", "active");
     await access.setMemberPermissions(
       companyId,

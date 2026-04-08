@@ -148,6 +148,7 @@ export function reconcilerService(db: Db) {
         .update(issues)
         .set({
           executionRunId: null,
+          executionLeaseId: null,
           executionLockedAt: null,
           updatedAt: now,
         })
@@ -393,6 +394,7 @@ export function reconcilerService(db: Db) {
         .set({
           status: restoredStatus,
           executionRunId: null,
+          executionLeaseId: null,
           checkoutRunId: null,
           executionLockedAt: null,
           updatedAt: now,
