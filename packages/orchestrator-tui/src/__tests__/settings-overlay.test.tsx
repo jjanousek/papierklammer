@@ -5,9 +5,9 @@ import { EventEmitter, PassThrough } from "node:stream";
 import { App } from "../components/App.js";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
-// Mock ink-spinner to render a deterministic marker instead of animated frames
-vi.mock("ink-spinner", () => ({
-  default: () => React.createElement("ink-text", null, "SPINNER"),
+// Mock AnimatedGlyph to render a deterministic marker instead of animated frames
+vi.mock("../components/AnimatedGlyph.js", () => ({
+  AnimatedGlyph: () => React.createElement("ink-text", null, "SPINNER"),
 }));
 
 // Suppress alternate screen buffer escape codes during tests
@@ -44,14 +44,32 @@ const MOCK_AGENTS: AgentOverview[] = [
 ];
 
 function createMockFetch(agents: AgentOverview[] = MOCK_AGENTS) {
-  return vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      agents,
-      totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
-      totalQueuedIntents: 0,
-      totalActiveLeases: 0,
-    }),
+  return vi.fn().mockImplementation(async (input: string | URL | Request) => {
+    const url = String(input);
+
+    if (url.includes("/approvals?status=pending")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    if (url.includes("/api/companies/") && url.includes("/issues")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    return {
+      ok: true,
+      json: async () => ({
+        agents,
+        totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
+        totalQueuedIntents: 0,
+        totalActiveLeases: 0,
+      }),
+    };
   });
 }
 
@@ -91,9 +109,9 @@ describe("VAL-TUI-CTRL-006: Settings overlay displays current configuration", ()
     // Should show current reasoning effort (default: high)
     expect(frame).toContain("Reasoning Effort");
     expect(frame).toContain("high");
-    // Should show current fast mode (default: off)
+    // Should show current fast mode (default: on)
     expect(frame).toContain("Fast Mode");
-    expect(frame).toContain("OFF");
+    expect(frame).toContain("ON");
 
     unmount();
   });
@@ -233,7 +251,7 @@ describe("VAL-TUI-CTRL-006: Settings overlay displays current configuration", ()
 
     const frame = lastFrame()!;
     expect(frame).toContain("Settings");
-    expect(frame).toContain("default");
+    expect(frame).toContain("gpt-5.4");
 
     unmount();
   });
@@ -262,7 +280,7 @@ describe("VAL-TUI-CTRL-006: Settings overlay displays current configuration", ()
     stdin.write("r");
     await tick();
 
-    // Enable fast mode
+    // Disable fast mode
     stdin.write("f");
     await tick();
 
@@ -273,7 +291,7 @@ describe("VAL-TUI-CTRL-006: Settings overlay displays current configuration", ()
     const frame = lastFrame()!;
     expect(frame).toContain("Settings");
     expect(frame).toContain("low");
-    expect(frame).toContain("ON");
+    expect(frame).toContain("OFF");
 
     unmount();
   });
@@ -305,7 +323,7 @@ describe("VAL-TUI-CTRL-006: Settings overlay displays current configuration", ()
     let frame = lastFrame()!;
     expect(frame).toContain("Settings");
     expect(frame).toContain("high");
-    expect(frame).toContain("OFF");
+    expect(frame).toContain("ON");
 
     // Press 'r' to cycle reasoning effort while settings is open
     stdin.write("r");
@@ -320,8 +338,8 @@ describe("VAL-TUI-CTRL-006: Settings overlay displays current configuration", ()
     await tick();
 
     frame = lastFrame()!;
-    // Overlay should now show fast mode ON
-    expect(frame).toContain("ON");
+    // Overlay should now show fast mode OFF
+    expect(frame).toContain("OFF");
 
     unmount();
   });
@@ -400,7 +418,7 @@ describe("VAL-TUI-CTRL-007: Controls persist across messages (settings overlay v
     stdin.write("r");
     await tick();
 
-    // Enable fast mode
+    // Disable fast mode
     stdin.write("f");
     await tick();
 
@@ -461,7 +479,7 @@ describe("VAL-TUI-CTRL-007: Controls persist across messages (settings overlay v
     const frame = lastFrame()!;
     expect(frame).toContain("Settings");
     expect(frame).toContain("low");
-    expect(frame).toContain("ON");
+    expect(frame).toContain("OFF");
     expect(frame).toContain("o4-mini");
 
     unmount();
@@ -624,7 +642,7 @@ describe("VAL-TUI-CROSS-002: Settings overlay during thinking", () => {
     expect(frame).toContain("Settings");
     expect(frame).toContain("o4-mini");
     expect(frame).toContain("high");
-    expect(frame).toContain("OFF");
+    expect(frame).toContain("ON");
 
     unmount();
   });

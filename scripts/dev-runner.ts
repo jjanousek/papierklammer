@@ -7,6 +7,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { shouldTrackDevServerPath } from "./dev-runner-paths.mjs";
 import { createDevServiceIdentity, repoRoot } from "./dev-service-profile.ts";
+import { ensureAgentJwtSecret, loadPaperclipEnvFile, resolveAgentJwtEnvFile } from "../cli/src/config/env.ts";
 import {
   findAdoptableLocalService,
   readLocalServicePortOwner,
@@ -87,6 +88,14 @@ const env: NodeJS.ProcessEnv = {
   ...process.env,
   PAPIERKLAMMER_UI_DEV_MIDDLEWARE: "true",
 };
+
+const agentJwtSecret = ensureAgentJwtSecret();
+loadPaperclipEnvFile();
+if (agentJwtSecret.created) {
+  console.log(
+    `[paperclip] created PAPIERKLAMMER_AGENT_JWT_SECRET in ${resolveAgentJwtEnvFile()}`,
+  );
+}
 
 if (mode === "dev") {
   env.PAPIERKLAMMER_DEV_SERVER_STATUS_FILE = devServerStatusFilePath;

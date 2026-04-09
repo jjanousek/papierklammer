@@ -52,14 +52,32 @@ const MOCK_AGENTS: AgentOverview[] = [
 ];
 
 function createMockFetch(agents: AgentOverview[] = MOCK_AGENTS) {
-  return vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      agents,
-      totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
-      totalQueuedIntents: 0,
-      totalActiveLeases: 0,
-    }),
+  return vi.fn().mockImplementation(async (input: string | URL | Request) => {
+    const url = String(input);
+
+    if (url.includes("/approvals?status=pending")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    if (url.includes("/api/companies/") && url.includes("/issues")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    return {
+      ok: true,
+      json: async () => ({
+        agents,
+        totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
+        totalQueuedIntents: 0,
+        totalActiveLeases: 0,
+      }),
+    };
   });
 }
 
@@ -87,7 +105,8 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     await tick();
     let frame = lastFrame()!;
     expect(frame).toContain("Papierklammer");
-    expect(frame).toContain("Agents");
+    expect(frame).toContain("CEO");
+    expect(frame).toContain("Attention 0");
     expect(frame).toContain("Chat");
     expect(frame).toContain("Codex:");
 
@@ -512,8 +531,74 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     await tick();
 
     const frame = lastFrame()!;
-    expect(frame).toContain("$ curl http://localhost:3100/api/health");
+    expect(frame).toContain("api/health");
     expect(frame).toContain('{"status":"ok"}');
+
+    unmount();
+  });
+
+  it("renders streamed reasoning in a dedicated auto-scrolling panel", async () => {
+    const mockProc = createMockProcess();
+    const mockSpawn = vi.fn().mockReturnValue(mockProc);
+    const mockFetch = createMockFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick();
+
+    stdin.write("Need a plan");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_reason_panel" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_1", status: "inProgress", items: [], error: null } },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_reason_panel",
+        turnId: "turn_1",
+        item: { type: "agentMessage", id: "reason_1", text: "", phase: "reasoning" },
+      },
+    });
+    await tick();
+
+    for (const line of ["first", "second", "third", "fourth", "fifth", "sixth"]) {
+      respond(mockProc, {
+        method: "item/agentMessage/delta",
+        params: {
+          threadId: "thr_reason_panel",
+          turnId: "turn_1",
+          itemId: "reason_1",
+          delta: `${line}\n`,
+        },
+      });
+      await tick();
+    }
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Reasoning");
+    expect(frame).toContain("…");
+    expect(frame).toContain("sixth");
+    expect(frame).not.toContain("first");
 
     unmount();
   });

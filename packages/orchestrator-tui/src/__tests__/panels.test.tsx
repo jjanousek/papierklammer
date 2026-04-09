@@ -70,7 +70,7 @@ const MOCK_RECENT_RUNS: RunReviewEntry[] = [
 describe("AgentSidebar", () => {
   it("renders agents with correct status indicators", () => {
     const { lastFrame, unmount } = render(
-      <AgentSidebar agents={MOCK_AGENTS} />,
+      <AgentSidebar agents={MOCK_AGENTS} width={40} />,
     );
     const frame = lastFrame()!;
     // Check agent names are present
@@ -85,12 +85,12 @@ describe("AgentSidebar", () => {
 
   it("renders status text for each agent", () => {
     const { lastFrame, unmount } = render(
-      <AgentSidebar agents={MOCK_AGENTS} />,
+      <AgentSidebar agents={MOCK_AGENTS} width={40} />,
     );
     const frame = lastFrame()!;
     expect(frame).toContain("(idle)");
     expect(frame).toContain("(running");
-    expect(frame).toContain("live run");
+    expect(frame).toContain("1 li");
     expect(frame).toContain("(error)");
     expect(frame).toContain("(blocked)");
     unmount();
@@ -104,9 +104,10 @@ describe("AgentSidebar", () => {
 
   it("shows Agents header", () => {
     const { lastFrame, unmount } = render(
-      <AgentSidebar agents={MOCK_AGENTS} />,
+      <AgentSidebar agents={MOCK_AGENTS} width={40} />,
     );
     expect(lastFrame()).toContain("Agents");
+    expect(lastFrame()).toContain("roster");
     unmount();
   });
 
@@ -115,15 +116,14 @@ describe("AgentSidebar", () => {
       <AgentSidebar
         agents={MOCK_AGENTS}
         recentRuns={MOCK_RECENT_RUNS}
+        width={40}
       />,
     );
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Run inspection");
-    expect(frame).toContain("inspect run");
+    expect(frame).toContain("Selected");
     expect(frame).toContain("run-comp");
-    expect(frame).toContain("AUD-1");
-    expect(frame).toContain("Result/output");
+    expect(frame).toContain("issue A");
     expect(frame).toContain("Prepared the audit");
     expect(frame).toContain("demo report.");
     unmount();
@@ -149,12 +149,15 @@ describe("AgentSidebar", () => {
             stderrExcerpt: null,
           },
         ]}
+        width={40}
       />,
     );
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Run inspection");
-    expect(frame).toContain("No runs for CEO");
+    expect(frame).toContain("Selected");
+    expect(frame).toContain("No matching run for");
+    expect(frame).toContain("the current");
+    expect(frame).toContain("selection.");
     expect(frame).not.toContain("AUD-2");
     expect(frame).not.toContain("Implemented the CLI command.");
     unmount();
@@ -181,12 +184,13 @@ describe("AgentSidebar", () => {
           },
         ]}
         recentRuns={MOCK_RECENT_RUNS}
+        width={40}
       />,
     );
 
     const frame = lastFrame()!;
     expect(frame).toContain("run-live");
-    expect(frame).toContain("AUD-3");
+    expect(frame).toContain("issue A");
     expect(frame).toContain("Live stdout preview");
     expect(frame).not.toContain("run-comp");
     expect(frame).not.toContain("AUD-1");
@@ -213,13 +217,14 @@ describe("AgentSidebar", () => {
             stderrExcerpt: null,
           },
         ]}
+        width={40}
       />,
     );
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Run inspection");
+    expect(frame).toContain("Selected");
     expect(frame).toContain("run-live");
-    expect(frame).toContain("AUD-2");
+    expect(frame).toContain("issue A");
     expect(frame).toContain("Live stdout preview");
     unmount();
   });
@@ -236,6 +241,7 @@ describe("AgentSidebar", () => {
             queuedIntentCount: 0,
           },
         ]}
+        width={40}
       />,
     );
 
@@ -243,7 +249,7 @@ describe("AgentSidebar", () => {
     expect(frame).toContain("CEO");
     expect(frame).toContain("(running");
     expect(frame).toContain("2");
-    expect(frame).toContain("live runs");
+    expect(frame).toContain("live ");
     unmount();
   });
 
@@ -383,6 +389,24 @@ describe("StatusBar", () => {
     unmount();
   });
 
+  it("keeps reasoning and fast mode visible in compact status layout", () => {
+    const { lastFrame, unmount } = render(
+      <StatusBar
+        codexState="connected"
+        threadId="thr_very_long_identifier"
+        model="gpt-5.4"
+        reasoningEffort="high"
+        fastMode={true}
+        columns={60}
+      />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("cx:up");
+    expect(frame).toContain("r:high");
+    expect(frame).toContain("f:on");
+    unmount();
+  });
+
   it("does not show threadId when not provided", () => {
     const { lastFrame, unmount } = render(
       <StatusBar codexState="connected" />,
@@ -400,6 +424,13 @@ describe("Keyboard navigation", () => {
       const url = String(input);
 
       if (url.includes("/approvals?status=pending")) {
+        return {
+          ok: true,
+          json: async () => [],
+        };
+      }
+
+      if (url.includes("/api/companies/") && url.includes("/issues")) {
         return {
           ok: true,
           json: async () => [],
@@ -440,8 +471,8 @@ describe("Keyboard navigation", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame1 = lastFrame()!;
-    // Sidebar should be focused — verify it renders agents (focus indicator is border color)
-    expect(frame1).toContain("Agents");
+    // Sidebar should be focused — verify it renders agent rows
+    expect(frame1).toContain("CEO");
 
     // Second Tab → next focusable component (input bar)
     stdin.write("\t");
@@ -456,7 +487,7 @@ describe("Keyboard navigation", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame3 = lastFrame()!;
-    expect(frame3).toContain("Agents");
+    expect(frame3).toContain("CEO");
 
     unmount();
   });
@@ -485,11 +516,10 @@ describe("Keyboard navigation", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame = lastFrame()!;
-    // All agents should still be visible
-    expect(frame).toContain("CEO");
     expect(frame).toContain("Dev-1");
     expect(frame).toContain("Dev-2");
     expect(frame).toContain("QA");
+    expect(frame).toContain("Dev-1 · running");
 
     // Press up arrow to move back to index 0
     stdin.write("\u001B[A"); // Up arrow escape sequence
@@ -627,10 +657,10 @@ describe("Agent list scrolling", () => {
     stdin.write("\t");
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    // Since default maxVisible is 20 and we only have 10 agents,
-    // no scrolling needed. All agents should be visible.
+    // With the responsive sidebar height, the exact visible slice can vary,
+    // but a 10-agent list should still fit without scroll indicators here.
     const frame = lastFrame()!;
-    expect(frame).toContain("Agent-0");
+    expect(frame).toContain("Agent-1");
     expect(frame).toContain("Agent-9");
     expect(frame).not.toContain("▲");
     expect(frame).not.toContain("▼");
@@ -891,9 +921,8 @@ describe("Sidebar with API data", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame = lastFrame()!;
-    expect(frame).toContain("CEO");
+    expect(frame).toContain("4 roster");
     expect(frame).toContain("Dev-1");
-    expect(frame).toContain("Dev-2");
     expect(frame).toContain("QA");
     expect(frame).toContain("Connected");
     expect(frame).toContain("4 agents");

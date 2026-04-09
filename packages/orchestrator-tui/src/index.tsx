@@ -18,6 +18,7 @@ render(
     apiKey={flags.apiKey}
     companyId={flags.companyId}
     companyName={flags.companyName}
+    model={flags.model}
     spawnFn={spawn}
     enableCodex
   />,

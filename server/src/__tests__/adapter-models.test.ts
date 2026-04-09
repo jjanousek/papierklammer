@@ -54,27 +54,34 @@ describe("adapter model listing", () => {
 
   it("falls back to static codex models when OpenAI model discovery fails", async () => {
     process.env.OPENAI_API_KEY = "sk-test";
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: false,
       status: 401,
       json: async () => ({}),
     } as Response);
 
-    const models = await listAdapterModels("codex_local");
-    expect(models).toEqual(codexFallbackModels);
+    const first = await listAdapterModels("codex_local");
+    const second = await listAdapterModels("codex_local");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(first).toEqual(codexFallbackModels);
+    expect(second).toEqual(codexFallbackModels);
   });
 
 
   it("returns cursor fallback models when CLI discovery is unavailable", async () => {
-    setCursorModelsRunnerForTests(() => ({
+    const runner = vi.fn(() => ({
       status: null,
       stdout: "",
       stderr: "",
       hasError: true,
     }));
+    setCursorModelsRunnerForTests(runner);
 
-    const models = await listAdapterModels("cursor");
-    expect(models).toEqual(cursorFallbackModels);
+    const first = await listAdapterModels("cursor");
+    const second = await listAdapterModels("cursor");
+    expect(runner).toHaveBeenCalledTimes(1);
+    expect(first).toEqual(cursorFallbackModels);
+    expect(second).toEqual(cursorFallbackModels);
   });
 
   it("returns opencode fallback models including gpt-5.4", async () => {

@@ -8,6 +8,19 @@ export interface TerminalSize {
 
 const DEFAULT_COLUMNS = 80;
 const DEFAULT_ROWS = 24;
+const MIN_COLUMNS = 40;
+const MIN_ROWS = 6;
+
+function normalizeDimension(
+  value: number | undefined,
+  fallback: number,
+  minimum: number,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.max(minimum, Math.floor(value));
+}
 
 /**
  * Hook that tracks terminal dimensions using Ink's useStdout().
@@ -19,17 +32,23 @@ export function useTerminalSize(): TerminalSize {
   const { stdout } = useStdout();
 
   const [size, setSize] = useState<TerminalSize>(() => ({
-    columns: (stdout as NodeJS.WriteStream).columns ?? DEFAULT_COLUMNS,
-    rows: (stdout as NodeJS.WriteStream).rows ?? DEFAULT_ROWS,
+    columns: normalizeDimension((stdout as NodeJS.WriteStream).columns, DEFAULT_COLUMNS, MIN_COLUMNS),
+    rows: normalizeDimension((stdout as NodeJS.WriteStream).rows, DEFAULT_ROWS, MIN_ROWS),
   }));
 
   useEffect(() => {
     const stream = stdout as NodeJS.WriteStream;
 
     const handleResize = (): void => {
-      setSize({
-        columns: stream.columns ?? DEFAULT_COLUMNS,
-        rows: stream.rows ?? DEFAULT_ROWS,
+      setSize((current) => {
+        const next = {
+          columns: normalizeDimension(stream.columns, DEFAULT_COLUMNS, MIN_COLUMNS),
+          rows: normalizeDimension(stream.rows, DEFAULT_ROWS, MIN_ROWS),
+        };
+        if (next.columns === current.columns && next.rows === current.rows) {
+          return current;
+        }
+        return next;
       });
     };
 

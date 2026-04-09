@@ -58,7 +58,10 @@ vi.mock("@/context/ToastContext", () => ({
 vi.mock("@/api/companies", () => ({
   companiesApi: {
     update: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
     archive: vi.fn(),
+    deleteCompany: vi.fn(),
   },
 }));
 

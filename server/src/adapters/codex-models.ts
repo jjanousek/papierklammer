@@ -96,6 +96,11 @@ export async function listCodexModels(): Promise<AdapterModel[]> {
     return cached.models;
   }
 
+  cached = {
+    keyFingerprint,
+    expiresAt: now + OPENAI_MODELS_CACHE_TTL_MS,
+    models: fallback,
+  };
   return fallback;
 }
 

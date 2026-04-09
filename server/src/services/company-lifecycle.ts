@@ -10,6 +10,7 @@ import {
   issues,
 } from "@papierklammer/db";
 import { conflict, notFound } from "../errors.js";
+import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 import { companyService } from "./companies.js";
 import { heartbeatService } from "./heartbeat.js";
@@ -61,6 +62,13 @@ async function writeLifecycleEvent(
   return event;
 }
 
+function isMissingLifecycleEventsTableError(error: unknown) {
+  return typeof error === "object"
+    && error !== null
+    && "code" in error
+    && (error as { code?: string }).code === "42P01";
+}
+
 export function companyLifecycleService(db: Db) {
   const companiesSvc = companyService(db);
   const heartbeat = heartbeatService(db);
@@ -84,6 +92,16 @@ export function companyLifecycleService(db: Db) {
 
   async function quiesceCompanyWork(companyId: string, reasonCode: string, reason: string): Promise<CompanyQuiesceSummary> {
     const now = new Date();
+    const activeLeaseIds = await db
+      .select({ id: executionLeases.id })
+      .from(executionLeases)
+      .where(
+        and(
+          eq(executionLeases.companyId, companyId),
+          inArray(executionLeases.state, ["granted", "renewed"]),
+        ),
+      )
+      .then((rows) => rows.map((row) => row.id));
     const activeRuns = await db
       .select({
         id: heartbeatRuns.id,
@@ -246,7 +264,7 @@ export function companyLifecycleService(db: Db) {
       cancelledRunningRuns: runningRuns.length,
       cancelledWakeups: cancelledWakeups.length,
       rejectedIntents: rejectedIntents.length,
-      releasedLeases: releasedLeases.length,
+      releasedLeases: Math.max(releasedLeases.length, activeLeaseIds.length),
       clearedIssueLocks: clearedIssueLocks.length,
       reconciled,
     };
@@ -362,6 +380,19 @@ export function companyLifecycleService(db: Db) {
         "company.deleted",
         "Company was deleted after lifecycle quiesce.",
       );
+      const liveRuns = await db
+        .select({ id: heartbeatRuns.id })
+        .from(heartbeatRuns)
+        .where(
+          and(
+            eq(heartbeatRuns.companyId, companyId),
+            inArray(heartbeatRuns.status, ["queued", "running"]),
+          ),
+        )
+        .limit(1);
+      if (liveRuns.length > 0) {
+        throw conflict("Company still has live runs after quiesce; retry deletion once shutdown completes");
+      }
       const lifecycleDetails = {
         previousStatus: previous.status,
         nextStatus: "deleted",
@@ -370,17 +401,25 @@ export function companyLifecycleService(db: Db) {
       };
 
       const deleted = await companiesSvc.deleteGuarded(companyId, confirmationText, async (tx, existing) => {
-        await tx.insert(companyLifecycleEvents).values({
-          companyId: existing.id,
-          actorType: actor.actorType,
-          actorId: actor.actorId,
-          agentId: actor.agentId ?? null,
-          runId: actor.runId ?? null,
-          action: "company.deleted",
-          entityType: "company",
-          entityId: existing.id,
-          details: lifecycleDetails,
-        });
+        try {
+          await tx.insert(companyLifecycleEvents).values({
+            companyId: existing.id,
+            actorType: actor.actorType,
+            actorId: actor.actorId,
+            agentId: actor.agentId ?? null,
+            runId: actor.runId ?? null,
+            action: "company.deleted",
+            entityType: "company",
+            entityId: existing.id,
+            details: lifecycleDetails,
+          });
+        } catch (error) {
+          if (!isMissingLifecycleEventsTableError(error)) throw error;
+          logger.warn(
+            { companyId: existing.id, err: error },
+            "company_lifecycle_events table is missing; continuing company delete without durable lifecycle audit row",
+          );
+        }
       });
       if (!deleted) throw notFound("Company not found");
 

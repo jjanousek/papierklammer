@@ -28,17 +28,45 @@ import { resolveCodexDesiredSkillNames } from "./skills.js";
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const CODEX_ROLLOUT_NOISE_RE =
   /^\d{4}-\d{2}-\d{2}T[^\s]+\s+ERROR\s+codex_core::rollout::list:\s+state db missing rollout path for thread\s+[a-z0-9-]+$/i;
+const CODEX_TIMESTAMPED_LOG_RE = /^\d{4}-\d{2}-\d{2}T[^\s]+\s+(?:WARN|ERROR|INFO)\s+/i;
+const CODEX_IGNORED_BLOCK_START_RES = [
+  /WARN\s+codex_core::plugins::manager:\s+failed to warm featured plugin ids cache/i,
+  /WARN\s+codex_core::plugins::startup_sync:\s+startup remote plugin sync failed/i,
+  /WARN\s+codex_analytics::analytics_client:\s+events failed with status 403 Forbidden:/i,
+];
+const CODEX_IGNORED_LINE_RES = [
+  /WARN\s+codex_core::plugins::manager:\s+failed to load plugin:\s+plugin is not installed/i,
+  /WARN\s+codex_core::plugins::manifest:\s+ignoring interface\.defaultPrompt:/i,
+  /WARN\s+codex_core::shell_snapshot:\s+Failed to delete shell snapshot/i,
+];
+const executionLocksByKey = new Map<string, Promise<void>>();
 
-function stripCodexRolloutNoise(text: string): string {
+function stripCodexNoise(text: string): string {
   const parts = text.split(/\r?\n/);
   const kept: string[] = [];
+  let suppressBlock = false;
   for (const part of parts) {
     const trimmed = part.trim();
+    if (suppressBlock && /^<\/html>$/i.test(trimmed)) {
+      suppressBlock = false;
+      continue;
+    }
+    if (suppressBlock && CODEX_TIMESTAMPED_LOG_RE.test(trimmed)) {
+      suppressBlock = false;
+    }
     if (!trimmed) {
-      kept.push(part);
+      if (!suppressBlock) kept.push(part);
+      continue;
+    }
+    if (suppressBlock) {
+      continue;
+    }
+    if (CODEX_IGNORED_BLOCK_START_RES.some((pattern) => pattern.test(trimmed))) {
+      suppressBlock = /<html>/i.test(trimmed) || /Forbidden:/i.test(trimmed);
       continue;
     }
     if (CODEX_ROLLOUT_NOISE_RE.test(trimmed)) continue;
+    if (CODEX_IGNORED_LINE_RES.some((pattern) => pattern.test(trimmed))) continue;
     kept.push(part);
   }
   return kept.join("\n");
@@ -138,6 +166,28 @@ async function pruneBrokenUnavailablePaperclipSkillSymlinks(
 
 function resolveCodexSkillsDir(codexHome: string): string {
   return path.join(codexHome, "skills");
+}
+
+async function withExecutionLock<T>(key: string | null, fn: () => Promise<T>) {
+  if (!key) return fn();
+
+  const previous = executionLocksByKey.get(key) ?? Promise.resolve();
+  let release!: () => void;
+  const marker = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const chain = previous.then(() => marker);
+  executionLocksByKey.set(key, chain);
+
+  await previous;
+  try {
+    return await fn();
+  } finally {
+    release();
+    if (executionLocksByKey.get(key) === chain) {
+      executionLocksByKey.delete(key);
+    }
+  }
 }
 
 type EnsureCodexSkillsInjectedOptions = {
@@ -492,6 +542,10 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     return args;
   };
 
+  const executionLockKey = agentHome
+    ? `agent-home:${path.resolve(agentHome)}`
+    : `codex-home:${path.resolve(effectiveCodexHome)}`;
+
   const runAttempt = async (resumeSessionId: string | null) => {
     const args = buildArgs(resumeSessionId);
     if (onMeta) {
@@ -523,12 +577,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           await onLog(stream, chunk);
           return;
         }
-        const cleaned = stripCodexRolloutNoise(chunk);
+        const cleaned = stripCodexNoise(chunk);
         if (!cleaned.trim()) return;
         await onLog(stream, cleaned);
       },
     });
-    const cleanedStderr = stripCodexRolloutNoise(proc.stderr);
+    const cleanedStderr = stripCodexNoise(proc.stderr);
     return {
       proc: {
         ...proc,
@@ -596,20 +650,22 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     };
   };
 
-  const initial = await runAttempt(sessionId);
-  if (
-    sessionId &&
-    !initial.proc.timedOut &&
-    (initial.proc.exitCode ?? 0) !== 0 &&
-    isCodexUnknownSessionError(initial.proc.stdout, initial.rawStderr)
-  ) {
-    await onLog(
-      "stdout",
-      `[paperclip] Codex resume session "${sessionId}" is unavailable; retrying with a fresh session.\n`,
-    );
-    const retry = await runAttempt(null);
-    return toResult(retry, true);
-  }
+  return withExecutionLock(executionLockKey, async () => {
+    const initial = await runAttempt(sessionId);
+    if (
+      sessionId &&
+      !initial.proc.timedOut &&
+      (initial.proc.exitCode ?? 0) !== 0 &&
+      isCodexUnknownSessionError(initial.proc.stdout, initial.rawStderr)
+    ) {
+      await onLog(
+        "stdout",
+        `[paperclip] Codex resume session "${sessionId}" is unavailable; retrying with a fresh session.\n`,
+      );
+      const retry = await runAttempt(null);
+      return toResult(retry, true);
+    }
 
-  return toResult(initial);
+    return toResult(initial);
+  });
 }

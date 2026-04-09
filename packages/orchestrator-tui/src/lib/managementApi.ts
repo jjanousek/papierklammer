@@ -6,6 +6,19 @@ export interface PendingApprovalSummary {
   createdAt: string | null;
 }
 
+export interface CompanyIssueSummary {
+  id: string;
+  identifier: string | null;
+  title: string;
+  description: string | null;
+  status: string;
+  projectedStatus?: string | null;
+  priority: string;
+  assigneeAgentId: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+
 export interface AgentMutationResult {
   id: string | null;
   status: string | null;
@@ -74,6 +87,77 @@ export async function listPendingApprovals(
     const rightTime = right.createdAt ? Date.parse(right.createdAt) : 0;
     return leftTime - rightTime;
   });
+}
+
+function compareIssues(left: CompanyIssueSummary, right: CompanyIssueSummary) {
+  return Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
+}
+
+export async function listCompanyIssues(
+  baseUrl: string,
+  apiKey: string,
+  companyId: string,
+  fetchFn: FetchLike = globalThis.fetch,
+): Promise<CompanyIssueSummary[]> {
+  const issues = await requestJson<unknown>(
+    fetchFn,
+    `${normalizeBaseUrl(baseUrl)}/api/companies/${encodeURIComponent(companyId)}/issues?status=backlog,todo,in_progress,in_review,blocked`,
+    {
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+    },
+  );
+
+  return (Array.isArray(issues) ? issues : [])
+    .filter((issue): issue is CompanyIssueSummary => Boolean(issue && typeof issue === "object" && typeof issue.id === "string"))
+    .sort(compareIssues);
+}
+
+export async function createOrchestratorIssue(
+  baseUrl: string,
+  apiKey: string,
+  input: {
+    companyId: string;
+    title: string;
+    description?: string;
+    priority?: string;
+  },
+  fetchFn: FetchLike = globalThis.fetch,
+): Promise<CompanyIssueSummary> {
+  return requestJson<CompanyIssueSummary>(
+    fetchFn,
+    `${normalizeBaseUrl(baseUrl)}/api/orchestrator/issues`,
+    {
+      method: "POST",
+      headers: authHeaders(apiKey),
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function unblockIssue(
+  baseUrl: string,
+  apiKey: string,
+  issueId: string,
+  fetchFn: FetchLike = globalThis.fetch,
+): Promise<{
+  issue: CompanyIssueSummary | null;
+  recovery?: {
+    rejectedIntentCount?: number;
+    releasedLeaseId?: string | null;
+  };
+}> {
+  return requestJson(
+    fetchFn,
+    `${normalizeBaseUrl(baseUrl)}/api/orchestrator/issues/${encodeURIComponent(issueId)}/unblock`,
+    {
+      method: "POST",
+      headers: authHeaders(apiKey),
+      body: JSON.stringify({ payload: { source: "tui_issue_desk" } }),
+    },
+  );
 }
 
 export async function approveApproval(

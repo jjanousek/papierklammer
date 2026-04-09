@@ -7,9 +7,9 @@ import { AgentSidebar } from "../components/AgentSidebar.js";
 import { App } from "../components/App.js";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
-// Mock ink-spinner to render a deterministic marker instead of animated frames
-vi.mock("ink-spinner", () => ({
-  default: () => React.createElement("ink-text", null, "SPINNER"),
+// Mock AnimatedGlyph to render a deterministic marker instead of animated frames
+vi.mock("../components/AnimatedGlyph.js", () => ({
+  AnimatedGlyph: () => React.createElement("ink-text", null, "SPINNER"),
 }));
 
 // Suppress alternate screen buffer escape codes during tests

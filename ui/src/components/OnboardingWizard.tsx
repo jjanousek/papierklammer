@@ -4,6 +4,7 @@ import type { AdapterEnvironmentTestResult } from "@papierklammer/shared";
 import { useLocation, useNavigate, useParams } from "@/lib/router";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
+import { useToast } from "../context/ToastContext";
 import { companiesApi } from "../api/companies";
 import { goalsApi } from "../api/goals";
 import { agentsApi } from "../api/agents";
@@ -76,6 +77,14 @@ const DEFAULT_TASK_DESCRIPTION = `You are the CEO. You set the direction for the
 - write a hiring plan
 - break the roadmap into concrete tasks and start delegating work`;
 
+const CURATED_CODEX_MODEL_IDS = [
+  "gpt-5.4",
+  DEFAULT_CODEX_LOCAL_MODEL,
+  "gpt-5.3-codex-spark",
+  "gpt-5-mini",
+  "codex-mini-latest"
+] as const;
+
 export function OnboardingWizard() {
   const { onboardingOpen, onboardingOptions, closeOnboarding } = useDialog();
   const { companies, setSelectedCompanyId, loading: companiesLoading } = useCompany();
@@ -83,6 +92,7 @@ export function OnboardingWizard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const { pushToast } = useToast();
   const [routeDismissed, setRouteDismissed] = useState(false);
 
   const routeOnboardingOptions =
@@ -99,8 +109,13 @@ export function OnboardingWizard() {
     ? onboardingOptions
     : routeOnboardingOptions ?? {};
 
-  const initialStep = effectiveOnboardingOptions.initialStep ?? 1;
   const existingCompanyId = effectiveOnboardingOptions.companyId;
+  const isNewCompanyFlow = !existingCompanyId;
+  const initialStep: Step =
+    existingCompanyId
+      ? 1
+      : effectiveOnboardingOptions.initialStep ?? 1;
+  const existingCompany = companies.find((company) => company.id === existingCompanyId) ?? null;
 
   const [step, setStep] = useState<Step>(initialStep);
   const [loading, setLoading] = useState(false);
@@ -108,11 +123,7 @@ export function OnboardingWizard() {
   const [modelOpen, setModelOpen] = useState(false);
   const [modelSearch, setModelSearch] = useState("");
 
-  // Step 1
-  const [companyName, setCompanyName] = useState("");
-  const [companyGoal, setCompanyGoal] = useState("");
-
-  // Step 2
+  // Agent step
   const [agentName, setAgentName] = useState("CEO");
   const [adapterType, setAdapterType] = useState<AdapterType>("claude_local");
   const [model, setModel] = useState("");
@@ -127,8 +138,14 @@ export function OnboardingWizard() {
     useState(false);
   const [unsetAnthropicLoading, setUnsetAnthropicLoading] = useState(false);
   const [showMoreAdapters, setShowMoreAdapters] = useState(false);
+  const [draftingCompany, setDraftingCompany] = useState(false);
+  const [draftingTask, setDraftingTask] = useState(false);
 
-  // Step 3
+  // Company step
+  const [companyName, setCompanyName] = useState("");
+  const [companyGoal, setCompanyGoal] = useState("");
+
+  // Task step
   const [taskTitle, setTaskTitle] = useState(
     "Hire your first engineer and create a hiring plan"
   );
@@ -160,11 +177,15 @@ export function OnboardingWizard() {
   const [createdIssueId, setCreatedIssueId] = useState<string | null>(null);
   const [createdIssueRef, setCreatedIssueRef] = useState<string | null>(null);
   const maxAccessibleStep = useMemo<Step>(() => {
-    if (!createdCompanyId) return 1;
-    if (!createdAgentId) return 2;
+    if (!isNewCompanyFlow) {
+      if (!createdAgentId) return 1;
+      if (!taskTitle.trim()) return 2;
+      return 3;
+    }
+    if (!createdCompanyId || !createdAgentId) return 2;
     if (!taskTitle.trim()) return 3;
     return 4;
-  }, [createdCompanyId, createdAgentId, taskTitle]);
+  }, [createdAgentId, createdCompanyId, isNewCompanyFlow, taskTitle]);
 
   useEffect(() => {
     setRouteDismissed(false);
@@ -176,7 +197,7 @@ export function OnboardingWizard() {
   useEffect(() => {
     if (!effectiveOnboardingOpen) return;
     const cId = effectiveOnboardingOptions.companyId ?? null;
-    setStep(effectiveOnboardingOptions.initialStep ?? 1);
+    setStep(initialStep);
     setCreatedCompanyId(cId);
     setCreatedCompanyPrefix(null);
     setCreatedCompanyGoalId(null);
@@ -187,7 +208,7 @@ export function OnboardingWizard() {
   }, [
     effectiveOnboardingOpen,
     effectiveOnboardingOptions.companyId,
-    effectiveOnboardingOptions.initialStep
+    initialStep
   ]);
 
   // Backfill issue prefix for an existing company once companies are loaded.
@@ -197,10 +218,20 @@ export function OnboardingWizard() {
     if (company) setCreatedCompanyPrefix(company.issuePrefix);
   }, [effectiveOnboardingOpen, createdCompanyId, createdCompanyPrefix, companies]);
 
-  // Resize textarea when step 3 is shown or description changes
   useEffect(() => {
-    if (step === 3) autoResizeTextarea();
-  }, [step, taskDescription, autoResizeTextarea]);
+    if (!existingCompany?.name || companyName.trim().length > 0) return;
+    setCompanyName(existingCompany.name);
+  }, [companyName, existingCompany?.name]);
+
+  const isAgentStep = step === 1;
+  const isCompanyStep = isNewCompanyFlow && step === 2;
+  const isTaskStep = isNewCompanyFlow ? step === 3 : step === 2;
+  const isLaunchStep = isNewCompanyFlow ? step === 4 : step === 3;
+
+  // Resize textarea when the task step is shown or description changes
+  useEffect(() => {
+    if (isTaskStep) autoResizeTextarea();
+  }, [isTaskStep, taskDescription, autoResizeTextarea]);
 
   useEffect(() => {
     if (step > maxAccessibleStep) {
@@ -218,7 +249,7 @@ export function OnboardingWizard() {
       ? queryKeys.agents.adapterModels(createdCompanyId, adapterType)
       : ["agents", "none", "adapter-models", adapterType],
     queryFn: () => agentsApi.adapterModels(createdCompanyId!, adapterType),
-    enabled: Boolean(createdCompanyId) && effectiveOnboardingOpen && step === 2
+    enabled: Boolean(createdCompanyId) && effectiveOnboardingOpen && step === 1
   });
   const isLocalAdapter =
     adapterType === "claude_local" ||
@@ -245,12 +276,26 @@ export function OnboardingWizard() {
       : "claude");
 
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 1) return;
     setAdapterEnvResult(null);
     setAdapterEnvError(null);
   }, [step, adapterType, model, command, args, url]);
 
-  const selectedModel = (adapterModels ?? []).find((m) => m.id === model);
+  const onboardingAdapterModels = useMemo(() => {
+    let models = adapterModels ?? [];
+    if (adapterType === "codex_local") {
+      const curated = CURATED_CODEX_MODEL_IDS.map((id) => ({ id, label: id === "codex-mini-latest" ? "Codex Mini" : id }));
+      if (models.length === 0) return curated;
+      const curatedIds = new Set<string>(CURATED_CODEX_MODEL_IDS);
+      const curatedMap = new Map(curated.map((entry) => [entry.id, entry]));
+      const filtered = models.filter((entry) => curatedIds.has(entry.id));
+      return filtered.length > 0
+        ? CURATED_CODEX_MODEL_IDS.map((id) => filtered.find((entry) => entry.id === id) ?? curatedMap.get(id)!).filter(Boolean)
+        : curated;
+    }
+    return models;
+  }, [adapterModels, adapterType]);
+  const selectedModel = onboardingAdapterModels.find((m) => m.id === model);
   const hasAnthropicApiKeyOverrideCheck =
     adapterEnvResult?.checks.some(
       (check) =>
@@ -262,7 +307,7 @@ export function OnboardingWizard() {
     hasAnthropicApiKeyOverrideCheck;
   const filteredModels = useMemo(() => {
     const query = modelSearch.trim().toLowerCase();
-    return (adapterModels ?? []).filter((entry) => {
+    return onboardingAdapterModels.filter((entry) => {
       if (!query) return true;
       const provider = extractProviderIdWithFallback(entry.id, "");
       return (
@@ -271,7 +316,7 @@ export function OnboardingWizard() {
         provider.toLowerCase().includes(query)
       );
     });
-  }, [adapterModels, modelSearch]);
+  }, [modelSearch, onboardingAdapterModels]);
   const groupedModels = useMemo(() => {
     if (adapterType !== "opencode_local") {
       return [
@@ -300,6 +345,9 @@ export function OnboardingWizard() {
     setStep(1);
     setLoading(false);
     setError(null);
+    setModelOpen(false);
+    setModelSearch("");
+    setShowMoreAdapters(false);
     setCompanyName("");
     setCompanyGoal("");
     setAgentName("CEO");
@@ -322,6 +370,8 @@ export function OnboardingWizard() {
     setCreatedProjectId(null);
     setCreatedIssueId(null);
     setCreatedIssueRef(null);
+    setDraftingCompany(false);
+    setDraftingTask(false);
   }
 
   function handleClose() {
@@ -396,19 +446,115 @@ export function OnboardingWizard() {
     }
   }
 
+  async function createAgentForCompany(companyId: string) {
+    if (adapterType === "opencode_local") {
+      const selectedModelId = model.trim();
+      if (!selectedModelId) {
+        setError(
+          "OpenCode requires an explicit model in provider/model format."
+        );
+        return null;
+      }
+      if (adapterModelsError) {
+        setError(
+          adapterModelsError instanceof Error
+            ? adapterModelsError.message
+            : "Failed to load OpenCode models."
+        );
+        return null;
+      }
+      if (adapterModelsLoading || adapterModelsFetching) {
+        setError(
+          "OpenCode models are still loading. Please wait and try again."
+        );
+        return null;
+      }
+      const discoveredModels = onboardingAdapterModels;
+      if (!discoveredModels.some((entry) => entry.id === selectedModelId)) {
+        setError(
+          discoveredModels.length === 0
+            ? "No OpenCode models discovered. Run `opencode models` and authenticate providers."
+            : `Configured OpenCode model is unavailable: ${selectedModelId}`
+        );
+        return null;
+      }
+    }
+
+    if (isLocalAdapter) {
+      const result = adapterEnvResult ?? (await runAdapterEnvironmentTest());
+      if (!result) return null;
+      if (result.status === "fail") {
+        setError("Adapter environment check failed. Fix the errors and retry.");
+        return null;
+      }
+    }
+
+    const agent = await agentsApi.create(companyId, {
+      name: agentName.trim(),
+      role: "ceo",
+      adapterType,
+      adapterConfig: buildAdapterConfig(),
+      runtimeConfig: {
+        heartbeat: {
+          enabled: true,
+          intervalSec: 3600,
+          wakeOnDemand: true,
+          cooldownSec: 10,
+          maxConcurrentRuns: 1
+        }
+      }
+    });
+    setCreatedAgentId(agent.id);
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.agents.list(companyId)
+    });
+    return agent;
+  }
+
   async function handleStep1Next() {
+    setError(null);
+    if (isNewCompanyFlow) {
+      setStep(2);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      const nextAgent = await createAgentForCompany(createdCompanyId!);
+      if (!nextAgent) return;
+      setStep(2);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create agent");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleStep2Next() {
+    if (!isNewCompanyFlow) {
+      if (!createdCompanyId || !createdAgentId) return;
+      setError(null);
+      setStep(3);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const company = await companiesApi.create({ name: companyName.trim() });
-      setCreatedCompanyId(company.id);
-      setCreatedCompanyPrefix(company.issuePrefix);
-      setSelectedCompanyId(company.id);
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
+      let companyId = createdCompanyId;
+      let companyPrefix = createdCompanyPrefix;
+      if (!companyId) {
+        const company = await companiesApi.create({ name: companyName.trim() });
+        companyId = company.id;
+        companyPrefix = company.issuePrefix;
+        setCreatedCompanyId(company.id);
+        setCreatedCompanyPrefix(company.issuePrefix);
+        setSelectedCompanyId(company.id);
+        queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
+      }
 
-      if (companyGoal.trim()) {
+      if (companyGoal.trim() && !createdCompanyGoalId) {
         const parsedGoal = parseOnboardingGoalInput(companyGoal);
-        const goal = await goalsApi.create(company.id, {
+        const goal = await goalsApi.create(companyId, {
           title: parsedGoal.title,
           ...(parsedGoal.description
             ? { description: parsedGoal.description }
@@ -418,89 +564,19 @@ export function OnboardingWizard() {
         });
         setCreatedCompanyGoalId(goal.id);
         queryClient.invalidateQueries({
-          queryKey: queryKeys.goals.list(company.id)
+          queryKey: queryKeys.goals.list(companyId)
         });
-      } else {
+      } else if (!companyGoal.trim()) {
         setCreatedCompanyGoalId(null);
       }
 
-      setStep(2);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create company");
-    } finally {
-      setLoading(false);
-    }
-  }
+      const agent = createdAgentId ? { id: createdAgentId } : await createAgentForCompany(companyId);
+      if (!agent) return;
 
-  async function handleStep2Next() {
-    if (!createdCompanyId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      if (adapterType === "opencode_local") {
-        const selectedModelId = model.trim();
-        if (!selectedModelId) {
-          setError(
-            "OpenCode requires an explicit model in provider/model format."
-          );
-          return;
-        }
-        if (adapterModelsError) {
-          setError(
-            adapterModelsError instanceof Error
-              ? adapterModelsError.message
-              : "Failed to load OpenCode models."
-          );
-          return;
-        }
-        if (adapterModelsLoading || adapterModelsFetching) {
-          setError(
-            "OpenCode models are still loading. Please wait and try again."
-          );
-          return;
-        }
-        const discoveredModels = adapterModels ?? [];
-        if (!discoveredModels.some((entry) => entry.id === selectedModelId)) {
-          setError(
-            discoveredModels.length === 0
-              ? "No OpenCode models discovered. Run `opencode models` and authenticate providers."
-              : `Configured OpenCode model is unavailable: ${selectedModelId}`
-          );
-          return;
-        }
-      }
-
-      if (isLocalAdapter) {
-        const result = adapterEnvResult ?? (await runAdapterEnvironmentTest());
-        if (!result) return;
-        if (result.status === "fail") {
-          setError("Adapter environment check failed. Fix the errors and retry.");
-          return;
-        }
-      }
-
-      const agent = await agentsApi.create(createdCompanyId, {
-        name: agentName.trim(),
-        role: "ceo",
-        adapterType,
-        adapterConfig: buildAdapterConfig(),
-        runtimeConfig: {
-          heartbeat: {
-            enabled: true,
-            intervalSec: 3600,
-            wakeOnDemand: true,
-            cooldownSec: 10,
-            maxConcurrentRuns: 1
-          }
-        }
-      });
-      setCreatedAgentId(agent.id);
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.agents.list(createdCompanyId)
-      });
+      setCreatedCompanyPrefix(companyPrefix ?? null);
       setStep(3);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create agent");
+      setError(err instanceof Error ? err.message : "Failed to create company");
     } finally {
       setLoading(false);
     }
@@ -556,9 +632,70 @@ export function OnboardingWizard() {
   }
 
   async function handleStep3Next() {
+    if (isNewCompanyFlow) {
+      if (!createdCompanyId || !createdAgentId) return;
+      setError(null);
+      setStep(4);
+      return;
+    }
     if (!createdCompanyId || !createdAgentId) return;
     setError(null);
-    setStep(4);
+    setStep(3);
+  }
+
+  function asOptionalDraftField(value: string) {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  async function handleDraftCompany() {
+    setDraftingCompany(true);
+    setError(null);
+    try {
+      const draft = await companiesApi.onboardingDraft({
+        kind: "company",
+        companyName: asOptionalDraftField(companyName),
+        companyGoal: asOptionalDraftField(companyGoal),
+        agentName: asOptionalDraftField(agentName),
+        adapterType
+      });
+      if (draft.companyName) setCompanyName(draft.companyName);
+      if (draft.companyGoal) setCompanyGoal(draft.companyGoal);
+      pushToast({
+        title: draft.source === "openai" ? "Company draft generated" : "Company draft suggested",
+        tone: "success"
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to draft company");
+    } finally {
+      setDraftingCompany(false);
+    }
+  }
+
+  async function handleDraftTask() {
+    setDraftingTask(true);
+    setError(null);
+    try {
+      const draft = await companiesApi.onboardingDraft({
+        kind: "task",
+        companyName: asOptionalDraftField(companyName),
+        companyGoal: asOptionalDraftField(companyGoal),
+        agentName: asOptionalDraftField(agentName),
+        adapterType,
+        taskTitle: asOptionalDraftField(taskTitle),
+        taskDescription: asOptionalDraftField(taskDescription)
+      });
+      if (draft.taskTitle) setTaskTitle(draft.taskTitle);
+      if (draft.taskDescription) setTaskDescription(draft.taskDescription);
+      pushToast({
+        title: draft.source === "openai" ? "Starter task drafted" : "Starter task suggested",
+        tone: "success"
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to draft starter task");
+    } finally {
+      setDraftingTask(false);
+    }
   }
 
   async function handleLaunch() {
@@ -659,14 +796,28 @@ export function OnboardingWizard() {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      if (step === 1 && companyName.trim()) handleStep1Next();
-      else if (step === 2 && agentName.trim()) handleStep2Next();
-      else if (step === 3 && taskTitle.trim()) handleStep3Next();
-      else if (step === 4) handleLaunch();
+      if (isAgentStep && agentName.trim()) handleStep1Next();
+      else if (isCompanyStep && companyName.trim()) handleStep2Next();
+      else if (isTaskStep && taskTitle.trim()) {
+        if (isNewCompanyFlow) handleStep3Next();
+        else handleStep2Next();
+      } else if (isLaunchStep) handleLaunch();
     }
   }
 
   if (!effectiveOnboardingOpen) return null;
+  const visibleSteps = isNewCompanyFlow
+    ? [
+        { step: 1 as Step, label: "Agent", icon: Bot },
+        { step: 2 as Step, label: "Company", icon: Building2 },
+        { step: 3 as Step, label: "Task", icon: ListTodo },
+        { step: 4 as Step, label: "Launch", icon: Rocket }
+      ]
+    : [
+        { step: 1 as Step, label: "Agent", icon: Bot },
+        { step: 2 as Step, label: "Task", icon: ListTodo },
+        { step: 3 as Step, label: "Launch", icon: Rocket }
+      ];
 
   return (
     <Dialog
@@ -703,14 +854,7 @@ export function OnboardingWizard() {
             <div className="w-full max-w-md mx-auto my-auto px-8 py-12 shrink-0">
               {/* Progress tabs */}
               <div className="flex items-center gap-0 mb-8 border-b border-border">
-                {(
-                  [
-                    { step: 1 as Step, label: "Company", icon: Building2 },
-                    { step: 2 as Step, label: "Agent", icon: Bot },
-                    { step: 3 as Step, label: "Task", icon: ListTodo },
-                    { step: 4 as Step, label: "Launch", icon: Rocket }
-                  ] as const
-                ).map(({ step: s, label, icon: Icon }) => (
+                {visibleSteps.map(({ step: s, label, icon: Icon }) => (
                   <button
                     key={s}
                     type="button"
@@ -736,69 +880,16 @@ export function OnboardingWizard() {
               </div>
 
               {/* Step content */}
-              {step === 1 && (
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3 mb-1">
-                    <div className="bg-muted/50 p-2">
-                      <Building2 className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Name your company</h3>
-                      <p className="text-xs text-muted-foreground">
-                        This is the organization your agents will work for.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 group">
-                    <label
-                      className={cn(
-                        "text-xs mb-1 block",
-                        companyName.trim()
-                          ? "text-foreground"
-                          : "text-muted-foreground group-focus-within:text-foreground"
-                      )}
-                    >
-                      Company name
-                    </label>
-                    <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
-                      placeholder="Acme Corp"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="group">
-                    <label
-                      className={cn(
-                        "text-xs mb-1 block",
-                        companyGoal.trim()
-                          ? "text-foreground"
-                          : "text-muted-foreground group-focus-within:text-foreground"
-                      )}
-                    >
-                      Mission / goal (optional)
-                    </label>
-                    <textarea
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-[60px]"
-                      placeholder="What is this company trying to achieve?"
-                      value={companyGoal}
-                      onChange={(e) => setCompanyGoal(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {step === 2 && (
+              {isAgentStep && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="bg-muted/50 p-2">
                       <Bot className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Create your first agent</h3>
+                      <h3 className="font-medium">Choose your first agent</h3>
                       <p className="text-xs text-muted-foreground">
-                        Choose how this agent will run tasks.
+                        Pick the adapter and model for the CEO before we seed the company.
                       </p>
                     </div>
                   </div>
@@ -1081,8 +1172,8 @@ export function OnboardingWizard() {
                   )}
 
                   {isLocalAdapter && (
-                    <div className="space-y-2 rounded-md border border-border p-3">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="space-y-2 rounded-md border border-border p-3">
+                        <div className="flex items-center justify-between gap-2">
                         <div>
                           <p className="text-xs font-medium">
                             Adapter environment check
@@ -1096,12 +1187,18 @@ export function OnboardingWizard() {
                           size="sm"
                           variant="outline"
                           className="h-7 px-2.5 text-xs"
-                          disabled={adapterEnvLoading}
+                          disabled={adapterEnvLoading || (isNewCompanyFlow && !createdCompanyId)}
                           onClick={() => void runAdapterEnvironmentTest()}
                         >
-                          {adapterEnvLoading ? "Testing..." : "Test now"}
+                          {adapterEnvLoading ? "Testing..." : isNewCompanyFlow && !createdCompanyId ? "Create company first" : "Test now"}
                         </Button>
                       </div>
+
+                      {isNewCompanyFlow && !createdCompanyId && (
+                        <div className="rounded-md border border-border/70 bg-muted/20 px-2.5 py-2 text-[11px] text-muted-foreground">
+                          We run the live adapter check after the company is created on the next step.
+                        </div>
+                      )}
 
                       {adapterEnvError && (
                         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-2 text-[11px] text-destructive">
@@ -1221,7 +1318,70 @@ export function OnboardingWizard() {
                 </div>
               )}
 
-              {step === 3 && (
+              {isCompanyStep && (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="bg-muted/50 p-2">
+                      <Building2 className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Name your company</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Set the company identity and the mission your CEO should work from.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={draftingCompany || loading}
+                      onClick={() => void handleDraftCompany()}
+                    >
+                      {draftingCompany ? "Drafting..." : "Draft with AI"}
+                    </Button>
+                  </div>
+                  <div className="mt-3 group">
+                    <label
+                      className={cn(
+                        "text-xs mb-1 block",
+                        companyName.trim()
+                          ? "text-foreground"
+                          : "text-muted-foreground group-focus-within:text-foreground"
+                      )}
+                    >
+                      Company name
+                    </label>
+                    <input
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+                      placeholder="Acme Corp"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="group">
+                    <label
+                      className={cn(
+                        "text-xs mb-1 block",
+                        companyGoal.trim()
+                          ? "text-foreground"
+                          : "text-muted-foreground group-focus-within:text-foreground"
+                      )}
+                    >
+                      Mission / goal (optional)
+                    </label>
+                    <textarea
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-[120px]"
+                      placeholder="What is this company trying to achieve?"
+                      value={companyGoal}
+                      onChange={(e) => setCompanyGoal(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isTaskStep && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="bg-muted/50 p-2">
@@ -1234,6 +1394,16 @@ export function OnboardingWizard() {
                         a research question, writing a script.
                       </p>
                     </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={draftingTask || loading}
+                      onClick={() => void handleDraftTask()}
+                    >
+                      {draftingTask ? "Drafting..." : "Draft with AI"}
+                    </Button>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
@@ -1262,7 +1432,7 @@ export function OnboardingWizard() {
                 </div>
               )}
 
-              {step === 4 && (
+              {isLaunchStep && (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
                     <div className="bg-muted/50 p-2">
@@ -1281,7 +1451,7 @@ export function OnboardingWizard() {
                       <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {companyName}
+                          {companyName || existingCompany?.name || "Company"}
                         </p>
                         <p className="text-xs text-muted-foreground">Company</p>
                       </div>
@@ -1323,7 +1493,7 @@ export function OnboardingWizard() {
               {/* Footer navigation */}
               <div className="flex items-center justify-between mt-8">
                 <div>
-                  {step > 1 && step > (onboardingOptions.initialStep ?? 1) && (
+                  {step > 1 && step > initialStep && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1339,7 +1509,7 @@ export function OnboardingWizard() {
                   {step === 1 && (
                     <Button
                       size="sm"
-                      disabled={!companyName.trim() || loading}
+                      disabled={!agentName.trim() || loading}
                       onClick={handleStep1Next}
                     >
                       {loading ? (
@@ -1350,15 +1520,14 @@ export function OnboardingWizard() {
                       {loading ? "Creating..." : "Next"}
                     </Button>
                   )}
-                  {step === 2 && (
+                  {isCompanyStep && (
                     <Button
                       size="sm"
                       disabled={
-                        !agentName.trim() ||
+                        !companyName.trim() ||
                         loading ||
                         adapterEnvLoading ||
-                        (isLocalAdapter &&
-                          adapterEnvResult?.status === "fail")
+                        (isLocalAdapter && adapterEnvResult?.status === "fail")
                       }
                       onClick={handleStep2Next}
                     >
@@ -1370,11 +1539,11 @@ export function OnboardingWizard() {
                       {loading ? "Creating..." : "Next"}
                     </Button>
                   )}
-                  {step === 3 && (
+                  {isTaskStep && (
                     <Button
                       size="sm"
                       disabled={!taskTitle.trim() || loading}
-                      onClick={handleStep3Next}
+                      onClick={isNewCompanyFlow ? handleStep3Next : handleStep2Next}
                     >
                       {loading ? (
                         <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>
@@ -1384,7 +1553,7 @@ export function OnboardingWizard() {
                       {loading ? "Creating..." : "Next"}
                     </Button>
                   )}
-                  {step === 4 && (
+                  {isLaunchStep && (
                     <Button size="sm" disabled={loading} onClick={handleLaunch}>
                       {loading ? (
                         <span className="text-[10px] text-[var(--fg-dim)]">loading...</span>

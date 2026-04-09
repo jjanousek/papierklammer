@@ -6,6 +6,7 @@ import { issueRoutes } from "../routes/issues.js";
 
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
+  getByIdentifier: vi.fn(),
   getAncestors: vi.fn(),
   findMentionedProjectIds: vi.fn(),
   getCommentCursor: vi.fn(),
@@ -20,6 +21,10 @@ const mockProjectService = vi.hoisted(() => ({
 const mockGoalService = vi.hoisted(() => ({
   getById: vi.fn(),
   getDefaultCompanyGoal: vi.fn(),
+}));
+
+const mockWorkProductService = vi.hoisted(() => ({
+  listForIssue: vi.fn(async () => []),
 }));
 
 function createApp() {
@@ -61,9 +66,7 @@ function createApp() {
     routineService: {
       syncRunStatusForIssue: vi.fn(async () => undefined),
     } as any,
-    workProductService: {
-      listForIssue: vi.fn(async () => []),
-    } as any,
+    workProductService: mockWorkProductService as any,
     projectionService: {
       getIssueProjection: vi.fn(async () => ({
         projectedStatus: "todo",
@@ -123,6 +126,9 @@ describe("issue goal context routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIssueService.getById.mockResolvedValue(legacyProjectLinkedIssue);
+    mockIssueService.getByIdentifier.mockImplementation(async (identifier: string) =>
+      identifier.toUpperCase() === legacyProjectLinkedIssue.identifier ? legacyProjectLinkedIssue : null,
+    );
     mockIssueService.getAncestors.mockResolvedValue([]);
     mockIssueService.findMentionedProjectIds.mockResolvedValue([]);
     mockIssueService.getCommentCursor.mockResolvedValue({
@@ -199,5 +205,15 @@ describe("issue goal context routes", () => {
       }),
     );
     expect(mockGoalService.getDefaultCompanyGoal).not.toHaveBeenCalled();
+  });
+
+  it("resolves issue identifiers before listing work products", async () => {
+    const res = await request(createApp()).get("/api/issues/PAP-581/work-products");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+    expect(mockIssueService.getByIdentifier).toHaveBeenCalledWith("PAP-581");
+    expect(mockIssueService.getById).toHaveBeenCalledWith(legacyProjectLinkedIssue.id);
+    expect(mockWorkProductService.listForIssue).toHaveBeenCalledWith(legacyProjectLinkedIssue);
   });
 });

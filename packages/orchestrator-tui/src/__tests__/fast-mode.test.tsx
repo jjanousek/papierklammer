@@ -39,14 +39,32 @@ const MOCK_AGENTS: AgentOverview[] = [
 ];
 
 function createMockFetch(agents: AgentOverview[] = MOCK_AGENTS) {
-  return vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      agents,
-      totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
-      totalQueuedIntents: 0,
-      totalActiveLeases: 0,
-    }),
+  return vi.fn().mockImplementation(async (input: string | URL | Request) => {
+    const url = String(input);
+
+    if (url.includes("/approvals?status=pending")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    if (url.includes("/api/companies/") && url.includes("/issues")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    return {
+      ok: true,
+      json: async () => ({
+        agents,
+        totalActiveRuns: agents.reduce((s, a) => s + a.activeRunCount, 0),
+        totalQueuedIntents: 0,
+        totalActiveLeases: 0,
+      }),
+    };
   });
 }
 
@@ -68,29 +86,29 @@ describe("VAL-TUI-CTRL-004: Fast mode toggle", () => {
 
     await tick();
 
-    // Default is off
+    // Default is on
     let frame = lastFrame()!;
-    expect(frame).toContain("fast: OFF");
+    expect(frame).toContain("fast: ON");
 
     // Switch focus to sidebar so 'f' is not captured by input
     stdin.write("\t");
     await tick();
 
-    // Press 'f' to toggle on
-    stdin.write("f");
-    await tick();
-
-    frame = lastFrame()!;
-    expect(frame).toContain("fast: ON");
-    expect(frame).toContain("2×");
-
-    // Press 'f' again to toggle off
+    // Press 'f' to toggle off
     stdin.write("f");
     await tick();
 
     frame = lastFrame()!;
     expect(frame).toContain("fast: OFF");
     expect(frame).not.toContain("2×");
+
+    // Press 'f' again to toggle back on
+    stdin.write("f");
+    await tick();
+
+    frame = lastFrame()!;
+    expect(frame).toContain("fast: ON");
+    expect(frame).toContain("2×");
 
     unmount();
   });
@@ -111,7 +129,7 @@ describe("VAL-TUI-CTRL-004: Fast mode toggle", () => {
     await tick();
 
     const frame = lastFrame()!;
-    expect(frame).toContain("fast: OFF");
+    expect(frame).toContain("fast: ON");
 
     unmount();
   });
@@ -131,9 +149,9 @@ describe("VAL-TUI-CTRL-004: Fast mode toggle", () => {
 
     await tick();
 
-    // Default is off
+    // Default is on
     let frame = lastFrame()!;
-    expect(frame).toContain("fast: OFF");
+    expect(frame).toContain("fast: ON");
 
     // Focus input by tabbing (default is input, Tab → sidebar, Tab → input)
     stdin.write("\t"); // sidebar
@@ -146,8 +164,8 @@ describe("VAL-TUI-CTRL-004: Fast mode toggle", () => {
     await tick();
 
     frame = lastFrame()!;
-    // Should still say "OFF" because input was focused
-    expect(frame).toContain("fast: OFF");
+    // Should still say "ON" because input was focused
+    expect(frame).toContain("fast: ON");
 
     unmount();
   });
@@ -187,7 +205,7 @@ describe("VAL-TUI-CTRL-004: Fast mode toggle", () => {
     await tick();
 
     frame = lastFrame()!;
-    expect(frame).toContain("fast: OFF");
+    expect(frame).toContain("fast: ON");
 
     unmount();
   });
@@ -225,18 +243,6 @@ describe("VAL-TUI-CTRL-005: Fast mode passed to Codex", () => {
 
     // Initialize
     respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
-    await tick();
-
-    // Switch focus to sidebar so 'f' shortcut works
-    stdin.write("\t");
-    await tick();
-
-    // Enable fast mode
-    stdin.write("f");
-    await tick();
-
-    // Switch back to input
-    stdin.write("\t");
     await tick();
 
     // Send a message
@@ -295,7 +301,7 @@ describe("VAL-TUI-CTRL-005: Fast mode passed to Codex", () => {
     stdin.write("\t");
     await tick();
 
-    // Enable fast mode
+    // Disable fast mode
     stdin.write("f");
     await tick();
 
@@ -326,12 +332,12 @@ describe("VAL-TUI-CTRL-005: Fast mode passed to Codex", () => {
     ) as { method: string; params: Record<string, unknown> } | undefined;
 
     expect(turnStart).toBeDefined();
-    expect(turnStart!.params.serviceTier).toBe("fast");
+    expect(turnStart!.params.serviceTier).toBeUndefined();
 
     unmount();
   });
 
-  it("thread/start does NOT include serviceTier when fast mode is off", async () => {
+  it("thread/start omits serviceTier after fast mode is toggled off", async () => {
     const mockProc = createMockProcess();
     const mockSpawn = vi.fn().mockReturnValue(mockProc);
     const mockFetch = createMockFetch();
@@ -362,7 +368,15 @@ describe("VAL-TUI-CTRL-005: Fast mode passed to Codex", () => {
     respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
     await tick();
 
-    // Send a message (fast mode is OFF by default)
+    // Switch focus to sidebar and disable fast mode from its default-on state
+    stdin.write("\t");
+    await tick();
+    stdin.write("f");
+    await tick();
+    stdin.write("\t");
+    await tick();
+
+    // Send a message
     stdin.write("Hello normal");
     await tick();
     stdin.write("\r");
@@ -422,12 +436,12 @@ describe("VAL-TUI-CTRL-007: Fast mode persists across messages", () => {
     stdin.write("\t");
     await tick();
 
-    // Enable fast mode
+    // Disable fast mode
     stdin.write("f");
     await tick();
 
     let frame = lastFrame()!;
-    expect(frame).toContain("fast: ON");
+    expect(frame).toContain("fast: OFF");
 
     // Switch back to input
     stdin.write("\t");
@@ -456,9 +470,9 @@ describe("VAL-TUI-CTRL-007: Fast mode persists across messages", () => {
     });
     await tick();
 
-    // Verify fast mode still shows ON in status bar
+    // Verify fast mode still shows OFF in status bar
     frame = lastFrame()!;
-    expect(frame).toContain("fast: ON");
+    expect(frame).toContain("fast: OFF");
 
     // Send second message — should still have serviceTier
     stdin.write("Second");
@@ -473,19 +487,19 @@ describe("VAL-TUI-CTRL-007: Fast mode persists across messages", () => {
     });
     await tick();
 
-    // Verify both turn/start calls used serviceTier "fast"
+    // Verify both turn/start calls omit fast service tier after disabling it
     const turnStarts = sentMessages.filter((m: any) => m.method === "turn/start");
     expect(turnStarts).toHaveLength(2);
 
     const t1 = turnStarts[0] as { params: { serviceTier?: string } };
     const t2 = turnStarts[1] as { params: { serviceTier?: string } };
 
-    expect(t1.params.serviceTier).toBe("fast");
-    expect(t2.params.serviceTier).toBe("fast");
+    expect(t1.params.serviceTier).toBeUndefined();
+    expect(t2.params.serviceTier).toBeUndefined();
 
-    // StatusBar still shows fast: ON
+    // StatusBar still shows fast: OFF
     frame = lastFrame()!;
-    expect(frame).toContain("fast: ON");
+    expect(frame).toContain("fast: OFF");
 
     unmount();
   });

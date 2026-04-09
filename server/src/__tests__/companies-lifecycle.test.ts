@@ -303,8 +303,8 @@ describeDB("company lifecycle routes", () => {
     });
     expect(firstArchive.status).toBe(200);
     expect((firstArchive.body as any).status).toBe("archived");
-    expect((firstArchive.body as any).pauseReason).toBeNull();
-    expect((firstArchive.body as any).pausedAt).toBeNull();
+    expect((firstArchive.body as any).pauseReason).toBe("manual");
+    expect((firstArchive.body as any).pausedAt).toBeInstanceOf(Date);
 
     const secondArchive = await callRoute({
       method: "post",

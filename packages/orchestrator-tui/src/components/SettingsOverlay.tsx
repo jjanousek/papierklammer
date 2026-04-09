@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Text, useInput } from "ink";
 import type { ReasoningEffort } from "../codex/types.js";
+import { DEFAULT_TUI_MODEL } from "../config.js";
 
 export interface SettingsOverlayProps {
   /** Whether the overlay is visible. */
@@ -25,7 +26,7 @@ export interface SettingsOverlayProps {
 export function SettingsOverlay({
   visible,
   onDismiss,
-  model,
+  model = DEFAULT_TUI_MODEL,
   reasoningEffort,
   fastMode,
 }: SettingsOverlayProps): React.ReactElement | null {
@@ -57,7 +58,7 @@ export function SettingsOverlay({
         <Text bold color="yellow">
           {"Model".padEnd(18)}
         </Text>
-        <Text>{model ?? "default"}</Text>
+        <Text>{model}</Text>
       </Box>
       <Box gap={1}>
         <Text bold color="yellow">
@@ -76,6 +77,7 @@ export function SettingsOverlay({
         )}
       </Box>
       <Text> </Text>
+      <Text dimColor>Default profile: gpt-5.4 · high · fast</Text>
       <Text dimColor>Press r to cycle reasoning · f to toggle fast mode</Text>
       <Text dimColor>Press s or Escape to close</Text>
     </Box>

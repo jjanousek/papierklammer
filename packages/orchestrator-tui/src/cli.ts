@@ -3,6 +3,7 @@ export interface CliFlags {
   apiKey: string;
   companyId: string;
   companyName: string;
+  model: string;
 }
 
 export interface ParseArgsResult {
@@ -17,6 +18,7 @@ Options:
   --api-key <key>        API key for authentication
   --company-id <id>      Company ID to connect to
   --company-name <name>  Company name to display in the header
+  --model <model>        Codex model to use (default: gpt-5.4)
   --help, -h             Show this help message`;
 
 /**
@@ -35,6 +37,7 @@ export function parseArgs(argv: string[]): ParseArgsResult {
       "",
     companyId: process.env.PAPIERKLAMMER_TUI_COMPANY_ID || "",
     companyName: process.env.PAPIERKLAMMER_TUI_COMPANY_NAME || "",
+    model: process.env.PAPIERKLAMMER_TUI_MODEL || "gpt-5.4",
   };
 
   let showHelp = false;
@@ -49,6 +52,8 @@ export function parseArgs(argv: string[]): ParseArgsResult {
       flags.companyId = argv[++i]!;
     } else if (arg === "--company-name" && i + 1 < argv.length) {
       flags.companyName = argv[++i]!;
+    } else if (arg === "--model" && i + 1 < argv.length) {
+      flags.model = argv[++i]!;
     } else if (arg === "--help" || arg === "-h") {
       showHelp = true;
     }

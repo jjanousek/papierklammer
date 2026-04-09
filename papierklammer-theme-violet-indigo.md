@@ -65,7 +65,7 @@ The violet base is darker and more saturated than the rose, so text opacity valu
 
 ### Status color adjustments
 
-The green status indicator shifts slightly more saturated (`#5AE87A` vs `#82E88A`) because the violet background has higher saturation and a desaturated green would look washed out. The red shifts to `#FF5555` (slightly brighter) for the same reason. Yellow stays the same.
+The violet theme uses more saturated/electric status colors (`#5AE87A` green, `#E8D560` yellow, `#FF5555` red) because the deep violet background has high saturation and muted tones would look washed out. The rose theme uses softer, warmer status colors (`#78C498` sage green, `#C8A85A` amber gold, `#D47272` soft coral) that harmonize with its warm midtone palette.
 
 ### Contrast notes
 
@@ -96,9 +96,9 @@ Each theme is a set of CSS custom properties scoped to a `data-theme` attribute 
   --fg-dim: rgba(255, 255, 255, 0.40);
   --border: rgba(255, 255, 255, 0.18);
   --border-strong: rgba(255, 255, 255, 0.32);
-  --alive: #82E88A;
-  --warn: #E8D560;
-  --dead: #FF6060;
+  --alive: #78C498;
+  --warn: #C8A85A;
+  --dead: #D47272;
 }
 
 [data-theme="violet-indigo"] {

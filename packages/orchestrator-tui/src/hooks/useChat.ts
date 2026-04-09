@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useEffect } from "react";
 
 export interface CommandItem {
   command: string;
@@ -17,6 +18,8 @@ export interface UseChatResult {
   messages: ChatMessage[];
   /** Partial streaming text for the current assistant response. */
   streamingText: string;
+  /** Partial or recent reasoning text for the active turn. */
+  reasoningText: string;
   /** Whether the assistant is currently thinking/streaming. */
   isThinking: boolean;
   /** Command items accumulated during the current turn. */
@@ -25,6 +28,8 @@ export interface UseChatResult {
   sendMessage: (text: string) => void;
   /** Append a text delta to the current streaming response. */
   onDelta: (text: string) => void;
+  /** Append a reasoning delta to the current reasoning view. */
+  onReasoningDelta: (text: string) => void;
   /** Finalize the current streaming response as an assistant message. */
   onTurnCompleted: () => void;
   /** Track a command execution. */
@@ -52,10 +57,24 @@ export interface UseChatResult {
 export function useChat(): UseChatResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingText, setStreamingText] = useState("");
+  const [reasoningText, setReasoningText] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const pendingTurnRef = useRef(false);
   const pendingCommandItemsRef = useRef<CommandItem[]>([]);
   const [pendingCommandItems, setPendingCommandItems] = useState<CommandItem[]>([]);
+
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role !== "assistant" || !lastMessage.text.startsWith("Error:")) {
+      return;
+    }
+
+    pendingTurnRef.current = false;
+    pendingCommandItemsRef.current = [];
+    setPendingCommandItems([]);
+    setStreamingText("");
+    setIsThinking(false);
+  }, [messages]);
 
   const sendMessage = useCallback((text: string): void => {
     const userMessage: ChatMessage = {
@@ -67,6 +86,7 @@ export function useChat(): UseChatResult {
     pendingTurnRef.current = true;
     setIsThinking(true);
     setStreamingText("");
+    setReasoningText("");
     pendingCommandItemsRef.current = [];
     setPendingCommandItems([]);
   }, []);
@@ -75,6 +95,10 @@ export function useChat(): UseChatResult {
     setStreamingText((prev) => prev + text);
     // First delta means we're no longer just "thinking" — we're streaming
     setIsThinking(false);
+  }, []);
+
+  const onReasoningDelta = useCallback((text: string): void => {
+    setReasoningText((prev) => prev + text);
   }, []);
 
   const onTurnCompleted = useCallback((): void => {
@@ -166,10 +190,12 @@ export function useChat(): UseChatResult {
   return {
     messages,
     streamingText,
+    reasoningText,
     isThinking,
     pendingCommandItems,
     sendMessage,
     onDelta,
+    onReasoningDelta,
     onTurnCompleted,
     onCommandExecution,
     onError,

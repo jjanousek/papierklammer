@@ -4,24 +4,15 @@ commands:
   build: pnpm -r --workspace-concurrency=1 build
   test: pnpm test:run -- --maxWorkers=1
   lint: echo "no lint configured"
-  e2e: pnpm test:e2e
-  reset_audit_instance: pnpm audit:instance:audit:reset
-  reset_precompany_instance: pnpm audit:instance:precompany:reset
-  bootstrap_audit_instance: pnpm audit:instance:audit:bootstrap
-  bootstrap_precompany_instance: pnpm audit:instance:precompany:bootstrap
-  fresh_audit_instance: pnpm audit:instance:audit:fresh
-  fresh_precompany_instance: pnpm audit:instance:precompany:fresh
+  dev_start: PORT=3100 pnpm dev:once
+  dev_stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
+  health: curl -sf http://localhost:3100/api/health
+  companies: curl -sf http://localhost:3100/api/companies
 
 services:
-  audit-app:
-    start: pnpm audit:instance:audit:bootstrap && PAPIERKLAMMER_HOME=/tmp/papierklammer-mission-64c225d0 PAPIERKLAMMER_INSTANCE_ID=audit PORT=3100 pnpm papierklammer run
+  qa-app:
+    start: PORT=3100 pnpm dev:once
     stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
     healthcheck: curl -sf http://localhost:3100/api/health
     port: 3100
-    depends_on: []
-  precompany-app:
-    start: pnpm audit:instance:precompany:bootstrap && PAPIERKLAMMER_HOME=/tmp/papierklammer-mission-64c225d0 PAPIERKLAMMER_INSTANCE_ID=precompany PORT=3101 pnpm papierklammer run
-    stop: lsof -tiTCP:3101 -sTCP:LISTEN | xargs kill 2>/dev/null || true
-    healthcheck: curl -sf http://localhost:3101/api/health
-    port: 3101
     depends_on: []

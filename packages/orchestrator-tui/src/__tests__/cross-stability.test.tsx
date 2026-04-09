@@ -5,9 +5,9 @@ import { EventEmitter, PassThrough } from "node:stream";
 import { App } from "../components/App.js";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 
-// Mock ink-spinner to render a deterministic marker instead of animated frames
-vi.mock("ink-spinner", () => ({
-  default: () => React.createElement("ink-text", null, "SPINNER"),
+// Mock AnimatedGlyph to render a deterministic marker instead of animated frames
+vi.mock("../components/AnimatedGlyph.js", () => ({
+  AnimatedGlyph: () => React.createElement("ink-text", null, "SPINNER"),
 }));
 
 // Suppress alternate screen buffer escape codes during tests
@@ -509,6 +509,55 @@ describe("VAL-TUI-CROSS-001: Resize during thinking doesn't break layout", () =>
 
     frame = lastFrame()!;
     expect(frame).toBeDefined();
+
+    unmount();
+  });
+
+  it("narrow resize keeps reasoning and fast mode visible in the status bar", async () => {
+    const { stdin, lastFrame, unmount, mockProc, stdout } = await setupApp();
+
+    stdin.write("Make it narrow");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    resizeTerminal(stdout as unknown as EventEmitter, 18, 60);
+    await tick();
+
+    let frame = lastFrame()!;
+    expect(frame).toContain("r:high");
+    expect(frame).toContain("f:on");
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_narrow" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_1", status: "inProgress", items: [], error: null } },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "item/agentMessage/delta",
+      params: {
+        threadId: "thr_narrow",
+        turnId: "turn_1",
+        itemId: "item_1",
+        delta: "Still stable",
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_narrow",
+        turn: { id: "turn_1", status: "completed", items: [], error: null },
+      },
+    });
+    await tick();
+
+    frame = lastFrame()!;
+    expect(frame).toContain("r:high");
+    expect(frame).toContain("f:on");
+    expect(frame).not.toContain("thinking...");
 
     unmount();
   });

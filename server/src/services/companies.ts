@@ -391,12 +391,14 @@ export function companyService(db: Db) {
           return existing;
         }
 
+        const archivedAt = existing.pausedAt ?? new Date();
+
         await tx
           .update(companies)
           .set({
             status: "archived",
-            pauseReason: null,
-            pausedAt: null,
+            pauseReason: existing.pauseReason ?? "manual",
+            pausedAt: archivedAt,
             updatedAt: new Date(),
           })
           .where(eq(companies.id, id))

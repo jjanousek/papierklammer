@@ -12,47 +12,31 @@ Environment variables, external dependencies, and setup notes.
 - Node.js 25.6.1 (repo requires `>=20`)
 - pnpm 9.15.4
 - macOS darwin arm64
-- `codex` CLI is required for this mission because onboarding drafting and Codex onboarding use real `codex_local`
+- Default mission runtime is the repo’s local dev flow on port `3100`
+- `pnpm papierklammer run` is not the default mission path because the non-interactive config is currently missing in this environment
 - Docker is off-limits for this mission
-
-## Isolated local instances
-
-Workers and validators should use fresh isolated local instance data instead of the default Papierklammer home.
-
-- Mission home root: `/tmp/papierklammer-mission-64c225d0`
-- Primary audit instance id: `audit`
-- Primary app port: `3100`
-- Pre-company/TUI launcher instance id: `precompany`
-- Pre-company launcher port: `3101`
-
-Do not reuse `~/.papierklammer/instances/default` for mission validation unless the orchestrator explicitly changes the plan. Reset `instances/audit` or `instances/precompany` under the mission home before fresh validation runs when needed.
 
 ## Environment variables
 
 Important env vars for this mission:
 
-- `PAPIERKLAMMER_HOME` — isolated instance home root
-- `PAPIERKLAMMER_INSTANCE_ID` — isolated instance id within that home
-- `PORT` — hardcoded service port for the chosen instance
+- `PORT=3100` — used when starting the default local dev app for mission work
 - `DATABASE_URL` — leave unset for embedded Postgres in this mission
+- `PAPIERKLAMMER_TUI_COMPANY_ID` — if present, may influence TUI company selection and should be recorded when investigating stale-company behavior
 
-For `codex_local`, local readiness may come from existing Codex login state and/or `OPENAI_API_KEY`. Workers must never print or commit secrets. If Codex is unavailable, return to the orchestrator rather than substituting a mock provider silently.
+Workers must never print or commit secrets. If a local provider such as `codex_local` becomes relevant to a QA path and is unavailable, record the blocker with evidence and return that blocker in the report instead of silently substituting a mock path.
 
 ## Database and migrations
 
 - Embedded PostgreSQL is the default local database for the audit instances
 - Migrations auto-apply on server startup
-- If schema changes are required:
-  ```sh
-  cd packages/db
-  pnpm build
-  npx drizzle-kit generate
-  ```
+- This mission should not reset or migrate user data unless the user explicitly requests it
 
 ## Known local constraints
 
 - Browser + API validation are the primary surfaces for this mission
-- TUI validation requires a real PTY and is only used when a feature truly touches orchestration/TUI-adjacent behavior
+- TUI validation requires a real PTY and only begins after the QA company exists
 - This mission validates one full bundle at a time because memory headroom is limited
-- Never exceed 4 concurrent Node.js processes during mission work; shut down Node-based helpers, app servers, and test workers as soon as they are no longer needed
-- There are existing local uncommitted changes around direct wakeup lease ownership; workers touching that area must inspect them before editing
+- The machine has ambient Node-based processes outside this repo, so workers must not add parallel Node-heavy tooling beyond the single mission-controlled app/process they actively need
+- Treat the user’s process-budget instruction conservatively: one app instance at a time, no parallel local validators, and stop temporary Node-based tools as soon as evidence is captured
+- Do not wipe the default instance or delete pre-existing companies; create a uniquely named QA company for the audit and preserve existing user state

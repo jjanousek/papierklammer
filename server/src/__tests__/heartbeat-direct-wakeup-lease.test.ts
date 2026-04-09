@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
+  agentWakeupRequests,
   agents,
   companies,
   controlPlaneEvents,
@@ -284,6 +285,241 @@ describeDB("heartbeat direct issue wakeups", () => {
             && event.eventType === "reconciliation_orphaned_run_closed",
         ),
       ).toBe(false);
+    } finally {
+      await heartbeat.cancelActiveForAgent(agentId);
+    }
+  });
+
+  it("coalesces duplicate direct wakeups for the same agent and issue into the active run", async () => {
+    const companyId = randomUUID();
+    const agentId = randomUUID();
+    const issueId = randomUUID();
+
+    await db.insert(companies).values({
+      id: companyId,
+      name: "Overlap Co",
+      issuePrefix: "OVR",
+      requireBoardApprovalForNewAgents: false,
+    });
+
+    await db.insert(agents).values({
+      id: agentId,
+      companyId,
+      name: "CEO",
+      role: "ceo",
+      status: "active",
+      adapterType: "process",
+      adapterConfig: {
+        command: process.execPath,
+        args: ["-e", "setInterval(() => {}, 1000)"],
+      },
+      runtimeConfig: {},
+      permissions: {},
+    });
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId,
+      title: "Top-level mission",
+      status: "todo",
+      priority: "high",
+      assigneeAgentId: agentId,
+    });
+
+    try {
+      const firstRun = await heartbeat.wakeup(agentId, {
+        source: "assignment",
+        triggerDetail: "system",
+        reason: "issue_assigned",
+        payload: { issueId },
+        contextSnapshot: { issueId, source: "issue.update" },
+      });
+      expect(firstRun).not.toBeNull();
+      expect((await waitForRunStatus(firstRun!.id, "running"))?.status).toBe("running");
+
+      const secondRun = await heartbeat.wakeup(agentId, {
+        source: "assignment",
+        triggerDetail: "system",
+        reason: "issue_assigned",
+        payload: { issueId },
+        contextSnapshot: { issueId, source: "issue.update", replay: true },
+      });
+
+      expect(secondRun?.id).toBe(firstRun?.id);
+
+      const runs = await db
+        .select({ id: heartbeatRuns.id, status: heartbeatRuns.status })
+        .from(heartbeatRuns)
+        .where(eq(heartbeatRuns.agentId, agentId))
+        .orderBy(heartbeatRuns.createdAt);
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toEqual({
+        id: firstRun!.id,
+        status: "running",
+      });
+
+      const coalescedWakeups = await db
+        .select({
+          status: agentWakeupRequests.status,
+          reason: agentWakeupRequests.reason,
+          runId: agentWakeupRequests.runId,
+        })
+        .from(agentWakeupRequests)
+        .where(eq(agentWakeupRequests.agentId, agentId))
+        .orderBy(agentWakeupRequests.requestedAt);
+      expect(coalescedWakeups).toHaveLength(2);
+      expect(coalescedWakeups[1]).toEqual({
+        status: "coalesced",
+        reason: "issue_execution_same_name",
+        runId: firstRun!.id,
+      });
+    } finally {
+      await heartbeat.cancelActiveForAgent(agentId);
+    }
+  });
+
+  it("releases the execution lease when a direct wakeup run is cancelled", async () => {
+    const companyId = randomUUID();
+    const agentId = randomUUID();
+    const issueId = randomUUID();
+
+    await db.insert(companies).values({
+      id: companyId,
+      name: "Cleanup Co",
+      issuePrefix: "CLN",
+      requireBoardApprovalForNewAgents: false,
+    });
+
+    await db.insert(agents).values({
+      id: agentId,
+      companyId,
+      name: "CEO",
+      role: "ceo",
+      status: "active",
+      adapterType: "process",
+      adapterConfig: {
+        command: process.execPath,
+        args: ["-e", "setInterval(() => {}, 1000)"],
+      },
+      runtimeConfig: {},
+      permissions: {},
+    });
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId,
+      title: "Cancel me cleanly",
+      status: "todo",
+      priority: "medium",
+      assigneeAgentId: agentId,
+    });
+
+    const run = await heartbeat.wakeup(agentId, {
+      source: "assignment",
+      triggerDetail: "system",
+      reason: "issue_assigned",
+      payload: { issueId },
+      contextSnapshot: { issueId, source: "issue.update" },
+    });
+
+    expect(run).not.toBeNull();
+    expect((await waitForRunStatus(run!.id, "running"))?.status).toBe("running");
+
+    const activeLease = await db
+      .select()
+      .from(executionLeases)
+      .where(
+        and(
+          eq(executionLeases.companyId, companyId),
+          eq(executionLeases.issueId, issueId),
+          eq(executionLeases.runId, run!.id),
+          eq(executionLeases.state, "granted"),
+        ),
+      )
+      .then((rows) => rows[0] ?? null);
+    expect(activeLease).not.toBeNull();
+
+    await heartbeat.cancelRun(run!.id);
+
+    const releasedLease = await db
+      .select({
+        state: executionLeases.state,
+        releasedAt: executionLeases.releasedAt,
+        releaseReason: executionLeases.releaseReason,
+      })
+      .from(executionLeases)
+      .where(eq(executionLeases.id, activeLease!.id))
+      .then((rows) => rows[0] ?? null);
+
+    expect(releasedLease?.state).toBe("released");
+    expect(releasedLease?.releasedAt).toBeInstanceOf(Date);
+    expect(releasedLease?.releaseReason).toBe("run_cancelled");
+  });
+
+  it("persists live stdout excerpts while a run is still active", async () => {
+    const companyId = randomUUID();
+    const agentId = randomUUID();
+    const issueId = randomUUID();
+
+    await db.insert(companies).values({
+      id: companyId,
+      name: "Excerpt Co",
+      issuePrefix: "XPT",
+      requireBoardApprovalForNewAgents: false,
+    });
+
+    await db.insert(agents).values({
+      id: agentId,
+      companyId,
+      name: "Streamer",
+      role: "engineer",
+      status: "active",
+      adapterType: "process",
+      adapterConfig: {
+        command: process.execPath,
+        args: ["-e", "setTimeout(() => process.stdout.write('live stdout preview\\n'), 800); setInterval(() => {}, 1000)"],
+      },
+      runtimeConfig: {},
+      permissions: {},
+    });
+
+    await db.insert(issues).values({
+      id: issueId,
+      companyId,
+      title: "Stream output",
+      status: "todo",
+      priority: "medium",
+      assigneeAgentId: agentId,
+    });
+
+    try {
+      const run = await heartbeat.wakeup(agentId, {
+        source: "assignment",
+        triggerDetail: "system",
+        reason: "issue_assigned",
+        payload: { issueId },
+        contextSnapshot: { issueId, source: "issue.update" },
+      });
+
+      expect(run).not.toBeNull();
+      expect((await waitForRunStatus(run!.id, "running"))?.status).toBe("running");
+
+      const deadline = Date.now() + 3_000;
+      let excerpt: string | null = null;
+      while (Date.now() < deadline) {
+        const row = await db
+          .select({
+            stdoutExcerpt: heartbeatRuns.stdoutExcerpt,
+          })
+          .from(heartbeatRuns)
+          .where(eq(heartbeatRuns.id, run!.id))
+          .then((rows) => rows[0] ?? null);
+        excerpt = row?.stdoutExcerpt ?? null;
+        if (excerpt?.includes("live stdout preview")) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      expect(excerpt).toContain("live stdout preview");
     } finally {
       await heartbeat.cancelActiveForAgent(agentId);
     }

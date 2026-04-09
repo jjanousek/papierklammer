@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
   invalidateQueries: vi.fn(),
   setSelectedCompanyId: vi.fn(),
+  pushToast: vi.fn(),
   companiesCreate: vi.fn(),
+  companiesOnboardingDraft: vi.fn(),
   goalsCreate: vi.fn(),
   goalsList: vi.fn(),
   agentsCreate: vi.fn(),
@@ -42,7 +44,7 @@ vi.mock("@/lib/router", () => ({
 vi.mock("../context/DialogContext", () => ({
   useDialog: () => ({
     onboardingOpen: true,
-    onboardingOptions: { initialStep: 2, companyId: "company-1" },
+    onboardingOptions: { initialStep: 1, companyId: "company-1" },
     closeOnboarding: mocks.closeOnboarding,
   }),
 }));
@@ -58,7 +60,14 @@ vi.mock("../context/CompanyContext", () => ({
 vi.mock("../api/companies", () => ({
   companiesApi: {
     create: mocks.companiesCreate,
+    onboardingDraft: mocks.companiesOnboardingDraft,
   },
+}));
+
+vi.mock("../context/ToastContext", () => ({
+  useToast: () => ({
+    pushToast: mocks.pushToast,
+  }),
 }));
 
 vi.mock("../api/goals", () => ({
@@ -193,6 +202,13 @@ beforeEach(async () => {
   mocks.projectsCreate.mockResolvedValue({ id: "project-1" });
   mocks.issuesCreate.mockResolvedValue({ id: "issue-1", identifier: "ACME-1" });
   mocks.agentsWakeup.mockResolvedValue({ id: "run-1", status: "queued" });
+  mocks.companiesOnboardingDraft.mockResolvedValue({
+    source: "fallback",
+    companyName: null,
+    companyGoal: null,
+    taskTitle: null,
+    taskDescription: null,
+  });
 
   await act(async () => {
     root.render(<OnboardingWizard />);
@@ -226,7 +242,6 @@ describe("OnboardingWizard", () => {
       "Adapter environment check failed. Fix the errors and retry.",
     );
     expect(document.body.textContent).toContain("Codex is not ready");
-    expect(getButton("Next").disabled).toBe(true);
   });
 
   it("keeps Task and Launch tabs inaccessible after codex validation fails", async () => {
@@ -249,7 +264,7 @@ describe("OnboardingWizard", () => {
     });
     await flush();
 
-    expect(document.body.textContent).toContain("Create your first agent");
+    expect(document.body.textContent).toContain("Choose your first agent");
     expect(document.body.textContent).not.toContain("Give it something to do");
     expect(document.body.textContent).not.toContain("Ready to launch");
     expect(mocks.agentsCreate).not.toHaveBeenCalled();

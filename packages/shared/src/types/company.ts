@@ -18,3 +18,21 @@ export interface Company {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface CompanyOnboardingDraftRequest {
+  kind: "company" | "task";
+  companyName?: string | null;
+  companyGoal?: string | null;
+  agentName?: string | null;
+  adapterType?: string | null;
+  taskTitle?: string | null;
+  taskDescription?: string | null;
+}
+
+export interface CompanyOnboardingDraftResponse {
+  source: "openai" | "fallback";
+  companyName: string | null;
+  companyGoal: string | null;
+  taskTitle: string | null;
+  taskDescription: string | null;
+}

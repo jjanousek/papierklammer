@@ -140,6 +140,7 @@ function fetchCursorModelsFromCli(): AdapterModel[] {
 
 export async function listCursorModels(): Promise<AdapterModel[]> {
   const now = Date.now();
+  const fallback = dedupeModels(cursorFallbackModels);
   if (cached && cached.expiresAt > now) {
     return cached.models;
   }
@@ -158,7 +159,11 @@ export async function listCursorModels(): Promise<AdapterModel[]> {
     return cached.models;
   }
 
-  return dedupeModels(cursorFallbackModels);
+  cached = {
+    expiresAt: now + CURSOR_MODELS_CACHE_TTL_MS,
+    models: fallback,
+  };
+  return fallback;
 }
 
 export function resetCursorModelsCacheForTests() {

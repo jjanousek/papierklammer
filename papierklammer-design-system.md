@@ -41,9 +41,9 @@
   --border-strong: rgba(255, 255, 255, 0.32);  /* card outlines, input borders */
 
   /* Semantic status */
-  --alive:  #82E88A;   /* running, active, success */
-  --warn:   #E8D560;   /* tool calls, warnings, pending */
-  --dead:   #FF6060;   /* error, failed, disconnected */
+  --alive:  #78C498;   /* running, active, success */
+  --warn:   #C8A85A;   /* tool calls, warnings, pending */
+  --dead:   #D47272;   /* error, failed, disconnected */
 }
 ```
 

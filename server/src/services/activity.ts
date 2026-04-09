@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import type { Db } from "@papierklammer/db";
 import { activityLog, companyLifecycleEvents, heartbeatRuns, issues } from "@papierklammer/db";
+import { logger } from "../middleware/logger.js";
 
 export interface ActivityFilters {
   companyId: string;
@@ -55,7 +56,22 @@ export function activityService(db: Db) {
         .select()
         .from(companyLifecycleEvents)
         .where(and(...lifecycleConditions))
-        .orderBy(desc(companyLifecycleEvents.createdAt));
+        .orderBy(desc(companyLifecycleEvents.createdAt))
+        .catch((error) => {
+          if (
+            typeof error === "object"
+            && error !== null
+            && "code" in error
+            && (error as { code?: string }).code === "42P01"
+          ) {
+            logger.warn(
+              { companyId: filters.companyId, err: error },
+              "company_lifecycle_events table is missing; returning activity feed without lifecycle events",
+            );
+            return [];
+          }
+          throw error;
+        });
 
       return [...persistedActivity, ...lifecycleActivity]
         .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());

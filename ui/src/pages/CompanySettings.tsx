@@ -9,7 +9,7 @@ import { assetsApi } from "../api/assets";
 import { queryKeys } from "../lib/queryKeys";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
-import { Settings, Check, Download, Upload } from "lucide-react";
+import { Settings, Check, Download, Upload, Pause, Play, Archive, Trash2 } from "lucide-react";
 import { CompanyPatternIcon } from "../components/CompanyPatternIcon";
 import {
   Field,
@@ -53,6 +53,7 @@ export function CompanySettings() {
   const [inviteSnippet, setInviteSnippet] = useState<string | null>(null);
   const [snippetCopied, setSnippetCopied] = useState(false);
   const [snippetCopyDelightId, setSnippetCopyDelightId] = useState(0);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
 
   const generalDirty =
     !!selectedCompany &&
@@ -175,7 +176,33 @@ export function CompanySettings() {
     setInviteSnippet(null);
     setSnippetCopied(false);
     setSnippetCopyDelightId(0);
+    setDeleteConfirmationText("");
   }, [selectedCompanyId]);
+
+  async function refreshCompanies() {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.companies.all
+    });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.companies.stats
+    });
+  }
+
+  const pauseMutation = useMutation({
+    mutationFn: (companyId: string) => companiesApi.pause(companyId),
+    onSuccess: async () => {
+      await refreshCompanies();
+      pushToast({ title: "Company paused", tone: "success" });
+    }
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: (companyId: string) => companiesApi.resume(companyId),
+    onSuccess: async () => {
+      await refreshCompanies();
+      pushToast({ title: "Company resumed", tone: "success" });
+    }
+  });
 
   const archiveMutation = useMutation({
     mutationFn: ({
@@ -189,12 +216,29 @@ export function CompanySettings() {
       if (nextCompanyId) {
         setSelectedCompanyId(nextCompanyId);
       }
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.companies.all
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.companies.stats
-      });
+      await refreshCompanies();
+      pushToast({ title: "Company archived", tone: "success" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ({
+      companyId,
+      confirmationText,
+      nextCompanyId
+    }: {
+      companyId: string;
+      confirmationText: string;
+      nextCompanyId: string | null;
+    }) =>
+      companiesApi.deleteCompany(companyId, confirmationText).then(() => ({ nextCompanyId })),
+    onSuccess: async ({ nextCompanyId }) => {
+      setDeleteConfirmationText("");
+      if (nextCompanyId) {
+        setSelectedCompanyId(nextCompanyId);
+      }
+      await refreshCompanies();
+      pushToast({ title: "Company deleted", tone: "success" });
     }
   });
 
@@ -220,6 +264,16 @@ export function CompanySettings() {
       brandColor: brandColor || null
     });
   }
+
+  const nextVisibleCompanyId =
+    companies.find(
+      (company) =>
+        company.id !== selectedCompanyId &&
+        company.status !== "archived"
+    )?.id ?? null;
+  const canDelete =
+    selectedCompany.status === "paused" || selectedCompany.status === "archived";
+  const deleteConfirmationMatches = deleteConfirmationText === selectedCompany.name;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -504,49 +558,150 @@ export function CompanySettings() {
           Danger Zone
         </div>
         <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Archive this company to hide it from the sidebar. This persists in
-            the database.
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={
-                archiveMutation.isPending ||
-                selectedCompany.status === "archived"
-              }
-              onClick={() => {
-                if (!selectedCompanyId) return;
-                const confirmed = window.confirm(
-                  `Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`
-                );
-                if (!confirmed) return;
-                const nextCompanyId =
-                  companies.find(
-                    (company) =>
-                      company.id !== selectedCompanyId &&
-                      company.status !== "archived"
-                  )?.id ?? null;
-                archiveMutation.mutate({
-                  companyId: selectedCompanyId,
-                  nextCompanyId
-                });
-              }}
-            >
-              {archiveMutation.isPending
-                ? "Archiving..."
-                : selectedCompany.status === "archived"
-                ? "Already archived"
-                : "Archive company"}
-            </Button>
-            {archiveMutation.isError && (
-              <span className="text-xs text-destructive">
-                {archiveMutation.error instanceof Error
-                  ? archiveMutation.error.message
-                  : "Failed to archive company"}
-              </span>
+          <div className="rounded-md border border-destructive/20 bg-background/50 px-4 py-3 space-y-2">
+            <div className="flex items-start gap-3">
+              <Pause className="mt-0.5 h-4 w-4 text-destructive" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Pause company</p>
+                <p className="text-sm text-muted-foreground">
+                  Cancel queued and running work, then block new work until you resume the company.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedCompanyId || pauseMutation.isPending || selectedCompany.status !== "active"}
+                onClick={() => {
+                  if (!selectedCompanyId) return;
+                  const confirmed = window.confirm(
+                    `Pause "${selectedCompany.name}"? All current and future company work will stop until you resume it.`
+                  );
+                  if (!confirmed) return;
+                  pauseMutation.mutate(selectedCompanyId);
+                }}
+              >
+                {pauseMutation.isPending ? "Pausing..." : "Pause"}
+              </Button>
+            </div>
+            {pauseMutation.isError && (
+              <p className="text-xs text-destructive">
+                {pauseMutation.error instanceof Error ? pauseMutation.error.message : "Failed to pause company"}
+              </p>
             )}
+          </div>
+
+          <div className="rounded-md border border-destructive/20 bg-background/50 px-4 py-3 space-y-2">
+            <div className="flex items-start gap-3">
+              <Play className="mt-0.5 h-4 w-4 text-destructive" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Resume company</p>
+                <p className="text-sm text-muted-foreground">
+                  Allow future work again. Previously cancelled work stays cancelled.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedCompanyId || resumeMutation.isPending || selectedCompany.status !== "paused"}
+                onClick={() => {
+                  if (!selectedCompanyId) return;
+                  resumeMutation.mutate(selectedCompanyId);
+                }}
+              >
+                {resumeMutation.isPending ? "Resuming..." : "Resume"}
+              </Button>
+            </div>
+            {resumeMutation.isError && (
+              <p className="text-xs text-destructive">
+                {resumeMutation.error instanceof Error ? resumeMutation.error.message : "Failed to resume company"}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-md border border-destructive/20 bg-background/50 px-4 py-3 space-y-2">
+            <div className="flex items-start gap-3">
+              <Archive className="mt-0.5 h-4 w-4 text-destructive" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Archive company</p>
+                <p className="text-sm text-muted-foreground">
+                  Hide this company from default navigation while keeping its history available for review or export.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={!selectedCompanyId || archiveMutation.isPending || selectedCompany.status === "archived"}
+                onClick={() => {
+                  if (!selectedCompanyId) return;
+                  const confirmed = window.confirm(
+                    `Archive "${selectedCompany.name}"? It will be hidden from default navigation and all company work will stop.`
+                  );
+                  if (!confirmed) return;
+                  archiveMutation.mutate({
+                    companyId: selectedCompanyId,
+                    nextCompanyId: nextVisibleCompanyId
+                  });
+                }}
+              >
+                {archiveMutation.isPending ? "Archiving..." : "Archive"}
+              </Button>
+            </div>
+            {archiveMutation.isError && (
+              <p className="text-xs text-destructive">
+                {archiveMutation.error instanceof Error ? archiveMutation.error.message : "Failed to archive company"}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-md border border-destructive/20 bg-background/50 px-4 py-3 space-y-3">
+            <div className="flex items-start gap-3">
+              <Trash2 className="mt-0.5 h-4 w-4 text-destructive" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Delete company</p>
+                <p className="text-sm text-muted-foreground">
+                  Permanently remove this company and all of its data. Delete is only enabled after the company is paused or archived.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs text-muted-foreground">
+                Type <span className="font-mono text-foreground">{selectedCompany.name}</span> to confirm
+              </label>
+              <input
+                className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(event) => setDeleteConfirmationText(event.target.value)}
+                placeholder={selectedCompany.name}
+              />
+              {!canDelete && (
+                <p className="text-xs text-muted-foreground">
+                  Pause or archive the company first to enable deletion.
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={!selectedCompanyId || deleteMutation.isPending || !canDelete || !deleteConfirmationMatches}
+                onClick={() => {
+                  if (!selectedCompanyId) return;
+                  deleteMutation.mutate({
+                    companyId: selectedCompanyId,
+                    confirmationText: deleteConfirmationText,
+                    nextCompanyId: nextVisibleCompanyId
+                  });
+                }}
+              >
+                {deleteMutation.isPending ? "Deleting..." : "Delete company"}
+              </Button>
+              {deleteMutation.isError && (
+                <span className="text-xs text-destructive">
+                  {deleteMutation.error instanceof Error ? deleteMutation.error.message : "Failed to delete company"}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text } from "ink";
-import Spinner from "ink-spinner";
 import TextInput from "ink-text-input";
+import { AnimatedGlyph } from "./AnimatedGlyph.js";
 
 export interface InputBarProps {
   /** Called when the user submits a message (presses Enter). */
@@ -64,7 +64,7 @@ export function InputBar({
       flexShrink={0}
     >
       {disabled ? (
-        <Text dimColor><Spinner type="dots" /> Waiting for response...</Text>
+        <Text dimColor><AnimatedGlyph name="waiting" /> Waiting for response...</Text>
       ) : (
         <Box>
           <Text color="green">{">"} </Text>

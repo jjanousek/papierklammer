@@ -31,6 +31,20 @@ export const deleteCompanySchema = z
 
 export type DeleteCompany = z.infer<typeof deleteCompanySchema>;
 
+export const companyOnboardingDraftSchema = z
+  .object({
+    kind: z.enum(["company", "task"]),
+    companyName: z.string().min(1).optional().nullable(),
+    companyGoal: z.string().min(1).optional().nullable(),
+    agentName: z.string().min(1).optional().nullable(),
+    adapterType: z.string().min(1).optional().nullable(),
+    taskTitle: z.string().min(1).optional().nullable(),
+    taskDescription: z.string().min(1).optional().nullable(),
+  })
+  .strict();
+
+export type CompanyOnboardingDraft = z.infer<typeof companyOnboardingDraftSchema>;
+
 export const updateCompanyBrandingSchema = z
   .object({
     name: z.string().min(1).optional(),

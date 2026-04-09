@@ -60,7 +60,8 @@ export function Companies() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => companiesApi.remove(id),
+    mutationFn: ({ id, confirmationText }: { id: string; confirmationText: string }) =>
+      companiesApi.deleteCompany(id, confirmationText),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.stats });
@@ -280,7 +281,20 @@ export function Companies() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => deleteMutation.mutate(company.id)}
+                      onClick={() => {
+                        if (company.status === "active") {
+                          window.alert("Pause or archive the company before deleting it.");
+                          return;
+                        }
+                        const confirmationText = window.prompt(
+                          `Type "${company.name}" to permanently delete this company.`,
+                          "",
+                        );
+                        if (confirmationText !== company.name) {
+                          return;
+                        }
+                        deleteMutation.mutate({ id: company.id, confirmationText });
+                      }}
                       disabled={deleteMutation.isPending}
                     >
                       {deleteMutation.isPending ? "Deleting…" : "Delete"}

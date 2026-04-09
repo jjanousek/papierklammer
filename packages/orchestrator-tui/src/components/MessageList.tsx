@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import { CommandBlock } from "./CommandBlock.js";
+import { AnimatedGlyph } from "./AnimatedGlyph.js";
 import type { ChatMessage, CommandItem } from "../hooks/useChat.js";
 
 /** A segment of parsed message text — either plain text or a code block. */
@@ -10,6 +10,12 @@ interface TextSegment {
   content: string;
   language?: string;
 }
+
+type InlineToken =
+  | { type: "text"; content: string }
+  | { type: "bold"; content: string }
+  | { type: "code"; content: string }
+  | { type: "link"; label: string; url: string };
 
 /**
  * Parse message text into segments of plain text and code blocks.
@@ -55,6 +61,110 @@ function parseMarkdown(text: string): TextSegment[] {
   return segments;
 }
 
+function isInlineAssistantText(text: string): boolean {
+  return !text.includes("```") && !text.includes("\n") && !/\*\*|`|\[[^\]]+\]\([^)]+\)/.test(text);
+}
+
+function parseInlineMarkdown(text: string): InlineToken[] {
+  const tokens: InlineToken[] = [];
+  const pattern = /(\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ type: "text", content: text.slice(lastIndex, match.index) });
+    }
+
+    if (typeof match[2] === "string") {
+      tokens.push({ type: "bold", content: match[2] });
+    } else if (typeof match[3] === "string") {
+      tokens.push({ type: "code", content: match[3] });
+    } else if (typeof match[4] === "string" && typeof match[5] === "string") {
+      tokens.push({ type: "link", label: match[4], url: match[5] });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    tokens.push({ type: "text", content: text.slice(lastIndex) });
+  }
+
+  return tokens.length > 0 ? tokens : [{ type: "text", content: text }];
+}
+
+function RenderInlineMarkdown({ text }: { text: string }): React.ReactElement {
+  const tokens = parseInlineMarkdown(text);
+
+  return (
+    <Text>
+      {tokens.map((token, index) => {
+        if (token.type === "bold") {
+          return (
+            <Text key={index} bold>
+              {token.content}
+            </Text>
+          );
+        }
+        if (token.type === "code") {
+          return (
+            <Text key={index} color="yellow">
+              {token.content}
+            </Text>
+          );
+        }
+        if (token.type === "link") {
+          return (
+            <Text key={index}>
+              <Text underline>{token.label}</Text>
+              <Text dimColor>{` (${token.url})`}</Text>
+            </Text>
+          );
+        }
+        return <Text key={index}>{token.content}</Text>;
+      })}
+    </Text>
+  );
+}
+
+function renderMarkdownLine(line: string, key: string): React.ReactElement {
+  if (!line.trim()) {
+    return <Text key={key}> </Text>;
+  }
+
+  const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+  if (headingMatch) {
+    return (
+      <Text key={key} bold underline>
+        {headingMatch[2] ?? line}
+      </Text>
+    );
+  }
+
+  const bulletMatch = line.match(/^([-*])\s+(.+)$/);
+  if (bulletMatch) {
+    return (
+      <Text key={key}>
+        <Text color="cyan">• </Text>
+        <RenderInlineMarkdown text={bulletMatch[2] ?? ""} />
+      </Text>
+    );
+  }
+
+  const numberedMatch = line.match(/^(\d+\.)\s+(.+)$/);
+  if (numberedMatch) {
+    return (
+      <Text key={key}>
+        <Text color="cyan">{`${numberedMatch[1]} `}</Text>
+        <RenderInlineMarkdown text={numberedMatch[2] ?? ""} />
+      </Text>
+    );
+  }
+
+  return <RenderInlineMarkdown key={key} text={line} />;
+}
+
 /**
  * Render parsed text segments with code blocks visually distinct.
  */
@@ -62,7 +172,12 @@ function RenderedText({ text }: { text: string }): React.ReactElement {
   const segments = parseMarkdown(text);
 
   if (segments.length === 1 && segments[0]?.type === "text") {
-    return <Text>{segments[0].content}</Text>;
+    const lines = segments[0].content.split("\n");
+    return (
+      <Box flexDirection="column">
+        {lines.map((line, index) => renderMarkdownLine(line, `line-${index}`))}
+      </Box>
+    );
   }
 
   return (
@@ -85,7 +200,13 @@ function RenderedText({ text }: { text: string }): React.ReactElement {
             </Box>
           );
         }
-        return <Text key={idx}>{segment.content}</Text>;
+        return (
+          <Box key={idx} flexDirection="column">
+            {segment.content.split("\n").map((line, lineIndex) =>
+              renderMarkdownLine(line, `segment-${idx}-line-${lineIndex}`),
+            )}
+          </Box>
+        );
       })}
     </Box>
   );
@@ -225,17 +346,26 @@ export function MessageList({
                     <Text>{msg.text}</Text>
                   </Text>
                 ) : (
-                  <Box flexDirection="column">
-                    <Box flexDirection="column">
+                  isInlineAssistantText(msg.text) && (!msg.items || msg.items.length === 0) ? (
+                    <Text>
                       <Text color="cyan" bold>
-                        Orchestrator:
+                        Orchestrator:{" "}
                       </Text>
-                      <RenderedText text={msg.text} />
+                      <Text>{msg.text}</Text>
+                    </Text>
+                  ) : (
+                    <Box flexDirection="column">
+                      <Box flexDirection="column">
+                        <Text color="cyan" bold>
+                          Orchestrator:
+                        </Text>
+                        <RenderedText text={msg.text} />
+                      </Box>
+                      {msg.items?.map((item, cmdIdx) => (
+                        <CommandBlock key={cmdIdx} item={item} />
+                      ))}
                     </Box>
-                    {msg.items?.map((item, cmdIdx) => (
-                      <CommandBlock key={cmdIdx} item={item} />
-                    ))}
-                  </Box>
+                  )
                 )}
               </Box>
             );
@@ -248,7 +378,7 @@ export function MessageList({
                   <Text color="cyan" bold>
                     Orchestrator:{" "}
                   </Text>
-                  <Text dimColor><Spinner type="dots" /> thinking...</Text>
+                  <Text dimColor><AnimatedGlyph name="thinking" /> thinking...</Text>
                 </Text>
               ) : streamingText ? (
                 <Box flexDirection="column">

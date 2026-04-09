@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 
 export interface CompanyOption {
@@ -11,6 +11,12 @@ export interface CompanyPickerProps {
   companies: CompanyOption[];
   loading: boolean;
   error?: string | null;
+  title?: string;
+  subtitle?: string;
+  initialSelectedId?: string | null;
+  emptyStateText?: string;
+  dismissHint?: string | null;
+  onDismiss?: () => void;
   onSelect(company: CompanyOption): void;
 }
 
@@ -40,6 +46,12 @@ export function CompanyPicker({
   companies,
   loading,
   error,
+  title = "Select a company",
+  subtitle = "Sorted by most recently updated. Use ↑/↓ and Enter.",
+  initialSelectedId = null,
+  emptyStateText = "No companies found.",
+  dismissHint = null,
+  onDismiss,
   onSelect,
 }: CompanyPickerProps): React.ReactElement {
   const sortedCompanies = useMemo(
@@ -50,9 +62,21 @@ export function CompanyPicker({
       ),
     [companies],
   );
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    if (!initialSelectedId) return 0;
+    const index = sortedCompanies.findIndex((company) => company.id === initialSelectedId);
+    return index >= 0 ? index : 0;
+  });
 
-  useInput((_input, key) => {
+  useEffect(() => {
+    if (!initialSelectedId) return;
+    const nextIndex = sortedCompanies.findIndex((company) => company.id === initialSelectedId);
+    if (nextIndex >= 0) {
+      setSelectedIndex(nextIndex);
+    }
+  }, [initialSelectedId, sortedCompanies]);
+
+  useInput((input, key) => {
     if (loading || error || sortedCompanies.length === 0) return;
 
     if (key.downArrow) {
@@ -69,6 +93,9 @@ export function CompanyPicker({
         onSelect(company);
       }
     }
+    if ((input === "c" || key.escape) && onDismiss) {
+      onDismiss();
+    }
   });
 
   return (
@@ -81,13 +108,13 @@ export function CompanyPicker({
       paddingX={1}
       paddingY={1}
     >
-      <Text bold>Select a company</Text>
-      <Text color="gray">Sorted by most recently updated. Use ↑/↓ and Enter.</Text>
+      <Text bold>{title}</Text>
+      <Text color="gray">{subtitle}</Text>
       <Box marginTop={1} flexDirection="column">
         {loading ? <Text color="yellow">Loading companies...</Text> : null}
         {error ? <Text color="red">{error}</Text> : null}
         {!loading && !error && sortedCompanies.length === 0 ? (
-          <Text color="yellow">No companies found.</Text>
+          <Text color="yellow">{emptyStateText}</Text>
         ) : null}
         {!loading && !error
           ? sortedCompanies.map((company, index) => {
@@ -104,6 +131,11 @@ export function CompanyPicker({
               );
             })
           : null}
+        {dismissHint ? (
+          <Text color="gray">
+            {dismissHint}
+          </Text>
+        ) : null}
       </Box>
     </Box>
   );

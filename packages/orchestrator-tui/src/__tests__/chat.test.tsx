@@ -5,6 +5,7 @@ import { ChatPanel } from "../components/ChatPanel.js";
 import { CommandBlock } from "../components/CommandBlock.js";
 import { MessageList } from "../components/MessageList.js";
 import { InputBar } from "../components/InputBar.js";
+import { ReasoningPanel } from "../components/ReasoningPanel.js";
 import { App } from "../components/App.js";
 import type { ChatMessage, CommandItem } from "../hooks/useChat.js";
 import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
@@ -73,6 +74,26 @@ describe("ChatPanel", () => {
     unmount();
   });
 
+  it("renders basic markdown formatting in assistant messages", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "## Status\n- **Agents:** 8 total\n- `fast` is on",
+        timestamp: new Date(),
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <ChatPanel messages={messages} />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("Status");
+    expect(frame).toContain("Agents:");
+    expect(frame).toContain("8 total");
+    expect(frame).toContain("fast");
+    expect(frame).not.toContain("**Agents:**");
+    unmount();
+  });
+
   it("renders both user and assistant messages", () => {
     const messages: ChatMessage[] = [
       { role: "user", text: "What agents are running?", timestamp: new Date() },
@@ -121,6 +142,34 @@ describe("ChatPanel", () => {
     const frame = lastFrame()!;
     expect(frame).not.toContain("thinking...");
     expect(frame).toContain("Some text");
+    unmount();
+  });
+
+  it("renders a reasoning panel when reasoning text is present", () => {
+    const { lastFrame, unmount } = render(
+      <ChatPanel reasoningText={"step 1\nstep 2\nstep 3"} />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("Reasoning");
+    expect(frame).toContain("… 1 earlier line");
+    expect(frame).toContain("step 2");
+    expect(frame).toContain("step 3");
+    unmount();
+  });
+});
+
+describe("ReasoningPanel", () => {
+  it("auto-scrolls to the latest reasoning lines when content exceeds height", () => {
+    const text = Array.from({ length: 8 }, (_, index) => `line ${index + 1}`).join("\n");
+    const { lastFrame, unmount } = render(
+      <ReasoningPanel text={text} visibleHeight={4} />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("Reasoning");
+    expect(frame).toContain("… 6 earlier lines");
+    expect(frame).toContain("line 7");
+    expect(frame).toContain("line 8");
+    expect(frame).not.toContain("line 1");
     unmount();
   });
 });
@@ -226,6 +275,30 @@ describe("MessageList", () => {
     expect(frame).toContain("Running a command...");
     expect(frame).toContain("$ curl http://example.com");
     expect(frame).toContain("OK");
+    unmount();
+  });
+
+  it("renders bullet lists without leaking markdown markers", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "- **Agents:** 8 total\n- **Active runs:** 0",
+        timestamp: new Date(),
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <MessageList
+        messages={messages}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+      />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("•");
+    expect(frame).toContain("Agents:");
+    expect(frame).toContain("Active runs:");
+    expect(frame).not.toContain("**Agents:**");
     unmount();
   });
 

@@ -118,6 +118,7 @@ export interface TurnStartResult {
 
 export type ThreadItem =
   | AgentMessageItem
+  | ReasoningItem
   | CommandExecutionItem
   | UserMessageItem
   | GenericItem;
@@ -127,6 +128,14 @@ export interface AgentMessageItem {
   id: string;
   text: string;
   phase: string | null;
+}
+
+export interface ReasoningItem {
+  type: "reasoning";
+  id: string;
+  summary?: string | null;
+  content?: string | null;
+  phase?: string | null;
 }
 
 export interface CommandExecutionItem {
@@ -182,6 +191,13 @@ export interface TurnStartedParams {
 }
 
 export interface CommandOutputDeltaParams {
+  threadId: string;
+  turnId: string;
+  itemId: string;
+  delta: string;
+}
+
+export interface ReasoningDeltaParams {
   threadId: string;
   turnId: string;
   itemId: string;

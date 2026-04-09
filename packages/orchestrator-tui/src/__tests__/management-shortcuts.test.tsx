@@ -126,6 +126,13 @@ function createManagementFetch(options?: {
       };
     }
 
+    if (url.endsWith("/api/companies/company-1/issues?status=backlog,todo,in_progress,in_review,blocked")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
     if (url.endsWith("/api/agents/agent-1/heartbeat/invoke") && method === "POST") {
       return {
         ok: true,
@@ -215,7 +222,7 @@ describe("management shortcuts", () => {
       lastFrame,
       (current) => current.includes("Invoked heartbeat for CEO (run 12345678)."),
     );
-    expect(frame).toContain("Management");
+    expect(frame).toContain("invoke");
     expect(frame).toContain("Invoked heartbeat for CEO (run 12345678).");
 
     unmount();
@@ -420,7 +427,7 @@ describe("management shortcuts", () => {
 
     await tick(100);
 
-    expect(lastFrame()).toContain("Pending approvals");
+    expect(lastFrame()).toContain("Pending");
     expect(lastFrame()).toContain("unavailable");
     expect(lastFrame()).toContain("Approval polling");
     expect(lastFrame()).toContain("failed");

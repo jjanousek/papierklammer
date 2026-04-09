@@ -468,6 +468,58 @@ describeDB("company lifecycle runtime coordination", () => {
     expect(activeRuns[0]?.id).toBe(admission.runId);
   }, 20_000);
 
+  it("concurrent run cancellation and lifecycle pause complete without leaving active work behind", async () => {
+    const { companyId, agentId, projectId } = await seedCompanyFixture("active");
+    const seeded = await seedActiveWorkload(companyId, agentId, projectId);
+
+    const pausePromise = lifecycle.pause(companyId, actor);
+    const cancelPromise = heartbeat.cancelRun(seeded.runningRunId);
+
+    const [pauseResult, cancelResult] = await Promise.race([
+      Promise.all([pausePromise, cancelPromise]),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("concurrent cancellation timed out")), 5_000);
+      }),
+    ]);
+
+    expect(pauseResult.company.status).toBe("paused");
+    expect(cancelResult === null || typeof cancelResult === "object").toBe(true);
+
+    const activeRuns = await db
+      .select({ id: heartbeatRuns.id })
+      .from(heartbeatRuns)
+      .where(
+        and(
+          eq(heartbeatRuns.companyId, companyId),
+          inArray(heartbeatRuns.status, ["queued", "running"]),
+        ),
+      );
+    expect(activeRuns).toEqual([]);
+
+    const activeLeases = await db
+      .select({ id: executionLeases.id })
+      .from(executionLeases)
+      .where(
+        and(
+          eq(executionLeases.companyId, companyId),
+          inArray(executionLeases.state, ["granted", "renewed"]),
+        ),
+      );
+    expect(activeLeases).toEqual([]);
+
+    const issueLocks = await db
+      .select({
+        executionRunId: issues.executionRunId,
+        executionLeaseId: issues.executionLeaseId,
+      })
+      .from(issues)
+      .where(eq(issues.companyId, companyId));
+    for (const issue of issueLocks) {
+      expect(issue.executionRunId).toBeNull();
+      expect(issue.executionLeaseId).toBeNull();
+    }
+  }, 20_000);
+
   it("keeps delete audit visible after the company row is removed", async () => {
     const { companyId } = await seedCompanyFixture("paused");
 

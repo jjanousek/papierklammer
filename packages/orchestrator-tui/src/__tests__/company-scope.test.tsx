@@ -150,6 +150,20 @@ function createFetchWithCompanies() {
       };
     }
 
+    if (url.includes("/api/companies/") && url.includes("/issues")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
+    if (url.includes("/api/companies/") && url.includes("/approvals?status=pending")) {
+      return {
+        ok: true,
+        json: async () => [],
+      };
+    }
+
     throw new Error(`Unexpected URL: ${url}`);
   });
 
@@ -157,7 +171,7 @@ function createFetchWithCompanies() {
 }
 
 describe("company-scoped orchestrator behavior", () => {
-  it("uses the company selected in the picker for status polling and codex issue-creation context", async () => {
+  it("uses the selected company context for status polling and codex issue-creation context", async () => {
     const mockProc = createMockProcess();
     const requests = captureRequests(mockProc);
     const mockSpawn = vi.fn().mockReturnValue(mockProc);
@@ -167,28 +181,14 @@ describe("company-scoped orchestrator behavior", () => {
       <App
         url="http://localhost:3100"
         apiKey="board-key"
-        companyId=""
-        companyName=""
+        companyId="company-b"
+        companyName="Beta Company"
         fetchFn={fetchFn}
         pollInterval={60000}
         spawnFn={mockSpawn}
         enableCodex={true}
       />,
     );
-
-    const pickerFrame = await waitForFrame(
-      lastFrame,
-      (frame) =>
-        frame.includes("Select a company") &&
-        frame.includes("Beta Company") &&
-        frame.includes("Alpha Company"),
-    );
-    expect(pickerFrame.indexOf("Beta Company")).toBeLessThan(
-      pickerFrame.indexOf("Alpha Company"),
-    );
-    expect(pickerFrame).toContain("› Beta Company");
-
-    stdin.write("\r");
 
     await waitForCall(
       calls,
@@ -202,6 +202,11 @@ describe("company-scoped orchestrator behavior", () => {
     await waitForRequest(requests, (request: any) => request.method === "initialize");
 
     respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+
+    stdin.write("\t");
+    await tick();
+    stdin.write("\t");
+    await tick();
 
     await submitPrompt({
       stdin,
@@ -359,6 +364,105 @@ describe("company-scoped orchestrator behavior", () => {
     expect(turnStartB.params.input[0]?.text).toContain("Selected company ID: company-b");
     expect(turnStartB.params.input[0]?.text).toContain("Create work for Beta");
     expect(requestsA.filter((request: any) => request.method === "turn/start")).toHaveLength(1);
+
+    unmount();
+  });
+
+  it("switches companies from the running TUI and resets the active session", async () => {
+    const procA = createMockProcess();
+    const procB = createMockProcess();
+    const requestsA = captureRequests(procA);
+    const requestsB = captureRequests(procB);
+    const mockSpawn = vi.fn().mockReturnValueOnce(procA).mockReturnValueOnce(procB);
+    const { fetchFn, calls } = createFetchWithCompanies();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-a"
+        companyName="Alpha Company"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await waitForRequest(requestsA, (request: any) => request.method === "initialize");
+    respond(procA, { id: 0, result: { userAgent: "codex/0.117.0" } });
+
+    await submitPrompt({
+      stdin,
+      lastFrame,
+      text: "Alpha backlog review",
+    });
+
+    await waitForRequest(requestsA, (request: any) => request.method === "thread/start");
+    respond(procA, { id: 1, result: { thread: { id: "thr_alpha_live" } } });
+    await waitForRequest(requestsA, (request: any) => request.method === "turn/start");
+    respond(procA, {
+      id: 2,
+      result: { turn: { id: "turn_alpha_live", status: "inProgress", items: [], error: null } },
+    });
+    respond(procA, {
+      method: "item/agentMessage/delta",
+      params: {
+        threadId: "thr_alpha_live",
+        turnId: "turn_alpha_live",
+        itemId: "item_alpha_live",
+        delta: "Alpha live note.",
+      },
+    });
+    respond(procA, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_alpha_live",
+        turn: { id: "turn_alpha_live", status: "completed", items: [], error: null },
+      },
+    });
+
+    await waitForFrame(
+      lastFrame,
+      (frame) => frame.includes("Alpha Company") && frame.includes("Alpha live note."),
+    );
+
+    stdin.write("\t");
+    await tick();
+    stdin.write("c");
+    await tick();
+
+    const switcherFrame = await waitForFrame(
+      lastFrame,
+      (frame) =>
+        frame.includes("Switch Company")
+        && frame.includes("Alpha Company")
+        && frame.includes("Beta Company"),
+    );
+    expect(switcherFrame).toContain("Switch Company");
+
+    stdin.write("\u001B[A");
+    await tick();
+    stdin.write("\r");
+    await tick();
+
+    await waitForCall(
+      calls,
+      (call) => call === "http://localhost:3100/api/orchestrator/status?companyId=company-b",
+    );
+    await waitForRequest(requestsB, (request: any) => request.method === "initialize");
+    respond(procB, { id: 0, result: { userAgent: "codex/0.117.0" } });
+
+    const switchedFrame = await waitForFrame(
+      lastFrame,
+      (frame) =>
+        frame.includes("Beta Company")
+        && !frame.includes("Alpha live note.")
+        && !frame.includes("thr_alpha_live"),
+    );
+    expect(switchedFrame).toContain("Beta Company");
+    expect(switchedFrame).not.toContain("Alpha live note.");
+    expect(switchedFrame).not.toContain("thr_alpha_live");
 
     unmount();
   });

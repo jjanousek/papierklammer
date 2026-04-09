@@ -16,6 +16,7 @@ import type {
   ItemCompletedParams,
   TurnCompletedParams,
   CommandOutputDeltaParams,
+  ReasoningDeltaParams,
   WireMessage,
   ReasoningEffort,
 } from "./types.js";
@@ -38,6 +39,7 @@ export interface CodexCallbacks {
   onItemCompleted?: (params: ItemCompletedParams) => void;
   onTurnCompleted?: (params: TurnCompletedParams) => void;
   onCommandOutput?: (params: CommandOutputDeltaParams) => void;
+  onReasoningDelta?: (params: ReasoningDeltaParams) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
   onError?: (error: Error) => void;
@@ -250,6 +252,10 @@ export class CodexClient {
         break;
       case "item/commandExecution/outputDelta":
         this.callbacks.onCommandOutput?.(msg.params as CommandOutputDeltaParams);
+        break;
+      case "item/reasoning/textDelta":
+      case "item/reasoning/summaryTextDelta":
+        this.callbacks.onReasoningDelta?.(msg.params as ReasoningDeltaParams);
         break;
       // Other notifications are silently ignored
     }

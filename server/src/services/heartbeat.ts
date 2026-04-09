@@ -2719,11 +2719,65 @@ export function heartbeatService(db: Db) {
       taskKey,
     };
 
-    let seq = 1;
-    let handle: RunLogHandle | null = null;
-    let stdoutExcerpt = "";
-    let stderrExcerpt = "";
-    try {
+      let seq = 1;
+      let handle: RunLogHandle | null = null;
+      let stdoutExcerpt = "";
+      let stderrExcerpt = "";
+      let lastPersistedStdoutExcerpt = "";
+      let lastPersistedStderrExcerpt = "";
+      let lastExcerptPersistAt = 0;
+      let excerptPersistPromise = Promise.resolve();
+      const excerptPersistIntervalMs = 500;
+      let excerptPersistTimer: ReturnType<typeof setTimeout> | null = null;
+      const flushExcerptPersist = (force = false) => {
+        const excerptsChanged =
+          stdoutExcerpt !== lastPersistedStdoutExcerpt
+          || stderrExcerpt !== lastPersistedStderrExcerpt;
+        if (!excerptsChanged) return;
+
+        lastPersistedStdoutExcerpt = stdoutExcerpt;
+        lastPersistedStderrExcerpt = stderrExcerpt;
+        lastExcerptPersistAt = Date.now();
+
+        excerptPersistPromise = excerptPersistPromise
+          .then(async () => {
+            await db
+              .update(heartbeatRuns)
+              .set({
+                stdoutExcerpt: stdoutExcerpt || null,
+                stderrExcerpt: stderrExcerpt || null,
+                updatedAt: new Date(),
+              })
+              .where(eq(heartbeatRuns.id, run.id));
+          })
+          .catch((err) => {
+            logger.warn({ err, runId: run.id }, "failed to persist live run excerpts");
+          });
+      };
+      const queueExcerptPersist = (force = false) => {
+        const excerptsChanged =
+          stdoutExcerpt !== lastPersistedStdoutExcerpt
+          || stderrExcerpt !== lastPersistedStderrExcerpt;
+        if (!excerptsChanged) return;
+        const now = Date.now();
+        if (!force && now - lastExcerptPersistAt < excerptPersistIntervalMs) {
+          if (!excerptPersistTimer) {
+            const delay = Math.max(1, excerptPersistIntervalMs - (now - lastExcerptPersistAt));
+            excerptPersistTimer = setTimeout(() => {
+              excerptPersistTimer = null;
+              flushExcerptPersist(true);
+            }, delay);
+          }
+          return;
+        }
+
+        if (excerptPersistTimer) {
+          clearTimeout(excerptPersistTimer);
+          excerptPersistTimer = null;
+        }
+        flushExcerptPersist(force);
+      };
+      try {
       const startedAt = run.startedAt ?? new Date();
       const runningWithSession = await db
         .update(heartbeatRuns)
@@ -2785,6 +2839,7 @@ export function heartbeatService(db: Db) {
         const sanitizedChunk = redactCurrentUserText(chunk, currentUserRedactionOptions);
         if (stream === "stdout") stdoutExcerpt = appendExcerpt(stdoutExcerpt, sanitizedChunk);
         if (stream === "stderr") stderrExcerpt = appendExcerpt(stderrExcerpt, sanitizedChunk);
+        queueExcerptPersist();
         const ts = new Date().toISOString();
 
         if (handle) {
@@ -2882,18 +2937,15 @@ export function heartbeatService(db: Db) {
       };
 
       const adapter = getServerAdapter(agent.adapterType);
+      const hasExplicitPaperclipApiKey =
+        typeof adapterEnv.PAPIERKLAMMER_API_KEY === "string"
+        && adapterEnv.PAPIERKLAMMER_API_KEY.trim().length > 0;
       const authToken = adapter.supportsLocalAgentJwt
         ? createLocalAgentJwt(agent.id, agent.companyId, agent.adapterType, run.id)
         : null;
-      if (adapter.supportsLocalAgentJwt && !authToken) {
-        logger.warn(
-          {
-            companyId: agent.companyId,
-            agentId: agent.id,
-            runId: run.id,
-            adapterType: agent.adapterType,
-          },
-          "local agent jwt secret missing or invalid; running without injected PAPIERKLAMMER_API_KEY",
+      if (adapter.supportsLocalAgentJwt && !authToken && !hasExplicitPaperclipApiKey) {
+        throw new Error(
+          "Local agent authentication is unavailable: PAPIERKLAMMER_AGENT_JWT_SECRET is missing or invalid, and this agent has no explicit PAPIERKLAMMER_API_KEY configured.",
         );
       }
       // Inject envelope context when the run was dispatched through the
@@ -2985,6 +3037,12 @@ export function heartbeatService(db: Db) {
       const normalizedUsage = sessionUsageResolution.normalizedUsage;
 
       let outcome: "succeeded" | "failed" | "cancelled" | "timed_out";
+      if (excerptPersistTimer) {
+        clearTimeout(excerptPersistTimer);
+        excerptPersistTimer = null;
+      }
+      queueExcerptPersist(true);
+      await excerptPersistPromise;
       const latestRun = await getRun(run.id);
       if (latestRun?.status === "cancelled") {
         outcome = "cancelled";
@@ -3184,6 +3242,13 @@ export function heartbeatService(db: Db) {
         }
       }
 
+      if (excerptPersistTimer) {
+        clearTimeout(excerptPersistTimer);
+        excerptPersistTimer = null;
+      }
+      queueExcerptPersist(true);
+      await excerptPersistPromise;
+
       const failedRun = await setRunStatus(run.id, "failed", {
         error: message,
         errorCode: "adapter_failed",
@@ -3271,14 +3336,11 @@ export function heartbeatService(db: Db) {
 
   async function releaseIssueExecutionAndPromote(run: typeof heartbeatRuns.$inferSelect) {
     const promotedRun = await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select id from issues where company_id = ${run.companyId} and execution_run_id = ${run.id} for update`,
-      );
-
       const issue = await tx
         .select({
           id: issues.id,
           companyId: issues.companyId,
+          executionLeaseId: issues.executionLeaseId,
         })
         .from(issues)
         .where(and(eq(issues.companyId, run.companyId), eq(issues.executionRunId, run.id)))
@@ -3286,16 +3348,39 @@ export function heartbeatService(db: Db) {
 
       if (!issue) return;
 
-      await tx
+      const now = new Date();
+
+      if (issue.executionLeaseId) {
+        await tx
+          .update(executionLeases)
+          .set({
+            state: "released",
+            releasedAt: now,
+            releaseReason: `run_${run.status}`,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(executionLeases.id, issue.executionLeaseId),
+              inArray(executionLeases.state, ["granted", "renewed"]),
+            ),
+          );
+      }
+
+      const clearedIssue = await tx
         .update(issues)
         .set({
           executionRunId: null,
           executionLeaseId: null,
           executionAgentNameKey: null,
           executionLockedAt: null,
-          updatedAt: new Date(),
+          updatedAt: now,
         })
-        .where(eq(issues.id, issue.id));
+        .where(and(eq(issues.id, issue.id), eq(issues.executionRunId, run.id)))
+        .returning({ id: issues.id, companyId: issues.companyId })
+        .then((rows) => rows[0] ?? null);
+
+      if (!clearedIssue) return null;
 
       while (true) {
         const deferred = await tx
@@ -3303,9 +3388,9 @@ export function heartbeatService(db: Db) {
           .from(agentWakeupRequests)
           .where(
             and(
-              eq(agentWakeupRequests.companyId, issue.companyId),
+              eq(agentWakeupRequests.companyId, clearedIssue.companyId),
               eq(agentWakeupRequests.status, "deferred_issue_execution"),
-              sql`${agentWakeupRequests.payload} ->> 'issueId' = ${issue.id}`,
+              sql`${agentWakeupRequests.payload} ->> 'issueId' = ${clearedIssue.id}`,
             ),
           )
           .orderBy(asc(agentWakeupRequests.requestedAt))
@@ -3322,7 +3407,7 @@ export function heartbeatService(db: Db) {
 
         if (
           !deferredAgent ||
-          deferredAgent.companyId !== issue.companyId ||
+          deferredAgent.companyId !== clearedIssue.companyId ||
           deferredAgent.status === "paused" ||
           deferredAgent.status === "terminated" ||
           deferredAgent.status === "pending_approval"
@@ -3339,7 +3424,7 @@ export function heartbeatService(db: Db) {
           continue;
         }
 
-        const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(issue.companyId, tx);
+        const companyAdmissionBlock = await companiesSvc.getWorkAdmissionBlock(clearedIssue.companyId, tx);
         if (companyAdmissionBlock) {
           await tx
             .update(agentWakeupRequests)
@@ -3379,7 +3464,6 @@ export function heartbeatService(db: Db) {
         const sessionBefore =
           readNonEmptyString(promotedContextSnapshot.resumeSessionDisplayId) ??
           await resolveSessionBeforeForWakeup(deferredAgent, promotedTaskKey);
-        const now = new Date();
         const newRun = await tx
           .insert(heartbeatRuns)
           .values({
@@ -3416,7 +3500,7 @@ export function heartbeatService(db: Db) {
             executionLockedAt: now,
             updatedAt: now,
           })
-          .where(eq(issues.id, issue.id));
+          .where(eq(issues.id, clearedIssue.id));
 
         return newRun;
       }

@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import type { Db } from "@papierklammer/db";
 import {
+  companyOnboardingDraftSchema,
   companyPortabilityExportSchema,
   companyPortabilityImportSchema,
   companyPortabilityPreviewSchema,
@@ -22,6 +23,7 @@ import {
 } from "../services/index.js";
 import type { StorageService } from "../storage/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { generateOnboardingDraft } from "../services/onboarding-drafts.js";
 
 export interface CompanyRouteDependencies {
   companyService?: ReturnType<typeof companyService>;
@@ -257,6 +259,12 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
       );
     }
     res.status(201).json(company);
+  });
+
+  router.post("/onboarding-draft", validate(companyOnboardingDraftSchema), async (req, res) => {
+    assertBoard(req);
+    const result = await generateOnboardingDraft(req.body);
+    res.json(result);
   });
 
   router.patch("/:companyId", async (req, res) => {

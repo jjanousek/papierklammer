@@ -138,6 +138,8 @@ export {
 
 export type {
   Company,
+  CompanyOnboardingDraftRequest,
+  CompanyOnboardingDraftResponse,
   CompanySkillSourceType,
   CompanySkillTrustLevel,
   CompanySkillCompatibility,
@@ -338,10 +340,12 @@ export {
   createCompanySchema,
   updateCompanySchema,
   deleteCompanySchema,
+  companyOnboardingDraftSchema,
   updateCompanyBrandingSchema,
   type CreateCompany,
   type UpdateCompany,
   type DeleteCompany,
+  type CompanyOnboardingDraft,
   type UpdateCompanyBranding,
   agentSkillStateSchema,
   agentSkillSyncModeSchema,

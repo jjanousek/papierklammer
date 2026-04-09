@@ -71,6 +71,41 @@ async function ensureCopiedFile(target: string, source: string): Promise<void> {
   await fs.copyFile(source, target);
 }
 
+function stripPluginTablesFromToml(source: string): string {
+  const lines = source.split(/\r?\n/);
+  const kept: string[] = [];
+  let skippingPluginTable = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const isHeader = trimmed.startsWith("[") && trimmed.endsWith("]");
+    const isPluginHeader = /^\[plugins\./.test(trimmed);
+
+    if (isPluginHeader) {
+      skippingPluginTable = true;
+      continue;
+    }
+
+    if (skippingPluginTable && isHeader) {
+      skippingPluginTable = false;
+    }
+
+    if (skippingPluginTable) continue;
+    kept.push(line);
+  }
+
+  const sanitized = kept.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+  return `${sanitized}\n`;
+}
+
+async function ensureSanitizedCopiedFile(target: string, source: string): Promise<void> {
+  const existing = await fs.lstat(target).catch(() => null);
+  if (existing) return;
+  await ensureParentDir(target);
+  const contents = await fs.readFile(source, "utf8");
+  await fs.writeFile(target, stripPluginTablesFromToml(contents), "utf8");
+}
+
 export async function prepareManagedCodexHome(
   env: NodeJS.ProcessEnv,
   onLog: AdapterExecutionContext["onLog"],
@@ -92,7 +127,12 @@ export async function prepareManagedCodexHome(
   for (const name of COPIED_SHARED_FILES) {
     const source = path.join(sourceHome, name);
     if (!(await pathExists(source))) continue;
-    await ensureCopiedFile(path.join(targetHome, name), source);
+    const target = path.join(targetHome, name);
+    if (name === "config.toml") {
+      await ensureSanitizedCopiedFile(target, source);
+      continue;
+    }
+    await ensureCopiedFile(target, source);
   }
 
   await onLog(

@@ -1,5 +1,7 @@
 import type {
   Company,
+  CompanyOnboardingDraftRequest,
+  CompanyOnboardingDraftResponse,
   CompanyPortabilityExportRequest,
   CompanyPortabilityExportPreviewResult,
   CompanyPortabilityExportResult,
@@ -34,8 +36,15 @@ export const companiesApi = {
   ) => api.patch<Company>(`/companies/${companyId}`, data),
   updateBranding: (companyId: string, data: UpdateCompanyBranding) =>
     api.patch<Company>(`/companies/${companyId}/branding`, data),
+  pause: (companyId: string) => api.post<Company>(`/companies/${companyId}/pause`, {}),
+  resume: (companyId: string) => api.post<Company>(`/companies/${companyId}/resume`, {}),
   archive: (companyId: string) => api.post<Company>(`/companies/${companyId}/archive`, {}),
-  remove: (companyId: string) => api.delete<{ ok: true }>(`/companies/${companyId}`),
+  deleteCompany: (companyId: string, confirmationText: string) =>
+    api.post<{ ok: true }>(`/companies/${companyId}/delete`, { confirmationText }),
+  remove: (companyId: string, confirmationText: string) =>
+    api.delete<{ ok: true }>(`/companies/${companyId}`, { confirmationText }),
+  onboardingDraft: (data: CompanyOnboardingDraftRequest) =>
+    api.post<CompanyOnboardingDraftResponse>("/companies/onboarding-draft", data),
   exportBundle: (
     companyId: string,
     data: CompanyPortabilityExportRequest,

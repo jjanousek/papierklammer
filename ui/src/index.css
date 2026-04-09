@@ -71,9 +71,9 @@
   --border-strong: rgba(255, 255, 255, 0.32);
 
   /* Semantic status */
-  --alive: #82E88A;
-  --warn: #E8D560;
-  --dead: #8B1A1A;
+  --alive: #78C498;
+  --warn: #C8A85A;
+  --dead: #D47272;
 
   /* Font */
   --font: 'JetBrains Mono', monospace;

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import Spinner from "ink-spinner";
 import type { AgentOverview, RunReviewEntry } from "../hooks/useOrchestratorStatus.js";
 import type { PendingApprovalSummary } from "../lib/managementApi.js";
 import { getAgentOverviewDisplayStatus } from "../lib/agentStatus.js";
+import { AnimatedGlyph } from "./AnimatedGlyph.js";
 
 const STATUS_DOT: Record<string, { symbol: string; color: string }> = {
   idle: { symbol: "●", color: "green" },
@@ -20,6 +20,20 @@ function formatLiveRunCount(count: number): string {
   return `${count} live run${count === 1 ? "" : "s"}`;
 }
 
+function summarizeText(text: string | null, maxLength = 140): string | null {
+  const normalized = (text ?? "").replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (maxLength <= 0) return "";
+  if (text.length <= maxLength) return text;
+  if (maxLength === 1) return text.slice(0, 1);
+  return `${text.slice(0, maxLength - 1)}…`;
+}
+
 /** Default max visible agents before scrolling kicks in */
 const DEFAULT_MAX_VISIBLE = 20;
 
@@ -28,6 +42,8 @@ export interface AgentSidebarProps {
   activeRuns?: RunReviewEntry[];
   recentRuns?: RunReviewEntry[];
   pendingApprovals?: PendingApprovalSummary[];
+  width?: number | string;
+  height?: number | string;
   /** Override max visible agents for testing */
   maxVisible?: number;
   /** Whether the sidebar is currently focused for keyboard navigation */
@@ -51,6 +67,8 @@ export function AgentSidebar({
   activeRuns = [],
   recentRuns = [],
   pendingApprovals = [],
+  width = "25%",
+  height,
   maxVisible = DEFAULT_MAX_VISIBLE,
   focused = false,
   shortcutsEnabled = true,
@@ -133,9 +151,9 @@ export function AgentSidebar({
     [...activeRuns, ...recentRuns].find((run) => run.agentId === selectedAgentId)
     ?? null;
   const inspectedPreview =
-    inspectedRun?.resultSummaryText?.trim()
-    || inspectedRun?.stderrExcerpt?.trim()
-    || inspectedRun?.stdoutExcerpt?.trim()
+    summarizeText(inspectedRun?.resultSummaryText ?? null)
+    || summarizeText(inspectedRun?.stderrExcerpt ?? null)
+    || summarizeText(inspectedRun?.stdoutExcerpt ?? null)
     || null;
   const issueLabel = inspectedRun
     ? inspectedRun.issueIdentifier
@@ -144,11 +162,24 @@ export function AgentSidebar({
     : null;
   const runLabel = inspectedRun ? inspectedRun.runId.slice(0, 8) : null;
   const approvalLabel = selectedApproval ? selectedApproval.id.slice(0, 8) : null;
+  const runningCount = agents.filter((agent) => agent.activeRunCount > 0).length;
+  const blockedCount = agents.filter((agent) => getAgentOverviewDisplayStatus(agent) === "blocked").length;
+  const disconnectedError = error ?? pendingApprovalsError;
+  const estimatedWidth = typeof width === "number" ? Math.max(16, width - 4) : 24;
+  const selectedAgent = agents[selectedIndex] ?? null;
+  const selectedAgentStatus = selectedAgent ? getAgentOverviewDisplayStatus(selectedAgent) : "unknown";
+  const selectedAgentMeta = selectedAgent
+    ? truncateText(
+        `${selectedAgent.name || selectedAgent.agentId} · ${selectedAgentStatus}${selectedAgent.activeRunCount > 0 ? ` · ${formatLiveRunCount(selectedAgent.activeRunCount)}` : ""}`,
+        estimatedWidth,
+      )
+    : "No selection";
 
   return (
     <Box
       flexDirection="column"
-      width="25%"
+      width={width}
+      height={height}
       borderStyle="single"
       borderColor={borderColor}
       paddingX={1}
@@ -159,12 +190,15 @@ export function AgentSidebar({
       {!connected ? (
         <>
           <Text color="red">Disconnected</Text>
-          {error ? <Text dimColor>{error}</Text> : null}
+          {disconnectedError ? <Text dimColor>{disconnectedError}</Text> : null}
         </>
       ) : agents.length === 0 ? (
         <Text dimColor>No agents connected</Text>
       ) : (
         <>
+          <Text dimColor>
+            {agents.length} roster · {runningCount} running · {blockedCount} blocked · {pendingApprovals.length} approval{pendingApprovals.length === 1 ? "" : "s"}
+          </Text>
           {hasMoreAbove && <Text dimColor>▲ more above</Text>}
           {visibleAgents.map((agent, visIdx) => {
             const idx = scrollOffset + visIdx;
@@ -185,62 +219,51 @@ export function AgentSidebar({
                 inverse={isSelected && focused}
               >
                 {isRunning ? (
-                  <Text color={dot.color}><Spinner type="dots" /></Text>
+                  <Text color={dot.color}><AnimatedGlyph name="activeRun" /></Text>
                 ) : (
                   <Text color={dot.color}>{dot.symbol}</Text>
                 )}{" "}
-                {agent.name || agent.agentId} ({displayStatus}{liveRunSuffix})
+                {truncateText(`${agent.name || agent.agentId} (${displayStatus}${liveRunSuffix})`, estimatedWidth - 2)}
               </Text>
             );
           })}
           {hasMoreBelow && <Text dimColor>▼ more below</Text>}
-          {hasInspectableRuns ? (
-            <Box marginTop={1} flexDirection="column">
-              <Text bold underline>
-                Run inspection
-              </Text>
-              <Text dimColor>↑/↓ inspect run</Text>
-              {inspectedRun ? (
-                <>
-                  <Text>
-                    {runLabel} · {inspectedRun.status}
-                  </Text>
-                  <Text dimColor>
-                    issue {issueLabel} · agent {inspectedRun.agentName}
-                  </Text>
-                  <Text dimColor>Result/output</Text>
-                  {inspectedPreview ? (
-                    <Text>{inspectedPreview}</Text>
-                  ) : inspectedRun.status === "queued" || inspectedRun.status === "running" ? (
-                    <Text dimColor>Waiting for persisted output…</Text>
-                  ) : (
-                    <Text dimColor>No persisted result summary.</Text>
-                  )}
-                </>
-              ) : (
-                <Text dimColor>No runs for {selectedAgentName}</Text>
-              )}
-            </Box>
-          ) : null}
           <Box marginTop={1} flexDirection="column">
             <Text bold underline>
-              Management
+              Selected
             </Text>
-            <Text dimColor>v invoke · w wake selected agent</Text>
-            <Text dimColor>a approve · x reject · [ / ] cycle approvals</Text>
-            <Text>
-              Agent: {selectedAgentName}
-            </Text>
+            <Text>{selectedAgentMeta}</Text>
+            {inspectedRun ? (
+              <>
+                <Text dimColor>
+                  {truncateText(`${runLabel} · ${inspectedRun.status} · issue ${issueLabel}`, estimatedWidth)}
+                </Text>
+                {inspectedPreview ? <Text>{truncateText(inspectedPreview, estimatedWidth * 3)}</Text> : <Text dimColor>No persisted output yet.</Text>}
+              </>
+            ) : hasInspectableRuns ? (
+              <Text dimColor>No matching run for the current selection.</Text>
+            ) : (
+              <Text dimColor>No recent run activity.</Text>
+            )}
+          </Box>
+          <Box marginTop={1} flexDirection="column">
             <Text bold underline>
-              Pending approvals
+              Actions
+            </Text>
+            <Text dimColor>{truncateText("↑/↓ move · v invoke · w wake", estimatedWidth)}</Text>
+            <Text dimColor>{truncateText("[ / ] approval · a approve · x reject", estimatedWidth)}</Text>
+          </Box>
+          <Box marginTop={1} flexDirection="column">
+            <Text bold underline>
+              Approvals
             </Text>
             {selectedApproval ? (
               <>
                 <Text>
-                  {approvalLabel} · {selectedApproval.type}
+                  {truncateText(`${approvalLabel} · ${selectedApproval.type}`, estimatedWidth)}
                 </Text>
                 <Text dimColor>
-                  {selectedApprovalIndex + 1}/{pendingApprovals.length} · status {selectedApproval.status}
+                  {truncateText(`${selectedApprovalIndex + 1}/${pendingApprovals.length} · ${selectedApproval.status}`, estimatedWidth)}
                 </Text>
               </>
             ) : pendingApprovalsError ? (

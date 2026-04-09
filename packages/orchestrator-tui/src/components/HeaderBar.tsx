@@ -7,6 +7,14 @@ export interface HeaderBarProps {
   totalActiveRuns: number;
   companyLabel?: string | null;
   error?: string | null;
+  columns?: number;
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (maxLength <= 0) return "";
+  if (text.length <= maxLength) return text;
+  if (maxLength <= 1) return text.slice(0, maxLength);
+  return `${text.slice(0, maxLength - 1)}…`;
 }
 
 export function HeaderBar({
@@ -15,7 +23,20 @@ export function HeaderBar({
   totalActiveRuns,
   companyLabel = null,
   error = null,
+  columns,
 }: HeaderBarProps): React.ReactElement {
+  const compact = (columns ?? 120) < 70;
+  const leftLabel = compact
+    ? truncate(companyLabel ? `PK · ${companyLabel}` : "PK", Math.max(12, Math.floor((columns ?? 80) * 0.45)))
+    : truncate(companyLabel ? `Papierklammer · ${companyLabel}` : "Papierklammer", Math.max(18, Math.floor((columns ?? 120) * 0.5)));
+  const rightLabel = connected
+    ? compact
+      ? `${connected ? "up" : "down"} · a:${totalAgents} · r:${totalActiveRuns}`
+      : `${connected ? "Connected" : "Disconnected"} | ${totalAgents} agent${totalAgents !== 1 ? "s" : ""} | ${totalActiveRuns} active run${totalActiveRuns !== 1 ? "s" : ""}`
+    : compact
+      ? truncate(`down${error ? ` · ${error}` : ""}`, Math.max(10, Math.floor((columns ?? 80) * 0.45)))
+      : truncate(`Disconnected${error ? ` | ${error}` : ""}`, Math.max(16, Math.floor((columns ?? 120) * 0.45)));
+
   return (
     <Box
       flexDirection="row"
@@ -31,21 +52,11 @@ export function HeaderBar({
     >
       <Box>
         <Text bold color="cyan">
-          Papierklammer
+          {leftLabel}
         </Text>
-        {companyLabel ? <Text dimColor>{` · ${companyLabel}`}</Text> : null}
       </Box>
       <Box>
-        <Text color={connected ? "green" : "red"}>
-          {connected ? "Connected" : "Disconnected"}
-        </Text>
-        {connected ? (
-          <Text dimColor>
-            {" "}| {totalAgents} agent{totalAgents !== 1 ? "s" : ""} | {totalActiveRuns} active run{totalActiveRuns !== 1 ? "s" : ""}
-          </Text>
-        ) : error ? (
-          <Text dimColor> | {error}</Text>
-        ) : null}
+        <Text color={connected ? "green" : "red"}>{rightLabel}</Text>
       </Box>
     </Box>
   );

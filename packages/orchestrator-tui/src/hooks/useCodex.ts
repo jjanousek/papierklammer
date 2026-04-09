@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CodexClient, type CodexClientOptions } from "../codex/client.js";
-import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningEffort, TurnInfo } from "../codex/types.js";
+import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningDeltaParams, ReasoningEffort, TurnInfo } from "../codex/types.js";
 
 export type ConnectionState = "disconnected" | "connected" | "thinking";
 
@@ -15,6 +15,8 @@ export interface UseCodexOptions extends CodexClientOptions {
   onItemCompleted?: (params: ItemCompletedParams) => void;
   /** Called when command output arrives. */
   onCommandOutput?: (params: CommandOutputDeltaParams) => void;
+  /** Called when reasoning summary text arrives. */
+  onReasoningDelta?: (params: ReasoningDeltaParams) => void;
   /** Called when a request or connection action fails. */
   onError?: (error: Error) => void;
 }
@@ -31,7 +33,13 @@ export interface UseCodexResult {
   /** Current thread ID (null if no thread started). */
   threadId: string | null;
   /** Send a message. Creates a thread on first call. */
-  sendMessage: (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort, serviceTier?: string) => Promise<void>;
+  sendMessage: (
+    text: string,
+    baseInstructions?: string,
+    modelReasoningEffort?: ReasoningEffort,
+    serviceTier?: string,
+    model?: string,
+  ) => Promise<void>;
   /** Interrupt the current turn. */
   interruptTurn: () => Promise<void>;
 }
@@ -96,6 +104,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
         optsRef.current.onTurnCompleted?.(params);
       },
       onCommandOutput: (params) => optsRef.current.onCommandOutput?.(params),
+      onReasoningDelta: (params) => optsRef.current.onReasoningDelta?.(params),
       onConnected: () => {
         setConnectionState("connected");
         setErrorMessage(null);
@@ -124,7 +133,13 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sendMessage = useCallback(async (text: string, baseInstructions?: string, modelReasoningEffort?: ReasoningEffort, serviceTier?: string): Promise<void> => {
+  const sendMessage = useCallback(async (
+    text: string,
+    baseInstructions?: string,
+    modelReasoningEffort?: ReasoningEffort,
+    serviceTier?: string,
+    model?: string,
+  ): Promise<void> => {
     const client = clientRef.current;
     if (!client) {
       const err = new Error("Codex client is not available");
@@ -144,6 +159,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       // Create thread on first message
       if (!tid) {
         tid = await client.startThread({
+          ...(model ? { model } : {}),
           ...(baseInstructions ? { baseInstructions } : {}),
           ...(modelReasoningEffort ? { modelReasoningEffort } : {}),
           ...(serviceTier ? { serviceTier } : {}),
