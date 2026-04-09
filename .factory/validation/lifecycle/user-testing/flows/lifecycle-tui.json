@@ -1,0 +1,78 @@
+{
+  "surface": "tui",
+  "groupId": "lifecycle-tui",
+  "milestone": "lifecycle",
+  "status": "pass",
+  "assertions": [
+    {
+      "id": "VAL-TUIAPI-001",
+      "status": "pass",
+      "reason": "Concrete tuistory evidence shows the TUI launched into an explicit company picker, preselected the intended QA company 379b3817-9e7c-4483-bff0-ab2e908de27c, and resolved into the matching QA company console after selection.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-launch-picker.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-companies-before.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-qa-empty-before-action.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-TUIAPI-002",
+      "status": "pass",
+      "reason": "Concrete TUI and API artifacts reconcile one real TUI management action: creating PAP-2 from the QA company. The same evidence also shows an unintended heartbeat invoke run c95ca771-2074-49e6-a496-731359ec000b caused by shortcut bleed while the composer was open.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-created-issue.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-invoked-run-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-qa-after-poll.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-TUIAPI-003",
+      "status": "pass",
+      "reason": "The evidence preserves the same QA companyId 379b3817-9e7c-4483-bff0-ab2e908de27c and shared identifiers across browser/API/TUI artifacts, including approval-hire agentId 8bb087f2-eed7-4b7b-85f0-2869f0a159ae, issue PAP-2 / 63812deb-c4b4-431c-96ed-3a6b90e11531, and runId c95ca771-2074-49e6-a496-731359ec000b, with no unexplained cross-company mismatch.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-invoked-run-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent.json"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-TUIAPI-004",
+      "status": "pass",
+      "reason": "Concrete terminal and API evidence shows valid company switching cleared stale QA context, switched to Bad Weather data only, continued polling that selected company, and returned cleanly to the QA company; the same audit also captured a focus bug where pressing c from the input created BAD-2 instead of opening the switcher.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-switcher-open.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-bad-weather-after-switch.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-bad-weather-after-poll.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-bad-issues-baseline.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-bad-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-returned-to-qa.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    }
+  ],
+  "frictions": [
+    "While the TUI issue composer overlay was open, sidebar shortcuts still fired; typing the draft triggered an unintended heartbeat invoke run c95ca771-2074-49e6-a496-731359ec000b and corrupted the created PAP-2 title/description.",
+    "The TUI c company-switch shortcut only worked when focus was off the input bar; pressing c with input focus submitted chat text and created unintended Bad Weather issue BAD-2 (51c1813d-f03e-4830-9e07-2be8572312f4) instead of opening the switcher.",
+    "No additional live tuistory or curl checks were required because the provided markdown plus raw terminal/API artifacts were sufficient to support all four assigned assertions."
+  ],
+  "blockers": [],
+  "toolsUsed": [
+    "Read"
+  ]
+}

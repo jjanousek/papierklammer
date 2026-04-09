@@ -1,0 +1,143 @@
+{
+  "surface": "web-api",
+  "groupId": "lifecycle-web-api",
+  "milestone": "lifecycle",
+  "status": "pass",
+  "assertions": [
+    {
+      "id": "VAL-LIFE-001",
+      "status": "pass",
+      "reason": "Lifecycle evidence shows the direct hire completed with approvals disabled, the created agent entered idle state, and no approval artifact was created for that hire.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-settings-direct-hire-toggle-off.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-company-after-toggle-off.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-direct-hire-response.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-agents-after-direct-hire.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approvals-after-direct-hire.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-agents-after-direct-hire.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-direct-agent-detail.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-LIFE-002",
+      "status": "pass",
+      "reason": "Artifacts show approvals were enabled, the new hire entered pending_approval with a pending approval record, and a single approval resolution transitioned both approval and agent state as expected.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-settings-approval-toggle-on.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-company-after-toggle-on.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-hire-response.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-agents-after-approval-request.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approvals-after-approval-request.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-detail-pending.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-inbox-pending.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-detail-approved.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-after-approve.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-LIFE-003",
+      "status": "pass",
+      "reason": "Lifecycle evidence correlates a real delegated issue, assignee, live run, and final completion across browser screenshots and API payloads.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-postapproval-issue-assigned.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-postapproval-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-live-runs.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-company-live-runs.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-heartbeat-run.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-heartbeat-run-final.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-final.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-dashboard.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issues-list.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-detail.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent-detail-running.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-detail-final.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-dashboard-final.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-LIFE-004",
+      "status": "pass",
+      "reason": "The lifecycle notes explicitly cover dashboard, approvals, inbox, issues, issue detail, agents, and agent detail, with screenshots and 'no inconsistency' findings or preserved bug references for each reviewed surface.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-dashboard.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-dashboard-final.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-detail-pending.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-detail-approved.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approvals-list-all.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-inbox-pending.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issues-list.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-detail.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-detail-final.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-agents-after-direct-hire.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-pending-agent-detail.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent-detail-running.png"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-LIFE-005",
+      "status": "pass",
+      "reason": "Before approval, both attempted assignment and heartbeat invoke actions were blocked with 409 responses, and the pending agent detail showed the corresponding disabled run state in the UI.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-preapproval-assign-status.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-preapproval-assign-error.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-preapproval-invoke-status.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-preapproval-invoke-error.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-pending-agent.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-pending-agent-detail.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    },
+    {
+      "id": "VAL-LIFE-006",
+      "status": "pass",
+      "reason": "The same approval-gated hire that was blocked pre-approval was approved, became selectable for assignment, triggered a real assignment run, and was observed in subsequent issue and agent state.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-after-approve.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-postapproval-issue-assigned.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-postapproval-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-heartbeat-run.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent-detail-running.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-detail.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-issue-final.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approved-agent-final.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt"
+      ],
+      "toolsUsed": [
+        "Read"
+      ]
+    }
+  ],
+  "frictions": [
+    "The lifecycle markdown notes that the browser-network artifact was initially a placeholder ('No requests captured'); the current evidence set resolves that gap with the rerun log at /Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt."
+  ],
+  "blockers": [],
+  "toolsUsed": [
+    "Read"
+  ]
+}

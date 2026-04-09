@@ -1,0 +1,31 @@
+{
+  "milestone": "lifecycle",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-LIFE-001",
+    "VAL-LIFE-002",
+    "VAL-LIFE-003",
+    "VAL-LIFE-004",
+    "VAL-LIFE-005",
+    "VAL-LIFE-006",
+    "VAL-TUIAPI-001",
+    "VAL-TUIAPI-002",
+    "VAL-TUIAPI-003",
+    "VAL-TUIAPI-004"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "flowReports": [
+    "/Users/aischool/work/papierklammer_droid/.factory/validation/lifecycle/user-testing/flows/lifecycle-web-api.json",
+    "/Users/aischool/work/papierklammer_droid/.factory/validation/lifecycle/user-testing/flows/lifecycle-tui.json"
+  ]
+}
