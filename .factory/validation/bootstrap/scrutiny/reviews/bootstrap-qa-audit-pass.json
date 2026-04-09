@@ -1,0 +1,21 @@
+{
+  "featureId": "bootstrap-qa-audit-pass",
+  "reviewedAt": "2026-04-09T17:21:24.445526Z",
+  "commitId": "581401a3d161388591faf6460f466c7e5a9eeede",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "This QA-only feature\u2019s deliverable is the mission evidence package rather than a repository code change, so I reviewed the transcript skeleton, handoff, bootstrap evidence note, raw evidence captures, and the handoff commit context together. The worker captured `/api/health` and starting `/api/companies`, used the live Add company path to create a uniquely named QA company, exercised an invalid onboarding gate before the successful submit, reproduced the stale-company `/dashboard` routing anomaly with evidence, and documented a usable fallback company/agent/issue state after the seeded onboarding flow stalled. I did not find any high-confidence blocking or non-blocking defects in the feature implementation itself.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "For QA-only features whose outputs live under the mission directory, the handoff `commitId` does not isolate the reviewed work. The required git-diff review step pointed at a large repository feature commit unrelated to the bootstrap evidence artifact, so scrutiny had to rely on mission artifacts instead of a feature-specific diff.",
+      "evidence": "Handoff `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/handoffs/2026-04-09T17-13-43-102Z__bootstrap-qa-audit-pass__0081efcd-3395-459a-b395-e6150864660e.json` records commitId `581401a3d161388591faf6460f466c7e5a9eeede`; `git show --stat` for that commit reports `feat(papierklammer): improve onboarding lifecycle and TUI workflows` with 86 changed repo files, while the reviewed outputs for this feature are mission artifacts such as `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md` and files under `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The reviewed bootstrap QA feature produced evidence that substantiates the required bootstrap assertions: runtime readiness and starting inventory capture, live QA-company creation, an invalid onboarding gate before successful creation, reproduction of the stale `/dashboard` company-context bug, and documented fallback company/agent/issue identifiers after onboarding stalled. Shared-state note: QA evidence features need a feature-specific artifact linkage because the handoff commitId was not a useful diff boundary for scrutiny."
+}

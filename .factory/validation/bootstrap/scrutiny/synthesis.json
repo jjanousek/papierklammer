@@ -1,0 +1,40 @@
+{
+  "milestone": "bootstrap",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm -C \"/Users/aischool/work/papierklammer_droid\" test:run -- --maxWorkers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -C \"/Users/aischool/work/papierklammer_droid\" -r --workspace-concurrency=1 typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "skill",
+      "suggestion": "For QA-only features whose outputs live under the mission directory instead of the repo working tree, require the worker handoff or reviewer prompt to include the exact artifact paths (and not rely on a broad repo commit) so scrutiny can review a feature-specific boundary deterministically.",
+      "evidence": "The review for `bootstrap-qa-audit-pass` passed, but its shared-state observation noted that the handoff commitId pointed at repo commit `581401a3d161388591faf6460f466c7e5a9eeede`, which covered 86 repo files unrelated to the feature's actual deliverables in `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md` and `evidence/raw/*`. Scrutiny therefore had to rely on mission artifacts rather than a feature-specific diff.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}
