@@ -1,0 +1,22 @@
+{
+  "featureId": "reporting-bug-report-artifacts",
+  "reviewedAt": "2026-04-09T19:32:59Z",
+  "commitId": "4106e99e5cd910950491f55103b417124051f0c6",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass with one non-blocking artifact-hygiene issue. I reviewed the feature definition, handoff, transcript skeleton, commit diff, generated report, final handoff note, validation contract, mission AGENTS guidance, services metadata, and supporting library docs. The implementation satisfies the reporting contract: the required repo report and mission handoff exist, the report includes all 24 `VAL-*` assertions, preserves the known bootstrap and TUI bugs, separates product bugs from blockers/frictions, provides an identifier ledger, cites concrete evidence throughout, and documents the single-QA-company/sequential-runtime posture plus the explicit Bad Weather switching exception.",
+    "issues": [
+      {
+        "file": "doc/2026-04-09-papierklammer-qa-audit.md",
+        "line": 135,
+        "severity": "non_blocking",
+        "description": "The onboarding bug's evidence list includes a transient `/var/folders/.../droid-bg-*.out` path outside the mission evidence tree. Mission guidance says raw evidence should be stored under `evidence/raw/` and cited from there, so this reference is less durable than the rest of the artifact set even though the finding still has other supporting evidence."
+      }
+    ]
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The feature delivers the required reporting artifacts and covers the full contract, with only a minor durability issue from one temp-log evidence reference in the markdown report."
+}
