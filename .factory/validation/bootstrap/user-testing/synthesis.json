@@ -1,0 +1,29 @@
+{
+  "milestone": "bootstrap",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-BOOT-001",
+    "VAL-BOOT-002",
+    "VAL-BOOT-003",
+    "VAL-BOOT-004"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "flowReports": [
+    "/Users/aischool/work/papierklammer_droid/.factory/validation/bootstrap/user-testing/flows/bootstrap-bundle.json"
+  ],
+  "notes": [
+    "Round 1 validated the four bootstrap audit assertions from the completed bootstrap-qa-audit-pass feature.",
+    "Validation reused the existing QA company and evidence, while rechecking live health, company-scoped usability, invalid onboarding gating, and the stale-company /dashboard misroute.",
+    "All bootstrap audit assertions passed; the product bugs captured in the bootstrap evidence remain documented as findings, not validator failures."
+  ]
+}

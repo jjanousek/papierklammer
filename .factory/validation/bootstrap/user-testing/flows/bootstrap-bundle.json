@@ -1,0 +1,188 @@
+{
+  "groupId": "bootstrap-bundle",
+  "testedAt": "2026-04-09T17:34:33.459763+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277",
+    "appUrl": "http://localhost:3100",
+    "port": 3100,
+    "surfaceBundle": "agent-browser + curl",
+    "sequentialOnly": true,
+    "reusedExistingQACompany": true,
+    "companyId": "379b3817-9e7c-4483-bff0-ab2e908de27c",
+    "companyPrefix": "PAP",
+    "companyName": "Papierklammer QA Bootstrap 2026-04-10 1706"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-BOOT-001",
+      "title": "Runtime readiness and starting company inventory are captured before QA begins",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Review bootstrap evidence and raw captures for health, inventory, and process-budget posture.",
+          "expected": "Bootstrap artifacts document runtime readiness, starting inventory, and single-instance/process-budget notes.",
+          "observed": "bootstrap.md records one mission-controlled app instance, node_process_count=33, the starting BAD/WEA inventory, and links to raw health/company captures."
+        },
+        {
+          "action": "Run curl against GET /api/health.",
+          "expected": "Current local app responds healthy.",
+          "observed": "Received status=ok, deploymentMode=local_trusted, bootstrapStatus=ready, version=0.3.1."
+        },
+        {
+          "action": "Run curl against GET /api/companies.",
+          "expected": "Current inventory is readable and can be compared with bootstrap evidence.",
+          "observed": "Inventory returned PAP active plus BAD and WEA paused; this matches the earlier before/after bootstrap evidence chain."
+        }
+      ],
+      "evidence": {
+        "files": [
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-health.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-companies-before.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-companies-after.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-process-budget.txt"
+        ],
+        "notes": [
+          "Current curl /api/health remained healthy while testing.",
+          "Current curl /api/companies returned PAP active, BAD paused, and WEA paused."
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-BOOT-002",
+      "title": "The live company-creation path reaches a usable company-scoped state",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Review bootstrap evidence for the live company-creation path used during bootstrap.",
+          "expected": "Evidence identifies the real path taken and the resulting QA company identifiers or blocker.",
+          "observed": "bootstrap.md shows the in-app Add company path from the dashboard shell, creation of company 379b3817-9e7c-4483-bff0-ab2e908de27c (PAP), and the later usable-state captures."
+        },
+        {
+          "action": "Open the live app root in a browser session.",
+          "expected": "A usable company-scoped surface is reachable for the QA company.",
+          "observed": "Root redirected to /PAP/dashboard and rendered the QA company dashboard without console errors."
+        },
+        {
+          "action": "Open /PAP/issues in the browser.",
+          "expected": "A usable scoped work surface is visible.",
+          "observed": "Issues page showed PAP-1 \"Capture bootstrap QA evidence\" and the existing CEO agent context."
+        },
+        {
+          "action": "Run curl against the QA company agents and issues endpoints.",
+          "expected": "A corroborated post-bootstrap state exists for the QA company.",
+          "observed": "API returned agent d508e34e-0b40-4b01-850d-b2f1d1bd6a9b (CEO, idle) and issue 88757a82-2838-467f-86ea-ba5ac13242e6 (PAP-1, todo) under company 379b3817-9e7c-4483-bff0-ab2e908de27c."
+        }
+      ],
+      "evidence": {
+        "files": [
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-add-company-entry.png",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-qa-company.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-qa-agents.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-qa-issues.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-pap-dashboard-usable-state.png",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-pap-issue-detail.png"
+        ],
+        "notes": [
+          "Live browser check currently lands on /PAP/dashboard.",
+          "Live API check still shows the QA company, CEO agent, and PAP-1 issue as reachable company-scoped state."
+        ]
+      },
+      "issues": [
+        {
+          "severity": "medium",
+          "description": "The original bootstrap onboarding did not finish with the expected seeded agent/task state; bootstrap.md records that the company and goal were created but onboarding looped back instead of completing, so usable state had to be established afterward for the same QA company."
+        }
+      ]
+    },
+    {
+      "id": "VAL-BOOT-003",
+      "title": "Company-context routing anomalies are reproduced or ruled out",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Set browser localStorage key paperclip.selectedCompanyId to a nonexistent UUID and navigate to /dashboard.",
+          "expected": "The suspected stale-company anomaly is either reproduced or ruled out with a clear routing outcome.",
+          "observed": "The app reproduced the anomaly by navigating to /dashboard/dashboard and rendering a Company not found page for prefix \"DASHBOARD\"."
+        },
+        {
+          "action": "Inspect body text and browser network activity for the misroute.",
+          "expected": "Evidence shows the malformed route and the company-context request behavior.",
+          "observed": "Body text reported 'No company matches prefix \"DASHBOARD\"' and network logs included GET /api/companies/00000000-0000-0000-0000-000000000404/dashboard before normal QA-company dashboard fetches."
+        },
+        {
+          "action": "Navigate to root / with the same stale localStorage value.",
+          "expected": "Control path confirms whether root recovers correctly.",
+          "observed": "Root recovered to /PAP/dashboard, ruling out a broader root-navigation failure while confirming the unprefixed /dashboard bug."
+        }
+      ],
+      "evidence": {
+        "files": [
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-stale-company-dashboard-check.png",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-stale-company-dashboard-body.txt",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-stale-company-root-check.png"
+        ],
+        "notes": [
+          "Live recheck still reproduced /dashboard -> /dashboard/dashboard with Company not found.",
+          "Live root recheck still recovered to /PAP/dashboard."
+        ]
+      },
+      "issues": [
+        {
+          "severity": "medium",
+          "description": "With stale paperclip.selectedCompanyId state, visiting unprefixed /dashboard still misroutes to /dashboard/dashboard and renders a Company not found page instead of recovering to a valid company dashboard."
+        }
+      ]
+    },
+    {
+      "id": "VAL-BOOT-004",
+      "title": "Onboarding validation gates are audited before real creation",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open the live Add company onboarding flow from /PAP/dashboard.",
+          "expected": "The current runtime exposes a real onboarding path that can be inspected without creating data.",
+          "observed": "Add company opened an in-app onboarding modal with Agent, Company, Task, and Launch steps."
+        },
+        {
+          "action": "Advance to the Company step without entering required values.",
+          "expected": "The flow surfaces a visible validation gate and does not silently advance.",
+          "observed": "On the Company step, both textboxes resolved empty and the Next button stayed disabled, preventing progression beyond the invalid state."
+        },
+        {
+          "action": "Inspect browser network activity and re-run GET /api/companies after the invalid path.",
+          "expected": "No unintended company, agent, or issue creation occurs from the failed path.",
+          "observed": "Browser logs showed only GET requests during the invalid attempt and the companies inventory remained the same three-company set (PAP, BAD, WEA)."
+        },
+        {
+          "action": "Compare the current invalid-state behavior with the existing bootstrap evidence.",
+          "expected": "Previously captured invalid-gate evidence remains sufficient and materially consistent.",
+          "observed": "Existing evidence shows the company-step blocked state before successful creation; current behavior remains visibly blocked as well, with the live flow now preventing progress while required company/goal inputs are empty."
+        }
+      ],
+      "evidence": {
+        "files": [
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-company-step-after-clear.png",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-companies-before.json",
+          "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-companies-after.json"
+        ],
+        "notes": [
+          "Live recheck found the Company-step Next button disabled with empty company and goal inputs.",
+          "Re-reading GET /api/companies after the invalid flow showed no additional entities."
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 4 bootstrap assertions. All four pass as audit assertions. Current runtime remains healthy; the QA company PAP is usable with CEO and PAP-1 present; the stale-company unprefixed /dashboard misroute still reproduces; and the live add-company onboarding flow still blocks invalid progression without creating entities."
+}
