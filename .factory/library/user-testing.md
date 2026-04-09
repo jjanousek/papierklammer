@@ -26,6 +26,7 @@
 - **Web UI:** max **1** concurrent validator.
 - **API:** max **1** concurrent validator aligned to the same browser/TUI bundle.
 - **TUI:** max **1** concurrent validator when used.
+- **Report artifacts:** max **1** concurrent validator because the surface is read-only and the assertions are coupled to the same report + handoff bundle.
 - **Overall bundle rule:** run only **one full validation bundle at a time**.
 - **Observed dry-run cost:** starting the local dev app increased the observed node-related process count by about **+9** over baseline in this environment.
 - **Resource rule for this mission:** do not add overlapping Node-heavy helpers beyond the single active app and the current surface tool. Keep validation strictly sequential.
@@ -57,3 +58,10 @@
 - Record whether launch/selection resolves the intended QA company cleanly or falls back in a surprising way.
 - If the TUI is usable, capture one real management action and reconcile it with API or browser truth.
 - Note whether the TUI distinguishes true empty states from polling failures.
+
+## Flow Validator Guidance: Report artifacts
+- Treat this surface as read-only. Validate the shipped report and handoff artifacts; do not rewrite them from a flow-validator subagent.
+- Read the repository report, mission handoff note, and supporting evidence files referenced by the report.
+- Confirm the report includes: executive summary, product-bugs section, blocker/friction separation, full validation matrix, identifier ledger, and evidence references for every reported finding.
+- Check that reporting assertions (`VAL-REPORT-*`) and cross-area assertions (`VAL-CROSS-*`) are each represented with a status, short outcome note, and evidence citation.
+- If a cited evidence file is missing, unreadable, or inconsistent with the report text, mark the affected assertion `fail` and explain the mismatch precisely.

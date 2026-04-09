@@ -1,0 +1,158 @@
+{
+  "surface": "report-artifacts",
+  "groupId": "reporting-artifacts",
+  "milestone": "reporting",
+  "status": "pass",
+  "assertions": [
+    {
+      "id": "VAL-REPORT-001",
+      "status": "pass",
+      "reason": "The repository report exists at the required path and includes the required reporting structure: executive summary, environment posture, audit path, validation matrix, identifier ledger, product bugs, frictions, and blocked-assertion handling.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-REPORT-002",
+      "status": "pass",
+      "reason": "Each reported finding cites concrete runtime evidence, and the cited sample bug/friction artifacts used by the report exist on disk and match the described surfaces and identifiers.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-pap-onboarding-route.png",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-stale-company-dashboard-body.txt",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-bad-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-REPORT-003",
+      "status": "pass",
+      "reason": "The validation matrix in the report covers all 24 contract assertions, including every reporting and cross-area assertion assigned to this surface, with status, outcome note, and evidence citations.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/validation-contract.md",
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-REPORT-004",
+      "status": "pass",
+      "reason": "The report separates product defects from audit frictions in distinct sections and also states that no assertion ended blocked, preventing unsupported bug-free inferences.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-REPORT-005",
+      "status": "pass",
+      "reason": "The report begins with a concise executive summary that names the primary QA company, the top confirmed bugs, the passing lifecycle/TUI coverage, and the absence of blocked assertions.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-REPORT-006",
+      "status": "pass",
+      "reason": "The final handoff note names the report path and summarizes the QA company, highest-priority findings, lifecycle coverage, and blocked-area posture for chat delivery.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/final-handoff.md",
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-CROSS-001",
+      "status": "pass",
+      "reason": "A single primary QA company (379b3817-9e7c-4483-bff0-ab2e908de27c / PAP) anchors bootstrap, lifecycle, and TUI evidence, while the temporary switch into Bad Weather Corp is explicitly documented as a limited audit exception.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-qa-company.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-after-approve.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-bad-weather-after-switch.txt"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-CROSS-002",
+      "status": "pass",
+      "reason": "Sequential runtime discipline and single-app posture are documented consistently in the report and evidence notes, with process-budget support from bootstrap and explicit statements that browser/API/TUI work stayed sequential.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-process-budget.txt"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-CROSS-003",
+      "status": "pass",
+      "reason": "The report preserves a cross-surface identifier ledger for company, goal, agent, approval, issue, and run IDs, and sampled raw evidence confirms those ledger entries on disk.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-qa-company.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-approval-after-approve.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-created-issue-detail.json",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/tui-invoked-run-detail.json"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    },
+    {
+      "id": "VAL-CROSS-004",
+      "status": "pass",
+      "reason": "The report explicitly states that no assertion ended blocked, the matrix records every assigned reporting/cross assertion as pass, and the handoff reiterates that prerequisite bugs were preserved while reachable surfaces were still exercised.",
+      "evidence": [
+        "/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md",
+        "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/final-handoff.md"
+      ],
+      "toolsUsed": [
+        "Read",
+        "Execute"
+      ]
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": [
+    "Read",
+    "Execute"
+  ]
+}
