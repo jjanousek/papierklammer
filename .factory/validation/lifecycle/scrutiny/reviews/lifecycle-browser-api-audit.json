@@ -1,0 +1,33 @@
+{
+  "featureId": "lifecycle-browser-api-audit",
+  "reviewedAt": "2026-04-09T18:21:34.372255+00:00",
+  "commitId": "50fe2196f9058765cdff0a788f876e3f312e7e13",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The lifecycle audit artifact is otherwise thorough: the handoff, transcript skeleton, `evidence/lifecycle.md`, and raw JSON/screenshots consistently cover the direct-hire path, approval-gated hire, blocked pre-approval actions, post-approval delegation, identifier correlation, and explicit notes for each required surface. However, the lifecycle contract requires relevant network-call evidence for multiple VAL-LIFE assertions, and the only saved network capture for this feature is empty, so the output does not fully substantiate the audit as required.",
+    "issues": [
+      {
+        "file": "/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt",
+        "line": 1,
+        "severity": "blocking",
+        "description": "The mission validation contract requires relevant network-call evidence for VAL-LIFE-001/002/003/005 (`validation-contract.md:31-58`), but the saved lifecycle network capture contains only `No requests captured`. Because this feature's deliverable is the audit evidence itself, the missing network evidence leaves those assertions incompletely evidenced even though the markdown cites screenshots and API payloads."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The prescribed `git show <commitId>` review step did not expose this feature's actual output, because the lifecycle artifact lives in the mission directory outside the repository and the handoff commit points at unrelated repo changes. Review guidance should say how to review mission-dir-only artifacts when no repo diff exists.",
+      "evidence": "Handoff commitId is `50fe2196f9058765cdff0a788f876e3f312e7e13`, but `git show --stat 50fe2196f9058765cdff0a788f876e3f312e7e13` only shows `.factory/validation/bootstrap/user-testing/*`; the reviewed artifact is `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md` outside the repo."
+    },
+    {
+      "area": "skills",
+      "observation": "`audit-worker` says workers must read `package.json` before acting, but this transcript skeleton shows `doc/DEVELOPING.md`, `environment.md`, and `qa-report.md` reads without any `package.json` read while the handoff still marked `followedProcedure: true`. Either the skill should clarify that `package.json` is optional when services metadata is sufficient, or review guidance should treat it as a real required step.",
+      "evidence": "`/Users/aischool/work/papierklammer_droid/.factory/skills/audit-worker/SKILL.md:26-28` requires reading `package.json`; the transcript skeleton for worker session `f10f1078-273a-426c-a8c7-52ef4cefaac2` contains reads for `doc/DEVELOPING.md`, `.factory/library/environment.md`, and `.factory/library/qa-report.md` but no `package.json` read."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail. The lifecycle audit evidence is internally consistent on the main hire/delegation flow, but it is missing the contract-required network-call evidence because the saved lifecycle network capture is empty."
+}

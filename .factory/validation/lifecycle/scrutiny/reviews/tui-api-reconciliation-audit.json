@@ -1,0 +1,15 @@
+{
+  "featureId": "tui-api-reconciliation-audit",
+  "reviewedAt": "2026-04-09T18:20:23.389402+00:00",
+  "commitId": "50fe2196f9058765cdff0a788f876e3f312e7e13",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature output satisfies the TUI audit requirements. The worker handoff, transcript skeleton, `evidence/tui.md`, and raw terminal/API captures consistently show launch-time company resolution, a real TUI management action reconciled to API truth, stable cross-surface identifiers, and scoped company switching/polling behavior. I did not find a high-confidence defect in the feature output itself.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The audit evidence is complete and internally consistent for the requested TUI lifecycle review; no blocking or non-blocking issues were found in this feature output."
+}
