@@ -132,7 +132,7 @@ Path note: every shorthand reference like `evidence/...` or `validation-state.js
   - `evidence/raw/bootstrap-pap-onboarding-route.png`
   - `evidence/raw/bootstrap-pap-agent-codex-selected.png`
   - `evidence/raw/bootstrap-pap-task-after-agent-create.png`
-  - `/var/folders/9g/n5_xn26s65jb1hq4886h646w0000gp/T/droid-bg-1775754109097.out`
+  - `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/bootstrap-dev-log-droid-bg-1775754109097.out`
 - **Linked identifiers:** `companyId=379b3817-9e7c-4483-bff0-ab2e908de27c`, `goalId=7818ce84-401f-40fd-aa5c-76dd58f49f78`
 
 ### 2. Stale localStorage company selection misroutes unprefixed `/dashboard`
