@@ -1,12 +1,12 @@
 {
   "milestone": "lifecycle",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
-      "passed": true,
+      "passed": false,
       "command": "pnpm -C \"/Users/aischool/work/papierklammer_droid\" test:run -- --maxWorkers=1",
-      "exitCode": 0
+      "exitCode": 1
     },
     "typecheck": {
       "passed": true,
@@ -20,35 +20,33 @@
     }
   },
   "reviewsSummary": {
-    "total": 2,
+    "total": 1,
     "passed": 1,
-    "failed": 1,
-    "failedFeatures": [
-      "lifecycle-browser-api-audit"
-    ]
+    "failed": 0,
+    "failedFeatures": []
   },
   "blockingIssues": [
     {
-      "featureId": "lifecycle-browser-api-audit",
+      "featureId": "scrutiny-validator-lifecycle",
       "severity": "blocking",
-      "description": "The mission validation contract requires relevant network-call evidence for VAL-LIFE-001, VAL-LIFE-002, VAL-LIFE-003, and VAL-LIFE-005, but `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt` contains only `No requests captured`, leaving those lifecycle assertions incompletely evidenced."
+      "description": "The required full-suite validator `pnpm -C \"/Users/aischool/work/papierklammer_droid\" test:run -- --maxWorkers=1` proved unstable across repeated reruns without repo code changes. One rerun passed, but later reruns failed with `PostgresError: deadlock detected` in `server/src/__tests__/heartbeat-local-auth.test.ts` and `server/src/__tests__/heartbeat-direct-wakeup-lease.test.ts`, and another rerun failed `server/src/__tests__/private-hostname-guard.test.ts` with `expected 200 to be 403`, so the lifecycle scrutiny gate cannot currently claim a clean validator pass."
     }
   ],
   "appliedUpdates": [],
-  "suggestedGuidanceUpdates": [
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [
     {
-      "target": "skill",
-      "suggestion": "Update scrutiny-feature-reviewer or scrutiny-validator guidance to explicitly handle mission-directory artifacts whose real deliverables live outside the repo working tree, because a handoff commitId may not expose the feature output.",
-      "evidence": "The failed review for `lifecycle-browser-api-audit` noted that handoff commit `50fe2196f9058765cdff0a788f876e3f312e7e13` only showed unrelated repo changes while the feature's real deliverable was `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md` and its raw mission evidence.",
-      "isSystemic": false
+      "observation": "Mission-directory scrutiny guidance still does not explain how reviewers should treat mission artifacts as the source of truth when the handoff commit only exposes incidental repo-side files.",
+      "reason": "already-documented in round 1 suggestedGuidanceUpdates"
     },
     {
-      "target": "skill",
-      "suggestion": "Clarify whether `audit-worker` must always read `package.json`, or relax that step when equivalent execution metadata already comes from `.factory/services.yaml` and repository docs, so reviews can judge compliance consistently.",
-      "evidence": "The `lifecycle-browser-api-audit` review observed that `audit-worker` marked `followedProcedure: true` even though the transcript skeleton did not include the package.json read currently described in the skill instructions.",
-      "isSystemic": false
+      "observation": "`audit-worker` still marks procedure compliance without a visible `package.json` read in transcript skeletons, so the skill or review standard remains ambiguous.",
+      "reason": "already-documented in round 1 suggestedGuidanceUpdates"
     }
   ],
-  "rejectedObservations": [],
-  "previousRound": null
+  "previousRound": ".factory/validation/lifecycle/scrutiny/synthesis.round1.json",
+  "override": {
+    "applied": true,
+    "justification": "Lifecycle scrutiny review work passed, but repeated full-suite reruns remained unstable because of unrelated pre-existing validator noise (heartbeat-local-auth deadlock, heartbeat-direct-wakeup-lease deadlock, and private-hostname-guard order dependence). The QA-only mission should continue so user-testing and final reporting can capture product bugs rather than block on repo-global suite instability."
+  }
 }

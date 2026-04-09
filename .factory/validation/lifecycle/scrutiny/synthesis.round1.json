@@ -1,0 +1,54 @@
+{
+  "milestone": "lifecycle",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "pnpm -C \"/Users/aischool/work/papierklammer_droid\" test:run -- --maxWorkers=1",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "pnpm -C \"/Users/aischool/work/papierklammer_droid\" -r --workspace-concurrency=1 typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "echo \"no lint configured\"",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
+    "failedFeatures": [
+      "lifecycle-browser-api-audit"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "lifecycle-browser-api-audit",
+      "severity": "blocking",
+      "description": "The mission validation contract requires relevant network-call evidence for VAL-LIFE-001, VAL-LIFE-002, VAL-LIFE-003, and VAL-LIFE-005, but `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt` contains only `No requests captured`, leaving those lifecycle assertions incompletely evidenced."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "skill",
+      "suggestion": "Update scrutiny-feature-reviewer or scrutiny-validator guidance to explicitly handle mission-directory artifacts whose real deliverables live outside the repo working tree, because a handoff commitId may not expose the feature output.",
+      "evidence": "The failed review for `lifecycle-browser-api-audit` noted that handoff commit `50fe2196f9058765cdff0a788f876e3f312e7e13` only showed unrelated repo changes while the feature's real deliverable was `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md` and its raw mission evidence.",
+      "isSystemic": false
+    },
+    {
+      "target": "skill",
+      "suggestion": "Clarify whether `audit-worker` must always read `package.json`, or relax that step when equivalent execution metadata already comes from `.factory/services.yaml` and repository docs, so reviews can judge compliance consistently.",
+      "evidence": "The `lifecycle-browser-api-audit` review observed that `audit-worker` marked `followedProcedure: true` even though the transcript skeleton did not include the package.json read currently described in the skill instructions.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

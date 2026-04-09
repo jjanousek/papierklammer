@@ -1,0 +1,26 @@
+{
+  "featureId": "lifecycle-browser-network-evidence-rerun",
+  "reviewedAt": "2026-04-09T18:49:41Z",
+  "commitId": "ee83493cb7c0cdca0205be03dfd6a8ffb239614c",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. I reviewed the original failed feature, the prior scrutiny failure, the fix feature handoff/transcript skeleton, the mission evidence artifacts, and both cited commits. The original failure was specifically the placeholder `No requests captured` browser-network artifact. The fix adequately addresses that gap: `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt` now contains real browser-originated request/response evidence for the direct hire, approval-gated hire, blocked pre-approval assignment and invoke attempts, and delegated issue/run path, and `evidence/lifecycle.md` now includes a dedicated rerun section that points scrutiny to the new artifact and rerun identifiers.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The prescribed `git show <commitId>` review step still does not expose the actual reviewed deliverables for mission evidence fixes, because the meaningful artifacts live in the mission directory while the handoff commit only shows repo-side scrutiny metadata. Review guidance should explicitly tell reviewers how to treat mission-dir evidence as the source of truth when the commit diff is incidental.",
+      "evidence": "The fix handoff commit is `ee83493cb7c0cdca0205be03dfd6a8ffb239614c`, but `git show --stat --summary ee83493cb7c0cdca0205be03dfd6a8ffb239614c` only shows `.factory/validation/lifecycle/scrutiny/*` files; the actual fix deliverables are `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/lifecycle-browser-network.txt` and `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md`."
+    },
+    {
+      "area": "skills",
+      "observation": "`audit-worker` still says workers must read `package.json` before acting, but both the original lifecycle audit and the rerun marked `followedProcedure: true` without any `package.json` read in their transcript skeletons. The skill or review standard should be clarified so procedure compliance is judged consistently.",
+      "evidence": "`/Users/aischool/work/papierklammer_droid/.factory/skills/audit-worker/SKILL.md` step 2 requires reading `package.json`. The fix transcript skeleton for worker session `9d1274ca-7c82-42fb-a110-714d5db98d89` shows reads for `README.md`, `doc/DEVELOPING.md`, mission files, `.factory/services.yaml`, and library docs, but no `package.json` read, while the handoff file records `\"followedProcedure\": true`; the same mismatch was present in the original session `f10f1078-273a-426c-a8c7-52ef4cefaac2`."
+    }
+  ],
+  "addressesFailureFrom": "lifecycle-browser-api-audit",
+  "summary": "Pass. The rerun fixes the prior blocking scrutiny failure by replacing the empty lifecycle browser-network artifact with real captured browser/API evidence and by updating `evidence/lifecycle.md` so the new network evidence is directly traceable."
+}

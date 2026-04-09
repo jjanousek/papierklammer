@@ -23,3 +23,10 @@ Without this ordering, cleanup can fail on FK constraints when tests remove comp
 - Many board pages are mounted under a company prefix in the URL, not at bare paths.
 - For reliable GUI validation, first query `GET /api/companies`, then navigate with the company slug prefix, e.g. `/WEA/company/export` instead of `/company/export`.
 - Using non-prefixed paths can produce false negatives during visual checks (route not found / redirected states).
+
+## Full-suite validator instability under repeated reruns
+
+- In lifecycle scrutiny on 2026-04-10, repeated executions of `pnpm -C "/Users/aischool/work/papierklammer_droid" test:run -- --maxWorkers=1` alternated between pass and fail without repo code changes.
+- Observed failures included `PostgresError: deadlock detected` in `server/src/__tests__/heartbeat-local-auth.test.ts` and `server/src/__tests__/heartbeat-direct-wakeup-lease.test.ts`.
+- A later rerun also failed `server/src/__tests__/private-hostname-guard.test.ts` with `expected 200 to be 403`, suggesting an order-dependent full-suite state leak in addition to the deadlock flake.
+- Treat current full-suite stability as suspect during scrutiny/user-testing gates and preserve the exact failing command output when handing off.
