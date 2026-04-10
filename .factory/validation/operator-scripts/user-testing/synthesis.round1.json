@@ -1,0 +1,33 @@
+{
+  "milestone": "operator-scripts",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 9,
+    "passed": 7,
+    "failed": 2,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-CLI-001",
+    "VAL-CLI-002",
+    "VAL-CLI-003",
+    "VAL-CLI-005",
+    "VAL-CLI-006",
+    "VAL-CROSS-002",
+    "VAL-CROSS-003"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-CLI-004",
+      "reason": "The deterministic setup/smoke script scan found legacy tokens in active operator-facing scripts, including clean-onboard helpers that still reference paperclipai and Paperclip wording."
+    },
+    {
+      "id": "VAL-CROSS-005",
+      "reason": "A representative CLI issue-create mutation succeeded, but the follow-up issue activity recorded runId: null, so the renamed run-trace contract did not carry end-to-end."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}

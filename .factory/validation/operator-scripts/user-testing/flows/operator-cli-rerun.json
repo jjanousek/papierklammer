@@ -1,0 +1,73 @@
+{
+  "groupId": "operator-cli-rerun",
+  "testedAt": "2026-04-10T15:16:06Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "pnpm command + curl",
+    "assignedAssertions": [
+      "VAL-CLI-004",
+      "VAL-CROSS-005"
+    ],
+    "tempDir": "/Users/aischool/work/papierklammer_droid/.factory/validation/operator-scripts/user-testing/tmp/round-2-cli",
+    "evidenceDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/operator-scripts/operator-cli-rerun",
+    "companyId": "d3a8f62c-cec4-43d9-b3a5-11fe61383962",
+    "companyName": "Run Trace Followup 2026-04-10T15:04:47Z",
+    "existingIssuePrefix": "RUNAAA"
+  },
+  "toolsUsed": [
+    "pnpm command",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CLI-004",
+      "title": "Active setup and smoke scripts invoke renamed entrypoints and labels",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run the deterministic active-script scan across `package.json` and the in-scope operator setup/smoke scripts under `scripts/`.",
+          "expected": "The live setup/smoke script surface advertises only renamed entrypoints and labels, with no forbidden `paperclipai`, `Paperclip`, `X-Paperclip`, `paperclip-create-agent`, or `paperclip-create-plugin` hits.",
+          "observed": "Scanned 9 files; positive_matches=106; forbidden_hits=0. The previously failing clean-onboard script surfaces now show renamed `papierklammer` references in the scan transcript."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-rerun/VAL-CLI-004-script-scan.txt"
+        ],
+        "legacyTokenCheck": "Forbidden script-scan hits: none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-005",
+      "title": "Main CLI-to-server mutation flow uses the renamed run-trace contract end-to-end",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create one validation issue through the shipped CLI with `pnpm --dir /Users/aischool/work/papierklammer_droid papierklammer issue create --api-base http://127.0.0.1:3100 -C d3a8f62c-cec4-43d9-b3a5-11fe61383962 --title <timestamped-title> --json`.",
+          "expected": "The representative mutation succeeds in the dedicated company and surfaces a non-null renamed run trace on the created issue record.",
+          "observed": "Exit 0; created RUNAAA-2 (3a772ed0-f1cd-4ef8-b1d9-4e6d0c84ae43); CLI JSON included originRunId=8f51e699-899a-482c-97f1-ccbc9ab7f577."
+        },
+        {
+          "action": "Fetch `GET /api/issues/3a772ed0-f1cd-4ef8-b1d9-4e6d0c84ae43/activity` via curl.",
+          "expected": "The follow-up `issue.created` activity records the same non-null run id instead of `null`, proving the shipped CLI mutation carries the renamed run-trace contract end-to-end.",
+          "observed": "Exit 0; activityCount=1; issue.created.runId=8f51e699-899a-482c-97f1-ccbc9ab7f577."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-rerun/VAL-CROSS-005-cli-run-trace.txt",
+          "operator-scripts/operator-cli-rerun/VAL-CROSS-005-activity-confirmation.txt"
+        ],
+        "network": "CLI POST /api/companies/d3a8f62c-cec4-43d9-b3a5-11fe61383962/issues via `papierklammer issue create`; GET /api/issues/3a772ed0-f1cd-4ef8-b1d9-4e6d0c84ae43/activity -> 200",
+        "legacyTokenCheck": "Created issue RUNAAA-2 recorded non-null run id 8f51e699-899a-482c-97f1-ccbc9ab7f577 in the follow-up issue.created activity."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions: VAL-CLI-004=pass; VAL-CROSS-005=pass. The deterministic script scan was clean, and the representative CLI issue mutation for RUNAAA-2 recorded runId=8f51e699-899a-482c-97f1-ccbc9ab7f577 in follow-up activity."
+}
