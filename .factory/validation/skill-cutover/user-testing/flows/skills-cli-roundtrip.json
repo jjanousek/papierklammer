@@ -1,0 +1,120 @@
+{
+  "groupId": "skills-cli-roundtrip",
+  "testedAt": "2026-04-10T07:24:26.418391+00:00",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "pnpm command",
+    "assignedAssertions": [
+      "VAL-SKILLS-003",
+      "VAL-SKILLS-005",
+      "VAL-SKILLS-006",
+      "VAL-CROSS-001"
+    ],
+    "companyId": "406a464e-4f9f-407b-b781-86696ca67fc5",
+    "agentId": "7e46ba35-1e81-4a37-a5d6-65469bc6059f",
+    "agentUrlKey": "skill-cutover-agent",
+    "codexHome": "/Users/aischool/work/papierklammer_droid/.factory/validation/skill-cutover/user-testing/tmp/codex-home",
+    "claudeHome": "/Users/aischool/work/papierklammer_droid/.factory/validation/skill-cutover/user-testing/tmp/claude-home"
+  },
+  "toolsUsed": [
+    "pnpm command",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-SKILLS-003",
+      "title": "Agent skill snapshots use only renamed canonical skill keys",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "POST the fixture agent skill sync endpoint with the canonical renamed bundled skill key.",
+          "expected": "The response desiredSkills and entry keys/runtime names use only renamed canonical Papierklammer identity values.",
+          "observed": "desiredSkills=['papierklammer/papierklammer/papierklammer', 'papierklammer/papierklammer/papierklammer-create-agent', 'papierklammer/papierklammer/papierklammer-create-plugin', 'papierklammer/papierklammer/para-memory-files']; entryKeys=['papierklammer/papierklammer/papierklammer', 'papierklammer/papierklammer/papierklammer-create-agent', 'papierklammer/papierklammer/papierklammer-create-plugin', 'papierklammer/papierklammer/para-memory-files']; runtimeNames=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/skill-cutover/skills-cli-roundtrip/VAL-SKILLS-003-agent-skill-snapshot.txt"
+        ],
+        "filesystem": "Observed via sync response only; no legacy paperclip keys or runtime names were present.",
+        "legacyTokenCheck": "No desired skill key, entry key, or runtimeName matched the legacy Paperclip token family."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SKILLS-005",
+      "title": "`agent local-cli` installs only renamed local skill directories",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `pnpm --dir ... papierklammer agent local-cli ... --json` with isolated CODEX_HOME and CLAUDE_HOME.",
+          "expected": "The installer links only renamed skill directories into both homes.",
+          "observed": "Run 1 codex=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']; run 1 claude=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']"
+        },
+        {
+          "action": "Re-run the same local-cli install against the same isolated homes.",
+          "expected": "The rerun keeps only renamed directories and does not revive legacy `paperclip*` names.",
+          "observed": "Run 2 codex=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']; run 2 claude=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']; legacyHits=[]"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/skill-cutover/skills-cli-roundtrip/VAL-SKILLS-005-local-cli-install-roundtrip.txt"
+        ],
+        "filesystem": "CODEX_HOME/skills and CLAUDE_HOME/skills both matched repo bundled skill dirs ['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files'] on both runs.",
+        "legacyTokenCheck": "No installed directory in either isolated home began with `paperclip` after run 1 or run 2."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SKILLS-006",
+      "title": "Active bundled and project worker skill files are renamed in place",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Scan all active markdown files under `skills/` and `.factory/skills/`, extracting rename-relevant frontmatter, headings, and example/instruction lines.",
+          "expected": "The active bundled and worker skill surfaces expose only Papierklammer naming in those extracted lines.",
+          "observed": "Scanned 15 markdown files and extracted 275 rename-relevant lines; legacyHits=[]"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/skill-cutover/skills-cli-roundtrip/VAL-SKILLS-006-skill-file-scan.txt"
+        ],
+        "filesystem": "Scan roots: /Users/aischool/work/papierklammer_droid/skills and /Users/aischool/work/papierklammer_droid/.factory/skills",
+        "legacyTokenCheck": "No extracted heading/frontmatter/example/instruction line matched `Paperclip` or `paperclipai`."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-001",
+      "title": "Skill discovery, served markdown, and local installer agree on renamed skill identity",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Fetch `/api/skills/index` and `/api/skills/papierklammer`.",
+          "expected": "HTTP discovery and served markdown expose the renamed `papierklammer` slug and identity.",
+          "observed": "indexNames=['papierklammer', 'para-memory-files', 'papierklammer-create-agent', 'papierklammer-create-plugin']; frontmatterName=papierklammer; heading=# Papierklammer Skill"
+        },
+        {
+          "action": "Install local CLI skills into isolated CODEX_HOME and CLAUDE_HOME, then sync the fixture agent skill snapshot.",
+          "expected": "Installer output, installed directories, and the agent snapshot align on the same renamed bundled skill identity.",
+          "observed": "installerDirs=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']; snapshotDesired=['papierklammer/papierklammer/papierklammer', 'papierklammer/papierklammer/papierklammer-create-agent', 'papierklammer/papierklammer/papierklammer-create-plugin', 'papierklammer/papierklammer/para-memory-files']; snapshotRuntimeNames=['papierklammer', 'papierklammer-create-agent', 'papierklammer-create-plugin', 'para-memory-files']"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/skill-cutover/skills-cli-roundtrip/VAL-CROSS-001-skill-identity-roundtrip.txt"
+        ],
+        "filesystem": "HTTP slug `papierklammer`, installed dir `papierklammer`, and snapshot runtimeName `papierklammer` all aligned; desiredSkills included `papierklammer/papierklammer/papierklammer`.",
+        "legacyTokenCheck": "No legacy Paperclip token appeared in the discovery response, served markdown identity lines, installer dir names, or synced snapshot identity fields."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 4 assertions: VAL-SKILLS-003=pass, VAL-SKILLS-005=pass, VAL-SKILLS-006=pass, VAL-CROSS-001=pass."
+}

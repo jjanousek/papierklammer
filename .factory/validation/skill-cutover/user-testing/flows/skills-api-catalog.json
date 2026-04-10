@@ -1,0 +1,144 @@
+{
+  "groupId": "skills-api-catalog",
+  "testedAt": "2026-04-10T07:14:28.978339+00:00",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "curl",
+    "assignedAssertions": [
+      "VAL-SKILLS-001",
+      "VAL-SKILLS-002",
+      "VAL-SKILLS-004",
+      "VAL-SKILLS-007"
+    ]
+  },
+  "toolsUsed": [
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-SKILLS-001",
+      "title": "Bundled skill discovery publishes only renamed skill slugs",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Fetch /api/skills/index",
+          "expected": "Only renamed bundled skill slugs are listed.",
+          "observed": "/api/skills/index returned HTTP 200 with skills ['papierklammer', 'para-memory-files', 'papierklammer-create-agent', 'papierklammer-create-plugin']."
+        },
+        {
+          "action": "Fetch renamed bundled skill routes directly",
+          "expected": "Renamed /api/skills/papierklammer* routes return 200 markdown.",
+          "observed": "Statuses: papierklammer=200, papierklammer-create-agent=200, papierklammer-create-plugin=200."
+        },
+        {
+          "action": "Fetch legacy /api/skills/paperclip* routes",
+          "expected": "Legacy routes do not resolve and return 4xx.",
+          "observed": "Statuses: paperclip=404, paperclip-create-agent=404, paperclip-create-plugin=404."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "skill-cutover/skills-api-catalog/VAL-SKILLS-001-terminal.txt"
+        ],
+        "network": "GET /api/skills/index -> 200; GET /api/skills/papierklammer -> 200; GET /api/skills/papierklammer-create-agent -> 200; GET /api/skills/papierklammer-create-plugin -> 200; legacy GET /api/skills/paperclip* -> 404.",
+        "legacyTokenCheck": "Index contains only renamed slugs=True; legacy /api/skills/paperclip* all 4xx=True."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SKILLS-002",
+      "title": "Served bundled skill markdown is renamed end-to-end",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Fetch renamed bundled skill markdown routes",
+          "expected": "Bundled skill markdown is served from renamed routes.",
+          "observed": "Statuses: papierklammer=200, papierklammer-create-agent=200, papierklammer-create-plugin=200."
+        },
+        {
+          "action": "Scan fetched markdown for legacy branding and legacy skill-route examples",
+          "expected": "No fetched markdown teaches paperclipai, Paperclip, or legacy bundled skill names/routes.",
+          "observed": "Forbidden token matches: {\"papierklammer\": [], \"papierklammer-create-agent\": [], \"papierklammer-create-plugin\": []}."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "skill-cutover/skills-api-catalog/VAL-SKILLS-002-terminal.txt"
+        ],
+        "network": "GET /api/skills/papierklammer -> 200; GET /api/skills/papierklammer-create-agent -> 200; GET /api/skills/papierklammer-create-plugin -> 200.",
+        "legacyTokenCheck": "{\"papierklammer\": 0, \"papierklammer-create-agent\": 0, \"papierklammer-create-plugin\": 0}"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SKILLS-004",
+      "title": "Legacy skill refs and legacy adapter aliases are rejected",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Fetch /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f and /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills before mutation",
+          "expected": "Baseline canonical adapter and skill snapshot is observable.",
+          "observed": "Agent detail returned HTTP 200 with adapterType=codex_local; skills snapshot returned HTTP 200."
+        },
+        {
+          "action": "POST legacy desiredSkills=[\"paperclip\"] to the live skill-sync surface",
+          "expected": "The legacy bundled skill ref is rejected with 4xx rather than silently canonicalized.",
+          "observed": "POST /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills/sync returned HTTP 422 with body {\"error\":\"Legacy bundled skill references are no longer supported. Use renamed skill slugs instead (paperclip \u2192 papierklammer).\"}."
+        },
+        {
+          "action": "Fetch the live skill snapshot again after the rejected mutation",
+          "expected": "Observable agent skill state remains unchanged after the rejected legacy request.",
+          "observed": "Follow-up GET /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills returned HTTP 200; JSON unchanged=True."
+        },
+        {
+          "action": "Inspect the validated live responses for any legacy adapter alias relevant to this area",
+          "expected": "If a legacy adapter alias is discoverable, it can be probed; otherwise the absence is recorded with evidence.",
+          "observed": "Validated live responses exposed canonical adapterType=codex_local and no legacy adapter alias field or alias value was discoverable."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "skill-cutover/skills-api-catalog/VAL-SKILLS-004-terminal.txt"
+        ],
+        "network": "GET /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f -> 200; GET /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills -> 200; POST /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills/sync desiredSkills=[\"paperclip\"] -> 422; follow-up GET /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills -> 200.",
+        "legacyTokenCheck": "Legacy skill ref rejected with 4xx=True; follow-up snapshot unchanged=True; no live legacy adapter alias discoverable in validated responses."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SKILLS-007",
+      "title": "Available-skill and adapter guidance text uses renamed managed-skill wording",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Fetch /api/skills/available",
+          "expected": "Available-skill discovery uses the renamed managed-skill field/key names.",
+          "observed": "/api/skills/available returned HTTP 200; isPapierklammerManaged present=True."
+        },
+        {
+          "action": "Fetch /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills",
+          "expected": "Adapter guidance labels and reasons use renamed Papierklammer wording.",
+          "observed": "/api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills returned HTTP 200; banned text token matches=[]."
+        },
+        {
+          "action": "Scan the validated outputs for legacy managed-skill wording leaks",
+          "expected": "Validated outputs do not leak isPaperclipManaged, [paperclip], or Paperclip-branded guidance text.",
+          "observed": "Forbidden token matches: none."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "skill-cutover/skills-api-catalog/VAL-SKILLS-007-terminal.txt"
+        ],
+        "network": "GET /api/skills/available -> 200; GET /api/agents/7e46ba35-1e81-4a37-a5d6-65469bc6059f/skills -> 200.",
+        "legacyTokenCheck": "isPapierklammerManaged present=True; forbidden matches=none."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 4 assertions: 4 passed, 0 failed, 0 blocked."
+}

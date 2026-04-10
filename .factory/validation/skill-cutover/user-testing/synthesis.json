@@ -1,0 +1,31 @@
+{
+  "milestone": "skill-cutover",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-SKILLS-001",
+    "VAL-SKILLS-002",
+    "VAL-SKILLS-004",
+    "VAL-SKILLS-007",
+    "VAL-SKILLS-003",
+    "VAL-SKILLS-005",
+    "VAL-SKILLS-006",
+    "VAL-CROSS-001"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added exact flow-validator guidance sections for curl and pnpm command surfaces used in skill-cutover validation.",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null
+}

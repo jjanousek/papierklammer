@@ -50,10 +50,20 @@
 - For skill/API assertions, capture both success on the renamed path and failure on the legacy path when the contract requires a hard cut.
 - For sync/mutation assertions, capture the request plus the resulting observable snapshot/state.
 
+## Flow Validator Guidance: curl
+- Use `curl -sf` for success probes and capture the exact route, key response fields, and any failing legacy route status/body required by the assertion.
+- For mutation checks, include both the mutation response and the follow-up observable state proving whether legacy names were rejected or persisted.
+- Keep request bodies isolated to the dedicated validation fixture company/agent unless an assertion explicitly targets a shared runtime surface.
+
 ## Flow Validator Guidance: CLI and scripts
 - Favor `--help`, `--version`, safe error paths, and deterministic scans before trying heavier commands.
 - When a contract requires generated names/prefixes, use isolated temp output paths or dry-run-friendly inputs so validation does not pollute the user’s real environment.
 - For script inventory checks, preserve the exact scan command and match criteria in the evidence.
+
+## Flow Validator Guidance: pnpm command
+- Prefer `pnpm --dir /absolute/repo/path papierklammer ...` help/JSON-style probes and deterministic file scans.
+- For `agent local-cli`, always use isolated `CODEX_HOME` and `CLAUDE_HOME` temp directories and record the resulting skill directory names after each run.
+- When a pnpm-command assertion depends on HTTP state, pair the command output with a narrowly scoped follow-up `curl` snapshot for the same isolated fixture agent.
 
 ## Flow Validator Guidance: TUI
 - Skip the TUI surface unless it can be exercised without violating the process budget.
