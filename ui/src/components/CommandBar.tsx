@@ -1,24 +1,32 @@
 import { useState } from "react";
 
 interface CommandBarProps {
-  onExecute?: (command: string) => void;
+  onExecute?: (command: string) => void | Promise<void>;
 }
 
 export function CommandBar({ onExecute }: CommandBarProps) {
   const [value, setValue] = useState("");
+  const [isExecuting, setIsExecuting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = value.trim();
-    if (trimmed && onExecute) {
-      onExecute(trimmed);
-      setValue("");
+    if (!trimmed || !onExecute || isExecuting) {
+      return;
     }
-  };
+
+    setIsExecuting(true);
+    try {
+      await onExecute(trimmed);
+      setValue("");
+    } finally {
+      setIsExecuting(false);
+    }
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleSubmit();
+      void handleSubmit();
     }
   };
 
@@ -47,7 +55,8 @@ export function CommandBar({ onExecute }: CommandBarProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="type a command..."
+        placeholder="dispatch work: have CTO review blockers..."
+        disabled={isExecuting}
         className="flex-1 h-full px-3 outline-none"
         style={{
           background: "transparent",
@@ -59,8 +68,9 @@ export function CommandBar({ onExecute }: CommandBarProps) {
 
       {/* RUN button */}
       <button
-        onClick={handleSubmit}
-        className="flex items-center px-3 h-full border-l border-[var(--border)] cursor-pointer"
+        onClick={() => void handleSubmit()}
+        disabled={isExecuting}
+        className="flex items-center px-3 h-full border-l border-[var(--border)] cursor-pointer disabled:cursor-wait disabled:opacity-70"
         style={{
           background: "var(--bg-darker)",
           fontSize: "11px",
@@ -70,7 +80,7 @@ export function CommandBar({ onExecute }: CommandBarProps) {
           letterSpacing: "0.5px",
         }}
       >
-        RUN
+        {isExecuting ? "WORKING" : "RUN"}
       </button>
     </div>
   );

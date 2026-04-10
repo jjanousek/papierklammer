@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Settings } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
@@ -24,17 +24,21 @@ import { useSidebar } from "../context/SidebarContext";
 import { useTheme, THEMES, THEME_LABELS, type Theme } from "../context/ThemeContext";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
+import { agentsApi } from "../api/agents";
 import { healthApi } from "../api/health";
+import { issuesApi } from "../api/issues";
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import {
   DEFAULT_INSTANCE_SETTINGS_PATH,
   normalizeRememberedInstanceSettingsPath,
 } from "../lib/instance-settings";
+import { buildQuickDispatchDraft } from "../lib/quick-dispatch";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useToast } from "../context/ToastContext";
 
 function ThemeSelector({ currentTheme, onSelect }: { currentTheme: Theme; onSelect: (t: Theme) => void }) {
   return (
@@ -68,8 +72,10 @@ function readRememberedInstanceSettingsPath(): string {
 }
 
 export function Layout() {
+  const queryClient = useQueryClient();
   const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile } = useSidebar();
   const { openNewIssue, openOnboarding } = useDialog();
+  const { pushToast } = useToast();
   const { togglePanelVisible } = usePanel();
   const {
     companies,
@@ -104,6 +110,11 @@ export function Layout() {
       return data?.devServer?.enabled ? 2000 : false;
     },
     refetchIntervalInBackground: true,
+  });
+  const { data: companyAgents } = useQuery({
+    queryKey: selectedCompanyId ? queryKeys.agents.list(selectedCompanyId) : ["agents", "none"],
+    queryFn: () => agentsApi.list(selectedCompanyId!),
+    enabled: Boolean(selectedCompanyId),
   });
 
   useEffect(() => {
@@ -252,6 +263,71 @@ export function Layout() {
       window.removeEventListener("scroll", onScroll);
     };
   }, [isMobile, updateMobileNavVisibility]);
+
+  const handleQuickDispatch = useCallback(async (command: string) => {
+    if (!selectedCompanyId) {
+      pushToast({
+        title: "No company selected",
+        body: "Select a company before dispatching work from the command bar.",
+        tone: "warn",
+      });
+      return;
+    }
+
+    try {
+      const agents = companyAgents ?? await agentsApi.list(selectedCompanyId);
+      const draft = buildQuickDispatchDraft(command, agents);
+      const issue = await issuesApi.create(selectedCompanyId, {
+        title: draft.title,
+        description: draft.description,
+        status: draft.assigneeAgentId ? "todo" : "backlog",
+        priority: "medium",
+        assigneeAgentId: draft.assigneeAgentId,
+      });
+
+      let started = false;
+      if (draft.assigneeAgentId) {
+        try {
+          await issuesApi.checkout(issue.id, draft.assigneeAgentId);
+          started = true;
+        } catch {
+          started = false;
+        }
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard(selectedCompanyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.liveRuns(selectedCompanyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(selectedCompanyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.org(selectedCompanyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(selectedCompanyId) }),
+      ]);
+
+      pushToast({
+        title: started
+          ? `Dispatched ${issue.identifier ?? issue.id}`
+          : `Created ${issue.identifier ?? issue.id}`,
+        body: draft.assigneeLabel
+          ? started
+            ? `${draft.assigneeLabel} was assigned and nudged into active work.`
+            : `${draft.assigneeLabel} was assigned, but the run did not start immediately.`
+          : "No assignee was inferred, so the issue is waiting in the queue.",
+        tone: "success",
+        action: {
+          label: `Open ${issue.identifier ?? issue.id}`,
+          href: `/issues/${issue.identifier ?? issue.id}`,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Quick dispatch failed.";
+      pushToast({
+        title: "Quick dispatch failed",
+        body: message,
+        tone: "error",
+      });
+    }
+  }, [companyAgents, pushToast, queryClient, selectedCompanyId]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -427,7 +503,7 @@ export function Layout() {
             </main>
             <PropertiesPanel />
           </div>
-          <CommandBar />
+          <CommandBar onExecute={handleQuickDispatch} />
         </div>
       </div>
       {isMobile && <MobileBottomNav visible={mobileNavVisible} />}
