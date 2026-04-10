@@ -302,15 +302,19 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       const clientHttp = readFileSync(join(ROOT, "cli/src/client/http.ts"), "utf-8");
       const clientCommon = readFileSync(join(ROOT, "cli/src/commands/client/common.ts"), "utf-8");
       const authMiddleware = readFileSync(join(ROOT, "server/src/middleware/auth.ts"), "utf-8");
+      const issuesRoute = readFileSync(join(ROOT, "server/src/routes/issues.ts"), "utf-8");
 
       expect(appTs).toContain("papierklammer:${req.actor.source}:${req.actor.userId}");
       expect(appTs).not.toContain("paperclip:${req.actor.source}:${req.actor.userId}");
       expect(clientHttp).toContain('headers["x-papierklammer-run-id"] = this.runId;');
+      expect(clientHttp).toContain('headers["x-papierklammer-trace-id"] = this.traceId;');
       expect(clientHttp).not.toContain('headers["x-paperclip-run-id"] = this.runId;');
       expect(clientCommon).toContain("const runId = process.env.PAPIERKLAMMER_RUN_ID?.trim() || undefined;");
       expect(clientCommon).toContain("runId,");
       expect(authMiddleware).toContain('req.header("x-papierklammer-run-id")');
       expect(authMiddleware).not.toContain('req.header("x-paperclip-run-id")');
+      expect(issuesRoute).toContain('req.header("x-papierklammer-trace-id")');
+      expect(issuesRoute).toContain("originRunId: actor.runId ?? traceIdHeader ?? undefined,");
     });
 
     it("generated runtime text and svg assets are renamed", () => {

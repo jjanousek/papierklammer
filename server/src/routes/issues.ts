@@ -1016,10 +1016,12 @@ export function issueRoutes(db: Db, storage: StorageService, deps: IssueRouteDep
     }
 
     const actor = getActorInfo(req);
+    const traceIdHeader = req.header("x-papierklammer-trace-id")?.trim() || undefined;
     const issue = await svc.create(companyId, {
       ...req.body,
       createdByAgentId: actor.agentId,
       createdByUserId: actor.actorType === "user" ? actor.actorId : null,
+      originRunId: actor.runId ?? traceIdHeader ?? undefined,
     });
 
     await logActivityFn(db, {

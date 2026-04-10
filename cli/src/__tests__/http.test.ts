@@ -6,7 +6,7 @@ describe("PaperclipApiClient", () => {
     vi.restoreAllMocks();
   });
 
-  it("adds authorization and run-id headers", async () => {
+  it("adds authorization, run-id, and trace headers", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), { status: 200 }),
     );
@@ -27,7 +27,29 @@ describe("PaperclipApiClient", () => {
     const headers = call[1].headers as Record<string, string>;
     expect(headers.authorization).toBe("Bearer token-123");
     expect(headers["x-papierklammer-run-id"]).toBe("run-abc");
+    expect(headers["x-papierklammer-trace-id"]).toBe("run-abc");
     expect(headers["content-type"]).toBe("application/json");
+  });
+
+  it("adds a generated trace header even when no run id is present", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new PaperclipApiClient({
+      apiBase: "http://localhost:3100",
+    });
+
+    await client.post("/api/test", { hello: "world" });
+
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = call[1].headers as Record<string, string>;
+
+    expect(headers["x-papierklammer-run-id"]).toBeUndefined();
+    expect(headers["x-papierklammer-trace-id"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
   });
 
   it("returns null on ignoreNotFound", async () => {

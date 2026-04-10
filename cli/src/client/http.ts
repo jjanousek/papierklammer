@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { URL } from "node:url";
 
 export class ApiRequestError extends Error {
@@ -47,6 +48,7 @@ interface ApiClientOptions {
   apiBase: string;
   apiKey?: string;
   runId?: string;
+  traceId?: string;
   recoverAuth?: (input: RecoverAuthInput) => Promise<string | null>;
 }
 
@@ -54,12 +56,14 @@ export class PaperclipApiClient {
   readonly apiBase: string;
   apiKey?: string;
   readonly runId?: string;
+  readonly traceId: string;
   readonly recoverAuth?: (input: RecoverAuthInput) => Promise<string | null>;
 
   constructor(opts: ApiClientOptions) {
     this.apiBase = opts.apiBase.replace(/\/+$/, "");
     this.apiKey = opts.apiKey?.trim() || undefined;
     this.runId = opts.runId?.trim() || undefined;
+    this.traceId = opts.traceId?.trim() || this.runId || randomUUID();
     this.recoverAuth = opts.recoverAuth;
   }
 
@@ -114,6 +118,7 @@ export class PaperclipApiClient {
     if (this.runId) {
       headers["x-papierklammer-run-id"] = this.runId;
     }
+    headers["x-papierklammer-trace-id"] = this.traceId;
 
     let response: Response;
     try {

@@ -12,6 +12,20 @@ export interface ActivityFilters {
 
 export function activityService(db: Db) {
   const issueIdAsText = sql<string>`${issues.id}::text`;
+
+  function resolveRunTrace<T extends typeof activityLog.$inferSelect>(
+    row: T,
+    issueOriginRunId: string | null | undefined,
+  ): T {
+    if (row.runId || row.entityType !== "issue" || row.action !== "issue.created" || !issueOriginRunId) {
+      return row;
+    }
+    return {
+      ...row,
+      runId: issueOriginRunId,
+    };
+  }
+
   return {
     list: async (filters: ActivityFilters) => {
       const conditions = [eq(activityLog.companyId, filters.companyId)];
@@ -31,7 +45,7 @@ export function activityService(db: Db) {
       }
 
       const persistedActivity = await db
-        .select({ activityLog })
+        .select({ activityLog, issueOriginRunId: issues.originRunId })
         .from(activityLog)
         .leftJoin(
           issues,
@@ -50,7 +64,7 @@ export function activityService(db: Db) {
           ),
         )
         .orderBy(desc(activityLog.createdAt))
-        .then((rows) => rows.map((r) => r.activityLog));
+        .then((rows) => rows.map(({ activityLog, issueOriginRunId }) => resolveRunTrace(activityLog, issueOriginRunId)));
 
       const lifecycleActivity = await db
         .select()
@@ -79,15 +93,23 @@ export function activityService(db: Db) {
 
     forIssue: (issueId: string) =>
       db
-        .select()
+        .select({ activityLog, issueOriginRunId: issues.originRunId })
         .from(activityLog)
+        .leftJoin(
+          issues,
+          and(
+            eq(activityLog.entityType, sql`'issue'`),
+            eq(activityLog.entityId, issueIdAsText),
+          ),
+        )
         .where(
           and(
             eq(activityLog.entityType, "issue"),
             eq(activityLog.entityId, issueId),
           ),
         )
-        .orderBy(desc(activityLog.createdAt)),
+        .orderBy(desc(activityLog.createdAt))
+        .then((rows) => rows.map(({ activityLog, issueOriginRunId }) => resolveRunTrace(activityLog, issueOriginRunId))),
 
     runsForIssue: (companyId: string, issueId: string) =>
       db

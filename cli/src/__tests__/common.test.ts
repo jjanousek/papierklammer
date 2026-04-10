@@ -89,6 +89,18 @@ describe("resolveCommandContext", () => {
     });
 
     expect(resolved.api.runId).toBe("run-from-env");
+    expect(resolved.api.traceId).toBe("run-from-env");
+  });
+
+  it("generates a request trace id when no heartbeat run id is present", () => {
+    const resolved = resolveCommandContext({
+      apiBase: "http://localhost:3100",
+    });
+
+    expect(resolved.api.runId).toBeUndefined();
+    expect(resolved.api.traceId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
   });
 
   it("throws when company is required but unresolved", () => {
