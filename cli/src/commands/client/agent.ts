@@ -44,6 +44,11 @@ interface SkillsInstallSummary {
 }
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
+const LEGACY_BUNDLED_SKILL_NAMES = new Set([
+  "paperclip",
+  "paperclip-create-agent",
+  "paperclip-create-plugin",
+]);
 
 function codexSkillsHome(): string {
   const fromEnv = process.env.CODEX_HOME?.trim();
@@ -73,10 +78,11 @@ async function installSkillsForTarget(
 
   await fs.mkdir(targetSkillsDir, { recursive: true });
   const entries = await fs.readdir(sourceSkillsDir, { withFileTypes: true });
-  summary.removed = await removeMaintainerOnlySkillSymlinks(
-    targetSkillsDir,
-    entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name),
-  );
+  const allowedSkillNames = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  summary.removed = [
+    ...(await removeMaintainerOnlySkillSymlinks(targetSkillsDir, allowedSkillNames)),
+    ...(await removeLegacyBundledSkillSymlinks(targetSkillsDir, allowedSkillNames)),
+  ];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const source = path.join(sourceSkillsDir, entry.name);
@@ -139,6 +145,26 @@ async function installSkillsForTarget(
   }
 
   return summary;
+}
+
+async function removeLegacyBundledSkillSymlinks(
+  targetSkillsDir: string,
+  allowedSkillNames: string[],
+): Promise<string[]> {
+  const allowed = new Set(allowedSkillNames);
+  const entries = await fs.readdir(targetSkillsDir, { withFileTypes: true }).catch(() => []);
+  const removed: string[] = [];
+
+  for (const entry of entries) {
+    if (!LEGACY_BUNDLED_SKILL_NAMES.has(entry.name) || allowed.has(entry.name)) continue;
+    const target = path.join(targetSkillsDir, entry.name);
+    const existing = await fs.lstat(target).catch(() => null);
+    if (!existing?.isSymbolicLink()) continue;
+    await fs.unlink(target);
+    removed.push(entry.name);
+  }
+
+  return removed;
 }
 
 function buildAgentEnvExports(input: {
@@ -219,14 +245,14 @@ export function registerAgentCommands(program: Command): void {
     agent
       .command("local-cli")
       .description(
-        "Create an agent API key, install local Paperclip skills for Codex/Claude, and print shell exports",
+        "Create an agent API key, install local Papierklammer skills for Codex/Claude, and print shell exports",
       )
       .argument("<agentRef>", "Agent ID or shortname/url-key")
       .requiredOption("-C, --company-id <id>", "Company ID")
       .option("--key-name <name>", "API key label", "local-cli")
       .option(
         "--no-install-skills",
-        "Skip installing Paperclip skills into ~/.codex/skills and ~/.claude/skills",
+        "Skip installing Papierklammer skills into ~/.codex/skills and ~/.claude/skills",
       )
       .action(async (agentRef: string, opts: AgentLocalCliOptions) => {
         try {
@@ -251,7 +277,7 @@ export function registerAgentCommands(program: Command): void {
             const skillsDir = await resolvePaperclipSkillsDir(__moduleDir, [path.resolve(process.cwd(), "skills")]);
             if (!skillsDir) {
               throw new Error(
-                "Could not locate local Paperclip skills directory. Expected ./skills in the repo checkout.",
+                "Could not locate local Papierklammer skills directory. Expected ./skills in the repo checkout.",
               );
             }
 

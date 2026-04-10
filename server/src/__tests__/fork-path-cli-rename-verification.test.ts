@@ -433,5 +433,20 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(availableSkillsApi).toContain("isPapierklammerManaged");
       expect(availableSkillsApi).not.toContain("isPaperclipManaged");
     });
+
+    it("local agent skill round-trip code uses renamed bundled skill keys and installer wording", () => {
+      const serverUtils = readFileSync(join(ROOT, "packages/adapter-utils/src/server-utils.ts"), "utf-8");
+      const companySkills = readFileSync(join(ROOT, "server/src/services/company-skills.ts"), "utf-8");
+      const agentCli = readFileSync(join(ROOT, "cli/src/commands/client/agent.ts"), "utf-8");
+
+      expect(serverUtils).not.toContain("papierklammer/paperclip/");
+      expect(companySkills).not.toContain("papierklammer/paperclip/");
+      expect(agentCli).toContain("install local Papierklammer skills for Codex/Claude");
+      expect(agentCli).not.toContain("install local Paperclip skills for Codex/Claude");
+      expect(agentCli).toContain("Skip installing Papierklammer skills into ~/.codex/skills and ~/.claude/skills");
+      expect(agentCli).not.toContain("Skip installing Paperclip skills into ~/.codex/skills and ~/.claude/skills");
+      expect(agentCli).toContain("Could not locate local Papierklammer skills directory.");
+      expect(agentCli).not.toContain("Could not locate local Paperclip skills directory.");
+    });
   });
 });

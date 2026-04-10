@@ -31,7 +31,7 @@ async function createCustomSkill(root: string, skillName: string) {
 }
 
 describe("codex local adapter skill injection", () => {
-  const paperclipKey = "papierklammer/paperclip/paperclip";
+  const paperclipKey = "papierklammer/papierklammer/papierklammer";
   const cleanupDirs = new Set<string>();
 
   afterEach(async () => {
@@ -47,9 +47,9 @@ describe("codex local adapter skill injection", () => {
     cleanupDirs.add(oldRepo);
     cleanupDirs.add(skillsHome);
 
-    await createPaperclipRepoSkill(currentRepo, "paperclip");
-    await createPaperclipRepoSkill(oldRepo, "paperclip");
-    await fs.symlink(path.join(oldRepo, "skills", "paperclip"), path.join(skillsHome, "paperclip"));
+    await createPaperclipRepoSkill(currentRepo, "papierklammer");
+    await createPaperclipRepoSkill(oldRepo, "papierklammer");
+    await fs.symlink(path.join(oldRepo, "skills", "papierklammer"), path.join(skillsHome, "papierklammer"));
 
     const logs: Array<{ stream: "stdout" | "stderr"; chunk: string }> = [];
     await ensureCodexSkillsInjected(
@@ -60,19 +60,19 @@ describe("codex local adapter skill injection", () => {
         skillsHome,
         skillsEntries: [{
           key: paperclipKey,
-          runtimeName: "paperclip",
-          source: path.join(currentRepo, "skills", "paperclip"),
+          runtimeName: "papierklammer",
+          source: path.join(currentRepo, "skills", "papierklammer"),
         }],
       },
     );
 
-    expect(await fs.realpath(path.join(skillsHome, "paperclip"))).toBe(
-      await fs.realpath(path.join(currentRepo, "skills", "paperclip")),
+    expect(await fs.realpath(path.join(skillsHome, "papierklammer"))).toBe(
+      await fs.realpath(path.join(currentRepo, "skills", "papierklammer")),
     );
     expect(logs).toContainEqual(
       expect.objectContaining({
         stream: "stdout",
-        chunk: expect.stringContaining('Repaired Codex skill "paperclip"'),
+        chunk: expect.stringContaining('Repaired Codex skill "papierklammer"'),
       }),
     );
   });
@@ -85,21 +85,21 @@ describe("codex local adapter skill injection", () => {
     cleanupDirs.add(customRoot);
     cleanupDirs.add(skillsHome);
 
-    await createPaperclipRepoSkill(currentRepo, "paperclip");
-    await createCustomSkill(customRoot, "paperclip");
-    await fs.symlink(path.join(customRoot, "custom", "paperclip"), path.join(skillsHome, "paperclip"));
+    await createPaperclipRepoSkill(currentRepo, "papierklammer");
+    await createCustomSkill(customRoot, "papierklammer");
+    await fs.symlink(path.join(customRoot, "custom", "papierklammer"), path.join(skillsHome, "papierklammer"));
 
     await ensureCodexSkillsInjected(async () => {}, {
       skillsHome,
       skillsEntries: [{
         key: paperclipKey,
-        runtimeName: "paperclip",
-        source: path.join(currentRepo, "skills", "paperclip"),
+        runtimeName: "papierklammer",
+        source: path.join(currentRepo, "skills", "papierklammer"),
       }],
     });
 
-    expect(await fs.realpath(path.join(skillsHome, "paperclip"))).toBe(
-      await fs.realpath(path.join(customRoot, "custom", "paperclip")),
+    expect(await fs.realpath(path.join(skillsHome, "papierklammer"))).toBe(
+      await fs.realpath(path.join(customRoot, "custom", "papierklammer")),
     );
   });
 
@@ -111,7 +111,7 @@ describe("codex local adapter skill injection", () => {
     cleanupDirs.add(oldRepo);
     cleanupDirs.add(skillsHome);
 
-    await createPaperclipRepoSkill(currentRepo, "paperclip");
+    await createPaperclipRepoSkill(currentRepo, "papierklammer");
     await createPaperclipRepoSkill(oldRepo, "agent-browser");
     const staleTarget = path.join(oldRepo, "skills", "agent-browser");
     await fs.symlink(staleTarget, path.join(skillsHome, "agent-browser"));
@@ -126,8 +126,8 @@ describe("codex local adapter skill injection", () => {
         skillsHome,
         skillsEntries: [{
           key: paperclipKey,
-          runtimeName: "paperclip",
-          source: path.join(currentRepo, "skills", "paperclip"),
+          runtimeName: "papierklammer",
+          source: path.join(currentRepo, "skills", "papierklammer"),
         }],
       },
     );
@@ -149,7 +149,7 @@ describe("codex local adapter skill injection", () => {
     cleanupDirs.add(currentRepo);
     cleanupDirs.add(skillsHome);
 
-    await createPaperclipRepoSkill(currentRepo, "paperclip");
+    await createPaperclipRepoSkill(currentRepo, "papierklammer");
     await createPaperclipRepoSkill(currentRepo, "agent-browser");
     await fs.symlink(
       path.join(currentRepo, "skills", "agent-browser"),
@@ -160,12 +160,12 @@ describe("codex local adapter skill injection", () => {
       skillsHome,
       skillsEntries: [{
         key: paperclipKey,
-        runtimeName: "paperclip",
-        source: path.join(currentRepo, "skills", "paperclip"),
+        runtimeName: "papierklammer",
+        source: path.join(currentRepo, "skills", "papierklammer"),
       }],
     });
 
-    expect((await fs.lstat(path.join(skillsHome, "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(skillsHome, "papierklammer"))).isSymbolicLink()).toBe(true);
     expect((await fs.lstat(path.join(skillsHome, "agent-browser"))).isSymbolicLink()).toBe(true);
     expect(await fs.realpath(path.join(skillsHome, "agent-browser"))).toBe(
       await fs.realpath(path.join(currentRepo, "skills", "agent-browser")),

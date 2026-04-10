@@ -406,7 +406,7 @@ export async function listPaperclipSkillEntries(
     return entries
       .filter((entry) => entry.isDirectory())
       .map((entry) => ({
-        key: `papierklammer/paperclip/${entry.name}`,
+        key: `papierklammer/papierklammer/${entry.name}`,
         runtimeName: entry.name,
         source: path.join(root, entry.name),
         required: true,
@@ -416,6 +416,12 @@ export async function listPaperclipSkillEntries(
     return [];
   }
 }
+
+const LEGACY_BUNDLED_SKILL_REFERENCE_RENAMES: Record<string, string> = {
+  paperclip: "papierklammer",
+  "paperclip-create-agent": "papierklammer-create-agent",
+  "paperclip-create-plugin": "papierklammer-create-plugin",
+};
 
 export async function readInstalledSkillTargets(skillsHome: string): Promise<Map<string, InstalledSkillTarget>> {
   const entries = await fs.readdir(skillsHome, { withFileTypes: true }).catch(() => []);
@@ -607,7 +613,10 @@ function canonicalizeDesiredPaperclipSkillReference(
   reference: string,
   availableEntries: Array<{ key: string; runtimeName?: string | null }>,
 ): string {
-  const normalizedReference = reference.trim().toLowerCase();
+  const rawReference = reference.trim().toLowerCase();
+  if (!rawReference) return "";
+
+  const normalizedReference = LEGACY_BUNDLED_SKILL_REFERENCE_RENAMES[rawReference] ?? rawReference;
   if (!normalizedReference) return "";
 
   const exactKey = availableEntries.find((entry) => entry.key.trim().toLowerCase() === normalizedReference);

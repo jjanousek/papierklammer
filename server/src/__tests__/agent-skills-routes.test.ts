@@ -261,9 +261,9 @@ describe("agent skill routes", () => {
     mockSecretService.resolveAdapterConfigForRuntime.mockResolvedValue({ config: { env: {} } });
     mockCompanySkillService.listRuntimeSkillEntries.mockResolvedValue([
       {
-        key: "papierklammer/paperclip/paperclip",
-        runtimeName: "paperclip",
-        source: "/tmp/paperclip",
+        key: "papierklammer/papierklammer/papierklammer",
+        runtimeName: "papierklammer",
+        source: "/tmp/papierklammer",
         required: true,
         requiredReason: "required",
       },
@@ -272,7 +272,7 @@ describe("agent skill routes", () => {
       async (_companyId: string, requested: string[]) =>
         requested.map((value) =>
           value === "paperclip"
-            ? "papierklammer/paperclip/paperclip"
+            ? "papierklammer/papierklammer/papierklammer"
             : value,
         ),
     );
@@ -280,7 +280,7 @@ describe("agent skill routes", () => {
       adapterType: "claude_local",
       supported: true,
       mode: "ephemeral",
-      desiredSkills: ["papierklammer/paperclip/paperclip"],
+      desiredSkills: ["papierklammer/papierklammer/papierklammer"],
       entries: [],
       warnings: [],
     });
@@ -288,7 +288,7 @@ describe("agent skill routes", () => {
       adapterType: "claude_local",
       supported: true,
       mode: "ephemeral",
-      desiredSkills: ["papierklammer/paperclip/paperclip"],
+      desiredSkills: ["papierklammer/papierklammer/papierklammer"],
       entries: [],
       warnings: [],
     });
@@ -363,7 +363,7 @@ describe("agent skill routes", () => {
       adapterType: "codex_local",
       supported: true,
       mode: "persistent",
-      desiredSkills: ["papierklammer/paperclip/paperclip"],
+      desiredSkills: ["papierklammer/papierklammer/papierklammer"],
       entries: [],
       warnings: [],
     });
@@ -389,7 +389,7 @@ describe("agent skill routes", () => {
       path: "/agents/:id/skills/sync",
       params: { id: "11111111-1111-4111-8111-111111111111" },
       query: { companyId: "company-1" },
-      body: { desiredSkills: ["papierklammer/paperclip/paperclip"] },
+      body: { desiredSkills: ["papierklammer/papierklammer/papierklammer"] },
     });
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);

@@ -12,7 +12,7 @@ async function makeTempDir(prefix: string): Promise<string> {
 }
 
 describe("opencode local skill sync", () => {
-  const paperclipKey = "papierklammer/paperclip/paperclip";
+  const paperclipKey = "papierklammer/papierklammer/papierklammer";
   const cleanupDirs = new Set<string>();
 
   afterEach(async () => {
@@ -47,7 +47,7 @@ describe("opencode local skill sync", () => {
 
     const after = await syncOpenCodeSkills(ctx, [paperclipKey]);
     expect(after.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("installed");
-    expect((await fs.lstat(path.join(home, ".claude", "skills", "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(home, ".claude", "skills", "papierklammer"))).isSymbolicLink()).toBe(true);
   });
 
   it("keeps required bundled Paperclip skills installed even when the desired set is emptied", async () => {
@@ -85,6 +85,6 @@ describe("opencode local skill sync", () => {
     const after = await syncOpenCodeSkills(clearedCtx, []);
     expect(after.desiredSkills).toContain(paperclipKey);
     expect(after.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("installed");
-    expect((await fs.lstat(path.join(home, ".claude", "skills", "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(home, ".claude", "skills", "papierklammer"))).isSymbolicLink()).toBe(true);
   });
 });

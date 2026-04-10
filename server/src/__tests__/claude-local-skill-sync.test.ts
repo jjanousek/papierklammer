@@ -19,8 +19,8 @@ async function createSkillDir(root: string, name: string) {
 }
 
 describe("claude local skill sync", () => {
-  const paperclipKey = "papierklammer/paperclip/paperclip";
-  const createAgentKey = "papierklammer/paperclip/paperclip-create-agent";
+  const paperclipKey = "papierklammer/papierklammer/papierklammer";
+  const createAgentKey = "papierklammer/papierklammer/papierklammer-create-agent";
   const cleanupDirs = new Set<string>();
 
   afterEach(async () => {
@@ -61,11 +61,17 @@ describe("claude local skill sync", () => {
   });
 
   it("normalizes legacy flat Paperclip skill refs to canonical keys", async () => {
+    const home = await makeTempDir("paperclip-claude-legacy-skill-sync-");
+    cleanupDirs.add(home);
+
     const snapshot = await listClaudeSkills({
       agentId: "agent-3",
       companyId: "company-1",
       adapterType: "claude_local",
       config: {
+        env: {
+          HOME: home,
+        },
         paperclipSkillSync: {
           desiredSkills: ["paperclip"],
         },
@@ -104,7 +110,7 @@ describe("claude local skill sync", () => {
       originLabel: "User-installed",
       locationLabel: "~/.claude/skills",
       readOnly: true,
-      detail: "Installed outside Paperclip management in the Claude skills home.",
+      detail: "Installed outside Papierklammer management in the Claude skills home.",
     }));
   });
 });

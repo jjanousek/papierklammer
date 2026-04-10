@@ -12,7 +12,7 @@ async function makeTempDir(prefix: string): Promise<string> {
 }
 
 describe("gemini local skill sync", () => {
-  const paperclipKey = "papierklammer/paperclip/paperclip";
+  const paperclipKey = "papierklammer/papierklammer/papierklammer";
   const cleanupDirs = new Set<string>();
 
   afterEach(async () => {
@@ -46,7 +46,7 @@ describe("gemini local skill sync", () => {
 
     const after = await syncGeminiSkills(ctx, [paperclipKey]);
     expect(after.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("installed");
-    expect((await fs.lstat(path.join(home, ".gemini", "skills", "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(home, ".gemini", "skills", "papierklammer"))).isSymbolicLink()).toBe(true);
   });
 
   it("keeps required bundled Paperclip skills installed even when the desired set is emptied", async () => {
@@ -84,6 +84,6 @@ describe("gemini local skill sync", () => {
     const after = await syncGeminiSkills(clearedCtx, []);
     expect(after.desiredSkills).toContain(paperclipKey);
     expect(after.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("installed");
-    expect((await fs.lstat(path.join(home, ".gemini", "skills", "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(home, ".gemini", "skills", "papierklammer"))).isSymbolicLink()).toBe(true);
   });
 });

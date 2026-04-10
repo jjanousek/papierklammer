@@ -19,7 +19,7 @@ async function createSkillDir(root: string, name: string) {
 }
 
 describe("cursor local skill sync", () => {
-  const paperclipKey = "papierklammer/paperclip/paperclip";
+  const paperclipKey = "papierklammer/papierklammer/papierklammer";
   const cleanupDirs = new Set<string>();
 
   afterEach(async () => {
@@ -53,7 +53,7 @@ describe("cursor local skill sync", () => {
 
     const after = await syncCursorSkills(ctx, [paperclipKey]);
     expect(after.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("installed");
-    expect((await fs.lstat(path.join(home, ".cursor", "skills", "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(home, ".cursor", "skills", "papierklammer"))).isSymbolicLink()).toBe(true);
   });
 
   it("recognizes company-library runtime skills supplied outside the bundled Paperclip directory", async () => {
@@ -62,7 +62,7 @@ describe("cursor local skill sync", () => {
     cleanupDirs.add(home);
     cleanupDirs.add(runtimeSkills);
 
-    const paperclipDir = await createSkillDir(runtimeSkills, "paperclip");
+    const paperclipDir = await createSkillDir(runtimeSkills, "papierklammer");
     const asciiHeartDir = await createSkillDir(runtimeSkills, "ascii-heart");
 
     const ctx = {
@@ -75,8 +75,8 @@ describe("cursor local skill sync", () => {
         },
         paperclipRuntimeSkills: [
           {
-            key: "paperclip",
-            runtimeName: "paperclip",
+            key: "papierklammer/papierklammer/papierklammer",
+            runtimeName: "papierklammer",
             source: paperclipDir,
             required: true,
             requiredReason: "Bundled Paperclip skills are always available for local adapters.",
@@ -95,7 +95,7 @@ describe("cursor local skill sync", () => {
 
     const before = await listCursorSkills(ctx);
     expect(before.warnings).toEqual([]);
-    expect(before.desiredSkills).toEqual(["paperclip", "ascii-heart"]);
+    expect(before.desiredSkills).toEqual(["papierklammer/papierklammer/papierklammer", "ascii-heart"]);
     expect(before.entries.find((entry) => entry.key === "ascii-heart")?.state).toBe("missing");
 
     const after = await syncCursorSkills(ctx, ["ascii-heart"]);
@@ -139,6 +139,6 @@ describe("cursor local skill sync", () => {
     const after = await syncCursorSkills(clearedCtx, []);
     expect(after.desiredSkills).toContain(paperclipKey);
     expect(after.entries.find((entry) => entry.key === paperclipKey)?.state).toBe("installed");
-    expect((await fs.lstat(path.join(home, ".cursor", "skills", "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(home, ".cursor", "skills", "papierklammer"))).isSymbolicLink()).toBe(true);
   });
 });

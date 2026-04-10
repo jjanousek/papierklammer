@@ -25,14 +25,14 @@ describe("paperclip skill utils", () => {
 
     const moduleDir = path.join(root, "a", "b", "c", "d", "e");
     await fs.mkdir(moduleDir, { recursive: true });
-    await fs.mkdir(path.join(root, "skills", "paperclip"), { recursive: true });
+    await fs.mkdir(path.join(root, "skills", "papierklammer"), { recursive: true });
     await fs.mkdir(path.join(root, ".agents", "skills", "release"), { recursive: true });
 
     const entries = await listPaperclipSkillEntries(moduleDir);
 
-    expect(entries.map((entry) => entry.key)).toEqual(["papierklammer/paperclip/paperclip"]);
-    expect(entries.map((entry) => entry.runtimeName)).toEqual(["paperclip"]);
-    expect(entries[0]?.source).toBe(path.join(root, "skills", "paperclip"));
+    expect(entries.map((entry) => entry.key)).toEqual(["papierklammer/papierklammer/papierklammer"]);
+    expect(entries.map((entry) => entry.runtimeName)).toEqual(["papierklammer"]);
+    expect(entries[0]?.source).toBe(path.join(root, "skills", "papierklammer"));
   });
 
   it("removes stale maintainer-only symlinks from a shared skills home", async () => {
@@ -40,7 +40,7 @@ describe("paperclip skill utils", () => {
     cleanupDirs.add(root);
 
     const skillsHome = path.join(root, "skills-home");
-    const runtimeSkill = path.join(root, "skills", "paperclip");
+    const runtimeSkill = path.join(root, "skills", "papierklammer");
     const customSkill = path.join(root, "custom", "release-notes");
     const staleMaintainerSkill = path.join(root, ".agents", "skills", "release");
 
@@ -48,15 +48,15 @@ describe("paperclip skill utils", () => {
     await fs.mkdir(runtimeSkill, { recursive: true });
     await fs.mkdir(customSkill, { recursive: true });
 
-    await fs.symlink(runtimeSkill, path.join(skillsHome, "paperclip"));
+    await fs.symlink(runtimeSkill, path.join(skillsHome, "papierklammer"));
     await fs.symlink(customSkill, path.join(skillsHome, "release-notes"));
     await fs.symlink(staleMaintainerSkill, path.join(skillsHome, "release"));
 
-    const removed = await removeMaintainerOnlySkillSymlinks(skillsHome, ["paperclip"]);
+    const removed = await removeMaintainerOnlySkillSymlinks(skillsHome, ["papierklammer"]);
 
     expect(removed).toEqual(["release"]);
     await expect(fs.lstat(path.join(skillsHome, "release"))).rejects.toThrow();
-    expect((await fs.lstat(path.join(skillsHome, "paperclip"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(skillsHome, "papierklammer"))).isSymbolicLink()).toBe(true);
     expect((await fs.lstat(path.join(skillsHome, "release-notes"))).isSymbolicLink()).toBe(true);
   });
 });
