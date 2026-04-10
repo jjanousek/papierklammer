@@ -18,6 +18,7 @@ describe("resolveCommandContext", () => {
     delete process.env.PAPIERKLAMMER_API_URL;
     delete process.env.PAPIERKLAMMER_API_KEY;
     delete process.env.PAPIERKLAMMER_COMPANY_ID;
+    delete process.env.PAPIERKLAMMER_RUN_ID;
   });
 
   afterEach(() => {
@@ -78,6 +79,16 @@ describe("resolveCommandContext", () => {
     expect(resolved.api.apiBase).toBe("http://override:3200");
     expect(resolved.companyId).toBe("company-override");
     expect(resolved.api.apiKey).toBe("direct-token");
+  });
+
+  it("forwards the current Papierklammer run id from env into the API client", () => {
+    process.env.PAPIERKLAMMER_RUN_ID = "run-from-env";
+
+    const resolved = resolveCommandContext({
+      apiBase: "http://localhost:3100",
+    });
+
+    expect(resolved.api.runId).toBe("run-from-env");
   });
 
   it("throws when company is required but unresolved", () => {

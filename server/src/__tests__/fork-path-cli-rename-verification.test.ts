@@ -300,12 +300,15 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
     it("runtime session and run header namespace is renamed", () => {
       const appTs = readFileSync(join(ROOT, "server/src/app.ts"), "utf-8");
       const clientHttp = readFileSync(join(ROOT, "cli/src/client/http.ts"), "utf-8");
+      const clientCommon = readFileSync(join(ROOT, "cli/src/commands/client/common.ts"), "utf-8");
       const authMiddleware = readFileSync(join(ROOT, "server/src/middleware/auth.ts"), "utf-8");
 
       expect(appTs).toContain("papierklammer:${req.actor.source}:${req.actor.userId}");
       expect(appTs).not.toContain("paperclip:${req.actor.source}:${req.actor.userId}");
       expect(clientHttp).toContain('headers["x-papierklammer-run-id"] = this.runId;');
       expect(clientHttp).not.toContain('headers["x-paperclip-run-id"] = this.runId;');
+      expect(clientCommon).toContain("const runId = process.env.PAPIERKLAMMER_RUN_ID?.trim() || undefined;");
+      expect(clientCommon).toContain("runId,");
       expect(authMiddleware).toContain('req.header("x-papierklammer-run-id")');
       expect(authMiddleware).not.toContain('req.header("x-paperclip-run-id")');
     });
@@ -441,6 +444,19 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(devService).not.toContain("No Paperclip dev services registered for this repo.");
       expect(ensureWorkspaceLinks).toContain("[papierklammer] detected stale workspace package links for server; relinking dependencies...");
       expect(ensureWorkspaceLinks).not.toContain("[paperclip] detected stale workspace package links for server; relinking dependencies...");
+    });
+
+    it("active clean-onboard scripts use renamed operator-facing entrypoints and labels", () => {
+      const cleanOnboardGit = readFileSync(join(ROOT, "scripts/clean-onboard-git.sh"), "utf-8");
+      const cleanOnboardNpm = readFileSync(join(ROOT, "scripts/clean-onboard-npm.sh"), "utf-8");
+      const cleanOnboardRef = readFileSync(join(ROOT, "scripts/clean-onboard-ref.sh"), "utf-8");
+
+      expect(cleanOnboardGit).toContain("https://github.com/papierklammer/papierklammer.git");
+      expect(cleanOnboardGit).not.toContain("https://github.com/paperclipai/paperclip.git");
+      expect(cleanOnboardNpm).toContain("npx --yes papierklammer onboard --yes --data-dir");
+      expect(cleanOnboardNpm).not.toContain("npx --yes paperclipai onboard --yes --data-dir");
+      expect(cleanOnboardRef).toContain("Papierklammer data dir to use");
+      expect(cleanOnboardRef).not.toContain("Paperclip data dir to use");
     });
 
     it("OpenClaw onboarding and helper surfaces use renamed Papierklammer contract", () => {

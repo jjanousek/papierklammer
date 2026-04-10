@@ -61,6 +61,7 @@ export function resolveCommandContext(
     readKeyFromProfileEnv(profile);
   const storedBoardCredential = explicitApiKey ? null : getStoredBoardCredential(apiBase);
   const apiKey = explicitApiKey || storedBoardCredential?.token;
+  const runId = process.env.PAPIERKLAMMER_RUN_ID?.trim() || undefined;
 
   const companyId =
     options.companyId?.trim() ||
@@ -76,6 +77,7 @@ export function resolveCommandContext(
   const api = new PaperclipApiClient({
     apiBase,
     apiKey,
+    runId,
     recoverAuth: explicitApiKey || !canAttemptInteractiveBoardAuth()
       ? undefined
       : async ({ error }) => {
