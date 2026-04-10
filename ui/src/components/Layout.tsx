@@ -393,7 +393,7 @@ export function Layout() {
             <div className="border-t border-r border-border px-3 py-2 bg-background">
               <div className="flex items-center gap-1">
                 <a
-                  href="https://github.com/papierklammer/paperclip#readme"
+                  href="https://github.com/papierklammer/papierklammer#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-foreground/80 hover:opacity-80 hover:text-foreground flex-1 min-w-0"
@@ -441,7 +441,7 @@ export function Layout() {
             <div className="border-t border-r border-border px-3 py-2">
               <div className="flex items-center gap-1">
                 <a
-                  href="https://github.com/papierklammer/paperclip#readme"
+                  href="https://github.com/papierklammer/papierklammer#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-foreground/80 hover:opacity-80 hover:text-foreground flex-1 min-w-0"

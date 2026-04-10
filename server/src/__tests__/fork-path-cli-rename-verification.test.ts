@@ -252,7 +252,8 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(dashboardPage).toContain("Welcome to Papierklammer.");
       expect(dashboardPage).not.toContain("Welcome to Paperclip.");
       expect(layout).not.toContain("https://docs.paperclip.ing/");
-      expect(layout).toContain("github.com/papierklammer/paperclip");
+      expect(layout).toContain("https://github.com/papierklammer/papierklammer#readme");
+      expect(layout).not.toContain("https://github.com/papierklammer/paperclip#readme");
     });
 
     it("browser persistence keys hard-cut to papierklammer names", () => {
@@ -312,12 +313,39 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
     it("generated runtime text and svg assets are renamed", () => {
       const llmRoutes = readFileSync(join(ROOT, "server/src/routes/llms.ts"), "utf-8");
       const orgChartSvg = readFileSync(join(ROOT, "server/src/routes/org-chart-svg.ts"), "utf-8");
+      const geminiAdapter = readFileSync(
+        join(ROOT, "packages/adapters/gemini-local/src/index.ts"),
+        "utf-8",
+      );
+      const openclawGatewayAdapter = readFileSync(
+        join(ROOT, "packages/adapters/openclaw-gateway/src/index.ts"),
+        "utf-8",
+      );
 
       expect(llmRoutes).toContain("# Papierklammer Agent Configuration Index");
       expect(llmRoutes).toContain("# Papierklammer Agent Icon Names");
       expect(llmRoutes).not.toContain("# Paperclip Agent Configuration Index");
       expect(orgChartSvg).toContain("Papierklammer");
       expect(orgChartSvg).not.toContain(">Paperclip</text>");
+      expect(geminiAdapter).toContain("You want Papierklammer to run the Gemini CLI locally on the host machine");
+      expect(geminiAdapter).toContain("Papierklammer auto-injects local skills");
+      expect(geminiAdapter).not.toContain("You want Paperclip to run the Gemini CLI locally on the host machine");
+      expect(geminiAdapter).not.toContain("Paperclip auto-injects local skills");
+      expect(openclawGatewayAdapter).toContain("You want Papierklammer to invoke OpenClaw over the Gateway WebSocket protocol.");
+      expect(openclawGatewayAdapter).toContain("Papierklammer base URL advertised in wake text");
+      expect(openclawGatewayAdapter).toContain("fixed session key when strategy=fixed (default papierklammer)");
+      expect(openclawGatewayAdapter).toContain("standardized Papierklammer context added to every gateway agent request");
+      expect(openclawGatewayAdapter).not.toContain("You want Paperclip to invoke OpenClaw over the Gateway WebSocket protocol.");
+      expect(openclawGatewayAdapter).not.toContain("absolute Paperclip base URL advertised in wake text");
+      expect(openclawGatewayAdapter).not.toContain("fixed session key when strategy=fixed (default paperclip)");
+      expect(openclawGatewayAdapter).not.toContain("standardized Paperclip context added to every gateway agent request");
+    });
+
+    it("doctor help text is renamed", () => {
+      const cliIndex = readFileSync(join(ROOT, "cli/src/index.ts"), "utf-8");
+
+      expect(cliIndex).toContain('description("Run diagnostic checks on your Papierklammer setup")');
+      expect(cliIndex).not.toContain('description("Run diagnostic checks on your Paperclip setup")');
     });
   });
 });
