@@ -47,7 +47,7 @@ PY
 
 pnpm dev:stop >/dev/null 2>&1 || true
 
-REPO_NODE_COUNT="$(ps -Ao pid,args | grep '[n]ode' | grep '/Users/aischool/work/papierklammer_droid' | wc -l | tr -d ' ')"
+REPO_NODE_COUNT="$( (ps -Ao pid,args | grep '[n]ode' | grep '/Users/aischool/work/papierklammer_droid' | wc -l | tr -d ' ') || true )"
 echo "Observed repo-owned Node process count after cleanup: ${REPO_NODE_COUNT}"
 
 if [ "${REPO_NODE_COUNT}" -gt 4 ]; then
