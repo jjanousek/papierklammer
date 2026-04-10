@@ -1,0 +1,24 @@
+{
+  "milestone": "runtime-contracts",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 3,
+    "passed": 2,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-RUNTIME-002",
+    "VAL-RUNTIME-005"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-RUNTIME-006",
+      "reason": "GET /llms/agent-configuration/openclaw_gateway.txt still exposes legacy lowercase paperclip fields/defaults (`paperclipApiUrl`, `paperclip`, `paperclip.workspace`, `paperclip.workspaces`, `paperclip.workspaceRuntime`)."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}

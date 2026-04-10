@@ -1,0 +1,49 @@
+{
+  "groupId": "runtime-cli-api-rerun",
+  "testedAt": "2026-04-10T05:59:03Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "api",
+    "assignedAssertions": [
+      "VAL-RUNTIME-006"
+    ],
+    "evidenceDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/runtime-contracts/runtime-cli-api-rerun"
+  },
+  "toolsUsed": [
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-RUNTIME-006",
+      "title": "Generated runtime text and asset surfaces are renamed",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `curl -sS -D - \"http://127.0.0.1:3100/llms/agent-configuration.txt\"`",
+          "expected": "The minimal related generated text route returns 200 and uses renamed `Papierklammer` wording only.",
+          "observed": "Route returned `HTTP/1.1 200 OK`; the heading was `# Papierklammer Agent Configuration Index`, and a token scan found no `paperclip` or `Paperclip` matches."
+        },
+        {
+          "action": "Run `curl -sS -D - \"http://127.0.0.1:3100/llms/agent-configuration/openclaw_gateway.txt\"`",
+          "expected": "The previously failing OpenClaw gateway generated text route returns 200 and does not emit legacy `paperclip`/`Paperclip` branding.",
+          "observed": "Route returned `HTTP/1.1 200 OK`; the body used renamed tokens such as `Papierklammer`, `papierklammerApiUrl`, `papierklammer.workspace`, `papierklammer.workspaces`, and `papierklammer.workspaceRuntime`, and a scan found no `paperclip` or `Paperclip` matches."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "runtime-contracts/runtime-cli-api-rerun/VAL-RUNTIME-006-agent-configuration-index.txt",
+          "runtime-contracts/runtime-cli-api-rerun/VAL-RUNTIME-006-openclaw-gateway.txt",
+          "runtime-contracts/runtime-cli-api-rerun/VAL-RUNTIME-006-summary.json"
+        ],
+        "network": "GET /llms/agent-configuration.txt -> 200; GET /llms/agent-configuration/openclaw_gateway.txt -> 200",
+        "legacyTokenCheck": "Scanned the captured route bodies for `paperclip` and `Paperclip`; no matches remained. The OpenClaw route now exposes the renamed `papierklammer*` fields only."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Retested VAL-RUNTIME-006 via curl. Both the index route and `/llms/agent-configuration/openclaw_gateway.txt` returned 200, and the previously failing OpenClaw generated text no longer exposes legacy `paperclip`/`Paperclip` branding."
+}
