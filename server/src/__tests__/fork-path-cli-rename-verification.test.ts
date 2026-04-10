@@ -223,4 +223,101 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(sw).not.toContain("paperclip-v");
     });
   });
+
+  describe("runtime web/api branding uses Papierklammer", () => {
+    it("root shell runtime branding keys use papierklammer names", () => {
+      const indexHtml = readFileSync(join(ROOT, "ui/index.html"), "utf-8");
+      const uiBranding = readFileSync(join(ROOT, "server/src/ui-branding.ts"), "utf-8");
+      const worktreeBranding = readFileSync(join(ROOT, "ui/src/lib/worktree-branding.ts"), "utf-8");
+
+      expect(indexHtml).toContain('const key = "papierklammer-theme"');
+      expect(indexHtml).not.toContain('const key = "paperclip.theme"');
+
+      expect(uiBranding).toContain('name="papierklammer-worktree-name"');
+      expect(uiBranding).not.toContain('name="paperclip-worktree-name"');
+      expect(worktreeBranding).toContain('readMetaContent("papierklammer-worktree-name")');
+      expect(worktreeBranding).not.toContain('readMetaContent("paperclip-worktree-name")');
+    });
+
+    it("auth, cli approval, dashboard, and operator chrome copy is renamed", () => {
+      const authPage = readFileSync(join(ROOT, "ui/src/pages/Auth.tsx"), "utf-8");
+      const cliAuthPage = readFileSync(join(ROOT, "ui/src/pages/CliAuth.tsx"), "utf-8");
+      const dashboardPage = readFileSync(join(ROOT, "ui/src/pages/Dashboard.tsx"), "utf-8");
+      const layout = readFileSync(join(ROOT, "ui/src/components/Layout.tsx"), "utf-8");
+
+      expect(authPage).toContain("Papierklammer");
+      expect(authPage).not.toContain("Sign in to Paperclip");
+      expect(cliAuthPage).toContain("Approve Papierklammer CLI access");
+      expect(cliAuthPage).not.toContain("Approve Paperclip CLI access");
+      expect(dashboardPage).toContain("Welcome to Papierklammer.");
+      expect(dashboardPage).not.toContain("Welcome to Paperclip.");
+      expect(layout).not.toContain("https://docs.paperclip.ing/");
+      expect(layout).toContain("github.com/papierklammer/paperclip");
+    });
+
+    it("browser persistence keys hard-cut to papierklammer names", () => {
+      const files = [
+        "ui/src/context/CompanyContext.tsx",
+        "ui/src/context/PanelContext.tsx",
+        "ui/src/hooks/useCompanyPageMemory.ts",
+        "ui/src/lib/inbox.ts",
+        "ui/src/hooks/useInboxBadge.ts",
+        "ui/src/lib/project-order.ts",
+        "ui/src/lib/agent-order.ts",
+        "ui/src/lib/recent-assignees.ts",
+        "ui/src/components/CompanyRail.tsx",
+        "ui/src/pages/Issues.tsx",
+        "ui/src/pages/ProjectDetail.tsx",
+        "ui/src/pages/IssueDetail.tsx",
+        "ui/src/components/NewIssueDialog.tsx",
+        "ui/src/components/IssueDocumentsSection.tsx",
+      ];
+
+      const content = files.map((file) => readFileSync(join(ROOT, file), "utf-8")).join("\n");
+
+      expect(content).toContain("papierklammer.selectedCompanyId");
+      expect(content).toContain("papierklammer:panel-visible");
+      expect(content).toContain("papierklammer.companyPaths");
+      expect(content).toContain("papierklammer:inbox:dismissed");
+      expect(content).toContain("papierklammer.companyOrder");
+      expect(content).toContain("papierklammer:issues-view");
+      expect(content).toContain("papierklammer:project-tab:");
+      expect(content).toContain("papierklammer:issue-draft");
+      expect(content).toContain("papierklammer:issue-document-folds:");
+
+      expect(content).not.toContain("paperclip.selectedCompanyId");
+      expect(content).not.toContain("paperclip:panel-visible");
+      expect(content).not.toContain("paperclip.companyPaths");
+      expect(content).not.toContain("paperclip:inbox:dismissed");
+      expect(content).not.toContain("paperclip.companyOrder");
+      expect(content).not.toContain("paperclip:issues-view");
+      expect(content).not.toContain("paperclip:project-tab:");
+      expect(content).not.toContain("paperclip:issue-draft");
+      expect(content).not.toContain("paperclip:issue-document-folds:");
+    });
+
+    it("runtime session and run header namespace is renamed", () => {
+      const appTs = readFileSync(join(ROOT, "server/src/app.ts"), "utf-8");
+      const clientHttp = readFileSync(join(ROOT, "cli/src/client/http.ts"), "utf-8");
+      const authMiddleware = readFileSync(join(ROOT, "server/src/middleware/auth.ts"), "utf-8");
+
+      expect(appTs).toContain("papierklammer:${req.actor.source}:${req.actor.userId}");
+      expect(appTs).not.toContain("paperclip:${req.actor.source}:${req.actor.userId}");
+      expect(clientHttp).toContain('headers["x-papierklammer-run-id"] = this.runId;');
+      expect(clientHttp).not.toContain('headers["x-paperclip-run-id"] = this.runId;');
+      expect(authMiddleware).toContain('req.header("x-papierklammer-run-id")');
+      expect(authMiddleware).not.toContain('req.header("x-paperclip-run-id")');
+    });
+
+    it("generated runtime text and svg assets are renamed", () => {
+      const llmRoutes = readFileSync(join(ROOT, "server/src/routes/llms.ts"), "utf-8");
+      const orgChartSvg = readFileSync(join(ROOT, "server/src/routes/org-chart-svg.ts"), "utf-8");
+
+      expect(llmRoutes).toContain("# Papierklammer Agent Configuration Index");
+      expect(llmRoutes).toContain("# Papierklammer Agent Icon Names");
+      expect(llmRoutes).not.toContain("# Paperclip Agent Configuration Index");
+      expect(orgChartSvg).toContain("Papierklammer");
+      expect(orgChartSvg).not.toContain(">Paperclip</text>");
+    });
+  });
 });

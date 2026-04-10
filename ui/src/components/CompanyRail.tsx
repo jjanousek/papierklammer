@@ -31,7 +31,7 @@ import {
 import type { Company } from "@papierklammer/shared";
 import { CompanyPatternIcon } from "./CompanyPatternIcon";
 
-const ORDER_STORAGE_KEY = "paperclip.companyOrder";
+const ORDER_STORAGE_KEY = "papierklammer.companyOrder";
 
 function getStoredOrder(): string[] {
   try {

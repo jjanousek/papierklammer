@@ -24,8 +24,8 @@ type EnvVarRow = {
 };
 
 const DEFAULT_AGENT_JWT_TTL_SECONDS = "172800";
-const DEFAULT_AGENT_JWT_ISSUER = "paperclip";
-const DEFAULT_AGENT_JWT_AUDIENCE = "paperclip-api";
+const DEFAULT_AGENT_JWT_ISSUER = "papierklammer";
+const DEFAULT_AGENT_JWT_AUDIENCE = "papierklammer-api";
 const DEFAULT_HEARTBEAT_SCHEDULER_INTERVAL_MS = "30000";
 const DEFAULT_SECRETS_PROVIDER = "local_encrypted";
 const DEFAULT_STORAGE_PROVIDER = "local_disk";
@@ -37,7 +37,7 @@ function defaultStorageBaseDir(): string {
 }
 
 export async function envCommand(opts: { config?: string }): Promise<void> {
-  p.intro(pc.bgCyan(pc.black(" paperclip env ")));
+  p.intro(pc.bgCyan(pc.black(" papierklammer env ")));
 
   const configPath = resolveConfigPath(opts.config);
   let config: PaperclipConfig | null = null;
@@ -163,10 +163,7 @@ function collectDeploymentEnvRows(config: PaperclipConfig | null, configPath: st
     process.env.PAPIERKLAMMER_STORAGE_LOCAL_DIR ??
     config?.storage?.localDisk?.baseDir ??
     defaultStorageBaseDir();
-  const storageS3Bucket =
-    process.env.PAPIERKLAMMER_STORAGE_S3_BUCKET ??
-    config?.storage?.s3?.bucket ??
-    "paperclip";
+  const storageS3Bucket = process.env.PAPIERKLAMMER_STORAGE_S3_BUCKET ?? config?.storage?.s3?.bucket ?? "papierklammer";
   const storageS3Region =
     process.env.PAPIERKLAMMER_STORAGE_S3_REGION ??
     config?.storage?.s3?.region ??

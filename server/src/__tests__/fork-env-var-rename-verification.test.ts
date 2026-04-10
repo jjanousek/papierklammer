@@ -211,4 +211,15 @@ describe("fork-env-var-rename-verification: PAPERCLIP_* → PAPIERKLAMMER_*", ()
     }
     expect(violations).toEqual([]);
   });
+
+  it("env command defaults use papierklammer runtime identifiers", () => {
+    const envCommandPath = join(ROOT, "cli/src/commands/env.ts");
+    const content = readFileSync(envCommandPath, "utf-8");
+
+    expect(content).toContain('const DEFAULT_AGENT_JWT_ISSUER = "papierklammer"');
+    expect(content).toContain('const DEFAULT_AGENT_JWT_AUDIENCE = "papierklammer-api"');
+    expect(content).toContain('?? "papierklammer";');
+    expect(content).not.toContain('const DEFAULT_AGENT_JWT_ISSUER = "paperclip"');
+    expect(content).not.toContain('const DEFAULT_AGENT_JWT_AUDIENCE = "paperclip-api"');
+  });
 });

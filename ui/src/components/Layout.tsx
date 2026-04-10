@@ -60,7 +60,7 @@ function ThemeSelector({ currentTheme, onSelect }: { currentTheme: Theme; onSele
   );
 }
 
-const INSTANCE_SETTINGS_MEMORY_KEY = "paperclip.lastInstanceSettingsPath";
+const INSTANCE_SETTINGS_MEMORY_KEY = "papierklammer.lastInstanceSettingsPath";
 
 function readRememberedInstanceSettingsPath(): string {
   if (typeof window === "undefined") return DEFAULT_INSTANCE_SETTINGS_PATH;
@@ -393,7 +393,7 @@ export function Layout() {
             <div className="border-t border-r border-border px-3 py-2 bg-background">
               <div className="flex items-center gap-1">
                 <a
-                  href="https://docs.paperclip.ing/"
+                  href="https://github.com/papierklammer/paperclip#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-foreground/80 hover:opacity-80 hover:text-foreground flex-1 min-w-0"
@@ -441,7 +441,7 @@ export function Layout() {
             <div className="border-t border-r border-border px-3 py-2">
               <div className="flex items-center gap-1">
                 <a
-                  href="https://docs.paperclip.ing/"
+                  href="https://github.com/papierklammer/paperclip#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-foreground/80 hover:opacity-80 hover:text-foreground flex-1 min-w-0"
