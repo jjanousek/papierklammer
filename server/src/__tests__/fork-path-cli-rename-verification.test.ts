@@ -333,12 +333,22 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(geminiAdapter).not.toContain("Paperclip auto-injects local skills");
       expect(openclawGatewayAdapter).toContain("You want Papierklammer to invoke OpenClaw over the Gateway WebSocket protocol.");
       expect(openclawGatewayAdapter).toContain("Papierklammer base URL advertised in wake text");
+      expect(openclawGatewayAdapter).toContain("papierklammerApiUrl");
+      expect(openclawGatewayAdapter).toContain("papierklammer (object): standardized Papierklammer context added to every gateway agent request");
+      expect(openclawGatewayAdapter).toContain("papierklammer.workspace");
+      expect(openclawGatewayAdapter).toContain("papierklammer.workspaces");
+      expect(openclawGatewayAdapter).toContain("papierklammer.workspaceRuntime");
       expect(openclawGatewayAdapter).toContain("fixed session key when strategy=fixed (default papierklammer)");
       expect(openclawGatewayAdapter).toContain("standardized Papierklammer context added to every gateway agent request");
       expect(openclawGatewayAdapter).not.toContain("You want Paperclip to invoke OpenClaw over the Gateway WebSocket protocol.");
       expect(openclawGatewayAdapter).not.toContain("absolute Paperclip base URL advertised in wake text");
       expect(openclawGatewayAdapter).not.toContain("fixed session key when strategy=fixed (default paperclip)");
       expect(openclawGatewayAdapter).not.toContain("standardized Paperclip context added to every gateway agent request");
+      expect(openclawGatewayAdapter).not.toContain("paperclipApiUrl");
+      expect(openclawGatewayAdapter).not.toContain("paperclip (object): standardized Papierklammer context added to every gateway agent request");
+      expect(openclawGatewayAdapter).not.toContain("paperclip.workspace");
+      expect(openclawGatewayAdapter).not.toContain("paperclip.workspaces");
+      expect(openclawGatewayAdapter).not.toContain("paperclip.workspaceRuntime");
     });
 
     it("doctor help text is renamed", () => {
