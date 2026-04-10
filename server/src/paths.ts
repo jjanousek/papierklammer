@@ -23,12 +23,12 @@ function findConfigFileFromAncestors(startDir: string): string | null {
   return null;
 }
 
-export function resolvePaperclipConfigPath(overridePath?: string): string {
+export function resolvePapierklammerConfigPath(overridePath?: string): string {
   if (overridePath) return path.resolve(overridePath);
   if (process.env.PAPIERKLAMMER_CONFIG) return path.resolve(process.env.PAPIERKLAMMER_CONFIG);
   return findConfigFileFromAncestors(process.cwd()) ?? resolveDefaultConfigPath();
 }
 
-export function resolvePaperclipEnvPath(overrideConfigPath?: string): string {
-  return path.resolve(path.dirname(resolvePaperclipConfigPath(overrideConfigPath)), PAPIERKLAMMER_ENV_FILENAME);
+export function resolvePapierklammerEnvPath(overrideConfigPath?: string): string {
+  return path.resolve(path.dirname(resolvePapierklammerConfigPath(overrideConfigPath)), PAPIERKLAMMER_ENV_FILENAME);
 }

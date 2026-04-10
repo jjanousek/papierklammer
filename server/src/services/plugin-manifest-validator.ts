@@ -10,7 +10,7 @@
  * @see packages/shared/src/validators/plugin.ts — Zod schema definition
  */
 import { pluginManifestV1Schema } from "@papierklammer/shared";
-import type { PaperclipPluginManifestV1 } from "@papierklammer/shared";
+import type { PapierklammerPluginManifestV1 } from "@papierklammer/shared";
 import { PLUGIN_API_VERSION } from "@papierklammer/shared";
 import { badRequest } from "../errors.js";
 
@@ -34,7 +34,7 @@ const SUPPORTED_VERSIONS = [PLUGIN_API_VERSION] as const;
  */
 export interface ManifestParseSuccess {
   success: true;
-  manifest: PaperclipPluginManifestV1;
+  manifest: PapierklammerPluginManifestV1;
 }
 
 /**
@@ -79,7 +79,7 @@ export interface PluginManifestValidator {
    *
    * @throws {HttpError} 400 Bad Request if the manifest is invalid.
    */
-  parseOrThrow(input: unknown): PaperclipPluginManifestV1;
+  parseOrThrow(input: unknown): PapierklammerPluginManifestV1;
 
   /**
    * Return the list of plugin API versions supported by this host.
@@ -124,7 +124,7 @@ export function pluginManifestValidator(): PluginManifestValidator {
       if (result.success) {
         return {
           success: true,
-          manifest: result.data as PaperclipPluginManifestV1,
+          manifest: result.data as PapierklammerPluginManifestV1,
         };
       }
 
@@ -146,7 +146,7 @@ export function pluginManifestValidator(): PluginManifestValidator {
       };
     },
 
-    parseOrThrow(input: unknown): PaperclipPluginManifestV1 {
+    parseOrThrow(input: unknown): PapierklammerPluginManifestV1 {
       const result = this.parse(input);
 
       if (!result.success) {

@@ -7,7 +7,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { shouldTrackDevServerPath } from "./dev-runner-paths.mjs";
 import { createDevServiceIdentity, repoRoot } from "./dev-service-profile.ts";
-import { ensureAgentJwtSecret, loadPaperclipEnvFile, resolveAgentJwtEnvFile } from "../cli/src/config/env.ts";
+import { ensureAgentJwtSecret, loadPapierklammerEnvFile, resolveAgentJwtEnvFile } from "../cli/src/config/env.ts";
 import {
   findAdoptableLocalService,
   readLocalServicePortOwner,
@@ -90,7 +90,7 @@ const env: NodeJS.ProcessEnv = {
 };
 
 const agentJwtSecret = ensureAgentJwtSecret();
-loadPaperclipEnvFile();
+loadPapierklammerEnvFile();
 if (agentJwtSecret.created) {
   console.log(
     `[papierklammer] created PAPIERKLAMMER_AGENT_JWT_SECRET in ${resolveAgentJwtEnvFile()}`,
@@ -138,7 +138,7 @@ if (existingRunner) {
   process.exit(0);
 }
 
-async function hasReachablePaperclipHealth(port: number) {
+async function hasReachablePapierklammerHealth(port: number) {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/health`);
     if (!response.ok) return false;
@@ -150,7 +150,7 @@ async function hasReachablePaperclipHealth(port: number) {
 }
 
 const orphanPortOwner = await readLocalServicePortOwner(serverPort);
-if (orphanPortOwner && await hasReachablePaperclipHealth(serverPort)) {
+if (orphanPortOwner && await hasReachablePapierklammerHealth(serverPort)) {
   console.log(
     `[papierklammer] Papierklammer server already listening on http://127.0.0.1:${serverPort} (pid ${orphanPortOwner})`,
   );

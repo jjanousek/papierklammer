@@ -195,7 +195,7 @@ export type {
   PluginLauncherDeclaration,
   PluginMinimumHostVersion,
   PluginUiDeclaration,
-  PaperclipPluginManifestV1,
+  PapierklammerPluginManifestV1,
   PluginRecord,
   PluginStateRecord,
   PluginConfig,

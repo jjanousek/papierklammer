@@ -1,9 +1,9 @@
 import fs from "node:fs";
-import { paperclipConfigSchema, type PaperclipConfig } from "@papierklammer/shared";
-import { resolvePaperclipConfigPath } from "./paths.js";
+import { paperclipConfigSchema, type PapierklammerConfig } from "@papierklammer/shared";
+import { resolvePapierklammerConfigPath } from "./paths.js";
 
-export function readConfigFile(): PaperclipConfig | null {
-  const configPath = resolvePaperclipConfigPath();
+export function readConfigFile(): PapierklammerConfig | null {
+  const configPath = resolvePapierklammerConfigPath();
 
   if (!fs.existsSync(configPath)) return null;
 

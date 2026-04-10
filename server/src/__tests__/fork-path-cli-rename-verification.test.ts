@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { execSync } from "child_process";
 import { readFileSync, readdirSync, statSync } from "fs";
 import { join, resolve } from "path";
 
@@ -640,6 +641,49 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(agentCli).not.toContain("Skip installing Paperclip skills into ~/.codex/skills and ~/.claude/skills");
       expect(agentCli).toContain("Could not locate local Papierklammer skills directory.");
       expect(agentCli).not.toContain("Could not locate local Paperclip skills directory.");
+    });
+
+    it("skill-sync metadata keys and enums use renamed Papierklammer wording", () => {
+      const sharedTypes = readFileSync(join(ROOT, "packages/shared/src/types/adapter-skills.ts"), "utf-8");
+      const sharedValidators = readFileSync(join(ROOT, "packages/shared/src/validators/adapter-skills.ts"), "utf-8");
+      const adapterUtilsTypes = readFileSync(join(ROOT, "packages/adapter-utils/src/types.ts"), "utf-8");
+      const serverUtils = readFileSync(join(ROOT, "packages/adapter-utils/src/server-utils.ts"), "utf-8");
+      const agentsRoute = readFileSync(join(ROOT, "server/src/routes/agents.ts"), "utf-8");
+      const heartbeatService = readFileSync(join(ROOT, "server/src/services/heartbeat.ts"), "utf-8");
+      const companySkills = readFileSync(join(ROOT, "server/src/services/company-skills.ts"), "utf-8");
+      const companyPortability = readFileSync(join(ROOT, "server/src/services/company-portability.ts"), "utf-8");
+
+      expect(sharedTypes).toContain('"papierklammer_required"');
+      expect(sharedValidators).toContain('"papierklammer_required"');
+      expect(adapterUtilsTypes).toContain('| "papierklammer_required"');
+      expect(serverUtils).toContain('origin: "papierklammer_required"');
+      expect(agentsRoute).toContain("papierklammerRuntimeSkills");
+      expect(heartbeatService).toContain("papierklammerRuntimeSkills");
+      expect(companySkills).toContain("papierklammerSkillKey");
+      expect(serverUtils).toContain("papierklammerSkillSync");
+      expect(companyPortability).toContain("papierklammerSkillKey");
+      expect(companyPortability).toContain("papierklammerSkillSync");
+
+      expect(sharedTypes).not.toContain('"paperclip_required"');
+      expect(sharedValidators).not.toContain('"paperclip_required"');
+      expect(adapterUtilsTypes).not.toContain('| "paperclip_required"');
+      expect(serverUtils).not.toContain('origin: "paperclip_required"');
+      expect(agentsRoute).not.toContain("paperclipRuntimeSkills");
+      expect(heartbeatService).not.toContain("paperclipRuntimeSkills");
+      expect(companySkills).not.toContain("paperclipSkillKey");
+      expect(serverUtils).not.toContain("paperclipSkillSync");
+      expect(companyPortability).not.toContain("paperclipSkillKey");
+      expect(companyPortability).not.toContain("paperclipSkillSync");
+    });
+
+    it("canonical scoped live-surface sweep stays clean", () => {
+      expect(() =>
+        execSync("node scripts/check-live-brand-sweep.mjs", {
+          cwd: ROOT,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }),
+      ).not.toThrow();
     });
   });
 });

@@ -24,8 +24,8 @@ import {
   updateAgentSchema,
 } from "@papierklammer/shared";
 import {
-  readPaperclipSkillSyncPreference,
-  writePaperclipSkillSyncPreference,
+  readPapierklammerSkillSyncPreference,
+  writePapierklammerSkillSyncPreference,
 } from "@papierklammer/adapter-utils/server-utils";
 import { validate } from "../middleware/validate.js";
 import {
@@ -579,8 +579,8 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
 
   const LEGACY_BUNDLED_SKILL_RENAMES: Record<string, string> = {
     paperclip: "papierklammer",
-    "paperclip-create-agent": "papierklammer-create-agent",
-    "paperclip-create-plugin": "papierklammer-create-plugin",
+    "papierklammer-create-agent": "papierklammer-create-agent",
+    "papierklammer-create-plugin": "papierklammer-create-plugin",
   };
 
   function assertNoLegacyBundledSkillRefs(requestedDesiredSkills: string[]) {
@@ -611,7 +611,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
     });
     return {
       ...config,
-      paperclipRuntimeSkills: runtimeSkillEntries,
+      papierklammerRuntimeSkills: runtimeSkillEntries,
     };
   }
 
@@ -644,7 +644,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
     const desiredSkills = Array.from(new Set([...requiredSkills, ...resolvedRequestedSkills]));
 
     return {
-      adapterConfig: writePaperclipSkillSyncPreference(adapterConfig, desiredSkills),
+      adapterConfig: writePapierklammerSkillSyncPreference(adapterConfig, desiredSkills),
       desiredSkills,
       runtimeSkillEntries,
     };
@@ -795,7 +795,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
 
     const adapter = resolveServerAdapter(agent.adapterType);
     if (!adapter?.listSkills) {
-      const preference = readPaperclipSkillSyncPreference(
+      const preference = readPapierklammerSkillSyncPreference(
         agent.adapterConfig as Record<string, unknown>,
       );
       const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(agent.companyId, {
@@ -878,7 +878,7 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
       );
       const runtimeSkillConfig = {
         ...runtimeConfig,
-        paperclipRuntimeSkills: runtimeSkillEntries,
+        papierklammerRuntimeSkills: runtimeSkillEntries,
       };
       const snapshot = adapter?.syncSkills
         ? await adapter.syncSkills({

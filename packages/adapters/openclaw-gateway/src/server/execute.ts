@@ -3,7 +3,7 @@ import type {
   AdapterExecutionResult,
   AdapterRuntimeServiceReport,
 } from "@papierklammer/adapter-utils";
-import { asNumber, asString, buildPaperclipEnv, parseObject } from "@papierklammer/adapter-utils/server-utils";
+import { asNumber, asString, buildPapierklammerEnv, parseObject } from "@papierklammer/adapter-utils/server-utils";
 import crypto, { randomUUID } from "node:crypto";
 import { WebSocket } from "ws";
 
@@ -313,10 +313,10 @@ function resolvePapierklammerApiUrlOverride(value: unknown): string | null {
   }
 }
 
-function buildPaperclipEnvForWake(ctx: AdapterExecutionContext, wakePayload: WakePayload): Record<string, string> {
+function buildPapierklammerEnvForWake(ctx: AdapterExecutionContext, wakePayload: WakePayload): Record<string, string> {
   const papierklammerApiUrlOverride = resolvePapierklammerApiUrlOverride(ctx.config.papierklammerApiUrl);
   const paperclipEnv: Record<string, string> = {
-    ...buildPaperclipEnv(ctx.agent),
+    ...buildPapierklammerEnv(ctx.agent),
     PAPIERKLAMMER_RUN_ID: ctx.runId,
   };
 
@@ -1052,7 +1052,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const disableDeviceAuth = parseBoolean(ctx.config.disableDeviceAuth, false);
 
   const wakePayload = buildWakePayload(ctx);
-  const paperclipEnv = buildPaperclipEnvForWake(ctx, wakePayload);
+  const paperclipEnv = buildPapierklammerEnvForWake(ctx, wakePayload);
   const wakeText = buildWakeText(wakePayload, paperclipEnv);
 
   const sessionKeyStrategy = normalizeSessionKeyStrategy(ctx.config.sessionKeyStrategy);

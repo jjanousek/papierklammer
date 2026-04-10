@@ -7,8 +7,8 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_QUERY = "\"Co-Authored-By: Paperclip <noreply@paperclip.ing>\"";
-const DEFAULT_CACHE_FILE = path.resolve("data/paperclip-commit-metrics-cache.json");
+const DEFAULT_QUERY = "\"Co-Authored-By: Papierklammer <noreply@paperclip.ing>\"";
+const DEFAULT_CACHE_FILE = path.resolve("data/papierklammer-commit-metrics-cache.json");
 const DEFAULT_SEARCH_START = "2008-01-01T00:00:00Z";
 const SEARCH_WINDOW_LIMIT = 900;
 const MIN_WINDOW_MS = 60_000;
@@ -309,7 +309,7 @@ function parseNonNegativeInt(value: string, flag: string): number {
 }
 
 function printHelp() {
-  console.log(`Usage: tsx scripts/paperclip-commit-metrics.ts [options]
+  console.log(`Usage: tsx scripts/papierklammer-commit-metrics.ts [options]
 
 Options:
   --start <date>             ISO date/time lower bound (default: ${DEFAULT_SEARCH_START})
@@ -707,7 +707,7 @@ function buildSummary(cache: CacheFile, options: CliOptions, shas: string[], fet
 }
 
 function printSummary(summary: Summary) {
-  console.log("Paperclip commit metrics");
+  console.log("Papierklammer commit metrics");
   console.log(`Query: ${summary.detectedQuery}`);
   console.log(`Range: ${summary.range.start} -> ${summary.range.end} (${summary.range.searchField})`);
   if (summary.filters.excludedOwners.length > 0) {
@@ -841,7 +841,7 @@ class GitHubClient {
         headers: {
           Accept: "application/vnd.github+json",
           Authorization: `Bearer ${this.token}`,
-          "User-Agent": "paperclip-commit-metrics",
+          "User-Agent": "papierklammer-commit-metrics",
           "X-GitHub-Api-Version": "2022-11-28",
         },
       });

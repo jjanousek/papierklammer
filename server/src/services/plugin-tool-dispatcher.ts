@@ -24,7 +24,7 @@
 
 import type { Db } from "@papierklammer/db";
 import type {
-  PaperclipPluginManifestV1,
+  PapierklammerPluginManifestV1,
   PluginRecord,
 } from "@papierklammer/shared";
 import type { ToolRunContext, ToolResult } from "@papierklammer/plugin-sdk";
@@ -155,7 +155,7 @@ export interface PluginToolDispatcher {
    */
   registerPluginTools(
     pluginId: string,
-    manifest: PaperclipPluginManifestV1,
+    manifest: PapierklammerPluginManifestV1,
   ): void;
 
   /**
@@ -428,7 +428,7 @@ export function createPluginToolDispatcher(
 
     registerPluginTools(
       pluginId: string,
-      manifest: PaperclipPluginManifestV1,
+      manifest: PapierklammerPluginManifestV1,
     ): void {
       registry.registerPlugin(pluginId, manifest);
     },

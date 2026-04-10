@@ -40,7 +40,7 @@ import type { Db } from "@papierklammer/db";
 import type {
   PluginStatus,
   PluginRecord,
-  PaperclipPluginManifestV1,
+  PapierklammerPluginManifestV1,
 } from "@papierklammer/shared";
 import { pluginRegistryService } from "./plugin-registry.js";
 import { pluginLoader, type PluginLoader } from "./plugin-loader.js";

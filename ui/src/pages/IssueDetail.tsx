@@ -64,9 +64,9 @@ import {
   EyeOff,
   Hexagon,
   ListTree,
+  Link2,
   MessageSquare,
   MoreHorizontal,
-  Paperclip,
   Repeat,
   SlidersHorizontal,
   Trash2,
@@ -929,7 +929,7 @@ export function IssueDetail() {
           attachmentDragActive && "border-primary bg-primary/5",
         )}
       >
-        <Paperclip className="h-3.5 w-3.5 mr-1.5" />
+        <Link2 className="h-3.5 w-3.5 mr-1.5" />
         {uploadAttachment.isPending || importMarkdownDocument.isPending ? "Uploading..." : (
           <>
             <span className="hidden sm:inline">Upload attachment</span>

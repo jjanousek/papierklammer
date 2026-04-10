@@ -6,8 +6,8 @@ worktree_cwd="${PAPIERKLAMMER_WORKSPACE_CWD:?PAPIERKLAMMER_WORKSPACE_CWD is requ
 paperclip_home="${PAPIERKLAMMER_HOME:-$HOME/.papierklammer}"
 paperclip_instance_id="${PAPIERKLAMMER_INSTANCE_ID:-default}"
 paperclip_dir="$worktree_cwd/.papierklammer"
-worktree_config_path="$paperclip_dir/config.json"
-worktree_env_path="$paperclip_dir/.env"
+worktree_config_path="$papierklammer_dir/config.json"
+worktree_env_path="$papierklammer_dir/.env"
 worktree_name="${PAPIERKLAMMER_WORKSPACE_BRANCH:-$(basename "$worktree_cwd")}"
 
 if [[ ! -d "$base_cwd" ]]; then
@@ -25,11 +25,11 @@ if [[ -z "$source_config_path" && ( -e "$base_cwd/.papierklammer/config.json" ||
   source_config_path="$base_cwd/.papierklammer/config.json"
 fi
 if [[ -z "$source_config_path" ]]; then
-  source_config_path="$paperclip_home/instances/$paperclip_instance_id/config.json"
+  source_config_path="$papierklammer_home/instances/$papierklammer_instance_id/config.json"
 fi
 source_env_path="$(dirname "$source_config_path")/.env"
 
-mkdir -p "$paperclip_dir"
+mkdir -p "$papierklammer_dir"
 
 run_isolated_worktree_init() {
   if command -v pnpm >/dev/null 2>&1 && pnpm papierklammer --help >/dev/null 2>&1; then
@@ -49,7 +49,7 @@ write_fallback_worktree_config() {
   WORKTREE_NAME="$worktree_name" \
   BASE_CWD="$base_cwd" \
   WORKTREE_CWD="$worktree_cwd" \
-  PAPIERKLAMMER_DIR="$paperclip_dir" \
+  PAPIERKLAMMER_DIR="$papierklammer_dir" \
   SOURCE_CONFIG_PATH="$source_config_path" \
   SOURCE_ENV_PATH="$source_env_path" \
   PAPIERKLAMMER_WORKTREES_DIR="${PAPIERKLAMMER_WORKTREES_DIR:-}" \

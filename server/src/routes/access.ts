@@ -137,8 +137,8 @@ function readSkillMarkdown(skillName: string): string | null {
   return null;
 }
 
-/** Resolve the Paperclip repo skills directory (built-in / managed skills). */
-function resolvePaperclipSkillsDir(): string | null {
+/** Resolve the Papierklammer repo skills directory (built-in / managed skills). */
+function resolvePapierklammerSkillsDir(): string | null {
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
     path.resolve(moduleDir, "../../skills"),         // published
@@ -182,17 +182,17 @@ interface AvailableSkill {
 
 const LEGACY_BUNDLED_SKILL_NAMES = new Set([
   "paperclip",
-  "paperclip-create-agent",
-  "paperclip-create-plugin",
+  "papierklammer-create-agent",
+  "papierklammer-create-plugin",
 ]);
 
 /** Discover all available Claude Code skills from ~/.claude/skills/. */
 function listAvailableSkills(): AvailableSkill[] {
   const homeDir = process.env.HOME || process.env.USERPROFILE || "";
   const claudeSkillsDir = path.join(homeDir, ".claude", "skills");
-  const paperclipSkillsDir = resolvePaperclipSkillsDir();
+  const paperclipSkillsDir = resolvePapierklammerSkillsDir();
 
-  // Build set of Paperclip-managed skill names
+  // Build set of Papierklammer-managed skill names
   const paperclipSkillNames = new Set<string>();
   if (paperclipSkillsDir) {
     try {

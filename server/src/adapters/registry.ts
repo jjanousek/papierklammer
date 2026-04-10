@@ -1,4 +1,4 @@
-import type { ServerAdapterModule } from "./types.js";
+import type { AdapterSkillSnapshot, ServerAdapterModule } from "./types.js";
 import { getAdapterSessionManagement } from "@papierklammer/adapter-utils";
 import {
   execute as claudeExecute,
@@ -81,6 +81,22 @@ import {
 } from "hermes-paperclip-adapter";
 import { processAdapter } from "./process/index.js";
 import { httpAdapter } from "./http/index.js";
+
+function normalizeAdapterSkillSnapshot(snapshot: AdapterSkillSnapshot): AdapterSkillSnapshot {
+  return {
+    ...snapshot,
+    entries: snapshot.entries.map((entry) => ({
+      ...entry,
+      origin: (
+        typeof entry.origin === "string"
+        && entry.origin.startsWith("paper")
+        && entry.origin.endsWith("_required")
+      )
+        ? "papierklammer_required"
+        : entry.origin,
+    })),
+  };
+}
 
 const claudeLocalAdapter: ServerAdapterModule = {
   type: "claude_local",
@@ -180,8 +196,9 @@ const hermesLocalAdapter: ServerAdapterModule = {
   execute: hermesExecute,
   testEnvironment: hermesTestEnvironment,
   sessionCodec: hermesSessionCodec,
-  listSkills: hermesListSkills,
-  syncSkills: hermesSyncSkills,
+  listSkills: async (ctx) => normalizeAdapterSkillSnapshot(await hermesListSkills(ctx) as AdapterSkillSnapshot),
+  syncSkills: async (ctx, desiredSkills) =>
+    normalizeAdapterSkillSnapshot(await hermesSyncSkills(ctx, desiredSkills) as AdapterSkillSnapshot),
   models: hermesModels,
   supportsLocalAgentJwt: true,
   agentConfigurationDoc: hermesAgentConfigurationDoc,

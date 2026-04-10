@@ -1,5 +1,5 @@
 /**
- * `@papierklammer/plugin-sdk` — Paperclip plugin worker-side SDK.
+ * `@papierklammer/plugin-sdk` — Papierklammer plugin worker-side SDK.
  *
  * This is the main entrypoint for plugin worker code.  For plugin UI bundles,
  * import from `@papierklammer/plugin-sdk/ui` instead.
@@ -91,7 +91,7 @@ export {
 // Plugin definition and lifecycle types
 export type {
   PluginDefinition,
-  PaperclipPlugin,
+  PapierklammerPlugin,
   PluginHealthDiagnostics,
   PluginConfigValidationResult,
   PluginWebhookInput,
@@ -210,7 +210,7 @@ export type {
 // Plugin authors import manifest types from here so they have a single
 // dependency (@papierklammer/plugin-sdk) for all plugin authoring needs.
 export type {
-  PaperclipPluginManifestV1,
+  PapierklammerPluginManifestV1,
   PluginJobDeclaration,
   PluginWebhookDeclaration,
   PluginToolDeclaration,

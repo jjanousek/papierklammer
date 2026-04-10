@@ -52,7 +52,7 @@ interface ApiClientOptions {
   recoverAuth?: (input: RecoverAuthInput) => Promise<string | null>;
 }
 
-export class PaperclipApiClient {
+export class PapierklammerApiClient {
   readonly apiBase: string;
   apiKey?: string;
   readonly runId?: string;

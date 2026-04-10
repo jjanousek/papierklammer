@@ -2,7 +2,7 @@ import { Command } from "commander";
 import type { Agent } from "@papierklammer/shared";
 import {
   removeMaintainerOnlySkillSymlinks,
-  resolvePaperclipSkillsDir,
+  resolvePapierklammerSkillsDir,
 } from "@papierklammer/adapter-utils/server-utils";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -46,8 +46,8 @@ interface SkillsInstallSummary {
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const LEGACY_BUNDLED_SKILL_NAMES = new Set([
   "paperclip",
-  "paperclip-create-agent",
-  "paperclip-create-plugin",
+  "papierklammer-create-agent",
+  "papierklammer-create-plugin",
 ]);
 
 function codexSkillsHome(): string {
@@ -274,7 +274,7 @@ export function registerAgentCommands(program: Command): void {
 
           const installSummaries: SkillsInstallSummary[] = [];
           if (opts.installSkills !== false) {
-            const skillsDir = await resolvePaperclipSkillsDir(__moduleDir, [path.resolve(process.cwd(), "skills")]);
+            const skillsDir = await resolvePapierklammerSkillsDir(__moduleDir, [path.resolve(process.cwd(), "skills")]);
             if (!skillsDir) {
               throw new Error(
                 "Could not locate local Papierklammer skills directory. Expected ./skills in the repo checkout.",

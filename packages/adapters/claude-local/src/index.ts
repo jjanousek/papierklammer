@@ -33,5 +33,5 @@ Operational fields:
 - graceSec (number, optional): SIGTERM grace period in seconds
 
 Notes:
-- When Paperclip realizes a workspace/runtime for a run, it injects PAPIERKLAMMER_WORKSPACE_* and PAPIERKLAMMER_RUNTIME_* env vars for agent-side tooling.
+- When Papierklammer realizes a workspace/runtime for a run, it injects PAPIERKLAMMER_WORKSPACE_* and PAPIERKLAMMER_RUNTIME_* env vars for agent-side tooling.
 `;

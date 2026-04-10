@@ -2,7 +2,7 @@ import { readConfigFile } from "./config-file.js";
 import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { config as loadDotenv } from "dotenv";
-import { resolvePaperclipEnvPath } from "./paths.js";
+import { resolvePapierklammerEnvPath } from "./paths.js";
 import { maybeRepairLegacyWorktreeConfigAndEnvFiles } from "./worktree-config.js";
 import {
   AUTH_BASE_URL_MODES,
@@ -24,7 +24,7 @@ import {
   resolveHomeAwarePath,
 } from "./home-paths.js";
 
-const PAPIERKLAMMER_ENV_FILE_PATH = resolvePaperclipEnvPath();
+const PAPIERKLAMMER_ENV_FILE_PATH = resolvePapierklammerEnvPath();
 if (existsSync(PAPIERKLAMMER_ENV_FILE_PATH)) {
   loadDotenv({ path: PAPIERKLAMMER_ENV_FILE_PATH, override: false, quiet: true });
 }

@@ -40,10 +40,10 @@ Operational fields:
 
 Notes:
 - Prompts are piped via stdin (Codex receives "-" prompt argument).
-- If instructionsFilePath is configured, Paperclip prepends that file's contents to the stdin prompt on every run.
-- Codex exec automatically applies repo-scoped AGENTS.md instructions from the active workspace. Paperclip cannot suppress that discovery in exec mode, so repo AGENTS.md files may still apply even when you only configured an explicit instructionsFilePath.
-- Paperclip injects desired local skills into the effective CODEX_HOME/skills/ directory at execution time so Codex can discover "$paperclip" and related skills without polluting the project working directory. In managed-home mode (the default) this is ~/.papierklammer/instances/<id>/companies/<companyId>/codex-home/skills/; when CODEX_HOME is explicitly overridden in adapter config, that override is used instead.
-- Unless explicitly overridden in adapter config, Paperclip runs Codex with a per-company managed CODEX_HOME under the active Paperclip instance and seeds auth/config from the shared Codex home (the CODEX_HOME env var, when set, or ~/.codex).
+- If instructionsFilePath is configured, Papierklammer prepends that file's contents to the stdin prompt on every run.
+- Codex exec automatically applies repo-scoped AGENTS.md instructions from the active workspace. Papierklammer cannot suppress that discovery in exec mode, so repo AGENTS.md files may still apply even when you only configured an explicit instructionsFilePath.
+- Papierklammer injects desired local skills into the effective CODEX_HOME/skills/ directory at execution time so Codex can discover "$papierklammer" and related skills without polluting the project working directory. In managed-home mode (the default) this is ~/.papierklammer/instances/<id>/companies/<companyId>/codex-home/skills/; when CODEX_HOME is explicitly overridden in adapter config, that override is used instead.
+- Unless explicitly overridden in adapter config, Papierklammer runs Codex with a per-company managed CODEX_HOME under the active Papierklammer instance and seeds auth/config from the shared Codex home (the CODEX_HOME env var, when set, or ~/.codex).
 - Some model/tool combinations reject certain effort levels (for example minimal with web search enabled).
-- When Paperclip realizes a workspace/runtime for a run, it injects PAPIERKLAMMER_WORKSPACE_* and PAPIERKLAMMER_RUNTIME_* env vars for agent-side tooling.
+- When Papierklammer realizes a workspace/runtime for a run, it injects PAPIERKLAMMER_WORKSPACE_* and PAPIERKLAMMER_RUNTIME_* env vars for agent-side tooling.
 `;

@@ -11,7 +11,7 @@ const PAPIERKLAMMER_ART = [
 
 const TAGLINE = "Open-source orchestration for zero-human companies";
 
-export function printPaperclipCliBanner(): void {
+export function printPapierklammerCliBanner(): void {
   const lines = [
     "",
     ...PAPIERKLAMMER_ART.map((line) => pc.cyan(line)),

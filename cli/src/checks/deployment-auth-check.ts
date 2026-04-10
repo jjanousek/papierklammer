@@ -1,4 +1,4 @@
-import type { PaperclipConfig } from "../config/schema.js";
+import type { PapierklammerConfig } from "../config/schema.js";
 import type { CheckResult } from "./index.js";
 
 function isLoopbackHost(host: string) {
@@ -6,7 +6,7 @@ function isLoopbackHost(host: string) {
   return normalized === "127.0.0.1" || normalized === "localhost" || normalized === "::1";
 }
 
-export function deploymentAuthCheck(config: PaperclipConfig): CheckResult {
+export function deploymentAuthCheck(config: PapierklammerConfig): CheckResult {
   const mode = config.server.deploymentMode;
   const exposure = config.server.exposure;
   const auth = config.auth;
@@ -37,7 +37,7 @@ export function deploymentAuthCheck(config: PaperclipConfig): CheckResult {
       status: "fail",
       message: "authenticated mode requires BETTER_AUTH_SECRET (or PAPIERKLAMMER_AGENT_JWT_SECRET)",
       canRepair: false,
-      repairHint: "Set BETTER_AUTH_SECRET before starting Paperclip",
+      repairHint: "Set BETTER_AUTH_SECRET before starting Papierklammer",
     };
   }
 

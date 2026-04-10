@@ -46,7 +46,6 @@ import {
   Github,
   Link2,
   ExternalLink,
-  Paperclip,
   Pencil,
   Plus,
   RefreshCw,
@@ -159,7 +158,7 @@ function sourceMeta(sourceBadge: CompanySkillSourceBadge, sourceLabel: string | 
     case "local":
       return { icon: Folder, label: sourceLabel ?? "Folder", managedLabel: "Folder managed" };
     case "papierklammer":
-      return { icon: Paperclip, label: sourceLabel ?? "Papierklammer", managedLabel: "Papierklammer managed" };
+      return { icon: Boxes, label: sourceLabel ?? "Papierklammer", managedLabel: "Papierklammer managed" };
     default:
       return { icon: Boxes, label: sourceLabel ?? "Catalog", managedLabel: "Catalog managed" };
   }

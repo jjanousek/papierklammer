@@ -160,7 +160,7 @@ export type AdapterSkillState =
 
 export type AdapterSkillOrigin =
   | "company_managed"
-  | "paperclip_required"
+  | "papierklammer_required"
   | "user_installed"
   | "external_unknown";
 
