@@ -1328,9 +1328,9 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
   if (metadata.sourceKind === "paperclip_bundled") {
     return {
       editable: false,
-      editableReason: "Bundled Paperclip skills are read-only.",
-      sourceLabel: "Paperclip bundled",
-      sourceBadge: "paperclip",
+      editableReason: "Bundled Papierklammer skills are read-only.",
+      sourceLabel: "Papierklammer bundled",
+      sourceBadge: "papierklammer",
       sourcePath: null,
     };
   }
@@ -1378,8 +1378,8 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
       return {
         editable: true,
         editableReason: null,
-        sourceLabel: "Paperclip workspace",
-        sourceBadge: "paperclip",
+        sourceLabel: "Papierklammer workspace",
+        sourceBadge: "papierklammer",
         sourcePath: managedRoot,
       };
     }
@@ -2061,7 +2061,7 @@ export function companySkillService(db: Db) {
         source,
         required,
         requiredReason: required
-          ? "Bundled Paperclip skills are always available for local adapters."
+          ? "Bundled Papierklammer skills are always available for local adapters."
           : null,
       });
     }

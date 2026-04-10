@@ -1,4 +1,4 @@
-# Paperclip Create Agent API Reference
+# Papierklammer Create Agent API Reference
 
 ## Core Endpoints
 

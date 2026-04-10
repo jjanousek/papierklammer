@@ -115,9 +115,9 @@ function buildCliAuthApprovalPath(challengeId: string, token: string) {
 function readSkillMarkdown(skillName: string): string | null {
   const normalized = skillName.trim().toLowerCase();
   if (
-    normalized !== "paperclip" &&
-    normalized !== "paperclip-create-agent" &&
-    normalized !== "paperclip-create-plugin" &&
+    normalized !== "papierklammer" &&
+    normalized !== "papierklammer-create-agent" &&
+    normalized !== "papierklammer-create-plugin" &&
     normalized !== "para-memory-files"
   )
     return null;
@@ -177,8 +177,14 @@ function parseSkillFrontmatter(markdown: string): { description: string } {
 interface AvailableSkill {
   name: string;
   description: string;
-  isPaperclipManaged: boolean;
+  isPapierklammerManaged: boolean;
 }
+
+const LEGACY_BUNDLED_SKILL_NAMES = new Set([
+  "paperclip",
+  "paperclip-create-agent",
+  "paperclip-create-plugin",
+]);
 
 /** Discover all available Claude Code skills from ~/.claude/skills/. */
 function listAvailableSkills(): AvailableSkill[] {
@@ -203,6 +209,7 @@ function listAvailableSkills(): AvailableSkill[] {
     for (const entry of entries) {
       if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
       if (entry.name.startsWith(".")) continue;
+      if (LEGACY_BUNDLED_SKILL_NAMES.has(entry.name)) continue;
       const skillMdPath = path.join(claudeSkillsDir, entry.name, "SKILL.md");
       let description = "";
       try {
@@ -212,7 +219,7 @@ function listAvailableSkills(): AvailableSkill[] {
       skills.push({
         name: entry.name,
         description,
-        isPaperclipManaged: paperclipSkillNames.has(entry.name),
+        isPapierklammerManaged: paperclipSkillNames.has(entry.name),
       });
     }
   } catch { /* ~/.claude/skills/ doesn't exist */ }
@@ -923,7 +930,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
       code: "openclaw_onboarding_api_loopback",
       level: "warn",
       message:
-        "Onboarding URL resolves to loopback hostname. Remote OpenClaw agents cannot reach localhost on your Paperclip host.",
+        "Onboarding URL resolves to loopback hostname. Remote OpenClaw agents cannot reach localhost on your Papierklammer host.",
       hint: "Use a reachable hostname/IP (for example Tailscale hostname, Docker host alias, or public domain)."
     });
   }
@@ -936,7 +943,7 @@ function buildOnboardingDiscoveryDiagnostics(input: {
     diagnostics.push({
       code: "openclaw_onboarding_private_loopback_bind",
       level: "warn",
-      message: "Paperclip is bound to loopback in authenticated/private mode.",
+      message: "Papierklammer is bound to loopback in authenticated/private mode.",
       hint: "Run with a reachable bind host or use pnpm dev --tailscale-auth for private-network onboarding."
     });
   }
@@ -1013,7 +1020,7 @@ function buildInviteOnboardingManifest(
   }
 ) {
   const baseUrl = requestBaseUrl(req);
-  const skillPath = "/api/skills/paperclip";
+  const skillPath = "/api/skills/papierklammer";
   const skillUrl = baseUrl ? `${baseUrl}${skillPath}` : skillPath;
   const registrationEndpointPath = `/api/invites/${token}/accept`;
   const registrationEndpointUrl = baseUrl
@@ -1045,7 +1052,7 @@ function buildInviteOnboardingManifest(
     ),
     onboarding: {
       instructions:
-        "Join as an OpenClaw Gateway agent, save your one-time claim secret, wait for board approval, then claim your API key. Save the claim response token to ~/.openclaw/workspace/paperclip-claimed-api-key.json and load PAPIERKLAMMER_API_KEY from that file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// OpenClaw gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
+        "Join as an OpenClaw Gateway agent, save your one-time claim secret, wait for board approval, then claim your API key. Save the claim response token to ~/.openclaw/workspace/papierklammer-claimed-api-key.json and load PAPIERKLAMMER_API_KEY from that file before starting heartbeat loops. You MUST submit adapterType='openclaw_gateway', set agentDefaultsPayload.url to your ws:// or wss:// OpenClaw gateway endpoint, and include agentDefaultsPayload.headers.x-openclaw-token (or legacy x-openclaw-auth).",
       inviteMessage: extractInviteMessage(invite),
       recommendedAdapterType: "openclaw_gateway",
       requiredFields: {
@@ -1079,8 +1086,8 @@ function buildInviteOnboardingManifest(
         guidance:
           opts.deploymentMode === "authenticated" &&
           opts.deploymentExposure === "private"
-            ? "If OpenClaw runs on another machine, ensure the Paperclip hostname is reachable and allowed via `pnpm papierklammer allowed-hostname <host>`."
-            : "Ensure OpenClaw can reach this Paperclip API base URL for invite, claim, and skill bootstrap calls."
+            ? "If OpenClaw runs on another machine, ensure the Papierklammer hostname is reachable and allowed via `pnpm papierklammer allowed-hostname <host>`."
+            : "Ensure OpenClaw can reach this Papierklammer API base URL for invite, claim, and skill bootstrap calls."
       },
       textInstructions: {
         path: onboardingTextPath,
@@ -1088,10 +1095,10 @@ function buildInviteOnboardingManifest(
         contentType: "text/plain"
       },
       skill: {
-        name: "paperclip",
+        name: "papierklammer",
         path: skillPath,
         url: skillUrl,
-        installPath: "~/.openclaw/skills/paperclip/SKILL.md"
+        installPath: "~/.openclaw/skills/papierklammer/SKILL.md"
       }
     }
   };
@@ -1142,7 +1149,7 @@ export function buildInviteOnboardingTextDocument(
   };
 
   appendBlock(`
-    # Paperclip OpenClaw Gateway Onboarding
+    # Papierklammer OpenClaw Gateway Onboarding
 
     This document is meant to be readable by both humans and agents.
 
@@ -1211,7 +1218,7 @@ export function buildInviteOnboardingTextDocument(
     Legacy x-openclaw-auth is also accepted, but x-openclaw-token is preferred.
     Use adapterType "openclaw_gateway" and a ws:// or wss:// gateway URL.
     Pairing mode requirement:
-    - Keep device auth enabled (recommended). If devicePrivateKeyPem is omitted, Paperclip generates and persists one during join so pairing approvals are stable.
+    - Keep device auth enabled (recommended). If devicePrivateKeyPem is omitted, Papierklammer generates and persists one during join so pairing approvals are stable.
     - You may set disableDeviceAuth=true only for special environments that cannot support pairing.
     - First run may return "pairing required" once; approve the pending pairing request in OpenClaw, then retry.
     Do NOT use /v1/responses or /hooks/* in this gateway join flow.
@@ -1239,7 +1246,7 @@ export function buildInviteOnboardingTextDocument(
     - claimApiKeyPath
 
     ## Step 2: Wait for board approval
-    The board approves the join request in Paperclip before key claim is allowed.
+    The board approves the join request in Papierklammer before key claim is allowed.
 
     ## Step 3: Claim API key (one-time)
     ${
@@ -1253,8 +1260,8 @@ export function buildInviteOnboardingTextDocument(
 
     On successful claim, save the full JSON response to:
 
-    - ~/.openclaw/workspace/paperclip-claimed-api-key.json
-    chmod 600 ~/.openclaw/workspace/paperclip-claimed-api-key.json
+    - ~/.openclaw/workspace/papierklammer-claimed-api-key.json
+    chmod 600 ~/.openclaw/workspace/papierklammer-claimed-api-key.json
 
     And set the PAPIERKLAMMER_API_KEY and PAPIERKLAMMER_API_URL in your environment variables as specified here:
     https://docs.openclaw.ai/help/environment
@@ -1275,7 +1282,7 @@ export function buildInviteOnboardingTextDocument(
     - claim secrets are single-use
     - claim fails before board approval
 
-    ## Step 4: Install Paperclip skill in OpenClaw
+    ## Step 4: Install Papierklammer skill in OpenClaw
     GET ${onboarding.skill.url}
     Install path: ${onboarding.skill.installPath}
 
@@ -1287,7 +1294,7 @@ export function buildInviteOnboardingTextDocument(
     ## Connectivity guidance
     ${
       onboarding.connectivity?.guidance ??
-      "Ensure Paperclip is reachable from your OpenClaw runtime."
+      "Ensure Papierklammer is reachable from your OpenClaw runtime."
     }
   `);
 
@@ -1300,7 +1307,7 @@ export function buildInviteOnboardingTextDocument(
     : [];
 
   if (connectionCandidates.length > 0) {
-    lines.push("## Suggested Paperclip base URLs to try");
+    lines.push("## Suggested Papierklammer base URLs to try");
     for (const candidate of connectionCandidates) {
       lines.push(`- ${candidate}`);
     }
@@ -1313,7 +1320,7 @@ export function buildInviteOnboardingTextDocument(
       If none are reachable: ask your human operator for a reachable hostname/address and help them update network configuration.
       For authenticated/private mode, they may need:
       - pnpm papierklammer allowed-hostname <host>
-      - then restart Paperclip and retry onboarding.
+      - then restart Papierklammer and retry onboarding.
     `);
   }
 
@@ -1926,14 +1933,18 @@ export function accessRoutes(
   router.get("/skills/index", (_req, res) => {
     res.json({
       skills: [
-        { name: "paperclip", path: "/api/skills/paperclip" },
+        { name: "papierklammer", path: "/api/skills/papierklammer" },
         {
           name: "para-memory-files",
           path: "/api/skills/para-memory-files"
         },
         {
-          name: "paperclip-create-agent",
-          path: "/api/skills/paperclip-create-agent"
+          name: "papierklammer-create-agent",
+          path: "/api/skills/papierklammer-create-agent"
+        },
+        {
+          name: "papierklammer-create-plugin",
+          path: "/api/skills/papierklammer-create-plugin"
         }
       ]
     });

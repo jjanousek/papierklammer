@@ -158,7 +158,7 @@ function sourceMeta(sourceBadge: CompanySkillSourceBadge, sourceLabel: string | 
       return { icon: Link2, label: sourceLabel ?? "URL", managedLabel: "URL managed" };
     case "local":
       return { icon: Folder, label: sourceLabel ?? "Folder", managedLabel: "Folder managed" };
-    case "paperclip":
+    case "papierklammer":
       return { icon: Paperclip, label: sourceLabel ?? "Papierklammer", managedLabel: "Papierklammer managed" };
     default:
       return { icon: Boxes, label: sourceLabel ?? "Catalog", managedLabel: "Catalog managed" };

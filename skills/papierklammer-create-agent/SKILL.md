@@ -1,12 +1,12 @@
 ---
-name: paperclip-create-agent
+name: papierklammer-create-agent
 description: >
-  Create new agents in Paperclip with governance-aware hiring. Use when you need
+  Create new agents in Papierklammer with governance-aware hiring. Use when you need
   to inspect adapter configuration options, compare existing agent configs,
   draft a new agent prompt/config, and submit a hire request.
 ---
 
-# Paperclip Create Agent Skill
+# Papierklammer Create Agent Skill
 
 Use this skill when you are asked to hire/create an agent.
 
@@ -28,7 +28,7 @@ curl -sS "$PAPIERKLAMMER_API_URL/api/agents/me" \
   -H "Authorization: Bearer $PAPIERKLAMMER_API_KEY"
 ```
 
-2. Discover available adapter configuration docs for this Paperclip instance.
+2. Discover available adapter configuration docs for this Papierklammer instance.
 
 ```sh
 curl -sS "$PAPIERKLAMMER_API_URL/llms/agent-configuration.txt" \
@@ -130,7 +130,7 @@ For each linked issue, either:
 
 Before sending a hire request:
 
-- if the role needs skills, make sure they already exist in the company library or install them first using the Paperclip company-skills workflow
+- if the role needs skills, make sure they already exist in the company library or install them first using the Papierklammer company-skills workflow
 - Reuse proven config patterns from related agents where possible.
 - Set a concrete `icon` from `/llms/agent-icons.txt` so the new hire is identifiable in org and task views.
 - Avoid secrets in plain text unless required by adapter behavior.
@@ -139,4 +139,4 @@ Before sending a hire request:
 - If board requests revision, update payload and resubmit through approval flow.
 
 For endpoint payload shapes and full examples, read:
-`skills/paperclip-create-agent/references/api-reference.md`
+`skills/papierklammer-create-agent/references/api-reference.md`

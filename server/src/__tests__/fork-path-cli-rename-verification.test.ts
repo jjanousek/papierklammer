@@ -358,4 +358,80 @@ describe("fork-path-cli-rename-verification: filesystem paths and CLI branding",
       expect(cliIndex).not.toContain('description("Run diagnostic checks on your Paperclip setup")');
     });
   });
+
+  describe("skill catalog and worker-skill branding uses renamed Papierklammer identities", () => {
+    it("bundled skill directories and discovery routes only expose renamed slugs", () => {
+      const accessRoutes = readFileSync(join(ROOT, "server/src/routes/access.ts"), "utf-8");
+      const bundledSkillDirs = readdirSync(join(ROOT, "skills"), { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort();
+
+      expect(bundledSkillDirs).toEqual([
+        "papierklammer",
+        "papierklammer-create-agent",
+        "papierklammer-create-plugin",
+        "para-memory-files",
+      ]);
+      expect(accessRoutes).toContain('/api/skills/papierklammer');
+      expect(accessRoutes).toContain('/api/skills/papierklammer-create-agent');
+      expect(accessRoutes).not.toContain('/api/skills/paperclip');
+      expect(accessRoutes).not.toContain('/api/skills/paperclip-create-agent');
+      expect(accessRoutes).not.toContain('/api/skills/paperclip-create-plugin');
+    });
+
+    it("active bundled and project worker skill markdown avoids legacy Paperclip copy", () => {
+      const skillFiles = collectFiles(join(ROOT, "skills"), [".md"]).concat(
+        collectFiles(join(ROOT, ".factory/skills"), [".md"]),
+      );
+      const violations: { file: string; line: string }[] = [];
+      const forbiddenPatterns = [
+        "paperclipai",
+        "Paperclip",
+        "paperclip-create-agent",
+        "paperclip-create-plugin",
+        "/api/skills/paperclip",
+        "skills/paperclip",
+        "X-Paperclip",
+      ];
+
+      for (const file of skillFiles) {
+        const content = readFileSync(file, "utf-8");
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i += 1) {
+          const line = lines[i]!;
+          if (!forbiddenPatterns.some((pattern) => line.includes(pattern))) continue;
+          violations.push({
+            file: file.replace(ROOT + "/", ""),
+            line: `L${i + 1}: ${line.trim()}`,
+          });
+        }
+      }
+
+      expect(violations).toEqual([]);
+    });
+
+    it("available-skill and adapter guidance text uses Papierklammer managed wording", () => {
+      const accessRoutes = readFileSync(join(ROOT, "server/src/routes/access.ts"), "utf-8");
+      const companySkills = readFileSync(join(ROOT, "server/src/services/company-skills.ts"), "utf-8");
+      const claudeSkills = readFileSync(join(ROOT, "packages/adapters/claude-local/src/server/skills.ts"), "utf-8");
+      const codexSkills = readFileSync(join(ROOT, "packages/adapters/codex-local/src/server/skills.ts"), "utf-8");
+      const availableSkillsApi = readFileSync(join(ROOT, "ui/src/api/agents.ts"), "utf-8");
+
+      expect(accessRoutes).toContain("isPapierklammerManaged");
+      expect(accessRoutes).not.toContain("isPaperclipManaged");
+      expect(companySkills).toContain("Bundled Papierklammer skills are read-only.");
+      expect(companySkills).toContain('sourceBadge: "papierklammer"');
+      expect(companySkills).not.toContain("Bundled Paperclip skills are read-only.");
+      expect(companySkills).not.toContain('sourceBadge: "paperclip"');
+      expect(claudeSkills).toContain("Required by Papierklammer");
+      expect(claudeSkills).toContain("Managed by Papierklammer");
+      expect(claudeSkills).not.toContain("Required by Paperclip");
+      expect(codexSkills).toContain("Required by Papierklammer");
+      expect(codexSkills).toContain("Managed by Papierklammer");
+      expect(codexSkills).not.toContain("Managed by Paperclip");
+      expect(availableSkillsApi).toContain("isPapierklammerManaged");
+      expect(availableSkillsApi).not.toContain("isPaperclipManaged");
+    });
+  });
 });

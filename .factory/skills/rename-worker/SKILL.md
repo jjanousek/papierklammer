@@ -32,7 +32,7 @@ None
 
 4. **Perform the rename**:
    - Change shared naming sources before dependent surfaces.
-   - Be careful with case sensitivity: `PAPERCLIP` vs `paperclip` vs `Paperclip` may all need different replacements.
+   - Be careful with case sensitivity: `PAPIERKLAMMER` vs `papierklammer` vs `Papierklammer` may all need different replacements.
    - Treat generated and derived identifiers as first-class rename targets: skill keys, headers, onboarding snippets, labels, filenames, and browser storage keys.
    - Do NOT rename anything in `node_modules/`, `dist/`, or broad historical docs unless the feature explicitly says it is in scope.
    - If the feature touches active skill content, check both bundled `skills/` and active `.factory/skills/`.
@@ -57,8 +57,8 @@ None
 
 ```json
 {
-  "salientSummary": "Renamed the remaining bundled skill and CLI live surfaces from Paperclip to Papierklammer. Updated skill slugs, served skill markdown, local installer text, and active worker-skill instructions. Focused rename verification tests, low-concurrency typecheck, and targeted help/curl probes all passed.",
-  "whatWasImplemented": "Cut over active bundled skill names and operator-visible Paperclip strings across served skill routes, local-cli installer output, and active .factory worker skills. Extended the existing fork rename verification tests to cover the new live skill slugs and active skill-file content, while preserving explicit allowlisted vendor filenames outside mission scope.",
+  "salientSummary": "Renamed the remaining bundled skill and CLI live surfaces from legacy names to Papierklammer. Updated skill slugs, served skill markdown, local installer text, and active worker-skill instructions. Focused rename verification tests, low-concurrency typecheck, and targeted help/curl probes all passed.",
+  "whatWasImplemented": "Cut over active bundled skill names and operator-visible legacy strings across served skill routes, local-cli installer output, and active .factory worker skills. Extended the existing fork rename verification tests to cover the new live skill slugs and active skill-file content, while preserving explicit allowlisted vendor filenames outside mission scope.",
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
@@ -73,7 +73,7 @@ None
     "added": [
       { "file": "server/src/__tests__/rename-verification.test.ts", "cases": [
         { "name": "bundled skill routes use papierklammer slugs", "verifies": "live skill discovery rename complete" },
-        { "name": "active .factory skill files contain no Paperclip operator copy", "verifies": "active worker-skill rename complete" }
+        { "name": "active .factory skill files contain no legacy operator copy", "verifies": "active worker-skill rename complete" }
       ]}
     ]
   },

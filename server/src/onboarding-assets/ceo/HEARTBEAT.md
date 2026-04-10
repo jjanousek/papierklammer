@@ -38,7 +38,7 @@ If `PAPIERKLAMMER_APPROVAL_ID` is set:
 ## 6. Delegation
 
 - Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId` and `goalId`. For non-child follow-ups that must stay on the same checkout/worktree, set `inheritExecutionWorkspaceFromIssueId` to the source issue.
-- Use `paperclip-create-agent` when hiring new agents.
+- Use `papierklammer-create-agent` when hiring new agents.
 - Assign work to the right agent for the job.
 
 ## 7. Fact Extraction
@@ -66,7 +66,7 @@ If `PAPIERKLAMMER_APPROVAL_ID` is set:
 
 ## Rules
 
-- Always use the Papierklammer coordination skill (`paperclip`).
-- Always include `X-Paperclip-Run-Id` header on mutating API calls.
+- Always use the Papierklammer coordination skill (`papierklammer`).
+- Always include `X-Papierklammer-Run-Id` header on mutating API calls.
 - Comment in concise markdown: status line + bullets + links.
 - Self-assign via checkout only when explicitly @-mentioned.

@@ -399,7 +399,7 @@ describe("agent skill routes", () => {
     expect(mockAdapter.syncSkills).toHaveBeenCalled();
   });
 
-  it("canonicalizes desired skill references before syncing", async () => {
+  it("rejects legacy bundled skill references before syncing", async () => {
     mockAgentService.getById.mockResolvedValue(makeAgent("claude_local"));
 
     const res = await callRoute({
@@ -410,22 +410,12 @@ describe("agent skill routes", () => {
       body: { desiredSkills: ["paperclip"] },
     });
 
-    expect(res.status, JSON.stringify(res.body)).toBe(200);
-    expect(mockCompanySkillService.resolveRequestedSkillKeys).toHaveBeenCalledWith("company-1", ["paperclip"]);
-    expect(mockAgentService.update).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        adapterConfig: expect.objectContaining({
-          paperclipSkillSync: expect.objectContaining({
-            desiredSkills: ["papierklammer/paperclip/paperclip"],
-          }),
-        }),
-      }),
-      expect.any(Object),
-    );
+    expect(res.status, JSON.stringify(res.body)).toBe(422);
+    expect(mockCompanySkillService.resolveRequestedSkillKeys).not.toHaveBeenCalled();
+    expect(mockAgentService.update).not.toHaveBeenCalled();
   });
 
-  it("persists canonical desired skills when creating an agent directly", async () => {
+  it("rejects legacy bundled skill references when creating an agent directly", async () => {
     const res = await callRoute({
       method: "post",
       path: "/companies/:companyId/agents",
@@ -439,18 +429,9 @@ describe("agent skill routes", () => {
       },
     });
 
-    expect(res.status, JSON.stringify(res.body)).toBe(201);
-    expect(mockCompanySkillService.resolveRequestedSkillKeys).toHaveBeenCalledWith("company-1", ["paperclip"]);
-    expect(mockAgentService.create).toHaveBeenCalledWith(
-      "company-1",
-      expect.objectContaining({
-        adapterConfig: expect.objectContaining({
-          paperclipSkillSync: expect.objectContaining({
-            desiredSkills: ["papierklammer/paperclip/paperclip"],
-          }),
-        }),
-      }),
-    );
+    expect(res.status, JSON.stringify(res.body)).toBe(422);
+    expect(mockCompanySkillService.resolveRequestedSkillKeys).not.toHaveBeenCalled();
+    expect(mockAgentService.create).not.toHaveBeenCalled();
   });
 
   it("materializes a managed AGENTS.md for directly created local agents", async () => {
@@ -551,7 +532,7 @@ describe("agent skill routes", () => {
     );
   });
 
-  it("includes canonical desired skills in hire approvals", async () => {
+  it("rejects legacy bundled skill references in hire approvals", async () => {
     const db = createDb(true);
 
     const res = await callRoute({
@@ -568,19 +549,9 @@ describe("agent skill routes", () => {
       },
     });
 
-    expect(res.status, JSON.stringify(res.body)).toBe(201);
-    expect(mockCompanySkillService.resolveRequestedSkillKeys).toHaveBeenCalledWith("company-1", ["paperclip"]);
-    expect(mockApprovalService.create).toHaveBeenCalledWith(
-      "company-1",
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          desiredSkills: ["papierklammer/paperclip/paperclip"],
-          requestedConfigurationSnapshot: expect.objectContaining({
-            desiredSkills: ["papierklammer/paperclip/paperclip"],
-          }),
-        }),
-      }),
-    );
+    expect(res.status, JSON.stringify(res.body)).toBe(422);
+    expect(mockCompanySkillService.resolveRequestedSkillKeys).not.toHaveBeenCalled();
+    expect(mockApprovalService.create).not.toHaveBeenCalled();
   });
 
   it("uses managed AGENTS config in hire approval payloads", async () => {

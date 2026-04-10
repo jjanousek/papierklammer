@@ -577,6 +577,30 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
     return adapterType !== "claude_local";
   }
 
+  const LEGACY_BUNDLED_SKILL_RENAMES: Record<string, string> = {
+    paperclip: "papierklammer",
+    "paperclip-create-agent": "papierklammer-create-agent",
+    "paperclip-create-plugin": "papierklammer-create-plugin",
+  };
+
+  function assertNoLegacyBundledSkillRefs(requestedDesiredSkills: string[]) {
+    const legacyRefs = Array.from(
+      new Set(
+        requestedDesiredSkills
+          .map((value) => value.trim().toLowerCase())
+          .filter((value) => Object.prototype.hasOwnProperty.call(LEGACY_BUNDLED_SKILL_RENAMES, value)),
+      ),
+    );
+    if (legacyRefs.length === 0) return;
+
+    const suggestions = legacyRefs.map(
+      (legacyRef) => `${legacyRef} → ${LEGACY_BUNDLED_SKILL_RENAMES[legacyRef]}`,
+    );
+    throw unprocessable(
+      `Legacy bundled skill references are no longer supported. Use renamed skill slugs instead (${suggestions.join(", ")}).`,
+    );
+  }
+
   async function buildRuntimeSkillConfig(
     companyId: string,
     adapterType: string,
@@ -604,6 +628,8 @@ export function agentRoutes(db: Db, deps: AgentRouteDependencies = {}) {
         runtimeSkillEntries: null as Awaited<ReturnType<typeof companySkills.listRuntimeSkillEntries>> | null,
       };
     }
+
+    assertNoLegacyBundledSkillRefs(requestedDesiredSkills);
 
     const resolvedRequestedSkills = await companySkills.resolveRequestedSkillKeys(
       companyId,
