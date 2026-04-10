@@ -1,0 +1,63 @@
+{
+  "groupId": "residual-sweep",
+  "testedAt": "2026-04-10T16:17:28Z",
+  "isolation": {
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "pnpm command",
+    "assignedAssertions": [
+      "VAL-CROSS-004"
+    ],
+    "evidenceDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/verification-cleanup/residual-sweep",
+    "command": "node scripts/check-live-brand-sweep.mjs",
+    "sweepScope": {
+      "include": [
+        "package.json",
+        "cli/",
+        "server/",
+        "ui/",
+        "packages/",
+        "skills/",
+        ".factory/skills/",
+        "scripts/"
+      ],
+      "exclude": [
+        "node_modules/",
+        "dist/",
+        ".git/",
+        "docs/history/spec folders",
+        "tests unless explicitly required",
+        "mission artifacts",
+        "allowlisted vendor filenames such as .paperclip.yaml"
+      ]
+    }
+  },
+  "toolsUsed": [
+    "pnpm command"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-004",
+      "title": "In-scope live-surface residual Paperclip sweep is clean",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `node scripts/check-live-brand-sweep.mjs` from `/Users/aischool/work/papierklammer_droid`.",
+          "expected": "The deterministic live-surface sweep exits 0 and reports a clean sweep with zero forbidden legacy-brand matches.",
+          "observed": "Exit 0; output=`Live-surface rename sweep is clean.`"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "verification-cleanup/residual-sweep/VAL-CROSS-004-live-brand-sweep.txt"
+        ],
+        "command": "node scripts/check-live-brand-sweep.mjs",
+        "legacyTokenCheck": "Sweep exited 0 and reported `Live-surface rename sweep is clean.` with zero forbidden matches."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: VAL-CROSS-004=pass."
+}
