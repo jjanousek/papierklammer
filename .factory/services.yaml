@@ -2,17 +2,17 @@ commands:
   install: pnpm install
   typecheck: pnpm -r --workspace-concurrency=1 typecheck
   build: pnpm -r --workspace-concurrency=1 build
-  test: pnpm test:run -- --maxWorkers=1
+  test: pnpm exec vitest run --maxWorkers=1 server/src/__tests__/fork-rename-verification.test.ts server/src/__tests__/fork-path-cli-rename-verification.test.ts server/src/__tests__/fork-env-var-rename-verification.test.ts
   lint: echo "no lint configured"
   dev_start: PORT=3100 pnpm dev:once
   dev_stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
-  health: curl -sf http://localhost:3100/api/health
-  companies: curl -sf http://localhost:3100/api/companies
+  health: curl -sf http://127.0.0.1:3100/api/health
+  companies: curl -sf http://127.0.0.1:3100/api/companies
 
 services:
   qa-app:
     start: PORT=3100 pnpm dev:once
     stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
-    healthcheck: curl -sf http://localhost:3100/api/health
+    healthcheck: curl -sf http://127.0.0.1:3100/api/health
     port: 3100
     depends_on: []

@@ -2,100 +2,99 @@
 
 ## Mission focus
 
-This mission does not build new product behavior. It audits the shipped Papierklammer control plane by driving a real operator journey and preserving evidence for a detailed bug report.
+This mission is a hard live-brand rename. It removes remaining `Paperclip` / `paperclipai` naming from active code plus active skills/scripts and cuts over those live contracts to `Papierklammer` without keeping compatibility aliases.
 
-The audit follows one dedicated QA company through:
-- company creation or company-add flow
-- agent hiring
-- approval-gated hiring
-- issue delegation
-- post-company TUI checks
-- final bug-report generation
+The mission does not target broad docs/history cleanup. It targets the shipped runtime, agent skill distribution, CLI/operator surfaces, active scripts, and the shared identifiers that tie them together.
 
-## Runtime surfaces
+## System areas
 
-### Local dev app
-- The default local dev app runs on `http://localhost:3100`.
-- The Express server serves the API and the web board together in local development.
-- Workers should treat this single app instance as the only mission-controlled runtime process unless the orchestrator explicitly changes the plan.
-- The approved mission entrypoint is the default dev flow from `.factory/services.yaml` (`PORT=3100 pnpm dev:once`); do not default to `pnpm papierklammer run` in this environment.
+### 1. Runtime and UI/API layer
+- The local app on `http://127.0.0.1:3100` serves both the Express API and the web UI.
+- Runtime branding appears in:
+  - root HTML shell and server-emitted branding helpers
+  - UI page copy and navigation/help links
+  - browser persistence keys such as selected-company/view/draft state
+  - lightweight generated text/assets exposed by routes
+  - HTTP-facing identifiers such as session/trace/header naming
+- Shared constants and validators under `packages/shared/` influence both server and UI behavior, so renames here ripple widely.
 
-### Web UI
-- The browser surface is the main operator path for this audit.
-- The operator creates or selects the QA company, hires agents, toggles company settings, reviews approvals, triages issues, and inspects issue detail here.
-- Browser evidence is the main source for user-visible bugs.
+### 2. Skill distribution layer
+- Bundled skills live under `skills/` and are served by `/api/skills/*`.
+- Project worker skills live under `.factory/skills/` and are part of the active agent workflow for this repo.
+- `packages/adapter-utils/` and `server/src/services/company-skills.ts` derive bundled skill identities, keys, and installable names.
+- Agent skill state is exposed through `/api/agents/:id/skills` and `/api/agents/:id/skills/sync`.
+- Local adapter install flows write skills into adapter-specific home directories; those flows must agree with the served skill inventory.
 
-### API
-- The API under `/api` is the source of truth for entity identity and state during the audit.
-- `companyId`, `agentId`, `approvalId`, `issueId`, issue keys, and any `runId` values should be anchored here and then correlated back to browser and TUI evidence.
-- API evidence is used to prove whether an observed UI/TUI problem is a rendering/navigation issue or a real state inconsistency.
+### 3. CLI and operator-script layer
+- The root operator surface is the `papierklammer` CLI in `cli/src/index.ts`.
+- Operator-facing wording also lives in subcommands (`onboard`, `doctor`, `run`, `configure`, `env`, `db:backup`, `worktree`, client commands).
+- Active operational wrappers live in `scripts/` and `package.json` scripts, including smoke/setup helpers and worktree/dev tooling.
+- These surfaces often generate labels, prefixes, filenames, and next-step instructions; rename drift commonly survives here.
 
-### Orchestrator TUI
-- The TUI is a post-company surface only.
-- It attaches to the existing local app and is used for company selection, status polling, issue desk review, approvals, and management shortcuts such as wake/invoke/unblock or issue creation.
-- TUI checks should happen only after the QA company already exists in the local app.
+### 4. TUI and generated/export surfaces
+- The shipped TUI package (`packages/orchestrator-tui`, published as `papierklammer-tui`) is a live operator surface and can still leak legacy runtime strings even if package naming is already renamed.
+- Company portability/export flows generate user-facing files, readmes, manifests, links, and sidecar references. Those generated artifacts are live product output, not historical docs.
+- Generated text/assets from server routes or export helpers must be treated as rename targets when they are user-visible.
 
-### Audit artifacts
-- Mission evidence may live in the mission directory while the final bug report must live in the repository.
-- The audit must preserve an identifier ledger and a short handoff note so the final chat summary can point to the markdown report without recomputing findings.
-- Required paths for this mission:
-  - `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/bootstrap.md`
-  - `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/lifecycle.md`
-  - `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/tui.md`
-  - `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/evidence/raw/`
-  - `/Users/aischool/.factory/missions/c506faaa-7d1c-4db2-be71-183035095277/final-handoff.md`
-  - `/Users/aischool/work/papierklammer_droid/doc/2026-04-09-papierklammer-qa-audit.md`
+### 5. Adapter and OpenClaw bridge layer
+- Adapter registries and adapter-specific guidance live across `packages/adapters/**`, server routes, and CLI/UI surfaces.
+- OpenClaw is a special cross-surface bridge: onboarding text, generated manifests, skill references, filenames, config keys, and wake/run headers must all agree.
+- The rename must be coherent across normal local adapters and OpenClaw-specific flows.
 
-## Core audit flows
+## Cross-surface contracts
 
-### Bootstrap flow
-1. Start the local dev app on port `3100`.
-2. Capture `/api/health` and the starting company inventory.
-3. Reach the real company-creation path available in the current state.
-4. Establish a usable QA company context or document the blocker with evidence.
+The highest-risk contracts are the ones repeated in multiple places:
 
-### Hire and approval flow
-1. In the QA company, exercise one direct-hire path with approvals disabled.
-2. Enable board approval for new hires.
-3. Exercise one approval-gated hire.
-4. Record the pending state, resolve the approval once, and verify whether the approved hire becomes usable for real work.
+- bundled skill slugs and frontmatter names
+- runtime skill keys and desired/installed skill snapshots (for example `papierklammer/paperclip/<slug>`)
+- CLI command names and help text
+- HTTP trace/header and config names (for example `X-Paperclip-Run-Id`, `paperclipApiUrl`)
+- onboarding/manifests/install instructions
+- generated artifact prefixes, labels, and filenames
+- browser storage keys starting with `paperclip`
 
-### Delegation flow
-1. Create or update a runnable issue in the QA company.
-2. Assign or reassign it to the audited agent.
-3. Correlate the same issue and assignee state across browser and API evidence.
-4. Record wake/run behavior or the blocker that prevented it.
+If any one layer is renamed without the others, the product becomes internally inconsistent even when individual files compile.
 
-### TUI reconciliation flow
-1. Launch the TUI after the QA company exists.
-2. Confirm the TUI opens the intended company or records why it could not.
-3. Perform one real management action.
-4. Reconcile that action against API or browser truth.
+## Rename decision matrix
 
-### Reporting flow
-1. Consolidate evidence into a repository markdown bug report.
-2. Include a validation matrix and identifier ledger.
-3. Separate confirmed product bugs from test blockers/frictions.
-4. Prepare a short handoff note for the final chat response.
+### Must rename now
+- Active user-visible `Paperclip` / `paperclipai` branding in code, skills, scripts, generated assets, and operator flows
+- Live skill route/path/install names such as `/api/skills/paperclip` and `skills/paperclip`
+- Runtime/config/header names such as `X-Paperclip-Run-Id`, `paperclipApiUrl`, and legacy `paperclip:` runtime keys
+- Browser persistence keys beginning with `paperclip`
+- OpenClaw-facing legacy filenames/session/config names when they are part of the shipped flow
 
-## Invariants for this mission
-- The mission is QA-only. Workers should not fix product bugs as part of normal execution.
-- One app instance at a time is the default. Avoid overlapping Node-heavy helpers.
-- The QA should use one clearly named QA company whenever possible.
-- Once bootstrap creates the dedicated QA company for this mission, later features should reuse that same company unless a blocker forces an exception.
-- Existing user data must be preserved; do not reset the default instance or delete pre-existing companies unless the user explicitly approves it.
-- Downstream assertions may be marked `blocked` only when the prerequisite failure is evidenced and tied back to the earlier blocker.
+### Intentionally preserved or allowlisted only when explicitly required
+- Vendor/spec filenames and schema names that are intentionally outside this mission’s live rename scope, such as `.paperclip.yaml`, when they remain part of a published compatibility format
+
+### Needs explicit worker caution
+- Generated portability/export output: workers must inspect whether the user-visible artifact content is live branding that should change even if the filename/schema is allowlisted
+- Existing verification tests already capture some allowed legacy path cases; workers should extend those tests rather than assuming every `paperclip` token is automatically in scope
+
+## Mission invariants
+
+- Hard cut only: no compatibility aliases for legacy Paperclip names.
+- Package scope and primary binary rename are already done (`@papierklammer/*`, `papierklammer`, `papierklammer-tui`); remaining risk is concentrated in runtime strings, skill identities, generated artifacts, storage keys, and API/header names.
+- In scope: live code, active `skills/`, active `.factory/skills/`, active `scripts/`, and shipped operator/runtime surfaces.
+- Out of scope: broad docs/history/spec rewrites, archived validation artifacts, and tests except where they are needed to verify the rename.
+- Keep validation and implementation low-process: no more than four mission-started Node processes at once, no overlapping dev servers, and shut down temporary processes promptly.
+- Reuse port `3100` for app validation when needed; do not start parallel app instances.
 
 ## Risk concentrations
-- Root routing may reuse stale company selection and trigger dashboard/company mismatches.
-- Hire approval state may drift from assignment pickers or run controls.
-- Issue identity may differ across issue detail, live runs, approvals, and TUI summaries.
-- The TUI may retain stale company context when switching or recovering from launch-state issues.
-- Because this mission runs against the default local dev setup, pre-existing data can hide or distort first-run assumptions if the audit does not record starting inventory carefully.
+
+- Shared/runtime constants that look internal but leak into API/web/CLI output
+- Browser local-storage keys that can silently preserve old naming
+- Served bundled skill paths and the code that derives runtime skill keys
+- `agent local-cli` installation behavior versus the skill inventory served over HTTP
+- CLI help/next-step text and script-generated labels/prefixes
+- OpenClaw onboarding, filenames, config keys, and run-trace/header naming
+- Residual rename tokens in active `.factory/skills/` that many agents rely on
+- Generated portability/export artifacts and live TUI/operator strings
 
 ## Worker guidance
-- Read the mission contract before auditing a surface.
-- Prefer black-box evidence over implementation speculation.
-- Capture IDs early and reuse them throughout the audit.
-- Keep notes about runtime/process posture as you go; do not reconstruct them from memory during reporting.
-- If a product bug blocks the next planned flow, capture it immediately, mark downstream work as blocked where appropriate, and continue with any still-reachable surfaces.
+
+- Treat the validation contract as the source of truth for what must be observable after the rename.
+- Prefer changing shared naming sources first, then dependent surfaces.
+- When a rename touches generated or derived identifiers, verify both the source definition and an observable output path.
+- Reuse and extend the existing rename verification tests where possible; they already encode parts of the fork’s expected naming model.
+- Keep scans tightly scoped to active live surfaces so workers do not churn historical docs or mission artifacts.

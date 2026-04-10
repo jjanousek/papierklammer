@@ -3,65 +3,58 @@
 ## Validation Surface
 
 ### Web UI
-- Use `agent-browser` against the default local dev app served from `http://localhost:3100`.
-- Primary browser flows for this mission: company creation/add-company path, hire flows, approvals, issue delegation, dashboard/issues/inbox/agents review surfaces, and company-context anomalies.
-- Keep one browser session tied to the dedicated QA company so company context, screenshots, and network evidence remain aligned.
+- Use `agent-browser` against the local app on `http://127.0.0.1:3100` only when a browser assertion is required by the contract.
+- Primary browser flows for this mission are low-cost rename checks: root/auth/CLI-approval/dashboard text, visible links, and localStorage behavior.
+- Prefer deterministic text/link/key checks over broad manual exploration.
 
 ### API
-- Use `curl` against the same local app instance on `http://localhost:3100`.
-- Use API responses as the source of truth for `companyId`, `agentId`, `approvalId`, `issueId`, issue key, and any `runId` values that browser and TUI evidence should match.
-- The bootstrap pass must capture `/api/health` and `/api/companies` before deeper flows begin.
+- Use `curl` against the same local app instance on `http://127.0.0.1:3100`.
+- Primary API checks: skill discovery, skill fetches, skill sync responses, session/runtime payloads, and other lightweight rename-sensitive routes.
+- Use API probes as the main source of truth for contract assertions that do not require a browser.
+
+### CLI and operator scripts
+- Use lightweight `pnpm papierklammer ... --help` / safe diagnostic commands as the main operator-surface validation path.
+- For active scripts, prefer deterministic scans or safe dry-run style invocations that do not mutate user state.
+- Use temporary directories/home overrides for installer/onboarding probes when possible.
 
 ### TUI
-- Use TUI validation only after the QA company exists.
-- Use a real PTY-driven terminal path (`tuistory`).
-- Focus on company resolution, switching, scoped polling, one management action, and whether empty/error states are distinguished correctly.
-
-### Report artifacts
-- The final markdown bug report must live in the repository.
-- Supporting evidence notes may live in the mission directory, and raw screenshots/terminal captures/request snippets should live under the mission `evidence/raw/` directory.
-- The final report must include a validation matrix, blocker classification, identifier ledger, and a short executive summary.
+- TUI is a secondary rename surface.
+- Validate only if a low-process, non-overlapping check is feasible within the user’s strict process budget.
+- Prefer passive or narrowly scoped probes over long interactive sessions.
 
 ## Validation Concurrency
+
+### Validation Concurrency
 - **Web UI:** max **1** concurrent validator.
-- **API:** max **1** concurrent validator aligned to the same browser/TUI bundle.
-- **TUI:** max **1** concurrent validator when used.
-- **Report artifacts:** max **1** concurrent validator because the surface is read-only and the assertions are coupled to the same report + handoff bundle.
-- **Overall bundle rule:** run only **one full validation bundle at a time**.
-- **Observed dry-run cost:** starting the local dev app increased the observed node-related process count by about **+9** over baseline in this environment.
-- **Resource rule for this mission:** do not add overlapping Node-heavy helpers beyond the single active app and the current surface tool. Keep validation strictly sequential.
+- **API:** max **1** concurrent validator.
+- **CLI/scripts:** max **1** concurrent validator.
+- **TUI:** max **1** concurrent validator, only if used.
+- **Overall rule:** run only **one validation surface bundle at a time**.
+- **Process rule:** the mission must stay within the user’s strict low-memory posture; do not intentionally exceed 4 mission-started Node processes.
 
 ## Validation Setup Notes
-- Use the default local dev app from `.factory/services.yaml`; do not start a second app instance unless the orchestrator explicitly changes the plan.
-- Keep validation **local-only**; do not rely on Docker or remote hosted services.
-- Do not reset the default database or delete pre-existing companies. Instead, create a uniquely named QA company and record the starting company inventory before doing so.
-- In `local_trusted` mode, requests without an `Authorization` header are implicitly treated as board-authenticated. Do not use headerless requests as anonymous-denial evidence.
-- Reuse the same `companyId`, `issueId`, `agentId`, `approvalId`, and `runId` across browser, API, and TUI checks within a bundle.
-- When a prerequisite bug blocks a later flow, record the blocker immediately and continue with any remaining reachable surfaces.
-- Workers write evidence artifacts; validators own `validation-state.json` and update assertion statuses from those artifacts.
+- Stop repo-owned extra dev/watch/TUI processes before starting validation work.
+- Reuse the existing app entrypoint/port from `.factory/services.yaml`; do not start a second local app instance.
+- Keep validation local-only; do not rely on Docker or remote services.
+- The full `pnpm test:run -- --maxWorkers=1` suite is not the mission baseline because it exceeds the process budget.
+- Scope repo sweeps carefully: include active code, active `skills/`, active `.factory/skills/`, active `scripts/`, and other explicitly in-scope live files; exclude historical docs, tests unless required, dist output, and mission artifacts.
+- Treat compatibility/vendor filenames such as `.paperclip.yaml` as allowlisted only when the contract or worker guidance explicitly says so.
 
 ## Flow Validator Guidance: Web UI
-- Capture the actual path used to create the QA company: first-run onboarding or add-company flow.
-- Trigger one invalid onboarding or agent-readiness path before the real successful create path.
-- For hire validation, exercise both direct-hire and approval-gated hire paths.
-- For approval-gated hires, verify both “blocked before approval” and “usable after approval.”
-- Visit dashboard, approvals, inbox, issues, issue detail, agents, and agent detail explicitly; note “no issue observed” when a surface behaves correctly.
+- Capture visible `Papierklammer` versus `Paperclip` text on the exact pages named in the assertion.
+- When validating localStorage hard cuts, seed only the legacy keys needed for the contract, reload once, and record both the pre-seeded and post-load key state.
+- Record legacy docs/link targets if a page still points to them.
 
 ## Flow Validator Guidance: API
-- Begin with `GET /api/health` and `GET /api/companies`.
-- Use API probes to anchor every cross-surface check: created company, hires, approvals, issue assignment, and any run/wakeup state.
-- Preserve exact IDs and issue keys as they appear in payloads so the report can map them back to browser/TUI evidence.
-- Keep API checks sequential and scoped to the same QA company.
+- Begin with the exact route named by the assertion; do not broaden scope unnecessarily.
+- For skill/API assertions, capture both success on the renamed path and failure on the legacy path when the contract requires a hard cut.
+- For sync/mutation assertions, capture the request plus the resulting observable snapshot/state.
+
+## Flow Validator Guidance: CLI and scripts
+- Favor `--help`, `--version`, safe error paths, and deterministic scans before trying heavier commands.
+- When a contract requires generated names/prefixes, use isolated temp output paths or dry-run-friendly inputs so validation does not pollute the user’s real environment.
+- For script inventory checks, preserve the exact scan command and match criteria in the evidence.
 
 ## Flow Validator Guidance: TUI
-- Launch the TUI only after the QA company exists.
-- Record whether launch/selection resolves the intended QA company cleanly or falls back in a surprising way.
-- If the TUI is usable, capture one real management action and reconcile it with API or browser truth.
-- Note whether the TUI distinguishes true empty states from polling failures.
-
-## Flow Validator Guidance: Report artifacts
-- Treat this surface as read-only. Validate the shipped report and handoff artifacts; do not rewrite them from a flow-validator subagent.
-- Read the repository report, mission handoff note, and supporting evidence files referenced by the report.
-- Confirm the report includes: executive summary, product-bugs section, blocker/friction separation, full validation matrix, identifier ledger, and evidence references for every reported finding.
-- Check that reporting assertions (`VAL-REPORT-*`) and cross-area assertions (`VAL-CROSS-*`) are each represented with a status, short outcome note, and evidence citation.
-- If a cited evidence file is missing, unreadable, or inconsistent with the report text, mark the affected assertion `fail` and explain the mismatch precisely.
+- Skip the TUI surface unless it can be exercised without violating the process budget.
+- If used, keep the check short and capture only the rename-relevant output.

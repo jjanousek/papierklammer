@@ -12,31 +12,37 @@ Environment variables, external dependencies, and setup notes.
 - Node.js 25.6.1 (repo requires `>=20`)
 - pnpm 9.15.4
 - macOS darwin arm64
-- Default mission runtime is the repo’s local dev flow on port `3100`
-- `pnpm papierklammer run` is not the default mission path because the non-interactive config is currently missing in this environment
+- Default local app/API surface is `http://127.0.0.1:3100`
+- Embedded Postgres is currently observed on `127.0.0.1:54329`
 - Docker is off-limits for this mission
+
+## Resource and process posture
+
+- The user requires a strict low-memory mode: do not intentionally exceed 4 mission-started Node processes at once.
+- Stop repo-owned dev/watch/TUI processes you are not using before validation or implementation.
+- Do not run overlapping app instances on multiple ports; reuse `3100` when a local app is needed.
+- Run validators sequentially. The repo’s full `pnpm test:run -- --maxWorkers=1` is not an allowed baseline for this mission because it exceeds the process budget.
 
 ## Environment variables
 
 Important env vars for this mission:
 
-- `PORT=3100` — used when starting the default local dev app for mission work
-- `DATABASE_URL` — leave unset for embedded Postgres in this mission
-- `PAPIERKLAMMER_TUI_COMPANY_ID` — if present, may influence TUI company selection and should be recorded when investigating stale-company behavior
+- `PORT=3100` — use only when a worker must start the local app for validation
+- `DATABASE_URL` — leave unset to keep the embedded local database path
+- `PAPIERKLAMMER_API_URL` — may appear in CLI/operator flows and should remain aligned with renamed wording
+- Adapter/home overrides used during validation should point at temporary directories rather than real user homes whenever possible
 
-Workers must never print or commit secrets. If a local provider such as `codex_local` becomes relevant to a QA path and is unavailable, record the blocker with evidence and return that blocker in the report instead of silently substituting a mock path.
+Workers must never print or commit secrets.
 
-## Database and migrations
+## Data and filesystem expectations
 
-- Embedded PostgreSQL is the default local database for the audit instances
-- Migrations auto-apply on server startup
-- This mission should not reset or migrate user data unless the user explicitly requests it
+- The user allowed a hard rename with no backward compatibility. Existing test companies/state can be reset if needed for validation.
+- Even so, prefer isolated temp directories for skill-install and onboarding checks instead of mutating real user homes.
+- Broad docs/history cleanup is out of scope; keep file scans and edits focused on active code, active skills, active scripts, and live generated outputs.
 
 ## Known local constraints
 
-- Browser + API validation are the primary surfaces for this mission
-- TUI validation requires a real PTY and only begins after the QA company exists
-- This mission validates one full bundle at a time because memory headroom is limited
-- The machine has ambient Node-based processes outside this repo, so workers must not add parallel Node-heavy tooling beyond the single mission-controlled app/process they actively need
-- Treat the user’s process-budget instruction conservatively: one app instance at a time, no parallel local validators, and stop temporary Node-based tools as soon as evidence is captured
-- Do not wipe the default instance or delete pre-existing companies; create a uniquely named QA company for the audit and preserve existing user state
+- Primary validation surfaces are lightweight API, CLI, and web checks.
+- TUI checks are secondary and should remain low-process.
+- Active `.factory/skills/` files are in scope for the rename because agents in this repo rely on them.
+- Allowlisted compatibility/vendor filenames such as `.paperclip.yaml` should only remain when they are intentionally part of a published format; workers should not assume every `paperclip` token is automatically safe.
