@@ -1,0 +1,206 @@
+{
+  "groupId": "operator-cli-scripts",
+  "testedAt": "2026-04-10T08:36:03Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "pnpm command",
+    "assignedAssertions": [
+      "VAL-CLI-001",
+      "VAL-CLI-002",
+      "VAL-CLI-003",
+      "VAL-CLI-004",
+      "VAL-CLI-005",
+      "VAL-CLI-006",
+      "VAL-CROSS-003",
+      "VAL-CROSS-005"
+    ],
+    "tempDir": "/Users/aischool/work/papierklammer_droid/.factory/validation/operator-scripts/user-testing/tmp/cli",
+    "companyId": "a636b196-1514-4b29-a3fc-ee9863c8d3c4",
+    "companyName": "Skill Roundtrip QA",
+    "companyUrlKey": null
+  },
+  "toolsUsed": [
+    "pnpm command",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CLI-001",
+      "title": "Root CLI help and version are fully renamed",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `pnpm --dir \"/Users/aischool/work/papierklammer_droid\" papierklammer --help`.",
+          "expected": "Root help presents the shipped command as `papierklammer` with no operator-visible `Paperclip` or `paperclipai` copy.",
+          "observed": "Exit 0; first line=''; legacyHits=[]"
+        },
+        {
+          "action": "Run `pnpm --dir \"/Users/aischool/work/papierklammer_droid\" papierklammer --version`.",
+          "expected": "Version probe succeeds for the renamed `papierklammer` command only.",
+          "observed": "Exit 0; output='> papierklammer@ papierklammer /Users/aischool/work/papierklammer_droid\\n> node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts \"--version\"\\n\\n0.2.7'"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/VAL-CLI-001-help.txt",
+          "operator-scripts/operator-cli-scripts/VAL-CLI-001-version.txt"
+        ],
+        "legacyTokenCheck": "Forbidden token hits in combined help/version output: []"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-002",
+      "title": "Onboard, doctor, run, configure, env, backup, and bootstrap copy is renamed",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect help for `onboard`, `doctor`, `run`, `configure`, `env`, `db:backup`, and `auth bootstrap-ceo` plus a safe `configure` failure path.",
+          "expected": "The operator command set uses only `Papierklammer`/`papierklammer` wording and safe next-step copy.",
+          "observed": "Command exits={'onboard help': 0, 'doctor help': 0, 'run help': 0, 'configure help': 0, 'configure failure': 0, 'env output': 0, 'db:backup help': 0, 'auth bootstrap-ceo help': 0}; configure failure used renamed next-step copy; legacyHits=[]"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/VAL-CLI-002-command-set.txt"
+        ],
+        "legacyTokenCheck": "Forbidden token hits across the inspected command set: []"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-003",
+      "title": "Shared client and worktree operator guidance is renamed",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Inspect `context`, `issue create`, `agent local-cli`, `worktree`, and `worktree:make` help plus an `issue list` missing-company error path.",
+          "expected": "Shared help/error guidance uses only `papierklammer`, `Papierklammer API`, and renamed local-instance wording.",
+          "observed": "Command exits={'context help': 0, 'issue create help': 0, 'issue list missing company': 1, 'agent local-cli help': 0, 'worktree help': 0, 'worktree make help': 0}; missing-company error mentioned `papierklammer context set`; legacyHits=[]"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/VAL-CLI-003-shared-guidance.txt"
+        ],
+        "legacyTokenCheck": "Forbidden token hits across the shared help/error probes: []"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-004",
+      "title": "Active setup and smoke scripts invoke renamed entrypoints and labels",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Run a deterministic script inventory scan across package.json plus active setup/smoke scripts under `scripts/`.",
+          "expected": "The in-scope setup and smoke script surfaces advertise renamed entrypoints/labels only and do not expose forbidden legacy tokens.",
+          "observed": "Scanned 9 files; positiveMatches=207; forbiddenHits=[{'file': 'scripts/clean-onboard-git.sh', 'line': 10, 'label': 'paperclipai', 'text': 'git clone https://github.com/paperclipai/paperclip.git repo'}, {'file': 'scripts/clean-onboard-npm.sh', 'line': 13, 'label': 'paperclipai', 'text': 'npx --yes paperclipai onboard --yes --data-dir \"$PC_DATA\"'}, {'file': 'scripts/clean-onboard-ref.sh', 'line': 20, 'label': 'Paperclip', 'text': 'PC_DATA=/tmp/data           Paperclip data dir to use'}]"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/VAL-CLI-004-script-scan.txt"
+        ],
+        "legacyTokenCheck": "Forbidden script-scan hits: [{'file': 'scripts/clean-onboard-git.sh', 'line': 10, 'label': 'paperclipai', 'text': 'git clone https://github.com/paperclipai/paperclip.git repo'}, {'file': 'scripts/clean-onboard-npm.sh', 'line': 13, 'label': 'paperclipai', 'text': 'npx --yes paperclipai onboard --yes --data-dir \"$PC_DATA\"'}, {'file': 'scripts/clean-onboard-ref.sh', 'line': 20, 'label': 'Paperclip', 'text': 'PC_DATA=/tmp/data           Paperclip data dir to use'}]"
+      },
+      "issues": "The deterministic setup/smoke script scan found legacy tokens in active operator-facing scripts."
+    },
+    {
+      "id": "VAL-CLI-005",
+      "title": "Legacy CLI entrypoints, aliases, and Paperclip-named flags are not part of the live surface",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Re-check root help and attempt representative legacy entrypoints/flags (`paperclip`, `paperclipai`, and `--paperclip-api-url`).",
+          "expected": "The shipped help does not advertise legacy names, and legacy entrypoints/flags fail instead of aliasing.",
+          "observed": "Root help exited 0 with no legacy branding; `paperclip`, `paperclipai`, and `--paperclip-api-url` all failed as expected (254/254/1)."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/VAL-CLI-005-legacy-invocations.txt"
+        ],
+        "legacyTokenCheck": "Root help itself was clean; the transcript mentions `paperclip`/`paperclipai` only because those deliberate legacy invocations failed as part of the assertion."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-006",
+      "title": "Generated artifact names from backup, worktree, and dev helpers are renamed",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `papierklammer db:backup --dir <isolated-temp> --json`.",
+          "expected": "The generated backup artifact name is prefixed with `papierklammer`.",
+          "observed": "Exit 0; backupFile='/Users/aischool/work/papierklammer_droid/.factory/validation/operator-scripts/user-testing/tmp/cli/backup-artifacts/papierklammer-20260410-163601.sql'; observedDirEntries=['papierklammer-20260410-163601.sql']"
+        },
+        {
+          "action": "Inspect `papierklammer worktree:make --help` for the generated worktree naming contract.",
+          "expected": "Worktree helper output advertises the renamed `papierklammer-` auto-prefix.",
+          "observed": "Exit 0; containsPrefix=True"
+        },
+        {
+          "action": "Run `pnpm --dir ... dev:list` against the live local app.",
+          "expected": "Dev helper labels use renamed `papierklammer-*` service names.",
+          "observed": "Exit 0; output='> papierklammer@ dev:list /Users/aischool/work/papierklammer_droid\\n> pnpm --filter @papierklammer/server exec tsx ../scripts/dev-service.ts list\\n\\npapierklammer-dev-once pid=99920 group=99920 child=99920 cwd=/Users/aischool/work/papierklammer_droid/server url=http://127.0.0.1:3100'"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/VAL-CLI-006-helper-artifacts.txt"
+        ],
+        "legacyTokenCheck": "Backup filename='papierklammer-20260410-163601.sql'; worktreeHelpContainsPrefix=True; devListOutputHasPapierklammer=True"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-003",
+      "title": "OpenClaw onboarding and gateway-facing rename contract is coherent",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create a live OpenClaw invite prompt, fetch the generated onboarding manifest/text, inspect the shipped OpenClaw smoke helper, and fetch the generated OpenClaw gateway runtime text.",
+          "expected": "The onboarding/join surface, gateway-facing runtime text, and active smoke helper all expose only renamed skill/CLI/header/config identifiers.",
+          "observed": "inviteExit=0; manifestExit=0; textExit=0; runtimeTextExit=0; forbiddenHits=[]"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/shared-company-discovery.txt",
+          "operator-scripts/operator-cli-scripts/VAL-CROSS-003-openclaw-flow.txt"
+        ],
+        "network": "POST /api/companies/a636b196-1514-4b29-a3fc-ee9863c8d3c4/openclaw/invite-prompt; GET /api/invites/pcp_invite_cjtjipdk/onboarding; GET /api/invites/pcp_invite_cjtjipdk/onboarding.txt; GET /llms/agent-configuration/openclaw_gateway.txt",
+        "legacyTokenCheck": "Forbidden OpenClaw rename hits: []"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-005",
+      "title": "Main CLI-to-server mutation flow uses the renamed run-trace contract end-to-end",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Create an issue through the shipped CLI (`papierklammer issue create ... --json`) and then inspect the server-side activity record for that issue.",
+          "expected": "The CLI mutation flow sends the renamed run-trace header so the server-side observable event records a non-empty renamed run id, without relying on any legacy `X-Paperclip-*` contract.",
+          "observed": "issueCreateExit=0; issueId=3cd04864-a6c5-4a05-a82e-103e76ab475f; issueIdentifier=SKI-1; activityExit=0; observedRunId=None"
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "operator-scripts/operator-cli-scripts/shared-company-discovery.txt",
+          "operator-scripts/operator-cli-scripts/VAL-CROSS-005-cli-run-trace.txt",
+          "operator-scripts/operator-cli-scripts/VAL-CROSS-005-activity-confirmation.txt"
+        ],
+        "network": "CLI POST /api/companies/a636b196-1514-4b29-a3fc-ee9863c8d3c4/issues via `papierklammer issue create`; follow-up GET /api/issues/3cd04864-a6c5-4a05-a82e-103e76ab475f/activity -> 200",
+        "legacyTokenCheck": "Observed server-side runId for the created issue activity event: None"
+      },
+      "issues": "The representative CLI mutation created the issue successfully, but the follow-up server activity event recorded `runId: null`, so the shipped operator CLI flow did not carry a renamed run-trace header end-to-end."
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 8 assertions: VAL-CLI-001=pass; VAL-CLI-002=pass; VAL-CLI-003=pass; VAL-CLI-004=fail (The deterministic setup/smoke script scan found legacy tokens in active operator-facing scripts.); VAL-CLI-005=pass; VAL-CLI-006=pass; VAL-CROSS-003=pass; VAL-CROSS-005=fail (The representative CLI mutation created the issue successfully, but the follow-up server activity event recorded `runId: null`, so the shipped operator CLI flow did not carry a renamed run-trace header end-to-end.)."
+}

@@ -1,0 +1,66 @@
+{
+  "groupId": "operator-browser-cli-approval",
+  "testedAt": "2026-04-10T08:45:19Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "agent-browser",
+    "browserSession": "5261625bc068__u1",
+    "assignedAssertions": [
+      "VAL-CROSS-002"
+    ],
+    "evidenceDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/operator-scripts/operator-browser-cli-approval"
+  },
+  "toolsUsed": [
+    "agent-browser",
+    "pnpm command"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-002",
+      "title": "CLI auth/operator flow and web approval surface use consistent Papierklammer naming",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `pnpm --dir \"/Users/aischool/work/papierklammer_droid\" papierklammer auth login --help` and then start an isolated real auth flow with `PAPIERKLAMMER_HOME=<evidence-home> pnpm --dir \"/Users/aischool/work/papierklammer_droid\" papierklammer auth login --api-base \"http://127.0.0.1:3100\"`.",
+          "expected": "The initiating CLI surface uses the renamed `papierklammer` command family and emits an approval URL for the real browser flow.",
+          "observed": "Help output showed `Usage: papierklammer auth login [options]`. The live auth flow printed `Board authentication required`, emitted a real approval URL, and preserved `papierklammer auth login` in the terminal transcript before completing successfully for user `local-board`."
+        },
+        {
+          "action": "Open the emitted approval URL in the assigned browser session and inspect the pending approval page before approving it.",
+          "expected": "The browser approval surface should use the same renamed Papierklammer product/command family and must not say `Paperclip CLI` or show legacy link targets.",
+          "observed": "The page headline was `Approve Papierklammer CLI access`; body copy said `A local Papierklammer CLI process is requesting board access to this instance.`; the command field showed `papierklammer auth login`; no links were present and no `Paperclip`/`paperclipai` text was visible."
+        },
+        {
+          "action": "Approve the real challenge in the browser and inspect the resulting success state plus the CLI transcript.",
+          "expected": "Approval success should keep the renamed wording and allow the waiting CLI auth flow to finish.",
+          "observed": "After clicking `Approve CLI access`, the browser showed `CLI access approved` and `The Papierklammer CLI can now finish authentication on the requesting machine.` with `Command: papierklammer auth login`; the waiting CLI process finished with `{\"ok\": true, \"userId\": \"local-board\"}`."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-browser-before-approval.png",
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-browser-after-approval.png"
+        ],
+        "terminal": [
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-cli-help.txt",
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-cli-auth-output.txt"
+        ],
+        "artifacts": [
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-browser-approved-text.txt",
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-browser-network.txt",
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-browser-errors.txt",
+          "operator-scripts/operator-browser-cli-approval/VAL-CROSS-002-browser-links.json"
+        ],
+        "consoleErrors": "none",
+        "network": "POST /api/cli-auth/challenges/a57217e5-d529-4f64-ae0b-2e3906186b16/approve; GET /api/auth/get-session; GET /api/cli-auth/challenges/a57217e5-d529-4f64-ae0b-2e3906186b16?token=pcp_cli_auth_2f32fc99efbb26604b2c8f7a24159f12a67e51b82c920749",
+        "legacyTokenCheck": "No visible `Paperclip` or `paperclipai` text/link targets were observed on the approval flow; the CLI and browser both used `Papierklammer`/`papierklammer auth login`."
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: VAL-CROSS-002 passed. The terminal-side auth flow and the real browser approval page both used the renamed `Papierklammer` / `papierklammer auth login` wording, with no legacy `Paperclip` or `paperclipai` text observed."
+}
