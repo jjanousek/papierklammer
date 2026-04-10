@@ -332,7 +332,7 @@ describeDB("company lifecycle routes", () => {
       method: "post",
       path: "/:companyId/delete",
       params: { companyId: company.id },
-      body: { confirmationText: company.name },
+      body: {},
       originalUrl: `/api/companies/${company.id}/delete`,
     });
 
@@ -348,42 +348,24 @@ describeDB("company lifecycle routes", () => {
     expect((getRes.body as any).status).toBe("active");
   });
 
-  it("requires exact company-name confirmation for canonical delete", async () => {
+  it("deletes a paused company without requiring typed name confirmation", async () => {
     const company = await seedCompany({
       name: "Exact Match LLC",
       status: "paused",
       pauseReason: "manual",
       pausedAt: new Date("2026-04-08T10:00:00.000Z"),
     });
-    const missingConfirmation = await callRoute({
+    const deleteRes = await callRoute({
       method: "post",
       path: "/:companyId/delete",
       params: { companyId: company.id },
       body: {},
       originalUrl: `/api/companies/${company.id}/delete`,
     });
-    expect(missingConfirmation.status).toBe(422);
-
-    const mismatchedConfirmation = await callRoute({
-      method: "post",
-      path: "/:companyId/delete",
-      params: { companyId: company.id },
-      body: { confirmationText: "exact match llc" },
-      originalUrl: `/api/companies/${company.id}/delete`,
-    });
-    expect(mismatchedConfirmation.status).toBe(422);
-
-    const getRes = await callRoute({
-      method: "get",
-      path: "/:companyId",
-      params: { companyId: company.id },
-      originalUrl: `/api/companies/${company.id}`,
-    });
-    expect(getRes.status).toBe(200);
-    expect((getRes.body as any).status).toBe("paused");
+    expect(deleteRes.status).toBe(200);
   });
 
-  it("deletes a quiesced company only when the confirmation text matches exactly", async () => {
+  it("deletes an archived company with a single confirmation action", async () => {
     const company = await seedCompany({
       name: "Delete Me",
       status: "archived",
@@ -392,7 +374,7 @@ describeDB("company lifecycle routes", () => {
       method: "post",
       path: "/:companyId/delete",
       params: { companyId: company.id },
-      body: { confirmationText: "Delete Me" },
+      body: {},
       originalUrl: `/api/companies/${company.id}/delete`,
     });
 
@@ -427,28 +409,19 @@ describeDB("company lifecycle routes", () => {
       method: "delete",
       path: "/:companyId",
       params: { companyId: activeCompany.id },
-      body: { confirmationText: activeCompany.name },
+      body: {},
       originalUrl: `/api/companies/${activeCompany.id}`,
     });
     expect(activeDelete.status).toBe(409);
 
-    const missingConfirmation = await callRoute({
+    const pausedDelete = await callRoute({
       method: "delete",
       path: "/:companyId",
       params: { companyId: pausedCompany.id },
       body: {},
       originalUrl: `/api/companies/${pausedCompany.id}`,
     });
-    expect(missingConfirmation.status).toBe(422);
-
-    const matchedDelete = await callRoute({
-      method: "delete",
-      path: "/:companyId",
-      params: { companyId: pausedCompany.id },
-      body: { confirmationText: pausedCompany.name },
-      originalUrl: `/api/companies/${pausedCompany.id}`,
-    });
-    expect(matchedDelete.status).toBe(200);
+    expect(pausedDelete.status).toBe(200);
 
     const getRes = await callRoute({
       method: "get",
@@ -515,7 +488,7 @@ describeDB("company lifecycle routes", () => {
           companyId: company.id,
           source: "agent_key",
         },
-        body: { confirmationText: company.name },
+        body: {},
         originalUrl: `/api/companies/${company.id}/delete`,
       }),
     ]);

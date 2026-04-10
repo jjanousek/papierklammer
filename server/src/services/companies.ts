@@ -192,6 +192,9 @@ export function companyService(db: Db) {
     await tx.delete(issueReadStates).where(eq(issueReadStates.companyId, id));
     await tx.delete(issueInboxArchives).where(eq(issueInboxArchives.companyId, id));
     await tx.delete(issueDependencies).where(eq(issueDependencies.companyId, id));
+    await tx.delete(activityLog).where(eq(activityLog.companyId, id));
+    await tx.delete(costEvents).where(eq(costEvents.companyId, id));
+    await tx.delete(financeEvents).where(eq(financeEvents.companyId, id));
     await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, id));
     await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, id));
     await tx.delete(executionLeases).where(eq(executionLeases.companyId, id));
@@ -203,8 +206,6 @@ export function companyService(db: Db) {
     await tx.delete(agentConfigRevisions).where(eq(agentConfigRevisions.companyId, id));
     await tx.delete(agentRuntimeState).where(eq(agentRuntimeState.companyId, id));
     await tx.delete(issueComments).where(eq(issueComments.companyId, id));
-    await tx.delete(costEvents).where(eq(costEvents.companyId, id));
-    await tx.delete(financeEvents).where(eq(financeEvents.companyId, id));
     await tx.delete(controlPlaneEvents).where(eq(controlPlaneEvents.companyId, id));
     await tx.delete(approvalComments).where(eq(approvalComments.companyId, id));
     await tx.delete(issueApprovals).where(eq(issueApprovals.companyId, id));
@@ -227,7 +228,6 @@ export function companyService(db: Db) {
     await tx.delete(goals).where(eq(goals.companyId, id));
     await tx.delete(projects).where(eq(projects.companyId, id));
     await tx.delete(agents).where(eq(agents.companyId, id));
-    await tx.delete(activityLog).where(eq(activityLog.companyId, id));
   }
 
   function deriveIssuePrefixBase(name: string) {
@@ -441,7 +441,6 @@ export function companyService(db: Db) {
 
     deleteGuarded: (
       id: string,
-      confirmationText?: string,
       beforeDelete?: (
         tx: Pick<Db, "delete" | "insert">,
         existing: NonNullable<Awaited<ReturnType<typeof getHydratedCompanyById>>>,
@@ -452,9 +451,6 @@ export function companyService(db: Db) {
         if (!existing) return null;
         if (existing.status === "active") {
           throw conflict("Active companies must be paused or archived before deletion");
-        }
-        if (confirmationText !== existing.name) {
-          throw unprocessable("Company name confirmation must match exactly");
         }
 
         if (beforeDelete) {

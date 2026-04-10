@@ -39,10 +39,10 @@ export const companiesApi = {
   pause: (companyId: string) => api.post<Company>(`/companies/${companyId}/pause`, {}),
   resume: (companyId: string) => api.post<Company>(`/companies/${companyId}/resume`, {}),
   archive: (companyId: string) => api.post<Company>(`/companies/${companyId}/archive`, {}),
-  deleteCompany: (companyId: string, confirmationText: string) =>
-    api.post<{ ok: true }>(`/companies/${companyId}/delete`, { confirmationText }),
-  remove: (companyId: string, confirmationText: string) =>
-    api.delete<{ ok: true }>(`/companies/${companyId}`, { confirmationText }),
+  deleteCompany: (companyId: string) =>
+    api.post<{ ok: true }>(`/companies/${companyId}/delete`, {}),
+  remove: (companyId: string) =>
+    api.delete<{ ok: true }>(`/companies/${companyId}`, {}),
   onboardingDraft: (data: CompanyOnboardingDraftRequest) =>
     api.post<CompanyOnboardingDraftResponse>("/companies/onboarding-draft", data),
   exportBundle: (

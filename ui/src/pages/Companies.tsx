@@ -48,8 +48,6 @@ export function Companies() {
   // Inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
   const editMutation = useMutation({
     mutationFn: ({ id, newName }: { id: string; newName: string }) =>
       companiesApi.update(id, { name: newName }),
@@ -60,12 +58,11 @@ export function Companies() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, confirmationText }: { id: string; confirmationText: string }) =>
-      companiesApi.deleteCompany(id, confirmationText),
+    mutationFn: ({ id }: { id: string }) =>
+      companiesApi.deleteCompany(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.stats });
-      setConfirmDeleteId(null);
     },
   });
 
@@ -106,7 +103,6 @@ export function Companies() {
         {companies.map((company) => {
           const selected = company.id === selectedCompanyId;
           const isEditing = editingId === company.id;
-          const isConfirmingDelete = confirmDeleteId === company.id;
           const companyStats = stats?.[company.id];
           const agentCount = companyStats?.agentCount ?? 0;
           const issueCount = companyStats?.issueCount ?? 0;
@@ -221,7 +217,17 @@ export function Companies() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => setConfirmDeleteId(company.id)}
+                        onClick={() => {
+                          if (company.status === "active") {
+                            window.alert("Pause or archive the company before deleting it.");
+                            return;
+                          }
+                          const confirmed = window.confirm(
+                            `Are you sure you want to delete "${company.name}"? This cannot be undone.`,
+                          );
+                          if (!confirmed) return;
+                          deleteMutation.mutate({ id: company.id });
+                        }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Delete Company
@@ -259,49 +265,6 @@ export function Companies() {
                   <span>Created {relativeTime(company.createdAt)}</span>
                 </div>
               </div>
-
-              {/* Delete confirmation */}
-              {isConfirmingDelete && (
-                <div
-                  className="mt-4 flex items-center justify-between bg-destructive/5 border border-destructive/20 rounded-md px-4 py-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="text-sm text-destructive font-medium">
-                    Delete this company and all its data? This cannot be undone.
-                  </p>
-                  <div className="flex items-center gap-2 ml-4 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConfirmDeleteId(null)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        if (company.status === "active") {
-                          window.alert("Pause or archive the company before deleting it.");
-                          return;
-                        }
-                        const confirmationText = window.prompt(
-                          `Type "${company.name}" to permanently delete this company.`,
-                          "",
-                        );
-                        if (confirmationText !== company.name) {
-                          return;
-                        }
-                        deleteMutation.mutate({ id: company.id, confirmationText });
-                      }}
-                      disabled={deleteMutation.isPending}
-                    >
-                      {deleteMutation.isPending ? "Deleting…" : "Delete"}
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}

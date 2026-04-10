@@ -387,9 +387,9 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const { confirmationText } = parseDeleteRequestBody(req);
+    parseDeleteRequestBody(req);
     const actor = getActorInfo(req);
-    const deleted = await lifecycle.deleteGuarded(companyId, confirmationText, actor);
+    const deleted = await lifecycle.deleteGuarded(companyId, actor);
     if (!deleted) {
       res.status(404).json({ error: "Company not found" });
       return;
@@ -401,9 +401,9 @@ export function companyRoutes(db: Db, storage?: StorageService, deps: CompanyRou
     assertBoard(req);
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const { confirmationText } = parseDeleteRequestBody(req);
+    parseDeleteRequestBody(req);
     const actor = getActorInfo(req);
-    const deleted = await lifecycle.deleteGuarded(companyId, confirmationText, actor);
+    const deleted = await lifecycle.deleteGuarded(companyId, actor);
     if (!deleted) {
       res.status(404).json({ error: "Company not found" });
       return;

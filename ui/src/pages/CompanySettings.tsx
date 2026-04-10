@@ -7,7 +7,7 @@ import { companiesApi } from "../api/companies";
 import { accessApi } from "../api/access";
 import { assetsApi } from "../api/assets";
 import { queryKeys } from "../lib/queryKeys";
-import { Link } from "@/lib/router";
+import { Link, useNavigate } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { Settings, Check, Download, Upload, Pause, Play, Archive, Trash2 } from "lucide-react";
 import { CompanyPatternIcon } from "../components/CompanyPatternIcon";
@@ -33,6 +33,7 @@ export function CompanySettings() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const { pushToast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   // General settings local state
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
@@ -53,7 +54,6 @@ export function CompanySettings() {
   const [inviteSnippet, setInviteSnippet] = useState<string | null>(null);
   const [snippetCopied, setSnippetCopied] = useState(false);
   const [snippetCopyDelightId, setSnippetCopyDelightId] = useState(0);
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
 
   const generalDirty =
     !!selectedCompany &&
@@ -176,7 +176,6 @@ export function CompanySettings() {
     setInviteSnippet(null);
     setSnippetCopied(false);
     setSnippetCopyDelightId(0);
-    setDeleteConfirmationText("");
   }, [selectedCompanyId]);
 
   async function refreshCompanies() {
@@ -213,10 +212,16 @@ export function CompanySettings() {
       nextCompanyId: string | null;
     }) => companiesApi.archive(companyId).then(() => ({ nextCompanyId })),
     onSuccess: async ({ nextCompanyId }) => {
+      const nextCompany = nextCompanyId
+        ? companies.find((company) => company.id === nextCompanyId) ?? null
+        : null;
       if (nextCompanyId) {
         setSelectedCompanyId(nextCompanyId);
       }
       await refreshCompanies();
+      if (nextCompany) {
+        navigate(`/${nextCompany.issuePrefix}/company/settings`, { replace: true });
+      }
       pushToast({ title: "Company archived", tone: "success" });
     }
   });
@@ -224,20 +229,25 @@ export function CompanySettings() {
   const deleteMutation = useMutation({
     mutationFn: ({
       companyId,
-      confirmationText,
       nextCompanyId
     }: {
       companyId: string;
-      confirmationText: string;
       nextCompanyId: string | null;
     }) =>
-      companiesApi.deleteCompany(companyId, confirmationText).then(() => ({ nextCompanyId })),
+      companiesApi.deleteCompany(companyId).then(() => ({ nextCompanyId })),
     onSuccess: async ({ nextCompanyId }) => {
-      setDeleteConfirmationText("");
+      const nextCompany = nextCompanyId
+        ? companies.find((company) => company.id === nextCompanyId) ?? null
+        : null;
       if (nextCompanyId) {
         setSelectedCompanyId(nextCompanyId);
       }
       await refreshCompanies();
+      if (nextCompany) {
+        navigate(`/${nextCompany.issuePrefix}/company/settings`, { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
       pushToast({ title: "Company deleted", tone: "success" });
     }
   });
@@ -273,7 +283,6 @@ export function CompanySettings() {
     )?.id ?? null;
   const canDelete =
     selectedCompany.status === "paused" || selectedCompany.status === "archived";
-  const deleteConfirmationMatches = deleteConfirmationText === selectedCompany.name;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -664,19 +673,14 @@ export function CompanySettings() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="block text-xs text-muted-foreground">
-                Type <span className="font-mono text-foreground">{selectedCompany.name}</span> to confirm
-              </label>
-              <input
-                className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-                type="text"
-                value={deleteConfirmationText}
-                onChange={(event) => setDeleteConfirmationText(event.target.value)}
-                placeholder={selectedCompany.name}
-              />
               {!canDelete && (
                 <p className="text-xs text-muted-foreground">
                   Pause or archive the company first to enable deletion.
+                </p>
+              )}
+              {canDelete && (
+                <p className="text-xs text-muted-foreground">
+                  You&apos;ll get one final confirmation before the company is permanently deleted.
                 </p>
               )}
             </div>
@@ -684,12 +688,15 @@ export function CompanySettings() {
               <Button
                 size="sm"
                 variant="destructive"
-                disabled={!selectedCompanyId || deleteMutation.isPending || !canDelete || !deleteConfirmationMatches}
+                disabled={!selectedCompanyId || deleteMutation.isPending || !canDelete}
                 onClick={() => {
                   if (!selectedCompanyId) return;
+                  const confirmed = window.confirm(
+                    `Are you sure you want to delete "${selectedCompany.name}"? This cannot be undone.`,
+                  );
+                  if (!confirmed) return;
                   deleteMutation.mutate({
                     companyId: selectedCompanyId,
-                    confirmationText: deleteConfirmationText,
                     nextCompanyId: nextVisibleCompanyId
                   });
                 }}

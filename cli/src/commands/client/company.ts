@@ -1007,35 +1007,15 @@ export function resolveCompanyForDeletion(
   );
 }
 
-export function assertDeleteConfirmation(company: Company, opts: CompanyDeleteOptions): void {
+export function assertDeleteConfirmation(_company: Company, opts: CompanyDeleteOptions): void {
   if (!opts.yes) {
     throw new Error("Deletion requires --yes.");
-  }
-
-  const confirm = opts.confirm?.trim();
-  if (!confirm) {
-    throw new Error(
-      "Deletion requires --confirm <value> where value matches the company ID or issue prefix.",
-    );
-  }
-
-  const confirmsById = confirm === company.id;
-  const confirmsByPrefix = confirm.toUpperCase() === company.issuePrefix.toUpperCase();
-  if (!confirmsById && !confirmsByPrefix) {
-    throw new Error(
-      `Confirmation '${confirm}' does not match target company. Expected ID '${company.id}' or prefix '${company.issuePrefix}'.`,
-    );
   }
 }
 
 function assertDeleteFlags(opts: CompanyDeleteOptions): void {
   if (!opts.yes) {
     throw new Error("Deletion requires --yes.");
-  }
-  if (!opts.confirm?.trim()) {
-    throw new Error(
-      "Deletion requires --confirm <value> where value matches the company ID or issue prefix.",
-    );
   }
 }
 
@@ -1380,10 +1360,6 @@ export function registerCompanyCommands(program: Command): void {
         "auto",
       )
       .option("--yes", "Required safety flag to confirm destructive action", false)
-      .option(
-        "--confirm <value>",
-        "Required safety value: target company ID or shortname/prefix",
-      )
       .action(async (selector: string, opts: CompanyDeleteOptions) => {
         try {
           const by = (opts.by ?? "auto").trim().toLowerCase() as CompanyDeleteSelectorMode;

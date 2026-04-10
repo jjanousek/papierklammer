@@ -4,14 +4,29 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   agentWakeupRequests,
   agents,
+  budgetIncidents,
+  budgetPolicies,
   companies,
   createDb,
+  documentRevisions,
+  documents,
   dispatchIntents,
   executionLeases,
+  executionEnvelopes,
+  executionWorkspaces,
+  goals,
   heartbeatRuns,
+  issueDependencies,
+  issueDocuments,
+  issueInboxArchives,
+  issueReadStates,
+  issueWorkProducts,
   issues,
+  projectGoals,
   projectWorkspaces,
   projects,
+  workspaceOperations,
+  workspaceRuntimeServices,
 } from "@papierklammer/db";
 import {
   getEmbeddedPostgresTestSupport,
@@ -523,7 +538,7 @@ describeDB("company lifecycle runtime coordination", () => {
   it("keeps delete audit visible after the company row is removed", async () => {
     const { companyId } = await seedCompanyFixture("paused");
 
-    const deleted = await lifecycle.deleteGuarded(companyId, "Lifecycle Runtime Co", actor);
+    const deleted = await lifecycle.deleteGuarded(companyId, actor);
     expect(deleted.deletedCompanyId).toBe(companyId);
 
     expect(await companiesSvc.getById(companyId)).toBeNull();
@@ -547,7 +562,7 @@ describeDB("company lifecycle runtime coordination", () => {
 
     await lifecycle.pause(companyId, actor);
 
-    const deleted = await lifecycle.deleteGuarded(companyId, "Lifecycle Runtime Co", actor);
+    const deleted = await lifecycle.deleteGuarded(companyId, actor);
     expect(deleted.deletedCompanyId).toBe(companyId);
     expect(await companiesSvc.getById(companyId)).toBeNull();
 
@@ -562,5 +577,201 @@ describeDB("company lifecycle runtime coordination", () => {
         nextStatus: "deleted",
       },
     });
+  });
+
+  it("deletes a quiesced company even when auxiliary company-scoped records exist", async () => {
+    const { companyId, agentId, projectId, workspaceId } = await seedCompanyFixture("paused");
+    const goalId = randomUUID();
+    const issueId = randomUUID();
+    const dependencyIssueId = randomUUID();
+    const runId = randomUUID();
+    const executionWorkspaceId = randomUUID();
+    const runtimeServiceId = randomUUID();
+    const documentId = randomUUID();
+    const budgetPolicyId = randomUUID();
+    const now = new Date("2026-04-08T12:10:00.000Z");
+
+    await db.insert(goals).values({
+      id: goalId,
+      companyId,
+      title: "Lifecycle goal",
+      level: "company",
+      status: "active",
+    });
+
+    await db.insert(projectGoals).values({
+      companyId,
+      projectId,
+      goalId,
+    });
+
+    await db.insert(issues).values([
+      {
+        id: issueId,
+        companyId,
+        projectId,
+        goalId,
+        title: "Tracked issue",
+        status: "todo",
+        priority: "medium",
+        assigneeAgentId: agentId,
+      },
+      {
+        id: dependencyIssueId,
+        companyId,
+        projectId,
+        goalId,
+        title: "Dependency issue",
+        status: "done",
+        priority: "low",
+      },
+    ]);
+
+    await db.insert(issueDependencies).values({
+      companyId,
+      issueId,
+      dependsOnIssueId: dependencyIssueId,
+    });
+
+    await db.insert(heartbeatRuns).values({
+      id: runId,
+      companyId,
+      agentId,
+      invocationSource: "manual",
+      triggerDetail: "test",
+      status: "cancelled",
+      startedAt: now,
+      finishedAt: now,
+    });
+
+    await db.insert(executionWorkspaces).values({
+      id: executionWorkspaceId,
+      companyId,
+      projectId,
+      projectWorkspaceId: workspaceId,
+      sourceIssueId: issueId,
+      mode: "task",
+      strategyType: "reuse",
+      name: "Lifecycle execution workspace",
+      status: "active",
+      cwd: "/tmp/lifecycle-delete-aux",
+    });
+
+    await db.insert(workspaceRuntimeServices).values({
+      id: runtimeServiceId,
+      companyId,
+      projectId,
+      projectWorkspaceId: workspaceId,
+      executionWorkspaceId,
+      issueId,
+      scopeType: "execution_workspace",
+      scopeId: executionWorkspaceId,
+      serviceName: "preview",
+      status: "stopped",
+      lifecycle: "managed",
+      provider: "local_process",
+      startedAt: now,
+      lastUsedAt: now,
+    });
+
+    await db.insert(workspaceOperations).values({
+      companyId,
+      executionWorkspaceId,
+      heartbeatRunId: runId,
+      phase: "start",
+      status: "completed",
+      startedAt: now,
+      finishedAt: now,
+    });
+
+    await db.insert(issueWorkProducts).values({
+      companyId,
+      projectId,
+      issueId,
+      executionWorkspaceId,
+      runtimeServiceId,
+      type: "preview",
+      provider: "local",
+      title: "Preview link",
+      status: "ready",
+      createdByRunId: runId,
+    });
+
+    await db.insert(documents).values({
+      id: documentId,
+      companyId,
+      title: "Lifecycle doc",
+      latestBody: "hello",
+      latestRevisionNumber: 1,
+    });
+
+    await db.insert(documentRevisions).values({
+      companyId,
+      documentId,
+      revisionNumber: 1,
+      body: "hello",
+    });
+
+    await db.insert(issueDocuments).values({
+      companyId,
+      issueId,
+      documentId,
+      key: "summary",
+    });
+
+    await db.insert(issueReadStates).values({
+      companyId,
+      issueId,
+      userId: "board-user",
+      lastReadAt: now,
+    });
+
+    await db.insert(issueInboxArchives).values({
+      companyId,
+      issueId,
+      userId: "board-user",
+      archivedAt: now,
+    });
+
+    await db.insert(executionEnvelopes).values({
+      runId,
+      companyId,
+      agentId,
+      issueId,
+      projectId,
+      goalId,
+      wakeReason: "test",
+      runKind: "issue_assignment",
+      workspaceBindingMode: "project",
+    });
+
+    await db.insert(budgetPolicies).values({
+      id: budgetPolicyId,
+      companyId,
+      scopeType: "company",
+      scopeId: companyId,
+      windowKind: "calendar_month_utc",
+      amount: 1000,
+      createdByUserId: "board-user",
+      updatedByUserId: "board-user",
+    });
+
+    await db.insert(budgetIncidents).values({
+      companyId,
+      policyId: budgetPolicyId,
+      scopeType: "company",
+      scopeId: companyId,
+      metric: "billed_cents",
+      windowKind: "calendar_month_utc",
+      windowStart: now,
+      windowEnd: new Date(now.getTime() + 3_600_000),
+      thresholdType: "hard_stop",
+      amountLimit: 1000,
+      amountObserved: 1200,
+    });
+
+    const deleted = await lifecycle.deleteGuarded(companyId, actor);
+    expect(deleted.deletedCompanyId).toBe(companyId);
+    expect(await companiesSvc.getById(companyId)).toBeNull();
   });
 });

@@ -369,7 +369,7 @@ export function companyLifecycleService(db: Db) {
       return { company, quiesce, audit };
     },
 
-    async deleteGuarded(companyId: string, confirmationText: string | undefined, actor: LifecycleActor) {
+    async deleteGuarded(companyId: string, actor: LifecycleActor) {
       const previous = await requireCompanyStatus(companyId);
       if (previous.status === "active") {
         throw conflict("Active companies must be paused or archived before deletion");
@@ -400,7 +400,7 @@ export function companyLifecycleService(db: Db) {
         quiesce,
       };
 
-      const deleted = await companiesSvc.deleteGuarded(companyId, confirmationText, async (tx, existing) => {
+      const deleted = await companiesSvc.deleteGuarded(companyId, async (tx, existing) => {
         try {
           await tx.insert(companyLifecycleEvents).values({
             companyId: existing.id,

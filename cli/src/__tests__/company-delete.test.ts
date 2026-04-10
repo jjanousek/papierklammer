@@ -69,23 +69,10 @@ describe("assertDeleteConfirmation", () => {
   });
 
   it("requires --yes", () => {
-    expect(() => assertDeleteConfirmation(company, { confirm: "PAP" })).toThrow(/requires --yes/);
+    expect(() => assertDeleteConfirmation(company, {})).toThrow(/requires --yes/);
   });
 
-  it("accepts matching prefix confirmation", () => {
-    expect(() => assertDeleteConfirmation(company, { yes: true, confirm: "pap" })).not.toThrow();
-  });
-
-  it("accepts matching id confirmation", () => {
-    expect(() =>
-      assertDeleteConfirmation(company, {
-        yes: true,
-        confirm: "22222222-2222-2222-2222-222222222222",
-      })).not.toThrow();
-  });
-
-  it("rejects mismatched confirmation", () => {
-    expect(() => assertDeleteConfirmation(company, { yes: true, confirm: "nope" }))
-      .toThrow(/does not match target company/);
+  it("accepts --yes without requiring a second confirmation token", () => {
+    expect(() => assertDeleteConfirmation(company, { yes: true })).not.toThrow();
   });
 });
