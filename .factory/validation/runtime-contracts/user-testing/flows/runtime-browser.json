@@ -1,0 +1,85 @@
+{
+  "groupId": "runtime-browser",
+  "testedAt": "2026-04-10T05:40:58.555399+00:00",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "deploymentMode": "local_trusted",
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "evidenceDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba/evidence/runtime-contracts/runtime-browser",
+    "sharedCompanies": [
+      {
+        "name": "Weather Corp",
+        "id": "31df67d6-2c58-45f2-bd5d-9f4269a34be9"
+      },
+      {
+        "name": "Bad Weather Corp",
+        "id": "80fd2e4b-756e-4e54-92a0-8f55e3b65043"
+      }
+    ]
+  },
+  "toolsUsed": [
+    "agent-browser"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-RUNTIME-002",
+      "title": "Browser chrome and first-run copy no longer say Paperclip",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open / and inspect the operator chrome on the redirected Weather Corp dashboard.",
+          "expected": "Browser chrome uses Papierklammer branding and any help/docs target avoids legacy Paperclip-branded destinations.",
+          "observed": "The app opened at /WEA/dashboard with title 'Dashboard \u00b7 Papierklammer'. The chrome's Documentation link targeted https://github.com/papierklammer/papierklammer#readme, and no visible 'Paperclip' copy or paperclip.ing/docs hostname was present on the tested chrome."
+        },
+        {
+          "action": "Open /auth in local_trusted mode.",
+          "expected": "If local_trusted auto-auth redirects away from the standalone auth form, record that redirect without treating it as a rename failure.",
+          "observed": "Navigating to /auth redirected straight back to /WEA/dashboard, so the standalone auth form was not rendered in this mode. The resulting page title remained 'Dashboard \u00b7 Papierklammer'."
+        },
+        {
+          "action": "Create a temporary CLI auth challenge in-browser, then open its approval URL.",
+          "expected": "The CLI approval surface uses Papierklammer wording only and exposes no legacy Paperclip copy or legacy docs/help links.",
+          "observed": "The approval page loaded successfully and showed 'Approve Papierklammer CLI access', 'A local Papierklammer CLI process is requesting board access to this instance.', command 'papierklammer company import', and client 'papierklammer cli'. No 'Paperclip' text or external docs/help links were present."
+        },
+        {
+          "action": "Check console errors on the dashboard and CLI approval page after reload.",
+          "expected": "No browser console/page errors during the validated flow.",
+          "observed": "agent-browser errors returned no errors on the validated dashboard and CLI approval pages."
+        }
+      ],
+      "evidence": {
+        "screenshots": [
+          "runtime-contracts/runtime-browser/VAL-RUNTIME-002-dashboard-chrome.png",
+          "runtime-contracts/runtime-browser/VAL-RUNTIME-002-auth-redirect.png",
+          "runtime-contracts/runtime-browser/VAL-RUNTIME-002-cli-auth.png"
+        ],
+        "consoleErrors": "none",
+        "network": "Browser navigation / -> /WEA/dashboard; /auth -> /WEA/dashboard in local_trusted mode; in-browser POST /api/cli-auth/challenges -> 201 created approval URL /cli-auth/dc5ae01c-d59f-4b35-96da-2e4743e67d53?token=pcp_cli_auth_7377b5168cfac84a2fb43a343a1bee34b0f1df61ed5c51b7; approval page loaded and rendered successfully.",
+        "capturedText": {
+          "dashboardTitle": "Dashboard \u00b7 Papierklammer",
+          "dashboardDocumentationHref": "https://github.com/papierklammer/papierklammer#readme",
+          "cliApprovalTitle": "Papierklammer",
+          "cliApprovalBody": [
+            "Approve Papierklammer CLI access",
+            "A local Papierklammer CLI process is requesting board access to this instance.",
+            "Command: papierklammer company import",
+            "Client: papierklammer cli"
+          ]
+        }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "In local_trusted mode, visiting /auth redirected immediately to /WEA/dashboard instead of showing the standalone auth form.",
+      "resolved": true,
+      "resolution": "Recorded the redirect as expected context per task instructions and validated the rename check on the redirected dashboard plus a real CLI approval page.",
+      "affectedAssertions": [
+        "VAL-RUNTIME-002"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "VAL-RUNTIME-002 passed. The tested dashboard/operator chrome and a live CLI approval page used Papierklammer naming, the dashboard Documentation link pointed to the renamed GitHub README instead of a legacy Paperclip docs hostname, and no browser errors were observed."
+}

@@ -1,0 +1,82 @@
+{
+  "groupId": "runtime-cli-api",
+  "testedAt": "2026-04-10T05:45:51Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "missionDir": "/Users/aischool/.factory/missions/c7693cd0-d7a2-487e-b727-30252d48c4ba",
+    "surface": "cli/api",
+    "assignedAssertions": [
+      "VAL-RUNTIME-005",
+      "VAL-RUNTIME-006"
+    ]
+  },
+  "toolsUsed": [
+    "pnpm command",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-RUNTIME-005",
+      "title": "Lightweight runtime/env output stops seeding `paperclip` defaults",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `pnpm --dir \"/Users/aischool/work/papierklammer_droid\" papierklammer env`",
+          "expected": "Lightweight runtime/env output uses renamed defaults only and does not print `paperclip`, `paperclip-api`, or `Paperclip`.",
+          "observed": "Command succeeded and showed renamed defaults such as `papierklammer-api` and `papierklammer`; scan found no `paperclip`, `paperclip-api`, or `Paperclip` matches."
+        },
+        {
+          "action": "Run `pnpm --dir \"/Users/aischool/work/papierklammer_droid\" papierklammer doctor --help`",
+          "expected": "Doctor help is operator-visible `papierklammer`/`Papierklammer` copy only.",
+          "observed": "Command succeeded with `Usage: papierklammer doctor|--fix [options]` and `Run diagnostic checks on your Papierklammer setup`; scan found no legacy branding tokens."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-005-papierklammer-env.txt",
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-005-papierklammer-doctor-help.txt",
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-005-summary.txt"
+        ],
+        "legacyTokenCheck": "Scanned the captured outputs for `paperclip`, `paperclip-api`, and `Paperclip`; no matches remained."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUNTIME-006",
+      "title": "Generated runtime text and asset surfaces are renamed",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Run `curl -sS -D - \"http://127.0.0.1:3100/llms/agent-configuration.txt\"`",
+          "expected": "Representative generated runtime index text returns 200 and uses renamed `Papierklammer` wording only.",
+          "observed": "Route returned `HTTP/1.1 200 OK`; body heading was `# Papierklammer Agent Configuration Index` and the captured output had no `paperclip`, `paperclip-api`, or `Paperclip` matches."
+        },
+        {
+          "action": "Run `curl -sS -D - \"http://127.0.0.1:3100/llms/agent-configuration/gemini_local.txt\"`",
+          "expected": "Representative adapter configuration text returns 200 and uses renamed wording only.",
+          "observed": "Route returned `HTTP/1.1 200 OK`; body described Gemini usage in `Papierklammer` terms only and the captured output had no legacy token matches."
+        },
+        {
+          "action": "Run `curl -sS -D - \"http://127.0.0.1:3100/llms/agent-configuration/openclaw_gateway.txt\"`",
+          "expected": "Representative adapter configuration text returns 200 and contains no legacy `paperclip`/`Paperclip` wording.",
+          "observed": "Route returned `HTTP/1.1 200 OK` but still leaked legacy tokens: `paperclipApiUrl`, `paperclip`, `paperclip.workspace`, `paperclip.workspaces`, and `paperclip.workspaceRuntime`."
+        }
+      ],
+      "evidence": {
+        "terminal": [
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-006-agent-configuration-index.txt",
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-006-gemini-local.txt",
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-006-openclaw-gateway.txt",
+          "runtime-contracts/runtime-cli-api/VAL-RUNTIME-006-summary.txt"
+        ],
+        "network": "GET /llms/agent-configuration.txt -> 200; GET /llms/agent-configuration/gemini_local.txt -> 200; GET /llms/agent-configuration/openclaw_gateway.txt -> 200",
+        "legacyTokenCheck": "The openclaw gateway response still contains 5 lowercase `paperclip` matches."
+      },
+      "issues": "VAL-RUNTIME-006 failed because `/llms/agent-configuration/openclaw_gateway.txt` still exposes legacy `paperclip` field names and defaults even though the shared index and `gemini_local` route are clean."
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions: VAL-RUNTIME-005 passed, and VAL-RUNTIME-006 failed because `/llms/agent-configuration/openclaw_gateway.txt` still leaks legacy `paperclip` field names/defaults."
+}
