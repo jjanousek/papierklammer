@@ -18,6 +18,13 @@ function isRunActive(run: LiveRunForIssue): boolean {
   return run.status === "queued" || run.status === "running";
 }
 
+function runStatusLabel(run: LiveRunForIssue): string {
+  if (run.status === "queued") return "Queued";
+  if (run.status === "running") return "Live now";
+  if (run.finishedAt) return `Finished ${relativeTime(run.finishedAt)}`;
+  return `Started ${relativeTime(run.createdAt)}`;
+}
+
 interface ActiveAgentsPanelProps {
   companyId: string;
 }
@@ -110,7 +117,7 @@ function AgentRunCard({
               <Identity name={run.agentName} size="sm" className="[&>span:last-child]:!text-[11px]" />
             </div>
             <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span>{isActive ? "Live now" : run.finishedAt ? `Finished ${relativeTime(run.finishedAt)}` : `Started ${relativeTime(run.createdAt)}`}</span>
+              <span>{runStatusLabel(run)}</span>
             </div>
           </div>
 

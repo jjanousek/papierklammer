@@ -35,6 +35,34 @@ vi.mock("@/context/BreadcrumbContext", () => ({
   useBreadcrumbs: () => ({ setBreadcrumbs: vi.fn() }),
 }));
 
+const mockTranscriptByRun = new Map<string, Array<Record<string, unknown>>>([
+  ["run-1", [{ kind: "assistant", text: "Current reasoning for run-1" }]],
+  ["run-2", [{ kind: "assistant", text: "Queued reasoning for run-2" }]],
+  ["run-3", [{ kind: "assistant", text: "Completed reasoning for run-3" }]],
+]);
+
+vi.mock("@/components/transcript/useLiveRunTranscripts", () => ({
+  useLiveRunTranscripts: () => ({
+    transcriptByRun: mockTranscriptByRun,
+    hasOutputForRun: () => true,
+  }),
+}));
+
+vi.mock("@/components/transcript/RunTranscriptView", () => ({
+  RunTranscriptView: ({ entries, emptyMessage }: { entries: Array<Record<string, unknown>>; emptyMessage: string }) => (
+    <div data-testid="run-transcript-view">
+      {entries.length > 0
+        ? entries.map((entry) => {
+          if (typeof entry.text === "string") return entry.text;
+          if (typeof entry.content === "string") return entry.content;
+          if (typeof entry.name === "string") return entry.name;
+          return entry.kind as string;
+        }).join(" | ")
+        : emptyMessage}
+    </div>
+  ),
+}));
+
 const mockAgents: Agent[] = [
   makeAgent("a-ceo", "ceo-agent", "ceo", "active"),
   makeAgent("a-pm", "pm-agent", "pm", "active"),
@@ -107,7 +135,7 @@ vi.mock("@tanstack/react-query", () => ({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { Dashboard, MAX_STREAM_ENTRIES_PER_AGENT } from "../Dashboard";
+import { Dashboard } from "../Dashboard";
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -225,16 +253,15 @@ describe("Dashboard tier-column layout", () => {
 
   it("renders stable run identity fields for active dashboard agents", () => {
     renderDashboard();
-    expect(container.textContent).toContain("TST · company-1");
+    expect(container.textContent).toContain("TST");
     expect(container.textContent).toContain("TST-101");
-    expect(container.textContent).toContain("a-eng1");
     expect(container.textContent).toContain("run-1");
   });
 
-  it("renders recent completed run identity fields for idle dashboard agents", () => {
+  it("keeps recent completed agents collapsed by default for easier scanning", () => {
     renderDashboard();
-    expect(container.textContent).toContain("TST-202");
-    expect(container.textContent).toContain("run-3");
+    expect(container.textContent).toContain("eng-beta");
+    expect(container.textContent).not.toContain("run-3");
   });
 
   it("does not keep stale raw running agents in the active dashboard count once live runs clear", () => {
@@ -257,8 +284,101 @@ describe("Dashboard tier-column layout", () => {
     }
   });
 
-  it("has MAX_STREAM_ENTRIES_PER_AGENT >= 20", () => {
-    expect(MAX_STREAM_ENTRIES_PER_AGENT).toBeGreaterThanOrEqual(20);
+  it("uses the shared transcript renderer for expanded dashboard cards", () => {
+    renderDashboard();
+    expect(container.querySelectorAll('[data-testid="run-transcript-view"]').length).toBeGreaterThan(0);
+  });
+
+  it("shows a concise reasoning preview for active agents", () => {
+    renderDashboard();
+    expect(container.textContent).toContain("Now");
+    expect(container.textContent).toContain("Current reasoning for run-1");
+    expect(container.textContent).toContain("Queued reasoning for run-2");
+  });
+
+  it("falls back to role grouping when the org tree has no reporting relationships", () => {
+    const originalOrgNodes = mockOrgNodes.splice(0, mockOrgNodes.length);
+    mockOrgNodes.push(
+      ...mockAgents.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        role: agent.role,
+        status: agent.status,
+        reports: [],
+      })),
+    );
+
+    try {
+      renderDashboard();
+      const executive = container.querySelector('[data-testid="tier-column-executive"]');
+      const leads = container.querySelector('[data-testid="tier-column-leads"]');
+      const workers = container.querySelector('[data-testid="tier-column-workers"]');
+
+      expect(executive?.textContent).toContain("ceo-agent");
+      expect(leads?.textContent).toContain("pm-agent");
+      expect(leads?.textContent).toContain("qa-agent");
+      expect(workers?.textContent).toContain("eng-alpha");
+      expect(workers?.textContent).toContain("eng-beta");
+      expect(workers?.textContent).toContain("eng-gamma");
+    } finally {
+      mockOrgNodes.splice(0, mockOrgNodes.length, ...originalOrgNodes);
+    }
+  });
+
+  it("renders transcript content from the latest run shown on the card", () => {
+    const originalLiveRuns = mockLiveRuns.splice(0, mockLiveRuns.length);
+    const originalTranscripts = new Map(mockTranscriptByRun);
+
+    mockLiveRuns.push(
+      {
+        id: "run-latest",
+        status: "succeeded",
+        agentId: "a-eng1",
+        agentName: "eng-alpha",
+        adapterType: "claude_local",
+        createdAt: new Date(Date.now() - 1000).toISOString(),
+        startedAt: new Date(Date.now() - 1500).toISOString(),
+        finishedAt: new Date(Date.now() - 900).toISOString(),
+        invocationSource: "assignment",
+        triggerDetail: null,
+        issueId: "issue-101",
+      },
+      {
+        id: "run-older",
+        status: "succeeded",
+        agentId: "a-eng1",
+        agentName: "eng-alpha",
+        adapterType: "claude_local",
+        createdAt: new Date(Date.now() - 5000).toISOString(),
+        startedAt: new Date(Date.now() - 5500).toISOString(),
+        finishedAt: new Date(Date.now() - 4900).toISOString(),
+        invocationSource: "assignment",
+        triggerDetail: null,
+        issueId: "issue-101",
+      },
+    );
+
+    mockTranscriptByRun.clear();
+    mockTranscriptByRun.set("run-latest", [{ kind: "assistant", text: "Latest run reasoning" }]);
+    mockTranscriptByRun.set("run-older", [{ kind: "assistant", text: "Older run transcript noise" }]);
+
+    try {
+      renderDashboard();
+      const engAlphaBlock = Array.from(container.querySelectorAll('[data-testid="agent-block-collapsed"]'))
+        .find((node) => node.textContent?.includes("eng-alpha"));
+      expect(engAlphaBlock).toBeTruthy();
+      act(() => {
+        engAlphaBlock?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(container.textContent).toContain("Latest run reasoning");
+      expect(container.textContent).not.toContain("Older run transcript noise");
+    } finally {
+      mockLiveRuns.splice(0, mockLiveRuns.length, ...originalLiveRuns);
+      mockTranscriptByRun.clear();
+      for (const [key, value] of originalTranscripts.entries()) {
+        mockTranscriptByRun.set(key, value);
+      }
+    }
   });
 });
 

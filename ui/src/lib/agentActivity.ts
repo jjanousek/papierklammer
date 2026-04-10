@@ -9,7 +9,10 @@ export function getDashboardAgentDisplayStatus(
   agent: Pick<Agent, "status">,
   run?: LiveRunForIssue | null,
 ): string {
-  if (hasDashboardLiveRun(run)) {
+  if (run?.status === "queued") {
+    return "queued";
+  }
+  if (run?.status === "running") {
     return "running";
   }
   if (agent.status === "running") {
@@ -30,7 +33,7 @@ export function dashboardActivityPriority(
   run?: LiveRunForIssue | null,
 ): number {
   const displayStatus = getDashboardAgentDisplayStatus(agent, run);
-  if (displayStatus === "running" || displayStatus === "active") return 0;
+  if (displayStatus === "queued" || displayStatus === "running" || displayStatus === "active") return 0;
   if (displayStatus === "paused" || displayStatus === "pending_approval") return 1;
   return 2;
 }

@@ -105,9 +105,9 @@ export function OnboardingWizard() {
         });
   const effectiveOnboardingOpen =
     onboardingOpen || (routeOnboardingOptions !== null && !routeDismissed);
-  const effectiveOnboardingOptions = onboardingOpen
-    ? onboardingOptions
-    : routeOnboardingOptions ?? {};
+  const effectiveOnboardingOptions =
+    routeOnboardingOptions
+    ?? (onboardingOpen ? onboardingOptions : {});
 
   const existingCompanyId = effectiveOnboardingOptions.companyId;
   const isNewCompanyFlow = !existingCompanyId;
@@ -549,6 +549,10 @@ export function OnboardingWizard() {
         setCreatedCompanyId(company.id);
         setCreatedCompanyPrefix(company.issuePrefix);
         setSelectedCompanyId(company.id);
+        queryClient.setQueryData(queryKeys.companies.all, (current: typeof companies | undefined) => {
+          const existingCompanies = current ?? [];
+          return [company, ...existingCompanies.filter((entry) => entry.id !== company.id)];
+        });
         queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       }
 

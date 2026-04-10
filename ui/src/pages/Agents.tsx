@@ -65,6 +65,10 @@ function flattenOrgTree(
   }
 }
 
+function orgTreeHasRelationships(nodes: OrgNode[]): boolean {
+  return nodes.some((node) => node.reports.length > 0 || orgTreeHasRelationships(node.reports));
+}
+
 function tierLabel(depth: number): string {
   if (depth === 0) return "Executive";
   if (depth === 1) return "Leads";
@@ -184,20 +188,17 @@ export function Agents() {
     return map;
   }, [orgTree]);
 
+  const hasMeaningfulOrgTree = useMemo(
+    () => Boolean(orgTree && orgTree.length > 0 && orgTreeHasRelationships(orgTree)),
+    [orgTree],
+  );
+
   // Group agents into tiers for org view
   const displayTiers = useMemo((): TierInfo[] => {
     if (!agents) return [];
     const filteredAgentsList = filterAgents(agents, tab, showTerminated);
 
-    const tierBuckets = new Map<number, Agent[]>();
-    for (const agent of filteredAgentsList) {
-      const depth = agentDepthMap.get(agent.id) ?? 2;
-      if (!tierBuckets.has(depth)) tierBuckets.set(depth, []);
-      tierBuckets.get(depth)!.push(agent);
-    }
-
-    // If no org tree, group by role
-    if (!orgTree || orgTree.length === 0) {
+    if (!hasMeaningfulOrgTree) {
       const executive: Agent[] = [];
       const leads: Agent[] = [];
       const workers: Agent[] = [];
@@ -215,6 +216,13 @@ export function Agents() {
         { label: "Leads", rank: 1, agents: sortAgentsByActivity(leads, runByAgentId), runs: runByAgentId },
         { label: "Workers", rank: 2, agents: sortAgentsByActivity(workers, runByAgentId), runs: runByAgentId },
       ];
+    }
+
+    const tierBuckets = new Map<number, Agent[]>();
+    for (const agent of filteredAgentsList) {
+      const depth = agentDepthMap.get(agent.id) ?? 2;
+      if (!tierBuckets.has(depth)) tierBuckets.set(depth, []);
+      tierBuckets.get(depth)!.push(agent);
     }
 
     const depths = [...tierBuckets.keys()].sort((a, b) => a - b);
@@ -238,7 +246,7 @@ export function Agents() {
     }
 
     return tiers;
-  }, [agents, orgTree, agentDepthMap, runByAgentId, tab, showTerminated]);
+  }, [agents, hasMeaningfulOrgTree, agentDepthMap, runByAgentId, tab, showTerminated]);
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Agents" }]);

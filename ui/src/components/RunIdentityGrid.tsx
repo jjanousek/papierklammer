@@ -6,15 +6,22 @@ type RunIdentityValue = {
   label: string;
   value: string;
   href?: string | null;
+  title?: string;
 };
 
-function RunIdentityValueRow({ label, value, href }: RunIdentityValue) {
+function RunIdentityValueRow({ label, value, href, title }: RunIdentityValue) {
   const content = href ? (
-    <Link to={href} className="font-mono text-[10px] text-[var(--fg)] break-all hover:underline">
+    <Link
+      to={href}
+      className="font-mono text-[10px] text-[var(--fg)] break-all hover:underline"
+      title={title ?? value}
+    >
       {value}
     </Link>
   ) : (
-    <span className="font-mono text-[10px] text-[var(--fg)] break-all">{value}</span>
+    <span className="font-mono text-[10px] text-[var(--fg)] break-all" title={title ?? value}>
+      {value}
+    </span>
   );
 
   return (
@@ -37,6 +44,7 @@ interface RunIdentityGridProps {
   agentHref?: string | null;
   runHref?: string | null;
   className?: string;
+  compact?: boolean;
 }
 
 export function RunIdentityGrid({
@@ -51,19 +59,25 @@ export function RunIdentityGrid({
   agentHref,
   runHref,
   className,
+  compact = false,
 }: RunIdentityGridProps) {
   const visibleIssueValue = issueValue ?? issueId;
+  const companyValue = compact
+    ? companyIssuePrefix ?? companyId.slice(0, 8)
+    : formatCompanyIdentity(companyId, companyIssuePrefix);
+  const runValue = compact ? runId.slice(0, 8) : runId;
 
   return (
     <div className={cn("grid gap-1.5", className)} data-testid="run-identity-grid">
       <RunIdentityValueRow
         label="company"
-        value={formatCompanyIdentity(companyId, companyIssuePrefix)}
+        value={companyValue}
         href={companyHref}
+        title={formatCompanyIdentity(companyId, companyIssuePrefix)}
       />
       {visibleIssueValue ? <RunIdentityValueRow label="issue" value={visibleIssueValue} href={issueHref} /> : null}
-      <RunIdentityValueRow label="agent" value={agentId} href={agentHref} />
-      <RunIdentityValueRow label="run" value={runId} href={runHref} />
+      {!compact ? <RunIdentityValueRow label="agent" value={agentId} href={agentHref} /> : null}
+      <RunIdentityValueRow label="run" value={runValue} href={runHref} title={runId} />
     </div>
   );
 }

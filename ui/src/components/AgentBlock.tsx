@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Agent } from "@papierklammer/shared";
 import type { LiveRunForIssue } from "../api/heartbeats";
+import type { TranscriptEntry } from "../adapters";
 import { Link } from "../lib/router";
 import { useCompany } from "../context/CompanyContext";
 import { getDashboardAgentDisplayStatus } from "../lib/agentActivity";
+import { agentRouteRef, agentUrl, cn, relativeTime } from "../lib/utils";
 import { RunIdentityGrid } from "./RunIdentityGrid";
-import { agentRouteRef, agentUrl } from "../lib/utils";
-
-/** Stream entry in an agent's output. */
-export interface StreamEntry {
-  type: "reasoning" | "tool_call" | "tool_result" | "delegation" | "error" | "awaiting";
-  text: string;
-}
+import { RunTranscriptView } from "./transcript/RunTranscriptView";
 
 interface AgentBlockProps {
   agent: Agent;
@@ -20,11 +16,33 @@ interface AgentBlockProps {
   issueHref?: string | null;
   elapsed?: string;
   result?: string;
-  streamEntries?: StreamEntry[];
+  transcriptEntries?: TranscriptEntry[];
 }
+
+const ACTIVE_REASONING_PREVIEW_MAX = 220;
 
 function isActiveRun(run?: LiveRunForIssue | null): boolean {
   return run?.status === "running" || run?.status === "queued";
+}
+
+function compactWhitespace(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function truncatePreview(value: string, max: number): string {
+  return value.length > max ? `${value.slice(0, Math.max(0, max - 1))}…` : value;
+}
+
+function getActiveReasoningPreview(entries?: TranscriptEntry[]): string | null {
+  if (!entries || entries.length === 0) return null;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const entry = entries[index];
+    if (entry.kind !== "assistant" && entry.kind !== "thinking") continue;
+    const text = compactWhitespace(entry.text);
+    if (!text) continue;
+    return truncatePreview(text, ACTIVE_REASONING_PREVIEW_MAX);
+  }
+  return null;
 }
 
 export function AgentBlock({
@@ -34,21 +52,19 @@ export function AgentBlock({
   issueHref,
   elapsed,
   result,
-  streamEntries,
+  transcriptEntries,
 }: AgentBlockProps) {
   const { selectedCompany } = useCompany();
   const activeRun = isActiveRun(run);
   const displayStatus = getDashboardAgentDisplayStatus(agent, run);
-  const activeAgent = displayStatus === "active";
-  const mustStayExpanded = activeRun || activeAgent;
-  const hasRecentRun = Boolean(run);
-  const [expanded, setExpanded] = useState(mustStayExpanded || hasRecentRun);
+  const mustStayExpanded = activeRun;
+  const [expanded, setExpanded] = useState(mustStayExpanded);
 
   useEffect(() => {
-    if (mustStayExpanded || hasRecentRun) {
+    if (mustStayExpanded) {
       setExpanded(true);
     }
-  }, [mustStayExpanded, hasRecentRun]);
+  }, [mustStayExpanded]);
 
   const handleClick = () => {
     if (!mustStayExpanded) {
@@ -56,19 +72,25 @@ export function AgentBlock({
     }
   };
 
-  // Force active agents to always be expanded; recent completed runs start expanded too.
+  // Force live runs to stay expanded; completed runs are collapsed until opened.
   const isExpanded = mustStayExpanded || expanded;
 
   // Status color for the 6x6 square
   const statusStyle = getStatusStyle(displayStatus, activeRun);
+  const statusLabel = displayStatus.replace(/_/g, " ");
+  const hasTranscript = Boolean(transcriptEntries && transcriptEntries.length > 0);
+  const activeReasoningPreview = activeRun ? getActiveReasoningPreview(transcriptEntries) : null;
 
   if (!isExpanded) {
     // Collapsed (idle) - single line ~28px
     return (
       <div
-        className="flex items-center px-3 cursor-pointer hover:opacity-80 border-b border-[var(--border)]"
+        className={cn(
+          "flex items-center gap-2 border-b border-[var(--border)] px-3 transition-colors",
+          run ? "cursor-pointer hover:bg-background/60" : "cursor-default",
+        )}
         style={{ height: "28px", minHeight: "28px" }}
-        onClick={handleClick}
+        onClick={run ? handleClick : undefined}
         data-testid="agent-block-collapsed"
       >
         <Link
@@ -80,6 +102,16 @@ export function AgentBlock({
         >
           {agent.name}
         </Link>
+        {issueReference && issueHref ? (
+          <Link
+            to={issueHref}
+            onClick={(e) => e.stopPropagation()}
+            className="min-w-0 max-w-[8rem] truncate rounded border border-border/70 bg-background/70 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-[var(--fg-dim)] hover:text-[var(--fg)]"
+            title={issueReference}
+          >
+            {issueReference}
+          </Link>
+        ) : null}
         <span className="flex-1" />
         <span
           className="inline-block shrink-0"
@@ -92,7 +124,7 @@ export function AgentBlock({
           }}
         />
         <span style={{ fontSize: "10px", color: "var(--fg-dim)", marginRight: "8px" }}>
-          {displayStatus}
+          {statusLabel}
         </span>
         {elapsed && (
           <span style={{ fontSize: "10px", color: "var(--fg-dim)", marginRight: "8px" }}>
@@ -111,25 +143,37 @@ export function AgentBlock({
   // Expanded (active or user-expanded idle)
   return (
     <div
-      className="border-b border-[var(--border)]"
+      className={cn(
+        "border-b border-[var(--border)]",
+        activeRun ? "bg-cyan-500/[0.04]" : undefined,
+      )}
       onClick={!mustStayExpanded ? handleClick : undefined}
       style={{ cursor: mustStayExpanded ? "default" : "pointer" }}
       data-testid="agent-block-expanded"
     >
       {/* Header: name + status square */}
       <div
-        className="flex items-center px-3 border-b border-[var(--border)]"
-        style={{ height: "34px", minHeight: "34px" }}
+        className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-2"
       >
         <Link
           to={agentUrl(agent)}
           onClick={(e) => e.stopPropagation()}
           className="hover:underline"
-          style={{ fontSize: "11px", fontWeight: 500, color: "var(--fg)" }}
+          style={{ fontSize: "11px", fontWeight: 600, color: "var(--fg)" }}
           data-testid="agent-name-link"
         >
           {agent.name}
         </Link>
+        {issueReference && issueHref ? (
+          <Link
+            to={issueHref}
+            onClick={(e) => e.stopPropagation()}
+            className="min-w-0 max-w-[10rem] truncate rounded border border-cyan-500/20 bg-background/70 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-cyan-700 hover:text-cyan-600 dark:text-cyan-300"
+            title={issueReference}
+          >
+            {issueReference}
+          </Link>
+        ) : null}
         <span className="flex-1" />
         <span
           className="inline-block shrink-0"
@@ -140,13 +184,22 @@ export function AgentBlock({
             border: statusStyle.border ?? "none",
           }}
         />
+        <span className="rounded border border-border/70 bg-background/70 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em] text-[var(--fg-dim)]">
+          {statusLabel}
+        </span>
       </div>
 
       {/* Metadata key-value pairs */}
-      <div className="px-3 py-1 border-b border-[var(--border)]">
-        <MetaRow label="role" value={agent.role} />
-        {agent.reportsTo && <MetaRow label="reports to" value={agent.reportsTo} />}
-        {agent.adapterType && <MetaRow label="adapter" value={agent.adapterType} />}
+      <div className="border-b border-[var(--border)] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <MetaPill label="role" value={agent.role} />
+          {agent.adapterType ? <MetaPill label="adapter" value={agent.adapterType} /> : null}
+          {run?.finishedAt ? (
+            <MetaPill label="finished" value={relativeTime(run.finishedAt)} />
+          ) : run?.startedAt ? (
+            <MetaPill label={activeRun ? "started" : "updated"} value={relativeTime(run.startedAt)} />
+          ) : null}
+        </div>
         {run ? (
           <RunIdentityGrid
             className="mt-2"
@@ -159,110 +212,62 @@ export function AgentBlock({
             agentHref={agentUrl(agent)}
             runId={run.id}
             runHref={`/agents/${agentRouteRef(agent)}/runs/${run.id}`}
+            compact
           />
         ) : null}
       </div>
 
       {/* Stream content */}
-      {streamEntries && streamEntries.length > 0 && (
-        <div className="px-3 py-2">
-          <span
-            style={{
-              fontSize: "9px",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              color: "var(--fg-dim)",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            REASONING + ACTIONS
-          </span>
-          {streamEntries.map((entry, i) => {
-            const prevType = i > 0 ? streamEntries[i - 1].type : null;
-            const showGroupBorder = prevType !== null && prevType !== entry.type;
-            return (
-              <StreamLine key={i} entry={entry} showGroupBorder={showGroupBorder} />
-            );
-          })}
-        </div>
-      )}
+      <div className="px-3 py-2">
+        {activeReasoningPreview ? (
+          <div className="mb-2 rounded border border-cyan-500/20 bg-cyan-500/[0.07] px-2.5 py-2">
+            <div className="mb-1 text-[9px] font-medium uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">
+              Now
+            </div>
+            <div className="text-[11px] leading-5 text-[var(--fg)]">
+              {activeReasoningPreview}
+            </div>
+          </div>
+        ) : null}
+        {hasTranscript ? (
+          <RunTranscriptView
+            entries={transcriptEntries ?? []}
+            density="compact"
+            limit={4}
+            streaming={activeRun}
+            collapseStdout
+            thinkingClassName="!text-[10px] !leading-4"
+            emptyMessage="No transcript captured."
+          />
+        ) : run ? (
+          <div className="text-[10px] text-[var(--fg-dim)]">
+            {activeRun ? "Waiting for transcript output..." : "No transcript captured for this run."}
+          </div>
+        ) : null}
+        {!hasTranscript && !run ? (
+          <div className="text-[10px] text-[var(--fg-dim)]">
+            No recent run.
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-function MetaRow({ label, value }: { label: string; value: string }) {
+function MetaPill({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ lineHeight: "1.8", fontSize: "10px" }}>
-      <span style={{ color: "var(--fg-dim)" }}>{label}</span>
-      <span style={{ color: "var(--fg-dim)", margin: "0 6px" }}></span>
-      <span style={{ color: "var(--fg)" }}>{value}</span>
-    </div>
-  );
-}
-
-const REASONING_COLLAPSE_THRESHOLD = 120;
-
-function StreamLine({ entry, showGroupBorder }: { entry: StreamEntry; showGroupBorder?: boolean }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const styleMap: Record<StreamEntry["type"], { color: string; prefix?: string; indent?: boolean }> = {
-    reasoning: { color: "var(--fg-muted)" },
-    tool_call: { color: "var(--warn)", prefix: "$ " },
-    tool_result: { color: "var(--fg-dim)", indent: true },
-    delegation: { color: "var(--alive)" },
-    error: { color: "var(--dead)" },
-    awaiting: { color: "var(--fg-dim)" },
-  };
-
-  const s = styleMap[entry.type];
-  const isLongReasoning = entry.type === "reasoning" && entry.text.length > REASONING_COLLAPSE_THRESHOLD;
-  const displayText = isLongReasoning && !expanded
-    ? entry.text.slice(0, REASONING_COLLAPSE_THRESHOLD) + "…"
-    : entry.text;
-
-  return (
-    <div
-      style={{
-        fontSize: "10px",
-        color: s.color,
-        paddingLeft: s.indent ? "12px" : "0",
-        marginBottom: "2px",
-        ...(showGroupBorder
-          ? { marginTop: "6px", paddingTop: "6px", borderTop: "1px solid var(--border)" }
-          : {}),
-      }}
-    >
-      {s.prefix && <span>{s.prefix}</span>}
-      <span>{displayText}</span>
-      {isLongReasoning && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpanded((prev) => !prev);
-          }}
-          style={{
-            marginLeft: "4px",
-            color: "var(--fg-dim)",
-            fontSize: "9px",
-            cursor: "pointer",
-            background: "none",
-            border: "none",
-            padding: 0,
-            textDecoration: "underline",
-          }}
-          data-testid="stream-expand-btn"
-        >
-          {expanded ? "less" : "more"}
-        </button>
-      )}
-    </div>
+    <span className="inline-flex items-center gap-1 rounded border border-border/70 bg-background/70 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em] text-[var(--fg-dim)]">
+      <span>{label}</span>
+      <span className="text-[var(--fg)]">{value}</span>
+    </span>
   );
 }
 
 function getStatusStyle(status: string, isActive: boolean): { bg: string; border?: string } {
   if (isActive) return { bg: "var(--alive)" };
   switch (status) {
+    case "queued":
+      return { bg: "var(--warn)" };
     case "active":
     case "running":
       return { bg: "var(--alive)" };

@@ -111,6 +111,24 @@ function createManagementFetch(options?: {
       };
     }
 
+    if (url.endsWith("/api/companies")) {
+      return {
+        ok: true,
+        json: async () => [
+          {
+            id: "company-1",
+            name: "Audit Co",
+            updatedAt: "2026-04-05T00:00:00.000Z",
+          },
+          {
+            id: "company-2",
+            name: "Other Co",
+            updatedAt: "2026-04-04T00:00:00.000Z",
+          },
+        ],
+      };
+    }
+
     if (url.endsWith("/api/companies/company-1/approvals?status=pending")) {
       if (options?.approvalsError) {
         return {
@@ -130,6 +148,17 @@ function createManagementFetch(options?: {
       return {
         ok: true,
         json: async () => [],
+      };
+    }
+
+    if (url.endsWith("/api/companies/company-1/issues") && method === "POST") {
+      return {
+        ok: true,
+        json: async () => ({
+          id: "issue-1",
+          identifier: "AUD-1",
+          title: "Created from composer",
+        }),
       };
     }
 
@@ -303,9 +332,7 @@ describe("management shortcuts", () => {
     stdin.write("\t");
     await tick(50);
     stdin.write("]");
-    await tick(50);
-
-    expect(lastFrame()).toContain("cccccccc");
+    await waitForFrame(lastFrame, (frame) => frame.includes("cccccccc"));
 
     stdin.write("a");
 
@@ -407,6 +434,110 @@ describe("management shortcuts", () => {
       unmount();
     },
   );
+
+  it("does not fire sidebar mutation shortcuts while the issue composer is open", async () => {
+    const { fetchFn, calls } = createManagementFetch({
+      approvals: [
+        {
+          id: "bbbbbbbb-1111-1111-1111-111111111111",
+          type: "hire_agent",
+          createdAt: "2026-04-05T00:00:00.000Z",
+        },
+      ],
+    });
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-1"
+        companyName="Audit Co"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick(100);
+    stdin.write("\t");
+    await tick(50);
+    stdin.write("n");
+    await waitForFrame(lastFrame, (frame) => frame.includes("New Issue"));
+    await tick(50);
+
+    stdin.write("v");
+    stdin.write("a");
+    await tick(100);
+
+    expect(
+      calls.some(
+        (call) =>
+          call.method === "POST"
+          && (
+            call.url.endsWith("/api/agents/agent-1/heartbeat/invoke")
+            || call.url.includes("/api/approvals/")
+          ),
+      ),
+    ).toBe(false);
+    expect(lastFrame()).toContain("New Issue");
+
+    unmount();
+  });
+
+  it("opens the company switcher from an empty focused input bar", async () => {
+    const { fetchFn } = createManagementFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-1"
+        companyName="Audit Co"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick(100);
+    stdin.write("c");
+
+    const frame = await waitForFrame(
+      lastFrame,
+      (current) => current.includes("Switch Company") && current.includes("Other Co"),
+    );
+    expect(frame).toContain("Switch Company");
+    expect(frame).not.toContain("> c");
+
+    unmount();
+  });
+
+  it("keeps typing when company-switch shortcut is pressed with an existing input draft", async () => {
+    const { fetchFn } = createManagementFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-1"
+        companyName="Audit Co"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick(100);
+    stdin.write("go");
+    await tick(50);
+    stdin.write("c");
+    await tick(100);
+
+    expect(lastFrame()).toContain("> goc");
+    expect(lastFrame()).not.toContain("Switch Company");
+
+    unmount();
+  });
 
   it("shows an explicit pending approvals polling error instead of an empty approvals message", async () => {
     const { fetchFn } = createManagementFetch({

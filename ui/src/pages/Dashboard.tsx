@@ -16,52 +16,10 @@ import { TopBar } from "../components/TopBar";
 import { MetricsStrip } from "../components/MetricsStrip";
 import { TierColumn, type TierInfo } from "../components/TierColumn";
 import { useLiveRunTranscripts } from "../components/transcript/useLiveRunTranscripts";
-import type { StreamEntry } from "../components/AgentBlock";
-import type { TranscriptEntry } from "../adapters";
 
 import type { Agent } from "@papierklammer/shared";
 
 const MIN_DASHBOARD_RUNS = 8;
-export const MAX_STREAM_ENTRIES_PER_AGENT = 20;
-
-/** Convert adapter transcript entries into lightweight StreamEntry items for AgentBlock. */
-function transcriptToStreamEntries(entries: TranscriptEntry[]): StreamEntry[] {
-  const result: StreamEntry[] = [];
-  for (const entry of entries.slice(-MAX_STREAM_ENTRIES_PER_AGENT)) {
-    switch (entry.kind) {
-      case "thinking":
-      case "assistant":
-        result.push({ type: "reasoning", text: entry.text });
-        break;
-      case "tool_call": {
-        const argsStr = entry.input
-          ? typeof entry.input === "string"
-            ? entry.input.slice(0, 200)
-            : JSON.stringify(entry.input).slice(0, 200)
-          : "";
-        result.push({
-          type: "tool_call",
-          text: argsStr ? `${entry.name} ${argsStr}` : entry.name,
-        });
-        break;
-      }
-      case "tool_result":
-        result.push({ type: "tool_result", text: entry.content.slice(0, 200) });
-        break;
-      case "stderr":
-        result.push({ type: "error", text: entry.text.slice(0, 200) });
-        break;
-      case "system":
-        if (entry.text.toLowerCase().includes("delegat")) {
-          result.push({ type: "delegation", text: entry.text.slice(0, 200) });
-        }
-        break;
-      default:
-        break;
-    }
-  }
-  return result;
-}
 
 /**
  * Classify an agent's hierarchy tier from org tree.
@@ -78,6 +36,10 @@ function flattenOrgTree(
       flattenOrgTree(node.reports, depth + 1, out);
     }
   }
+}
+
+function orgTreeHasRelationships(nodes: OrgNode[]): boolean {
+  return nodes.some((node) => node.reports.length > 0 || orgTreeHasRelationships(node.reports));
 }
 
 function tierLabel(depth: number): string {
@@ -173,20 +135,6 @@ export function Dashboard() {
     return map;
   }, [liveRuns]);
 
-  // Build a map: agentId → StreamEntry[] from live transcripts
-  const streamsByAgent = useMemo(() => {
-    const map = new Map<string, StreamEntry[]>();
-    for (const run of liveRuns ?? []) {
-      const entries = transcriptByRun.get(run.id);
-      if (!entries || entries.length === 0) continue;
-      const streams = transcriptToStreamEntries(entries);
-      if (streams.length > 0) {
-        map.set(run.agentId, streams);
-      }
-    }
-    return map;
-  }, [liveRuns, transcriptByRun]);
-
   // Build org depth map
   const agentDepthMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -212,21 +160,16 @@ export function Dashboard() {
     return map;
   }, [issues]);
 
+  const hasMeaningfulOrgTree = useMemo(
+    () => Boolean(orgNodes && orgNodes.length > 0 && orgTreeHasRelationships(orgNodes)),
+    [orgNodes],
+  );
+
   // Group agents into tiers
   const tiers = useMemo((): TierInfo[] => {
     if (!agents) return [];
 
-    // Build tier buckets
-    const tierBuckets = new Map<number, Agent[]>();
-    for (const agent of agents) {
-      if (agent.status === "terminated") continue;
-      const depth = agentDepthMap.get(agent.id) ?? 2; // default to workers
-      if (!tierBuckets.has(depth)) tierBuckets.set(depth, []);
-      tierBuckets.get(depth)!.push(agent);
-    }
-
-    // If there are no org nodes, create a simple grouping based on role
-    if (!orgNodes || orgNodes.length === 0) {
+    if (!hasMeaningfulOrgTree) {
       const executive: Agent[] = [];
       const leads: Agent[] = [];
       const workers: Agent[] = [];
@@ -241,10 +184,19 @@ export function Dashboard() {
         }
       }
       const result: TierInfo[] = [];
-      result.push({ label: "Executive", rank: 0, agents: sortAgentsByActivity(executive, runByAgentId), runs: runByAgentId, streams: streamsByAgent });
-      result.push({ label: "Leads", rank: 1, agents: sortAgentsByActivity(leads, runByAgentId), runs: runByAgentId, streams: streamsByAgent });
-      result.push({ label: "Workers", rank: 2, agents: sortAgentsByActivity(workers, runByAgentId), runs: runByAgentId, streams: streamsByAgent });
+      result.push({ label: "Executive", rank: 0, agents: sortAgentsByActivity(executive, runByAgentId), runs: runByAgentId, transcriptsByRun: transcriptByRun });
+      result.push({ label: "Leads", rank: 1, agents: sortAgentsByActivity(leads, runByAgentId), runs: runByAgentId, transcriptsByRun: transcriptByRun });
+      result.push({ label: "Workers", rank: 2, agents: sortAgentsByActivity(workers, runByAgentId), runs: runByAgentId, transcriptsByRun: transcriptByRun });
       return result;
+    }
+
+    // Build tier buckets
+    const tierBuckets = new Map<number, Agent[]>();
+    for (const agent of agents) {
+      if (agent.status === "terminated") continue;
+      const depth = agentDepthMap.get(agent.id) ?? 2; // default to workers
+      if (!tierBuckets.has(depth)) tierBuckets.set(depth, []);
+      tierBuckets.get(depth)!.push(agent);
     }
 
     // Sort depths and create tier infos
@@ -254,22 +206,22 @@ export function Dashboard() {
       rank: depth,
       agents: sortAgentsByActivity(tierBuckets.get(depth)!, runByAgentId),
       runs: runByAgentId,
-      streams: streamsByAgent,
+      transcriptsByRun: transcriptByRun,
     }));
-  }, [agents, orgNodes, agentDepthMap, runByAgentId, streamsByAgent]);
+  }, [agents, hasMeaningfulOrgTree, agentDepthMap, runByAgentId, transcriptByRun]);
 
   // Ensure we always have 3 tiers minimum
   const displayTiers = useMemo(() => {
     if (tiers.length >= 3) return tiers;
     const result = [...tiers];
-    const existingRanks = new Set(result.map((t) => t.rank));
-    for (let i = 0; i < 3; i++) {
-      if (!existingRanks.has(i)) {
-        result.push({ label: tierLabel(i), rank: i, agents: [], runs: runByAgentId, streams: streamsByAgent });
+      const existingRanks = new Set(result.map((t) => t.rank));
+      for (let i = 0; i < 3; i++) {
+        if (!existingRanks.has(i)) {
+          result.push({ label: tierLabel(i), rank: i, agents: [], runs: runByAgentId, transcriptsByRun: transcriptByRun });
+        }
       }
-    }
-    return result.sort((a, b) => a.rank - b.rank);
-  }, [tiers, runByAgentId]);
+      return result.sort((a, b) => a.rank - b.rank);
+  }, [tiers, runByAgentId, transcriptByRun]);
 
   // Metrics
   const activeCount = useMemo(() => {

@@ -92,6 +92,13 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     }) =>
       companiesApi.create(data),
     onSuccess: (company) => {
+      queryClient.setQueryData(
+        queryKeys.companies.all,
+        (current: Company[] | undefined) => {
+          const companies = current ?? [];
+          return [company, ...companies.filter((entry) => entry.id !== company.id)];
+        },
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       setSelectedCompanyId(company.id);
     },

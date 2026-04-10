@@ -1,13 +1,14 @@
 import type { Agent } from "@papierklammer/shared";
 import type { LiveRunForIssue } from "../api/heartbeats";
-import { AgentBlock, type StreamEntry } from "./AgentBlock";
+import type { TranscriptEntry } from "../adapters";
+import { AgentBlock } from "./AgentBlock";
 
 export interface TierInfo {
   label: string;
   rank: number;
   agents: Agent[];
   runs?: Map<string, LiveRunForIssue>;
-  streams?: Map<string, StreamEntry[]>;
+  transcriptsByRun?: Map<string, TranscriptEntry[]>;
 }
 
 interface TierColumnProps {
@@ -70,6 +71,7 @@ export function TierColumn({
           const run = tier.runs?.get(agent.id) ?? null;
           const issueReference = run?.issueId ? issueReferences?.get(run.issueId) ?? run.issueId : null;
           const issueHref = run?.issueId ? issueHrefs?.get(run.issueId) ?? `/issues/${run.issueId}` : null;
+          const transcriptEntries = run ? tier.transcriptsByRun?.get(run.id) : undefined;
 
           return (
             <AgentBlock
@@ -78,7 +80,7 @@ export function TierColumn({
               run={run}
               issueReference={issueReference}
               issueHref={issueHref}
-              streamEntries={tier.streams?.get(agent.id)}
+              transcriptEntries={transcriptEntries}
             />
           );
         })}

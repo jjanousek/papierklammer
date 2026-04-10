@@ -4,6 +4,8 @@ import {
   companies,
   companyLogos,
   assets,
+  budgetIncidents,
+  budgetPolicies,
   agents,
   agentApiKeys,
   agentConfigRevisions,
@@ -11,9 +13,21 @@ import {
   agentTaskSessions,
   agentWakeupRequests,
   dispatchIntents,
+  documentRevisions,
+  documents,
   executionLeases,
+  executionEnvelopes,
+  executionWorkspaces,
   issues,
+  issueDependencies,
+  issueDocuments,
+  issueInboxArchives,
   issueComments,
+  issueApprovals,
+  issueReadStates,
+  issueWorkProducts,
+  projectGoals,
+  projectWorkspaces,
   projects,
   goals,
   heartbeatRuns,
@@ -30,6 +44,8 @@ import {
   invites,
   principalPermissionGrants,
   companyMemberships,
+  workspaceOperations,
+  workspaceRuntimeServices,
 } from "@papierklammer/db";
 import { conflict, notFound, unprocessable } from "../errors.js";
 
@@ -168,9 +184,18 @@ export function companyService(db: Db) {
   }
 
   async function removeCompanyRecords(id: string, tx: Pick<Db, "delete">) {
+    await tx.delete(workspaceOperations).where(eq(workspaceOperations.companyId, id));
+    await tx.delete(issueWorkProducts).where(eq(issueWorkProducts.companyId, id));
+    await tx.delete(workspaceRuntimeServices).where(eq(workspaceRuntimeServices.companyId, id));
+    await tx.delete(issueDocuments).where(eq(issueDocuments.companyId, id));
+    await tx.delete(documentRevisions).where(eq(documentRevisions.companyId, id));
+    await tx.delete(issueReadStates).where(eq(issueReadStates.companyId, id));
+    await tx.delete(issueInboxArchives).where(eq(issueInboxArchives.companyId, id));
+    await tx.delete(issueDependencies).where(eq(issueDependencies.companyId, id));
     await tx.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, id));
     await tx.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, id));
     await tx.delete(executionLeases).where(eq(executionLeases.companyId, id));
+    await tx.delete(executionEnvelopes).where(eq(executionEnvelopes.companyId, id));
     await tx.delete(heartbeatRuns).where(eq(heartbeatRuns.companyId, id));
     await tx.delete(agentWakeupRequests).where(eq(agentWakeupRequests.companyId, id));
     await tx.delete(dispatchIntents).where(eq(dispatchIntents.companyId, id));
@@ -182,16 +207,23 @@ export function companyService(db: Db) {
     await tx.delete(financeEvents).where(eq(financeEvents.companyId, id));
     await tx.delete(controlPlaneEvents).where(eq(controlPlaneEvents.companyId, id));
     await tx.delete(approvalComments).where(eq(approvalComments.companyId, id));
+    await tx.delete(issueApprovals).where(eq(issueApprovals.companyId, id));
+    await tx.delete(budgetIncidents).where(eq(budgetIncidents.companyId, id));
     await tx.delete(approvals).where(eq(approvals.companyId, id));
+    await tx.delete(budgetPolicies).where(eq(budgetPolicies.companyId, id));
     await tx.delete(companySkills).where(eq(companySkills.companyId, id));
     await tx.delete(companySecrets).where(eq(companySecrets.companyId, id));
     await tx.delete(joinRequests).where(eq(joinRequests.companyId, id));
     await tx.delete(invites).where(eq(invites.companyId, id));
     await tx.delete(principalPermissionGrants).where(eq(principalPermissionGrants.companyId, id));
     await tx.delete(companyMemberships).where(eq(companyMemberships.companyId, id));
+    await tx.delete(projectGoals).where(eq(projectGoals.companyId, id));
     await tx.delete(issues).where(eq(issues.companyId, id));
+    await tx.delete(executionWorkspaces).where(eq(executionWorkspaces.companyId, id));
+    await tx.delete(projectWorkspaces).where(eq(projectWorkspaces.companyId, id));
     await tx.delete(companyLogos).where(eq(companyLogos.companyId, id));
     await tx.delete(assets).where(eq(assets.companyId, id));
+    await tx.delete(documents).where(eq(documents.companyId, id));
     await tx.delete(goals).where(eq(goals.companyId, id));
     await tx.delete(projects).where(eq(projects.companyId, id));
     await tx.delete(agents).where(eq(agents.companyId, id));

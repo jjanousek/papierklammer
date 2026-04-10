@@ -7,9 +7,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AdapterEnvironmentTestResult } from "@papierklammer/shared";
 
 const mocks = vi.hoisted(() => ({
+  location: { pathname: "/", search: "", hash: "" },
+  params: {} as { companyPrefix?: string },
+  onboardingOpen: true,
+  onboardingOptions: {
+    initialStep: 1 as 1 | 2 | 3 | 4 | undefined,
+    companyId: "company-1" as string | undefined,
+  } as { initialStep?: 1 | 2 | 3 | 4; companyId?: string },
+  companies: [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }],
+  companiesLoading: false,
   closeOnboarding: vi.fn(),
   navigate: vi.fn(),
   invalidateQueries: vi.fn(),
+  setQueryData: vi.fn(),
   setSelectedCompanyId: vi.fn(),
   pushToast: vi.fn(),
   companiesCreate: vi.fn(),
@@ -32,27 +42,28 @@ vi.mock("@tanstack/react-query", () => ({
   }),
   useQueryClient: () => ({
     invalidateQueries: mocks.invalidateQueries,
+    setQueryData: mocks.setQueryData,
   }),
 }));
 
 vi.mock("@/lib/router", () => ({
-  useLocation: () => ({ pathname: "/", search: "", hash: "" }),
+  useLocation: () => mocks.location,
   useNavigate: () => mocks.navigate,
-  useParams: () => ({}),
+  useParams: () => mocks.params,
 }));
 
 vi.mock("../context/DialogContext", () => ({
   useDialog: () => ({
-    onboardingOpen: true,
-    onboardingOptions: { initialStep: 1, companyId: "company-1" },
+    onboardingOpen: mocks.onboardingOpen,
+    onboardingOptions: mocks.onboardingOptions,
     closeOnboarding: mocks.closeOnboarding,
   }),
 }));
 
 vi.mock("../context/CompanyContext", () => ({
   useCompany: () => ({
-    companies: [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }],
-    loading: false,
+    companies: mocks.companies,
+    loading: mocks.companiesLoading,
     setSelectedCompanyId: mocks.setSelectedCompanyId,
   }),
 }));
@@ -195,7 +206,29 @@ beforeEach(async () => {
   document.body.appendChild(container);
   root = createRoot(container);
 
-  Object.values(mocks).forEach((mock) => mock.mockReset());
+  [
+    mocks.closeOnboarding,
+    mocks.navigate,
+    mocks.invalidateQueries,
+    mocks.setQueryData,
+    mocks.setSelectedCompanyId,
+    mocks.pushToast,
+    mocks.companiesCreate,
+    mocks.companiesOnboardingDraft,
+    mocks.goalsCreate,
+    mocks.goalsList,
+    mocks.agentsCreate,
+    mocks.agentsTestEnvironment,
+    mocks.agentsWakeup,
+    mocks.issuesCreate,
+    mocks.projectsCreate,
+  ].forEach((mock) => mock.mockReset());
+  mocks.location = { pathname: "/", search: "", hash: "" };
+  mocks.params = {};
+  mocks.onboardingOpen = true;
+  mocks.onboardingOptions = { initialStep: 1, companyId: "company-1" };
+  mocks.companies = [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }];
+  mocks.companiesLoading = false;
 
   mocks.goalsList.mockResolvedValue([]);
   mocks.agentsCreate.mockResolvedValue({ id: "agent-1" });
@@ -307,5 +340,32 @@ describe("OnboardingWizard", () => {
     );
     expect(mocks.closeOnboarding).toHaveBeenCalled();
     expect(mocks.navigate).toHaveBeenCalledWith("/ACME/issues/ACME-1");
+  });
+
+  it("prefers the company-prefixed route over stale empty dialog options", async () => {
+    mocks.location = { pathname: "/ACME/onboarding", search: "", hash: "" };
+    mocks.params = { companyPrefix: "ACME" };
+    mocks.onboardingOptions = {};
+
+    await act(async () => {
+      root.render(<OnboardingWizard />);
+    });
+    await flush();
+
+    mocks.agentsTestEnvironment.mockResolvedValue(makeEnvResult("pass"));
+
+    await click("Codex");
+    await flush();
+    await click("Next");
+    await flush();
+
+    expect(mocks.agentsCreate).toHaveBeenCalledWith(
+      "company-1",
+      expect.objectContaining({
+        adapterType: "codex_local",
+      }),
+    );
+    expect(document.body.textContent).toContain("Give it something to do");
+    expect(document.body.textContent).not.toContain("Describe your company");
   });
 });

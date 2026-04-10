@@ -12,6 +12,8 @@ export interface InputBarProps {
   focused?: boolean;
   /** Called when the input bar gains or loses focus. */
   onFocusChange?: (isFocused: boolean) => void;
+  /** Called whenever the current draft text changes. */
+  onValueChange?: (value: string) => void;
 }
 
 /**
@@ -25,12 +27,17 @@ export function InputBar({
   disabled = false,
   focused = false,
   onFocusChange,
+  onValueChange,
 }: InputBarProps): React.ReactElement {
   const [value, setValue] = useState("");
 
   useEffect(() => {
     onFocusChange?.(focused);
   }, [focused, onFocusChange]);
+
+  useEffect(() => {
+    onValueChange?.(value);
+  }, [onValueChange, value]);
 
   const borderColor = focused ? "green" : undefined;
 

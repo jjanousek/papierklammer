@@ -92,6 +92,7 @@ interface CompanySessionProps {
   onDismissComposer: () => void;
   onOpenComposer: () => void;
   onInputFocusChange: (focused: boolean) => void;
+  onInputDraftChange: (value: string) => void;
 }
 
 function CompanySession({
@@ -117,8 +118,9 @@ function CompanySession({
   onDismissComposer,
   onOpenComposer,
   onInputFocusChange,
+  onInputDraftChange,
 }: CompanySessionProps): React.ReactElement {
-  const [focusTarget, setFocusTarget] = useState<"sidebar" | "input">("input");
+  const [focusTarget, setFocusTarget] = useState<"sidebar" | "input" | "overlay">("input");
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
   const { columns } = useTerminalSize();
 
@@ -438,6 +440,12 @@ function CompanySession({
     sortedIssues[Math.max(0, Math.min(selectedIssueIndex, sortedIssues.length - 1))]
     ?? null;
 
+  const handleOpenComposer = useCallback(() => {
+    setFocusTarget("overlay");
+    onInputFocusChange(false);
+    onOpenComposer();
+  }, [onInputFocusChange, onOpenComposer]);
+
   useInput(
     (input) => {
       if (focusTarget === "input" || helpVisible || settingsVisible || composerVisible) {
@@ -450,7 +458,7 @@ function CompanySession({
         setSelectedIssueIndex((current) => Math.max(current - 1, 0));
       }
       if (input === "n") {
-        onOpenComposer();
+        handleOpenComposer();
       }
       if (input === "u") {
         handleRecoverSelectedIssue();
@@ -532,7 +540,7 @@ function CompanySession({
             height={sidebarHeight}
             maxVisible={Math.max(4, sidebarHeight - 7)}
             focused={focusTarget === "sidebar"}
-            shortcutsEnabled={!helpVisible && !settingsVisible}
+            shortcutsEnabled={!helpVisible && !settingsVisible && !composerVisible}
             connected={status.connected}
             error={status.error}
             pendingApprovalsError={approvals.error}
@@ -559,7 +567,11 @@ function CompanySession({
             <Box flexGrow={1} height={mainPanelHeight} justifyContent="center" alignItems="center">
               <IssueComposerOverlay
                 visible={composerVisible}
-                onDismiss={onDismissComposer}
+                onDismiss={() => {
+                  setFocusTarget("sidebar");
+                  onInputFocusChange(false);
+                  onDismissComposer();
+                }}
                 onSubmit={handleCreateIssue}
               />
             </Box>
@@ -593,6 +605,7 @@ function CompanySession({
           disabled={inputDisabled}
           focused={focusTarget === "input"}
           onFocusChange={onInputFocusChange}
+          onValueChange={onInputDraftChange}
         />
         <StatusBar
           codexState={displayCodexState}
@@ -634,6 +647,7 @@ export function App({
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(!companyId);
   const [companiesError, setCompaniesError] = useState<string | null>(null);
+  const [inputDraft, setInputDraft] = useState("");
   const inputFocusedRef = useRef(true);
   const previousLaunchContextRef = useRef({
     companyId,
@@ -675,10 +689,18 @@ export function App({
     if (input === "f" && !inputFocusedRef.current && !helpVisible && !composerVisible && !switcherVisible) {
       setFastMode((current) => !current);
     }
-    if (input === "c" && !inputFocusedRef.current && !helpVisible && !settingsVisible && !composerVisible && !switcherVisible) {
+    if (
+      input === "c"
+      && !helpVisible
+      && !settingsVisible
+      && !composerVisible
+      && !switcherVisible
+      && (!inputFocusedRef.current || inputDraft.trim().length === 0)
+    ) {
+      setInputDraft("");
       setSwitcherVisible(true);
     }
-  });
+  }, { isActive: !switcherVisible });
 
   useEffect(() => {
     const previous = previousLaunchContextRef.current;
@@ -763,6 +785,7 @@ export function App({
   }, []);
 
   const handleDismissSwitcher = useCallback(() => {
+    setInputDraft("");
     setSwitcherVisible(false);
   }, []);
 
@@ -771,6 +794,7 @@ export function App({
   }, []);
 
   const handleCompanySelect = useCallback((company: CompanyOption) => {
+    setInputDraft("");
     setSelectedCompanyId(company.id);
     setSelectedCompanyName(company.name);
     setCompaniesError(null);
@@ -881,8 +905,12 @@ export function App({
             onDismissHelp={handleDismissHelp}
             onDismissSettings={handleDismissSettings}
             onDismissComposer={handleDismissComposer}
-            onOpenComposer={() => setComposerVisible(true)}
+            onOpenComposer={() => {
+              setInputDraft("");
+              setComposerVisible(true);
+            }}
             onInputFocusChange={handleInputFocusChange}
+            onInputDraftChange={setInputDraft}
           />
         )}
       </Box>
