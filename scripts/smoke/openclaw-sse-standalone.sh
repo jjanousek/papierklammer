@@ -24,7 +24,7 @@ OPENCLAW_METHOD="${OPENCLAW_METHOD:-POST}"
 OPENCLAW_AUTH_HEADER="${OPENCLAW_AUTH_HEADER:-}"
 OPENCLAW_TIMEOUT_SEC="${OPENCLAW_TIMEOUT_SEC:-180}"
 OPENCLAW_MODEL="${OPENCLAW_MODEL:-openclaw}"
-OPENCLAW_USER="${OPENCLAW_USER:-paperclip-smoke}"
+OPENCLAW_USER="${OPENCLAW_USER:-papierklammer-smoke}"
 
 PAPIERKLAMMER_RUN_ID="${PAPIERKLAMMER_RUN_ID:-smoke-run-$(date +%s)}"
 PAPIERKLAMMER_AGENT_ID="${PAPIERKLAMMER_AGENT_ID:-openclaw-smoke-agent}"
@@ -54,7 +54,7 @@ PAPIERKLAMMER_APPROVAL_ID=${PAPIERKLAMMER_APPROVAL_ID}
 PAPIERKLAMMER_APPROVAL_STATUS=${PAPIERKLAMMER_APPROVAL_STATUS}
 PAPIERKLAMMER_LINKED_ISSUE_IDS=${PAPIERKLAMMER_LINKED_ISSUE_IDS}
 
-Run your Paperclip heartbeat procedure now.
+Run your Papierklammer heartbeat procedure now.
 EOF
 
 PAYLOAD="$(jq -nc \
@@ -87,7 +87,7 @@ PAYLOAD="$(jq -nc \
       PAPIERKLAMMER_APPROVAL_ID: $approvalId,
       PAPIERKLAMMER_APPROVAL_STATUS: $approvalStatus,
       PAPIERKLAMMER_LINKED_ISSUE_IDS: $linkedIssueIds,
-      paperclip_session_key: ("paperclip:run:" + $runId)
+      papierklammer_session_key: ("papierklammer:run:" + $runId)
     }
   }')"
 
@@ -105,7 +105,7 @@ args=(
   -X "$OPENCLAW_METHOD"
   -H "content-type: application/json"
   -H "accept: text/event-stream"
-  -H "x-openclaw-session-key: paperclip:run:${PAPIERKLAMMER_RUN_ID}"
+  -H "x-openclaw-session-key: papierklammer:run:${PAPIERKLAMMER_RUN_ID}"
   -D "$headers_file"
   -o "$body_file"
   --data "$PAYLOAD"

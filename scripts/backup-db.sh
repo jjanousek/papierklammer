@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Backup the configured Paperclip database to the configured backup directory
+# Backup the configured Papierklammer database to the configured backup directory
 # (default: ~/.papierklammer/instances/<instance-id>/data/backups)
 #
 # Usage:

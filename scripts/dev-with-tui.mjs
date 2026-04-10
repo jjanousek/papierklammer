@@ -14,7 +14,7 @@ const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
 export const HELP_TEXT = `Usage: pnpm dev [-- <dev-runner-flags>]
 
-Starts the Paperclip dev server in the current terminal and tries to open the
+Starts the Papierklammer dev server in the current terminal and tries to open the
 orchestrator TUI in a second terminal once the server is reachable.
 
 Environment:
@@ -109,8 +109,8 @@ export function buildTuiCommand(launch) {
   return [
     `${command}; status=$?`,
     'if [ "$status" -ne 0 ]; then',
-    `  printf '\\n[paperclip] orchestrator TUI exited with status %s\\n' \"$status\"`,
-    "  printf '[paperclip] rerun manually in this terminal:\\n'",
+    `  printf '\\n[papierklammer] orchestrator TUI exited with status %s\\n' \"$status\"`,
+    "  printf '[papierklammer] rerun manually in this terminal:\\n'",
     `  printf '%s\\n' ${shellEscape(command)}`,
     "  printf 'Press Enter to close... '",
     "  read _",
@@ -164,20 +164,20 @@ export function run(argv = process.argv) {
         if (opened) {
           console.error(
             launch.companyId
-              ? `[paperclip] opened orchestrator TUI in a new terminal for company ${launch.companyId}`
-              : "[paperclip] opened orchestrator TUI in a new terminal with company picker",
+              ? `[papierklammer] opened orchestrator TUI in a new terminal for company ${launch.companyId}`
+              : "[papierklammer] opened orchestrator TUI in a new terminal with company picker",
           );
-          console.error("[paperclip] if you do not see it, run `pnpm dev:tui` in another terminal.");
+          console.error("[papierklammer] if you do not see it, run `pnpm dev:tui` in another terminal.");
           return;
         }
 
-        console.error("[paperclip] could not open a second terminal automatically.");
-        console.error("[paperclip] run this command in another terminal:");
+        console.error("[papierklammer] could not open a second terminal automatically.");
+        console.error("[papierklammer] run this command in another terminal:");
         console.error(command);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error resolving TUI launch";
-        console.error(`[paperclip] skipping TUI auto-open: ${message}`);
+        console.error(`[papierklammer] skipping TUI auto-open: ${message}`);
       }
     }, 0);
   }

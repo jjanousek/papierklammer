@@ -94,14 +94,14 @@ export async function main(argv = process.argv) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to resolve orchestrator TUI launch";
-    console.error(`[paperclip] ${message}`);
+    console.error(`[papierklammer] ${message}`);
     return 1;
   }
 
   console.error(
     launch.companyId
-      ? `[paperclip] launching orchestrator TUI for company ${launch.companyId} at ${launch.baseUrl}`
-      : `[paperclip] launching orchestrator TUI with company picker at ${launch.baseUrl}`,
+      ? `[papierklammer] launching orchestrator TUI for company ${launch.companyId} at ${launch.baseUrl}`
+      : `[papierklammer] launching orchestrator TUI with company picker at ${launch.baseUrl}`,
   );
 
   const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";

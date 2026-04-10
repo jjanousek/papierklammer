@@ -93,7 +93,7 @@ const agentJwtSecret = ensureAgentJwtSecret();
 loadPaperclipEnvFile();
 if (agentJwtSecret.created) {
   console.log(
-    `[paperclip] created PAPIERKLAMMER_AGENT_JWT_SECRET in ${resolveAgentJwtEnvFile()}`,
+    `[papierklammer] created PAPIERKLAMMER_AGENT_JWT_SECRET in ${resolveAgentJwtEnvFile()}`,
   );
 }
 
@@ -112,9 +112,9 @@ if (tailscaleAuth) {
   env.PAPIERKLAMMER_DEPLOYMENT_EXPOSURE = "private";
   env.PAPIERKLAMMER_AUTH_BASE_URL_MODE = "auto";
   env.HOST = "0.0.0.0";
-  console.log("[paperclip] dev mode: authenticated/private (tailscale-friendly) on 0.0.0.0");
+  console.log("[papierklammer] dev mode: authenticated/private (tailscale-friendly) on 0.0.0.0");
 } else {
-  console.log("[paperclip] dev mode: local_trusted (default)");
+  console.log("[papierklammer] dev mode: local_trusted (default)");
 }
 
 const serverPort = Number.parseInt(env.PORT ?? process.env.PORT ?? "3100", 10) || 3100;
@@ -133,7 +133,7 @@ const existingRunner = await findAdoptableLocalService({
 });
 if (existingRunner) {
   console.log(
-    `[paperclip] ${devService.serviceName} already running (pid ${existingRunner.pid}${typeof existingRunner.metadata?.childPid === "number" ? `, child ${existingRunner.metadata.childPid}` : ""})`,
+    `[papierklammer] ${devService.serviceName} already running (pid ${existingRunner.pid}${typeof existingRunner.metadata?.childPid === "number" ? `, child ${existingRunner.metadata.childPid}` : ""})`,
   );
   process.exit(0);
 }
@@ -152,9 +152,9 @@ async function hasReachablePaperclipHealth(port: number) {
 const orphanPortOwner = await readLocalServicePortOwner(serverPort);
 if (orphanPortOwner && await hasReachablePaperclipHealth(serverPort)) {
   console.log(
-    `[paperclip] Paperclip server already listening on http://127.0.0.1:${serverPort} (pid ${orphanPortOwner})`,
+    `[papierklammer] Papierklammer server already listening on http://127.0.0.1:${serverPort} (pid ${orphanPortOwner})`,
   );
-  console.log("[paperclip] run `pnpm dev:stop` to terminate the existing local instance first.");
+  console.log("[papierklammer] run `pnpm dev:stop` to terminate the existing local instance first.");
   process.exit(0);
 }
 
@@ -313,7 +313,7 @@ async function updateDevServiceRecord(extra?: Record<string, unknown>) {
   await writeLocalServiceRegistryRecord({
     version: 1,
     serviceKey: devService.serviceKey,
-    profileKind: "paperclip-dev",
+    profileKind: "papierklammer-dev",
     serviceName: devService.serviceName,
     command: mode === "watch" ? "server/scripts/dev-watch.ts" : "server/src/index.ts",
     cwd: serverRoot,
@@ -386,7 +386,7 @@ async function getMigrationStatusPayload() {
     process.stderr.write(
       status.stderr ||
         status.stdout ||
-        `[paperclip] Command failed with code ${status.code}: pnpm --filter @papierklammer/db exec tsx src/migration-status.ts --json\n`,
+        `[papierklammer] Command failed with code ${status.code}: pnpm --filter @papierklammer/db exec tsx src/migration-status.ts --json\n`,
     );
     process.exit(status.code);
   }
@@ -397,7 +397,7 @@ async function getMigrationStatusPayload() {
     process.stderr.write(
       status.stderr ||
         status.stdout ||
-        "[paperclip] migration-status returned invalid JSON payload\n",
+        "[papierklammer] migration-status returned invalid JSON payload\n",
     );
     throw toError(error, "Unable to parse migration-status JSON output");
   }
@@ -448,7 +448,7 @@ async function maybePreflightMigrations(options: { interactive?: boolean; autoAp
   if (!shouldApply) {
     if (exitOnDecline) {
       process.stderr.write(
-        `[paperclip] Pending migrations detected (${formatPendingMigrationSummary(pendingMigrations)}). Refusing to start watch mode against a stale schema.\n`,
+        `[papierklammer] Pending migrations detected (${formatPendingMigrationSummary(pendingMigrations)}). Refusing to start watch mode against a stale schema.\n`,
       );
       process.exit(1);
     }
@@ -472,7 +472,7 @@ async function maybePreflightMigrations(options: { interactive?: boolean; autoAp
 }
 
 async function buildPluginSdk() {
-  console.log("[paperclip] building plugin sdk...");
+  console.log("[papierklammer] building plugin sdk...");
   const result = await runPnpm(
     ["--filter", "@papierklammer/plugin-sdk", "build"],
     { stdio: "inherit" },
@@ -482,7 +482,7 @@ async function buildPluginSdk() {
     return;
   }
   if (result.code !== 0) {
-    console.error("[paperclip] plugin sdk build failed");
+    console.error("[papierklammer] plugin sdk build failed");
     process.exit(result.code);
   }
 }
@@ -497,7 +497,7 @@ async function runServerPreflight() {
     return;
   }
   if (result.code !== 0) {
-    console.error("[paperclip] server preflight failed");
+    console.error("[papierklammer] server preflight failed");
     process.exit(result.code);
   }
 }

@@ -296,7 +296,7 @@ EOF
 }
 
 if ! run_isolated_worktree_init; then
-  echo "paperclipai CLI not available in this workspace; writing isolated fallback config without DB seeding." >&2
+  echo "papierklammer CLI not available in this workspace; writing isolated fallback config without DB seeding." >&2
   write_fallback_worktree_config
 fi
 

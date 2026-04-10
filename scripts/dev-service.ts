@@ -48,10 +48,10 @@ function listRepoDevProcessGroups() {
 
       const command = match[3] ?? "";
       const label = command.includes("dev-runner.ts")
-        ? "paperclip-dev-runner"
+        ? "papierklammer-dev-runner"
         : command.includes("scripts/dev-watch.ts")
-          ? "paperclip-dev-watch"
-          : "paperclip-server";
+          ? "papierklammer-dev-watch"
+          : "papierklammer-server";
 
       const existing = groups.get(processGroupId);
       if (!existing || pid < existing.pid) {
@@ -72,7 +72,7 @@ async function findUnmanagedDevProcesses() {
   const serverPid = await readLocalServicePortOwner(config.port);
   if (serverPid && isPidAlive(serverPid)) {
     found.push({
-      label: "paperclip-server",
+      label: "papierklammer-server",
       pid: serverPid,
       processGroupId: null,
       url: `http://127.0.0.1:${config.port}`,
@@ -103,14 +103,14 @@ async function findUnmanagedDevProcesses() {
 
 const command = process.argv[2] ?? "list";
 const records = await listLocalServiceRegistryRecords({
-  profileKind: "paperclip-dev",
+  profileKind: "papierklammer-dev",
   metadata: { repoRoot },
 });
 const unmanaged = records.length === 0 ? await findUnmanagedDevProcesses() : [];
 
 if (command === "list") {
   if (records.length === 0 && unmanaged.length === 0) {
-    console.log("No Paperclip dev services registered for this repo.");
+    console.log("No Papierklammer dev services registered for this repo.");
     process.exit(0);
   }
   for (const line of toDisplayLines(records)) {
@@ -126,7 +126,7 @@ if (command === "list") {
 
 if (command === "stop") {
   if (records.length === 0 && unmanaged.length === 0) {
-    console.log("No Paperclip dev services registered for this repo.");
+    console.log("No Papierklammer dev services registered for this repo.");
     process.exit(0);
   }
   for (const record of records) {
