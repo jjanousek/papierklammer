@@ -1,0 +1,94 @@
+{
+  "groupId": "focus-003-retryable-composer",
+  "testedAt": "2026-04-16T05:50:41.720891+00:00",
+  "surface": "TUI",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "appUrl": "http://127.0.0.1:3100",
+    "runtimeMode": "local_trusted",
+    "port": 3100,
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100 --company-id 033c008c-adc3-46cb-8521-aa1359e42c12"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl",
+    "ps",
+    "kill"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-FOCUS-003",
+      "title": "Waiting and failure states return to a retryable composer",
+      "status": "pass",
+      "summary": "The send entered a visible waiting state; killing the TUI-owned Codex app-server cleared the waiting footer, appended a single visible error in the transcript, and immediately restored an editable composer in the same session. A retry from that same shell succeeded without duplicating the original user turn.",
+      "steps": [
+        {
+          "action": "Launch the seeded-company TUI and enter `run command sleep 15 and then echo hold` with explicit per-key input.",
+          "expected": "The composer is active and ready to start a live send in the seeded company session.",
+          "observed": "The startup shell showed `focus: composer`, and the filled draft was visible before submit."
+        },
+        {
+          "action": "Press `Enter` and capture the waiting state.",
+          "expected": "The composer visibly enters a waiting state after the user turn is appended.",
+          "observed": "The transcript appended the original user turn once, showed `Orchestrator: ... thinking...`, and the footer displayed `Waiting for response...`."
+        },
+        {
+          "action": "Kill the TUI-owned `codex app-server` subprocess after `Waiting for response...` appears.",
+          "expected": "The live turn fails visibly, the waiting state clears, and the same session becomes retryable.",
+          "observed": "After `kill 17872`, Codex respawned (`18221`/`18222`), the waiting footer cleared back to `Type a message...`, and the transcript showed exactly one error line: `Orchestrator: Error: Codex connection lost while waiting for a response.`"
+        },
+        {
+          "action": "Type `say ok only` immediately in the same shell and retry.",
+          "expected": "The composer accepts input immediately and the retry succeeds without duplicating the original user turn.",
+          "observed": "The composer accepted the retry draft immediately; the final transcript contained one original user turn, one error line, one retry user turn, and `Orchestrator: ok` with no duplicated original turn."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-startup.txt",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-before-submit.txt",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-waiting.txt",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-after-kill.txt",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-retry-draft.txt",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-after-retry-success.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-startup.png",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-before-submit.png",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-waiting.png",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-after-kill.png",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-retry-draft.png",
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-after-retry-success.png"
+        ],
+        "processLogs": [
+          "message-composer-foundation/focus-003-retryable-composer/VAL-FOCUS-003-processes-after-kill.txt"
+        ],
+        "network": "GET /api/health -> 200 before launch; GET /api/companies -> 200 with the seeded company present.",
+        "consoleErrors": "n/a (TUI flow)",
+        "probe": {
+          "inspect": "ps -axo pid,ppid,command | grep -E 'scripts/dev-tui\\.mjs|codex app-server' | grep -v grep",
+          "kill": "kill 17872",
+          "observedProcessesAfterKill": "695   494 /Applications/Codex.app/Contents/Resources/codex app-server --analytics-default-enabled\n17851 17839 node scripts/dev-tui.mjs -- --url http://127.0.0.1:3100 --company-id 033c008c-adc3-46cb-8521-aa1359e42c12\n18221 17863 node /opt/homebrew/bin/codex app-server -c sandbox_workspace_write.network_access=true\n18222 18221 /opt/homebrew/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex/codex app-server -c sandbox_workspace_write.network_access=true"
+        },
+        "verification": {
+          "waitingStateVisible": true,
+          "waitingStateCleared": true,
+          "errorVisibleOnceInFinalTranscript": 1,
+          "originalUserTurnCountInFinalTranscript": 1,
+          "retryUserTurnCountInFinalTranscript": 1,
+          "retryDraftEditable": true,
+          "retrySucceeded": true
+        }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "notes": "Verified local health and seeded company, launched `pnpm dev:tui` against port 3100, reproduced the waiting state, killed the TUI-owned Codex subprocess during the in-flight turn, observed a visible single error with the waiting footer cleared, then typed and submitted a retry in the same session and confirmed a clean success transcript without duplicate original user turns."
+}
