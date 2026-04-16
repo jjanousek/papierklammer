@@ -342,6 +342,10 @@ function getAssistantDisplayLines(
 ): DisplayLine[] {
   const textBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "text" }> => block.type === "text");
   const commandBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "command" }> => block.type === "command");
+  const toolOnlyFallback =
+    textBlocks.length === 0 && commandBlocks.length > 0
+      ? summarizeToolOnlyTurn(commandBlocks.map((block) => block.item))
+      : null;
   const inlineOnly =
     blocks.length === 1
     && blocks[0]?.type === "text"
@@ -367,9 +371,8 @@ function getAssistantDisplayLines(
     { key: `${keyPrefix}-label`, text: "Orchestrator:" },
   ];
 
-  if (textBlocks.length === 0 && commandBlocks.length > 0) {
-    const fallback = summarizeToolOnlyTurn(commandBlocks.map((block) => block.item));
-    lines.push(...getTextBlockLines(fallback, width, `${keyPrefix}-fallback`));
+  if (toolOnlyFallback) {
+    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-top`));
   }
 
   blocks.forEach((block, index) => {
@@ -379,6 +382,10 @@ function getAssistantDisplayLines(
     }
     lines.push(...getCommandBlockLines(block.item, width, `${keyPrefix}-command-${index}`));
   });
+
+  if (toolOnlyFallback) {
+    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-bottom`));
+  }
 
   if (options.streaming && textBlocks.length > 0) {
     lines.push({ key: `${keyPrefix}-cursor`, text: "▌" });
@@ -593,8 +600,16 @@ export function MessageList({
     [viewport.maxScrollOffset],
   );
 
+  const handleFollowLive = useCallback(() => {
+    setScrollOffset(viewport.maxScrollOffset);
+    setUserScrolled(false);
+  }, [viewport.maxScrollOffset]);
+
   useInput(
-    (_input, key) => {
+    (input, key) => {
+      if (input === "l") {
+        handleFollowLive();
+      }
       if (key.upArrow && key.shift) {
         handleScroll(-1);
       }
@@ -636,7 +651,7 @@ export function MessageList({
       )}
       {viewport.hasMoreBelow ? (
         <Text dimColor>
-          ▼ {newerLineCount} newer line{newerLineCount === 1 ? "" : "s"} below — PageDown or Shift+↓ to follow live
+          ▼ {newerLineCount} newer line{newerLineCount === 1 ? "" : "s"} below — l to jump live, or PageDown / Shift+↓ to follow
         </Text>
       ) : null}
     </Box>

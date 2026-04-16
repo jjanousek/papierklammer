@@ -679,6 +679,73 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     unmount();
   });
 
+  it("supports a deterministic local tool-only transcript probe without Codex narration", async () => {
+    const mockFetch = vi.fn().mockImplementation(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("/api/health")) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: "OK",
+          headers: new Headers({ "content-type": "application/json" }),
+          text: async () => '{"status":"ok"}',
+          json: async () => ({ status: "ok" }),
+        };
+      }
+
+      if (url.includes("/approvals?status=pending")) {
+        return {
+          ok: true,
+          json: async () => [],
+        };
+      }
+
+      if (url.includes("/api/companies/") && url.includes("/issues")) {
+        return {
+          ok: true,
+          json: async () => [],
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          agents: MOCK_AGENTS,
+          totalActiveRuns: MOCK_AGENTS.reduce((sum, agent) => sum + agent.activeRunCount, 0),
+          totalQueuedIntents: 0,
+          totalActiveLeases: 0,
+        }),
+      };
+    });
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick();
+
+    stdin.write("/tool-health");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Tool activity");
+    expect(frame).toContain("GET http://localhost:3100/api/health");
+    expect(frame).toContain('"status": "ok"');
+    expect(frame).toContain("completed");
+
+    unmount();
+  });
+
   it("renders streamed reasoning in a dedicated auto-scrolling panel", async () => {
     const mockProc = createMockProcess();
     const mockSpawn = vi.fn().mockReturnValue(mockProc);

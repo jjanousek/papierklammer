@@ -105,6 +105,12 @@ export function summarizeToolOnlyTurn(items: CommandItem[]): string {
     return "Tool activity";
   }
 
+  if (items.length === 1) {
+    const item = items[0]!;
+    const status = item.status ?? "completed";
+    return `Tool activity — ${item.command} ${status}.`;
+  }
+
   const noun = items.length === 1 ? "tool call" : "tool calls";
   return `Tool activity — ${summarizeCommandItems(items)} ${noun}.`;
 }

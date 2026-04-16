@@ -46,6 +46,7 @@ import type { AgentOverview } from "../hooks/useOrchestratorStatus.js";
 import { DEFAULT_TUI_FAST_MODE, DEFAULT_TUI_MODEL, DEFAULT_TUI_REASONING_EFFORT } from "../config.js";
 
 const REASONING_CYCLE: ReasoningEffort[] = ["low", "medium", "high"];
+const LOCAL_TOOL_HEALTH_COMMANDS = new Set(["/tool-health", "/toolhealth", "/th", "/t"]);
 
 function cycleReasoningEffort(current: ReasoningEffort): ReasoningEffort {
   const idx = REASONING_CYCLE.indexOf(current);
@@ -76,6 +77,29 @@ function formatTurnErrorMessage(
     params.turn.error?.additionalDetails ?? null,
   ];
   return parts.filter((part): part is string => Boolean(part)).join(" — ");
+}
+
+function formatLocalProbeOutput(
+  response: Pick<Response, "status" | "statusText" | "headers">,
+  body: string,
+): string {
+  const contentType = response.headers.get("content-type") ?? "";
+  let formattedBody = body.trim();
+
+  if (formattedBody && contentType.includes("application/json")) {
+    try {
+      formattedBody = JSON.stringify(JSON.parse(formattedBody), null, 2);
+    } catch {
+      // Keep the raw body when JSON parsing fails.
+    }
+  }
+
+  const statusLine = `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`;
+  return [statusLine, formattedBody].filter(Boolean).join("\n");
+}
+
+function isLocalToolHealthCommand(text: string): boolean {
+  return LOCAL_TOOL_HEALTH_COMMANDS.has(text);
 }
 
 export interface AppProps {
@@ -405,6 +429,7 @@ function CompanySession({
 
   const fastModeRef = useRef(fastMode);
   fastModeRef.current = fastMode;
+  const localToolProbeCounterRef = useRef(0);
 
   const handleSubmit = useCallback(
     (text: string) => {
@@ -419,6 +444,44 @@ function CompanySession({
       }
 
       onInputDraftChange("");
+      if (isLocalToolHealthCommand(normalizedText)) {
+        const endpoint = `${url.replace(/\/+$/, "")}/api/health`;
+        const command = `GET ${endpoint}`;
+        const itemId = `local-tool-health-${localToolProbeCounterRef.current++}`;
+
+        chat.onCommandStarted(itemId, command);
+
+        void (async () => {
+          try {
+            const response = await (fetchFn ?? globalThis.fetch)(endpoint, {
+              headers: {
+                accept: "application/json",
+                ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+              },
+            });
+            const body = await response.text();
+            chat.onCommandExecution(
+              itemId,
+              command,
+              formatLocalProbeOutput(response, body),
+              response.ok ? "completed" : "failed",
+              response.ok ? 0 : response.status,
+            );
+          } catch (error) {
+            chat.onCommandExecution(
+              itemId,
+              command,
+              error instanceof Error ? error.message : "Local tool probe failed",
+              "failed",
+              null,
+            );
+          }
+
+          chat.onTurnCompleted("completed");
+        })();
+        return;
+      }
+
       if (!enableCodex) {
         return;
       }
@@ -452,7 +515,7 @@ function CompanySession({
           );
         });
     },
-    [chat.sendMessage, chat.recoverFromPendingError, chat.setIsThinking, enableCodex, codex, companyId, companyName, effectiveModel, onInputDraftChange, url],
+    [apiKey, chat.onCommandExecution, chat.onCommandStarted, chat.onTurnCompleted, chat.recoverFromPendingError, chat.sendMessage, chat.setIsThinking, companyId, companyName, codex, effectiveModel, enableCodex, fetchFn, onInputDraftChange, url],
   );
 
   const runManagementAction = useCallback(

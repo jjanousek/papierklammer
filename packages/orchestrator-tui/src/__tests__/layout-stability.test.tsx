@@ -418,7 +418,7 @@ describe("VAL-TUI-STAB-007: Message scroll windowing works", () => {
     expect(frame).toContain("output line 18");
     expect(frame).not.toMatch(/\boutput line 1\b/);
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 14; i++) {
       stdin.write("\u001B[1;2A"); // Shift+Up
     }
     await tick();
@@ -478,6 +478,60 @@ describe("VAL-TUI-STAB-007: Message scroll windowing works", () => {
     expect(afterAppendFrame).toContain("Msg-5");
     expect(afterAppendFrame).not.toContain("Newest activity");
     expect(afterAppendFrame).toContain("▼");
+    unmount();
+  });
+
+  it("pressing l jumps back to the live bottom and clears the newer-activity indicator", async () => {
+    const messages: ChatMessage[] = Array.from({ length: 20 }, (_, i) => ({
+      role: "user" as const,
+      text: `Msg-${i}`,
+      timestamp: new Date(),
+    }));
+
+    const { stdin, lastFrame, rerender, unmount } = render(
+      <MessageList
+        messages={messages}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={6}
+      />,
+    );
+
+    await tick();
+
+    for (let i = 0; i < 10; i++) {
+      stdin.write("\u001B[1;2A"); // Shift+Up
+    }
+    await tick();
+
+    rerender(
+      <MessageList
+        messages={[
+          ...messages,
+          { role: "assistant", text: "Newest activity", timestamp: new Date() },
+        ]}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={6}
+      />,
+    );
+
+    await tick();
+
+    let frame = lastFrame()!;
+    expect(frame).toContain("▼");
+    expect(frame).not.toContain("Newest activity");
+
+    stdin.write("l");
+    await tick();
+
+    frame = lastFrame()!;
+    expect(frame).toContain("Newest activity");
+    expect(frame).not.toContain("▼");
     unmount();
   });
 });
