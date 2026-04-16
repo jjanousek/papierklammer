@@ -40,6 +40,8 @@ export interface UseChatResult {
   streamingText: string;
   /** Partial or recent reasoning text for the active turn. */
   reasoningText: string;
+  /** Whether a live reasoning item is active for the current turn. */
+  reasoningActive: boolean;
   /** Whether the assistant is currently thinking/streaming. */
   isThinking: boolean;
   /** Command items accumulated during the current turn. */
@@ -48,6 +50,8 @@ export interface UseChatResult {
   sendMessage: (text: string) => boolean;
   /** Append a text delta to the current streaming response. */
   onDelta: (itemId: string, text: string) => void;
+  /** Mark a reasoning item as active for the current turn. */
+  onReasoningStarted: () => void;
   /** Append a reasoning delta to the current reasoning view. */
   onReasoningDelta: (text: string) => void;
   /** Finalize the current streaming response as an assistant message. */
@@ -149,6 +153,7 @@ export function useChat(): UseChatResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingBlocks, setPendingBlocks] = useState<TranscriptBlock[]>([]);
   const [reasoningText, setReasoningText] = useState("");
+  const [reasoningActive, setReasoningActive] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const pendingTurnRef = useRef(false);
   const pendingBlocksRef = useRef<TranscriptBlock[]>([]);
@@ -175,6 +180,7 @@ export function useChat(): UseChatResult {
     pendingBlocksRef.current = [];
     setPendingBlocks([]);
     setReasoningText("");
+    setReasoningActive(false);
     setIsThinking(false);
   }, [messages]);
 
@@ -182,6 +188,7 @@ export function useChat(): UseChatResult {
     pendingTurnRef.current = false;
     setIsThinking(false);
     setReasoningText("");
+    setReasoningActive(false);
     updatePendingBlocks(() => []);
   }, [updatePendingBlocks]);
 
@@ -232,9 +239,14 @@ export function useChat(): UseChatResult {
     pendingTurnRef.current = true;
     setIsThinking(true);
     setReasoningText("");
+    setReasoningActive(false);
     updatePendingBlocks(() => []);
     return true;
   }, [updatePendingBlocks]);
+
+  const onReasoningStarted = useCallback((): void => {
+    setReasoningActive(true);
+  }, []);
 
   const onDelta = useCallback((itemId: string, text: string): void => {
     updatePendingBlocks((blocks) => {
@@ -266,6 +278,7 @@ export function useChat(): UseChatResult {
   }, [updatePendingBlocks]);
 
   const onReasoningDelta = useCallback((text: string): void => {
+    setReasoningActive(true);
     setReasoningText((prev) => prev + text);
   }, []);
 
@@ -449,10 +462,12 @@ export function useChat(): UseChatResult {
     pendingBlocks,
     streamingText,
     reasoningText,
+    reasoningActive,
     isThinking,
     pendingCommandItems,
     sendMessage,
     onDelta,
+    onReasoningStarted,
     onReasoningDelta,
     onTurnCompleted,
     onTurnFailed,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CodexClient, type CodexClientOptions } from "../codex/client.js";
-import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningDeltaParams, ReasoningEffort, TurnInfo } from "../codex/types.js";
+import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningDeltaParams, ReasoningEffort, ReasoningSummary, TurnInfo } from "../codex/types.js";
 
 export type ConnectionState = "disconnected" | "connected" | "thinking";
 
@@ -37,6 +37,7 @@ export interface UseCodexResult {
     text: string,
     baseInstructions?: string,
     modelReasoningEffort?: ReasoningEffort,
+    reasoningSummary?: ReasoningSummary,
     serviceTier?: string,
     model?: string,
   ) => Promise<void>;
@@ -153,6 +154,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
     text: string,
     baseInstructions?: string,
     modelReasoningEffort?: ReasoningEffort,
+    reasoningSummary?: ReasoningSummary,
     serviceTier?: string,
     model?: string,
   ): Promise<void> => {
@@ -185,8 +187,13 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       }
 
       setConnectionState("thinking");
-      const overrides: { modelReasoningEffort?: ReasoningEffort; serviceTier?: string } = {};
+      const overrides: {
+        modelReasoningEffort?: ReasoningEffort;
+        summary?: ReasoningSummary;
+        serviceTier?: string;
+      } = {};
       if (modelReasoningEffort) overrides.modelReasoningEffort = modelReasoningEffort;
+      if (reasoningSummary) overrides.summary = reasoningSummary;
       if (serviceTier) overrides.serviceTier = serviceTier;
       const result = await client.startTurn(tid, text, Object.keys(overrides).length > 0 ? overrides : undefined);
       turnIdRef.current = result.turn.id;

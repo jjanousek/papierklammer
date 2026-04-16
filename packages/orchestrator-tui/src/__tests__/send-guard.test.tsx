@@ -166,6 +166,7 @@ describe("message send guards", () => {
       expect.any(String),
       expect.anything(),
       expect.any(String),
+      expect.any(String),
     );
     const frame = lastFrame() ?? "";
     expect(countOccurrences(frame, "Ship the fix")).toBe(1);

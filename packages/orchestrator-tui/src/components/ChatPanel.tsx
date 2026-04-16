@@ -15,6 +15,8 @@ export interface ChatPanelProps {
   isThinking?: boolean;
   /** Reasoning text streamed for the current turn. */
   reasoningText?: string;
+  /** Whether a reasoning item is active for the current turn. */
+  reasoningActive?: boolean;
   /** Pending command items for the current turn. */
   pendingCommandItems?: CommandItem[];
   /** Whether the chat panel is focused (for scroll key handling). */
@@ -39,6 +41,7 @@ export function ChatPanel({
   pendingBlocks = [],
   isThinking = false,
   reasoningText = "",
+  reasoningActive = false,
   pendingCommandItems = [],
   isFocused = false,
   visibleHeight,
@@ -47,7 +50,7 @@ export function ChatPanel({
 }: ChatPanelProps): React.ReactElement {
   // Account for the "Chat" header line and panel border (top + bottom = 2) + paddingY
   // The MessageList gets the remaining space inside the panel
-  const hasReasoning = reasoningText.trim().length > 0;
+  const hasReasoning = reasoningActive || reasoningText.trim().length > 0;
   const reasoningHeight = hasReasoning ? Math.min(8, Math.max(4, Math.floor((visibleHeight ?? 12) * 0.3))) : 0;
   const messageListHeight = visibleHeight != null ? Math.max(1, visibleHeight - 3 - reasoningHeight) : undefined;
 
@@ -63,7 +66,7 @@ export function ChatPanel({
         Chat
       </Text>
       {hasReasoning ? (
-        <ReasoningPanel text={reasoningText} visibleHeight={reasoningHeight} />
+        <ReasoningPanel text={reasoningText} active={reasoningActive} visibleHeight={reasoningHeight} />
       ) : null}
       <MessageList
         messages={messages}

@@ -221,9 +221,10 @@ function CompanySession({
 
   const handleReasoningDelta = useCallback(
     (params: ReasoningDeltaParams) => {
+      chat.onReasoningStarted();
       chat.onReasoningDelta(params.delta);
     },
-    [chat.onReasoningDelta],
+    [chat.onReasoningDelta, chat.onReasoningStarted],
   );
 
   const handleItemStarted = useCallback(
@@ -237,6 +238,7 @@ function CompanySession({
         || phase.includes("analysis");
       if (looksLikeReasoning && typeof item.id === "string") {
         reasoningItemIdsRef.current.add(item.id);
+        chat.onReasoningStarted();
       }
 
       if (params.item.type === "commandExecution") {
@@ -370,6 +372,7 @@ function CompanySession({
       }
 
       const serviceTier = fastModeRef.current ? "fast" : undefined;
+      const reasoningSummary = "detailed";
       const scopedText = buildOrchestratorTurnInput(normalizedText, {
         companyId,
         companyName,
@@ -386,6 +389,7 @@ function CompanySession({
           scopedText,
           scopedInstructions,
           reasoningEffortRef.current,
+          reasoningSummary,
           serviceTier,
           effectiveModel,
         )
@@ -688,6 +692,7 @@ function CompanySession({
                 streamingText={chat.streamingText}
                 isThinking={chatThinking}
                 reasoningText={chat.reasoningText}
+                reasoningActive={chat.reasoningActive}
                 pendingCommandItems={chat.pendingCommandItems}
                 isFocused={focusTarget === "management"}
                 visibleHeight={computedChatHeight}

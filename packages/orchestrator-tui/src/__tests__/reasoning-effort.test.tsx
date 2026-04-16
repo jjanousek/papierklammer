@@ -162,6 +162,8 @@ describe("VAL-TUI-CTRL-001: Reasoning effort in Codex protocol", () => {
 
     expect(turnStart).toBeDefined();
     expect(turnStart!.params.modelReasoningEffort).toBe("high");
+    expect(turnStart!.params.effort).toBe("high");
+    expect(turnStart!.params.summary).toBe("detailed");
 
     unmount();
   });
@@ -372,10 +374,14 @@ describe("VAL-TUI-CTRL-003: Reasoning effort applies to next turn", () => {
     expect(turnStarts).toHaveLength(2);
 
     const t1 = turnStarts[0] as { params: { modelReasoningEffort?: string } };
-    const t2 = turnStarts[1] as { params: { modelReasoningEffort?: string } };
+    const t2 = turnStarts[1] as {
+      params: { modelReasoningEffort?: string; effort?: string; summary?: string };
+    };
 
     expect(t1.params.modelReasoningEffort).toBe("high");
     expect(t2.params.modelReasoningEffort).toBe("low");
+    expect(t2.params.effort).toBe("low");
+    expect(t2.params.summary).toBe("detailed");
 
     unmount();
   });
@@ -481,11 +487,19 @@ describe("VAL-TUI-CTRL-007: Reasoning effort persists across messages", () => {
     const turnStarts = sentMessages.filter((m: any) => m.method === "turn/start");
     expect(turnStarts).toHaveLength(2);
 
-    const t1 = turnStarts[0] as { params: { modelReasoningEffort?: string } };
-    const t2 = turnStarts[1] as { params: { modelReasoningEffort?: string } };
+    const t1 = turnStarts[0] as {
+      params: { modelReasoningEffort?: string; effort?: string; summary?: string };
+    };
+    const t2 = turnStarts[1] as {
+      params: { modelReasoningEffort?: string; effort?: string; summary?: string };
+    };
 
     expect(t1.params.modelReasoningEffort).toBe("medium");
     expect(t2.params.modelReasoningEffort).toBe("medium");
+    expect(t1.params.effort).toBe("medium");
+    expect(t2.params.effort).toBe("medium");
+    expect(t1.params.summary).toBe("detailed");
+    expect(t2.params.summary).toBe("detailed");
 
     // StatusBar still shows "medium"
     frame = lastFrame()!;

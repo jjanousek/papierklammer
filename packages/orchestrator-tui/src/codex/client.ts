@@ -19,6 +19,7 @@ import type {
   ReasoningDeltaParams,
   WireMessage,
   ReasoningEffort,
+  ReasoningSummary,
 } from "./types.js";
 import { isResponse, isNotification } from "./types.js";
 
@@ -360,11 +361,21 @@ export class CodexClient {
    * Start a turn in an existing thread (send user message).
    * Returns the turn info from the response.
    */
-  async startTurn(threadId: string, text: string, overrides?: { modelReasoningEffort?: ReasoningEffort; serviceTier?: string }): Promise<TurnStartResult> {
+  async startTurn(
+    threadId: string,
+    text: string,
+    overrides?: {
+      modelReasoningEffort?: ReasoningEffort;
+      summary?: ReasoningSummary;
+      serviceTier?: string;
+    },
+  ): Promise<TurnStartResult> {
     const params: TurnStartParams = {
       threadId,
       input: [{ type: "text", text }],
+      ...(overrides?.modelReasoningEffort ? { effort: overrides.modelReasoningEffort } : {}),
       ...(overrides?.modelReasoningEffort ? { modelReasoningEffort: overrides.modelReasoningEffort } : {}),
+      ...(overrides?.summary ? { summary: overrides.summary } : {}),
       ...(overrides?.serviceTier ? { serviceTier: overrides.serviceTier } : {}),
     };
 

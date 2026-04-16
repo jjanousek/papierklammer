@@ -51,7 +51,9 @@ export interface InitializeResult {
 
 // ── Reasoning effort ─────────────────────────────────────────────────
 
-export type ReasoningEffort = "low" | "medium" | "high";
+export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
+export type ReasoningSummary = "none" | "auto" | "concise" | "detailed";
 
 // ── Thread ───────────────────────────────────────────────────────────
 
@@ -88,7 +90,11 @@ export interface UserInput {
 export interface TurnStartParams {
   threadId: string;
   input: UserInput[];
+  /** Current Codex protocol field for reasoning effort overrides. */
+  effort?: ReasoningEffort;
+  /** Compatibility field accepted by older app-server builds. */
   modelReasoningEffort?: ReasoningEffort;
+  summary?: ReasoningSummary;
   serviceTier?: string;
 }
 
@@ -133,8 +139,8 @@ export interface AgentMessageItem {
 export interface ReasoningItem {
   type: "reasoning";
   id: string;
-  summary?: string | null;
-  content?: string | null;
+  summary?: unknown[] | string | null;
+  content?: unknown[] | string | null;
   phase?: string | null;
 }
 
@@ -202,6 +208,7 @@ export interface ReasoningDeltaParams {
   turnId: string;
   itemId: string;
   delta: string;
+  summaryIndex?: number;
 }
 
 // ── Wire message union ───────────────────────────────────────────────

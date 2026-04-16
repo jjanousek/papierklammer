@@ -317,6 +317,94 @@ describe("live transcript ordering and terminal states", () => {
     unmount();
   });
 
+  it("shows a live reasoning panel as soon as a reasoning item starts, even before summary text arrives", async () => {
+    const { stdin, lastFrame, unmount, mockProc } = await setupApp();
+
+    stdin.write("Plan the fix");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_reasoning_placeholder" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: {
+        turn: { id: "turn_reasoning_placeholder", status: "inProgress", items: [], error: null },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_reasoning_placeholder",
+        turnId: "turn_reasoning_placeholder",
+        item: {
+          type: "reasoning",
+          id: "reasoning_placeholder",
+          summary: [],
+          content: [],
+        },
+      },
+    });
+    await tick();
+
+    await waitForFrame(
+      lastFrame,
+      (current) =>
+        current.includes("Reasoning")
+        && current.includes("Reasoning in progress"),
+    );
+
+    respond(mockProc, {
+      method: "item/reasoning/summaryPartAdded",
+      params: {
+        threadId: "thr_reasoning_placeholder",
+        turnId: "turn_reasoning_placeholder",
+        itemId: "reasoning_placeholder",
+        summaryIndex: 0,
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "item/reasoning/summaryTextDelta",
+      params: {
+        threadId: "thr_reasoning_placeholder",
+        turnId: "turn_reasoning_placeholder",
+        itemId: "reasoning_placeholder",
+        delta: "Comparing the tradeoffs",
+        summaryIndex: 0,
+      },
+    });
+    await tick();
+
+    await waitForFrame(
+      lastFrame,
+      (current) => current.includes("Comparing the tradeoffs"),
+    );
+
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_reasoning_placeholder",
+        turn: { id: "turn_reasoning_placeholder", status: "completed", items: [], error: null },
+      },
+    });
+    await tick(100);
+
+    const completedFrame = await waitForFrame(
+      lastFrame,
+      (current) =>
+        !current.includes("Reasoning in progress")
+        && !current.includes("Comparing the tradeoffs"),
+    );
+
+    expect(completedFrame).not.toContain("Reasoning");
+
+    unmount();
+  });
+
   it("finalizes interrupted turns into a retryable idle shell without lingering reasoning", async () => {
     const { stdin, lastFrame, unmount, mockProc } = await setupApp();
 

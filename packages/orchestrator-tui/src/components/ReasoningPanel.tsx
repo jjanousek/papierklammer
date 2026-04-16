@@ -3,15 +3,17 @@ import { Box, Text } from "ink";
 
 export interface ReasoningPanelProps {
   text: string;
+  active?: boolean;
   visibleHeight?: number;
 }
 
 export function ReasoningPanel({
   text,
+  active = false,
   visibleHeight = 6,
 }: ReasoningPanelProps): React.ReactElement | null {
   const normalized = text.replace(/\r/g, "");
-  if (!normalized.trim()) {
+  if (!active && !normalized.trim()) {
     return null;
   }
 
@@ -29,9 +31,11 @@ export function ReasoningPanel({
       {hiddenCount > 0 ? (
         <Text dimColor>{`… ${hiddenCount} earlier line${hiddenCount === 1 ? "" : "s"}`}</Text>
       ) : null}
-      {visibleLines.map((line, index) => (
-        <Text key={`${startIndex + index}`}>{line || " "}</Text>
-      ))}
+      {normalized.trim()
+        ? visibleLines.map((line, index) => (
+            <Text key={`${startIndex + index}`}>{line || " "}</Text>
+          ))
+        : <Text dimColor>Reasoning in progress…</Text>}
     </Box>
   );
 }
