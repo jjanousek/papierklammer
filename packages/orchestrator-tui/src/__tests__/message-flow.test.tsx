@@ -106,6 +106,10 @@ function createMockFetch() {
   });
 }
 
+function countOccurrences(frame: string, value: string): number {
+  return frame.split(value).length - 1;
+}
+
 /** Helper: initialize codex, tab to input */
 async function setupApp(options?: { enableCodex?: boolean }) {
   const mockProc = createMockProcess();
@@ -588,6 +592,51 @@ describe("VAL-TUI-STAB-006: Error during send resets thinking state", () => {
     stdin.write("Retry the request");
     await tick();
     await waitForFrame(lastFrame, (current) => current.includes("Retry the request"));
+
+    unmount();
+  });
+
+  it("mid-turn Codex disconnect surfaces one visible error, clears waiting state, and keeps retry in the same session", async () => {
+    const { stdin, lastFrame, unmount, mockProc } = await setupApp();
+
+    stdin.write("Recover after restart");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_disconnect_recovery" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: {
+        turn: { id: "turn_disconnect_recovery", status: "inProgress", items: [], error: null },
+      },
+    });
+    await tick(100);
+
+    await waitForFrame(lastFrame, (current) => current.includes("Waiting for response..."));
+
+    mockProc.emit("exit", 1, null);
+    await tick(150);
+
+    const failureFrame = await waitForFrame(
+      lastFrame,
+      (current) =>
+        current.includes("Error: Codex connection lost while waiting for a response.")
+        && !current.includes("Waiting for response..."),
+    );
+
+    expect(countOccurrences(failureFrame, "Recover after restart")).toBe(1);
+    expect(
+      countOccurrences(
+        failureFrame,
+        "Error: Codex connection lost while waiting for a response.",
+      ),
+    ).toBe(1);
+
+    stdin.write("Retry right away");
+    await tick();
+    await waitForFrame(lastFrame, (current) => current.includes("Retry right away"));
 
     unmount();
   });

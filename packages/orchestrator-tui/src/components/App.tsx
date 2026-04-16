@@ -271,7 +271,7 @@ function CompanySession({
 
   const effectiveCodexState: CodexState =
     codexStateProp ?? (enableCodex ? codex.connectionState : "disconnected");
-  const effectiveCodexError = enableCodex ? codex.lastError : null;
+  const rawCodexError = enableCodex ? codex.lastError : null;
   const effectiveThreadId = threadIdProp ?? codex.threadId ?? undefined;
   const effectiveModel = model ?? DEFAULT_TUI_MODEL;
   const lastUserMessageIndex = chat.messages.reduce(
@@ -288,6 +288,7 @@ function CompanySession({
   const surfacedAssistantError =
     lastAssistantErrorIndex > lastUserMessageIndex
     && !chat.streamingText;
+  const effectiveCodexError = surfacedAssistantError ? null : rawCodexError;
   const chatThinking = surfacedAssistantError ? false : chat.isThinking;
   const inputDisabled = surfacedAssistantError ? false : (chatThinking || (enableCodex && codex.isThinking));
   const displayCodexState: CodexState =

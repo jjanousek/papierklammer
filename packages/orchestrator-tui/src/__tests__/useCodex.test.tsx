@@ -317,6 +317,44 @@ describe("useCodex", () => {
     unmount();
   });
 
+  it("surfaces an active-turn disconnect as an error and clears the stored thread", async () => {
+    const mockProc = createMockProcess();
+    const errors: string[] = [];
+
+    const { lastFrame, unmount } = render(
+      <TestHarness
+        mockProc={mockProc}
+        sendOnMount="Track the restart failure"
+        onError={(error) => errors.push(error.message)}
+      />,
+    );
+
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick(100);
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_active_disconnect" } } });
+    await tick(100);
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_active_disconnect", status: "inProgress", items: [], error: null } },
+    });
+    await tick(100);
+
+    expect(lastFrame()).toContain("state:thinking");
+    expect(lastFrame()).toContain("thread:thr_active_disconnect");
+
+    mockProc.emit("exit", 1, null);
+    await tick(100);
+
+    expect(lastFrame()).toContain("state:disconnected");
+    expect(lastFrame()).toContain("thread:none");
+    expect(errors).toEqual([
+      "Codex connection lost while waiting for a response.",
+    ]);
+
+    unmount();
+  });
+
   it("clears the stored thread when turn/start reports thread not found", async () => {
     const mockProc = createMockProcess();
     const sentMessages: unknown[] = [];

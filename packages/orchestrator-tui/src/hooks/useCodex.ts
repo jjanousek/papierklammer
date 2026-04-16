@@ -44,6 +44,8 @@ export interface UseCodexResult {
   interruptTurn: () => Promise<void>;
 }
 
+const ACTIVE_TURN_DISCONNECT_MESSAGE = "Codex connection lost while waiting for a response.";
+
 function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
@@ -119,9 +121,15 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
         setErrorMessage(null);
       },
       onDisconnected: () => {
+        const hadActiveTurn = turnIdRef.current !== null;
         setConnectionState("disconnected");
         turnIdRef.current = null;
         resetThreadState();
+        if (hadActiveTurn) {
+          const error = new Error(ACTIVE_TURN_DISCONNECT_MESSAGE);
+          setErrorMessage(error.message);
+          optsRef.current.onError?.(error);
+        }
       },
       onError: (error) => {
         setErrorMessage(normalizeError(error).message);
