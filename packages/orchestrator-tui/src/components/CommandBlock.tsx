@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { CommandItem } from "../hooks/useChat.js";
+import { redactSecretLikeText } from "../lib/transcriptRedaction.js";
 
 export interface CommandBlockProps {
   item: CommandItem;
@@ -13,6 +14,8 @@ export interface CommandBlockProps {
  * - Output text (in dim/gray)
  */
 export function CommandBlock({ item }: CommandBlockProps): React.ReactElement {
+  const command = redactSecretLikeText(item.command);
+  const output = redactSecretLikeText(item.output);
   const status = item.status ?? "completed";
   const statusColor =
     status === "running"
@@ -34,9 +37,9 @@ export function CommandBlock({ item }: CommandBlockProps): React.ReactElement {
       paddingX={1}
       marginY={0}
     >
-      <Text color="yellow">$ {item.command}</Text>
+      <Text color="yellow">$ {command}</Text>
       <Text color={statusColor}>status: {statusSummary}</Text>
-      {item.output ? <Text dimColor>{item.output}</Text> : null}
+      {output ? <Text dimColor>{output}</Text> : null}
     </Box>
   );
 }

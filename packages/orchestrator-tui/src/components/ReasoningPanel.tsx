@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { redactSecretLikeText } from "../lib/transcriptRedaction.js";
 
 export interface ReasoningPanelProps {
   text: string;
@@ -12,7 +13,7 @@ export function ReasoningPanel({
   active = false,
   visibleHeight = 6,
 }: ReasoningPanelProps): React.ReactElement | null {
-  const normalized = text.replace(/\r/g, "");
+  const normalized = redactSecretLikeText(text).replace(/\r/g, "");
   if (!active && !normalized.trim()) {
     return null;
   }

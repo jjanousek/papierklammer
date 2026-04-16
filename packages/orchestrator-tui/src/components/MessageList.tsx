@@ -7,6 +7,7 @@ import {
   type CommandItem,
   type TranscriptBlock,
 } from "../hooks/useChat.js";
+import { redactSecretLikeText } from "../lib/transcriptRedaction.js";
 
 /** A segment of parsed message text — either plain text or a code block. */
 interface TextSegment {
@@ -230,7 +231,7 @@ function getTextBlockLines(
   width: number,
   keyPrefix: string,
 ): DisplayLine[] {
-  const segments = parseMarkdown(text);
+  const segments = parseMarkdown(redactSecretLikeText(text));
   const lines: DisplayLine[] = [];
 
   if (segments.length === 0) {
@@ -282,6 +283,8 @@ function getCommandBlockLines(
   width: number,
   keyPrefix: string,
 ): DisplayLine[] {
+  const command = redactSecretLikeText(item.command);
+  const output = redactSecretLikeText(item.output);
   const status = item.status ?? "completed";
   const statusSummary =
     item.exitCode != null && status !== "running"
@@ -292,7 +295,7 @@ function getCommandBlockLines(
     { key: `${keyPrefix}-top`, text: "╭─" },
   ];
 
-  for (const [index, line] of wrapWithPrefix("│ ", `$ ${item.command}`, width, {
+  for (const [index, line] of wrapWithPrefix("│ ", `$ ${command}`, width, {
     continuationPrefix: "│ ",
   }).entries()) {
     lines.push({
@@ -310,8 +313,8 @@ function getCommandBlockLines(
     });
   }
 
-  if (item.output) {
-    for (const [lineIndex, rawLine] of item.output.split("\n").entries()) {
+  if (output) {
+    for (const [lineIndex, rawLine] of output.split("\n").entries()) {
       const wrapped = wrapWithPrefix("│ ", rawLine || " ", width, {
         continuationPrefix: "│ ",
         preserveWhitespace: true,
@@ -345,7 +348,11 @@ function getAssistantDisplayLines(
     && isInlineAssistantText(blocks[0].text);
 
   if (inlineOnly) {
-    const baseLines = wrapWithPrefix("Orchestrator: ", inlineMarkdownToText(textBlocks[0]?.text ?? ""), width);
+    const baseLines = wrapWithPrefix(
+      "Orchestrator: ",
+      inlineMarkdownToText(redactSecretLikeText(textBlocks[0]?.text ?? "")),
+      width,
+    );
     const displayLines = baseLines.map((line, index) => ({
       key: `${keyPrefix}-inline-${index}`,
       text: line,
