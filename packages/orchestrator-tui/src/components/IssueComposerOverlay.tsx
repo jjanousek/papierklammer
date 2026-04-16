@@ -3,6 +3,9 @@ import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 
 const PRIORITIES = ["critical", "high", "medium", "low"] as const;
+const FIELDS = ["title", "description", "priority"] as const;
+
+type ComposerField = (typeof FIELDS)[number];
 
 export interface IssueComposerValues {
   title: string;
@@ -21,7 +24,7 @@ export function IssueComposerOverlay({
   onDismiss,
   onSubmit,
 }: IssueComposerOverlayProps): React.ReactElement | null {
-  const [step, setStep] = useState<"title" | "description">("title");
+  const [field, setField] = useState<ComposerField>("title");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priorityIndex, setPriorityIndex] = useState(1);
@@ -32,13 +35,27 @@ export function IssueComposerOverlay({
     if (!visible) {
       return;
     }
-    setStep("title");
+    setField("title");
     setTitle("");
     setDescription("");
     setPriorityIndex(1);
     setSubmitting(false);
     setError(null);
   }, [visible]);
+
+  const cycleField = useCallback((direction: 1 | -1 = 1) => {
+    setField((current) => {
+      const currentIndex = FIELDS.indexOf(current);
+      const nextIndex = (currentIndex + direction + FIELDS.length) % FIELDS.length;
+      return FIELDS[nextIndex] ?? "title";
+    });
+  }, []);
+
+  const cyclePriority = useCallback((direction: 1 | -1) => {
+    setPriorityIndex((current) => (
+      current + direction + PRIORITIES.length
+    ) % PRIORITIES.length);
+  }, []);
 
   const submit = useCallback(async () => {
     if (!title.trim() || submitting) {
@@ -71,11 +88,19 @@ export function IssueComposerOverlay({
         return;
       }
       if (key.tab) {
-        setStep((current) => (current === "title" ? "description" : "title"));
+        cycleField();
         return;
       }
-      if (input === "p") {
-        setPriorityIndex((current) => (current + 1) % PRIORITIES.length);
+      if (field === "priority" && key.leftArrow) {
+        cyclePriority(-1);
+        return;
+      }
+      if (field === "priority" && key.rightArrow) {
+        cyclePriority(1);
+        return;
+      }
+      if (field === "priority" && key.return) {
+        void submit();
       }
     },
     { isActive: visible },
@@ -99,43 +124,43 @@ export function IssueComposerOverlay({
         New Issue
       </Text>
       <Text dimColor>
-        Title first, then a short description. Press p to cycle priority.
+        Title first, then a short description. Use Tab to reach priority.
       </Text>
       <Text> </Text>
-      <Text bold color="yellow">
-        Title
+      <Text bold color={field === "title" ? "cyan" : "yellow"}>
+        {field === "title" ? "› " : ""}Title
       </Text>
       <TextInput
         value={title}
         onChange={setTitle}
-        focus={step === "title" && !submitting}
+        focus={field === "title" && !submitting}
         placeholder="What needs to happen?"
         onSubmit={() => {
-          if (step === "title") {
-            setStep("description");
+          if (title.trim()) {
+            setField("description");
           }
         }}
       />
       <Text> </Text>
-      <Text bold color="yellow">
-        Description
+      <Text bold color={field === "description" ? "cyan" : "yellow"}>
+        {field === "description" ? "› " : ""}Description
       </Text>
       <TextInput
         value={description}
         onChange={setDescription}
-        focus={step === "description" && !submitting}
+        focus={field === "description" && !submitting}
         placeholder="Why this matters / next constraint"
         onSubmit={() => {
-          void submit();
+          setField("priority");
         }}
       />
       <Text> </Text>
-      <Text>
-        Priority: <Text color="yellow">{PRIORITIES[priorityIndex]}</Text>
+      <Text color={field === "priority" ? "cyan" : undefined}>
+        {field === "priority" ? "› " : ""}Priority: <Text color="yellow">{PRIORITIES[priorityIndex]}</Text>
       </Text>
       {error ? <Text color="red">{error}</Text> : null}
       <Text dimColor>
-        Enter advances or submits · Tab switches field · Esc closes
+        Enter advances fields and submits from priority · Tab switches field · ←/→ change priority · Esc closes
       </Text>
       {submitting ? <Text color="yellow">Creating issue…</Text> : null}
     </Box>
