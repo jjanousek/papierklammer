@@ -43,6 +43,7 @@ curl -sf -X POST http://127.0.0.1:3100/api/companies \
 ## Flow Validator Guidance: TUI
 - Use `tuistory launch`, `wait-idle`, snapshots, and keystroke playback to validate shipped TUI behavior.
 - Prefer validating through `pnpm dev:tui` once a seeded company exists; use the direct TUI entrypoint only when isolating launcher-vs-runtime behavior matters.
+- For Ink `TextInput` fields, prefer explicit per-key `tuistory press ...` sequences over bulk `tuistory type ...`; the bulk text command can intermittently drop characters in alternate-screen Ink sessions.
 - Capture:
   - startup frame
   - the key interaction sequence
