@@ -303,14 +303,23 @@ function CompanySession({
 
   const handleSubmit = useCallback(
     (text: string) => {
-      chat.sendMessage(text);
+      const normalizedText = text.trim();
+      if (!normalizedText) {
+        return;
+      }
+
+      const accepted = chat.sendMessage(normalizedText);
+      if (!accepted) {
+        return;
+      }
+
       onInputDraftChange("");
       if (!enableCodex) {
         return;
       }
 
       const serviceTier = fastModeRef.current ? "fast" : undefined;
-      const scopedText = buildOrchestratorTurnInput(text, {
+      const scopedText = buildOrchestratorTurnInput(normalizedText, {
         companyId,
         companyName,
         baseUrl: url,

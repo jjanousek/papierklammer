@@ -25,7 +25,7 @@ export interface UseChatResult {
   /** Command items accumulated during the current turn. */
   pendingCommandItems: CommandItem[];
   /** Send a user message. */
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string) => boolean;
   /** Append a text delta to the current streaming response. */
   onDelta: (text: string) => void;
   /** Append a reasoning delta to the current reasoning view. */
@@ -76,10 +76,15 @@ export function useChat(): UseChatResult {
     setIsThinking(false);
   }, [messages]);
 
-  const sendMessage = useCallback((text: string): void => {
+  const sendMessage = useCallback((text: string): boolean => {
+    const normalizedText = text.trim();
+    if (!normalizedText || pendingTurnRef.current) {
+      return false;
+    }
+
     const userMessage: ChatMessage = {
       role: "user",
-      text,
+      text: normalizedText,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -89,6 +94,7 @@ export function useChat(): UseChatResult {
     setReasoningText("");
     pendingCommandItemsRef.current = [];
     setPendingCommandItems([]);
+    return true;
   }, []);
 
   const onDelta = useCallback((text: string): void => {

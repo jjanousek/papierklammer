@@ -40,31 +40,44 @@ afterEach(() => {
 // ── Test component ───────────────────────────────────────────────────
 
 interface TestHarnessProps {
-  mockProc: ReturnType<typeof createMockProcess>;
+  mockProc?: ReturnType<typeof createMockProcess>;
+  spawnFn?: ReturnType<typeof vi.fn>;
+  autoReconnect?: boolean;
+  reconnectDelayMs?: number;
   onState?: (state: ConnectionState) => void;
   onDelta?: (params: DeltaParams) => void;
   onTurnCompleted?: (params: TurnCompletedParams) => void;
   onError?: (error: Error) => void;
   sendOnMount?: string;
   sendImmediately?: string;
+  triggerSendText?: string;
+  sendQueue?: string[];
   baseInstructions?: string;
 }
 
 function TestHarness({
   mockProc,
+  spawnFn,
+  autoReconnect = false,
+  reconnectDelayMs,
   onState,
   onDelta,
   onTurnCompleted,
   onError,
   sendOnMount,
   sendImmediately,
+  triggerSendText,
+  sendQueue,
   baseInstructions,
 }: TestHarnessProps): React.ReactElement {
-  const spawnFn = vi.fn().mockReturnValue(mockProc);
+  const effectiveSpawnFn = spawnFn ?? vi.fn().mockReturnValue(mockProc);
+  const sendQueueIndexRef = React.useRef(0);
+  const lastTriggeredSendRef = React.useRef<string | null>(null);
 
   const { connectionState, isConnected, isThinking, threadId, sendMessage } = useCodex({
-    spawnFn,
-    autoReconnect: false,
+    spawnFn: effectiveSpawnFn,
+    autoReconnect,
+    reconnectDelayMs,
     onDelta,
     onTurnCompleted,
     onError,
@@ -89,6 +102,33 @@ function TestHarness({
     // Only trigger on first mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!triggerSendText || !isConnected || isThinking) {
+      return;
+    }
+
+    if (lastTriggeredSendRef.current === triggerSendText) {
+      return;
+    }
+
+    lastTriggeredSendRef.current = triggerSendText;
+    void sendMessage(triggerSendText, baseInstructions).catch(() => {});
+  }, [baseInstructions, isConnected, isThinking, sendMessage, triggerSendText]);
+
+  useEffect(() => {
+    if (!sendQueue || !isConnected || isThinking) {
+      return;
+    }
+
+    const nextText = sendQueue[sendQueueIndexRef.current];
+    if (!nextText) {
+      return;
+    }
+
+    sendQueueIndexRef.current += 1;
+    void sendMessage(nextText, baseInstructions).catch(() => {});
+  }, [baseInstructions, isConnected, isThinking, sendMessage, sendQueue]);
 
   return (
     <Box flexDirection="column">
@@ -245,21 +285,100 @@ describe("useCodex", () => {
     const states: ConnectionState[] = [];
 
     const { lastFrame, unmount } = render(
-      <TestHarness mockProc={mockProc} onState={(s) => states.push(s)} />,
+      <TestHarness
+        mockProc={mockProc}
+        onState={(s) => states.push(s)}
+        sendOnMount="Track my thread"
+      />,
     );
 
     // Respond to initialize
     await tick();
     respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
-    await tick();
+    await tick(100);
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_disconnect" } } });
+    await tick(100);
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_disconnect", status: "inProgress", items: [], error: null } },
+    });
+    await tick(100);
 
-    expect(lastFrame()).toContain("state:connected");
+    expect(lastFrame()).toContain("state:thinking");
+    expect(lastFrame()).toContain("thread:thr_disconnect");
 
     // Simulate process crash
     mockProc.emit("exit", 1, null);
     await tick();
 
     expect(lastFrame()).toContain("state:disconnected");
+    expect(lastFrame()).toContain("thread:none");
+
+    unmount();
+  });
+
+  it("clears the stored thread when turn/start reports thread not found", async () => {
+    const mockProc = createMockProcess();
+    const sentMessages: unknown[] = [];
+
+    mockProc.stdin.on("data", (chunk: Buffer) => {
+      const lines = chunk.toString().split("\n").filter(Boolean);
+      for (const line of lines) {
+        sentMessages.push(JSON.parse(line));
+      }
+    });
+
+    const { lastFrame, rerender, unmount } = render(
+      <TestHarness
+        mockProc={mockProc}
+        triggerSendText="First message"
+        baseInstructions="You are helpful."
+      />,
+    );
+
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick(100);
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_first" } } });
+    await tick(100);
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_1", status: "inProgress", items: [], error: null } },
+    });
+    await tick(100);
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_first",
+        turn: { id: "turn_1", status: "completed", items: [], error: null },
+      },
+    });
+    await tick(100);
+
+    expect(lastFrame()).toContain("thread:thr_first");
+
+    rerender(
+      <TestHarness
+        mockProc={mockProc}
+        triggerSendText="Retry after restart"
+        baseInstructions="You are helpful."
+      />,
+    );
+    await tick(150);
+
+    respond(mockProc, {
+      id: 3,
+      error: { code: -32000, message: "thread not found: thr_first" },
+    });
+    await tick(100);
+
+    expect(
+      sentMessages.filter((message: any) => message.method === "thread/start"),
+    ).toHaveLength(1);
+    expect(
+      sentMessages.filter((message: any) => message.method === "turn/start"),
+    ).toHaveLength(2);
+    expect(lastFrame()).toContain("thread:none");
 
     unmount();
   });

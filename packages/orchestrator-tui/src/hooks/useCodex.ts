@@ -48,6 +48,10 @@ function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
+function shouldResetThread(message: string): boolean {
+  return /thread not found/i.test(message);
+}
+
 function formatTurnError(turn: TurnInfo): string {
   const parts = [
     turn.error?.message ?? "Turn failed",
@@ -77,6 +81,11 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
   const setErrorMessage = useCallback((message: string | null): void => {
     lastErrorRef.current = message;
     setLastError(message);
+  }, []);
+
+  const resetThreadState = useCallback((): void => {
+    threadIdRef.current = null;
+    setThreadId(null);
   }, []);
 
   // Create client on mount, destroy on unmount
@@ -112,6 +121,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       onDisconnected: () => {
         setConnectionState("disconnected");
         turnIdRef.current = null;
+        resetThreadState();
       },
       onError: (error) => {
         setErrorMessage(normalizeError(error).message);
@@ -183,6 +193,10 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
           : normalizedError.message;
       const alreadyReported = lastErrorRef.current === message;
 
+      if (shouldResetThread(message)) {
+        resetThreadState();
+      }
+
       setConnectionState(client.isConnected ? "connected" : "disconnected");
       setErrorMessage(message);
       if (!alreadyReported || client.isConnected) {
@@ -190,7 +204,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       }
       throw new Error(message);
     }
-  }, [setErrorMessage]);
+  }, [resetThreadState, setErrorMessage]);
 
   const interruptTurn = useCallback(async (): Promise<void> => {
     const client = clientRef.current;
