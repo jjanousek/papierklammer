@@ -116,6 +116,14 @@ export interface MessageListProps {
   visibleHeight?: number;
   /** Approximate transcript width for manual wrapping/windowing. */
   availableWidth?: number;
+  /** Reports the current transcript viewport state for status surfaces. */
+  onViewportChange?: (state: TranscriptViewportState) => void;
+}
+
+export interface TranscriptViewportState {
+  liveBottom: boolean;
+  newerLineCount: number;
+  earlierLineCount: number;
 }
 
 /** Default visible window size when no explicit height is given. */
@@ -555,6 +563,7 @@ export function MessageList({
   isFocused = false,
   visibleHeight,
   availableWidth,
+  onViewportChange,
 }: MessageListProps): React.ReactElement {
   const [scrollOffset, setScrollOffset] = useState(0);
   const [userScrolled, setUserScrolled] = useState(false);
@@ -641,6 +650,15 @@ export function MessageList({
     0,
     totalLines - (scrollOffset + viewport.contentWindowSize),
   );
+  const liveBottom = scrollOffset >= viewport.maxScrollOffset;
+
+  useEffect(() => {
+    onViewportChange?.({
+      liveBottom,
+      newerLineCount,
+      earlierLineCount: scrollOffset,
+    });
+  }, [liveBottom, newerLineCount, onViewportChange, scrollOffset]);
 
   return (
     <Box flexDirection="column" flexGrow={1} overflow="hidden">

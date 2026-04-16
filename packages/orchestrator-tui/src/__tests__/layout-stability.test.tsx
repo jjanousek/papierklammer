@@ -534,4 +534,75 @@ describe("VAL-TUI-STAB-007: Message scroll windowing works", () => {
     expect(frame).not.toContain("▼");
     unmount();
   });
+
+  it("reports explicit live-bottom state changes while scrolling away and returning", async () => {
+    const messages: ChatMessage[] = Array.from({ length: 20 }, (_, i) => ({
+      role: "user" as const,
+      text: `Msg-${i}`,
+      timestamp: new Date(),
+    }));
+    const onViewportChange = vi.fn();
+
+    const { stdin, rerender, unmount } = render(
+      <MessageList
+        messages={messages}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={6}
+        onViewportChange={onViewportChange}
+      />,
+    );
+
+    await tick();
+
+    expect(onViewportChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        liveBottom: true,
+        newerLineCount: 0,
+      }),
+    );
+
+    for (let i = 0; i < 10; i++) {
+      stdin.write("\u001B[1;2A"); // Shift+Up
+    }
+    await tick();
+
+    rerender(
+      <MessageList
+        messages={[
+          ...messages,
+          { role: "assistant", text: "Newest activity", timestamp: new Date() },
+        ]}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={6}
+        onViewportChange={onViewportChange}
+      />,
+    );
+
+    await tick();
+
+    expect(onViewportChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        liveBottom: false,
+        newerLineCount: expect.any(Number),
+      }),
+    );
+
+    stdin.write("l");
+    await tick();
+
+    expect(onViewportChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        liveBottom: true,
+        newerLineCount: 0,
+      }),
+    );
+
+    unmount();
+  });
 });

@@ -407,6 +407,31 @@ describe("StatusBar", () => {
     unmount();
   });
 
+  it("shows explicit transcript live-bottom state", () => {
+    const { lastFrame, unmount } = render(
+      <StatusBar
+        codexState="connected"
+        transcriptState={{ liveBottom: true, newerLineCount: 0, earlierLineCount: 12 }}
+      />,
+    );
+    expect(lastFrame()).toContain("transcript: live bottom");
+    unmount();
+  });
+
+  it("shows compact transcript off-bottom state with newer activity count", () => {
+    const { lastFrame, unmount } = render(
+      <StatusBar
+        codexState="connected"
+        transcriptState={{ liveBottom: false, newerLineCount: 7, earlierLineCount: 12 }}
+        columns={60}
+      />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("cx:up");
+    expect(frame).toContain("tx:+7");
+    unmount();
+  });
+
   it("does not show threadId when not provided", () => {
     const { lastFrame, unmount } = render(
       <StatusBar codexState="connected" />,

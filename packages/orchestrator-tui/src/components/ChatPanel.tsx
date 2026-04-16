@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import { MessageList } from "./MessageList.js";
+import { MessageList, type TranscriptViewportState } from "./MessageList.js";
 import { ReasoningPanel } from "./ReasoningPanel.js";
 import type { ChatMessage, CommandItem, TranscriptBlock } from "../hooks/useChat.js";
 
@@ -27,6 +27,8 @@ export interface ChatPanelProps {
   height?: number;
   /** Approximate transcript width for manual wrapping/windowing. */
   availableWidth?: number;
+  /** Reports the transcript viewport state for status surfaces. */
+  onViewportChange?: (state: TranscriptViewportState) => void;
 }
 
 /**
@@ -47,6 +49,7 @@ export function ChatPanel({
   visibleHeight,
   height,
   availableWidth,
+  onViewportChange,
 }: ChatPanelProps): React.ReactElement {
   // Account for the "Chat" header line and panel border (top + bottom = 2) + paddingY
   // The MessageList gets the remaining space inside the panel
@@ -77,6 +80,7 @@ export function ChatPanel({
         isFocused={isFocused}
         visibleHeight={messageListHeight}
         availableWidth={availableWidth}
+        onViewportChange={onViewportChange}
       />
     </Box>
   );

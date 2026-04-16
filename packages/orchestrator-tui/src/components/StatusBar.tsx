@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Text } from "ink";
 import type { ReasoningEffort } from "../codex/types.js";
 import { DEFAULT_TUI_FAST_MODE, DEFAULT_TUI_MODEL, DEFAULT_TUI_REASONING_EFFORT } from "../config.js";
+import type { TranscriptViewportState } from "./MessageList.js";
 
 export type CodexState = "disconnected" | "connected" | "thinking";
 
@@ -14,6 +15,7 @@ export interface StatusBarProps {
   fastMode?: boolean;
   focusRegion?: string;
   columns?: number;
+  transcriptState?: TranscriptViewportState;
 }
 
 const STATE_COLORS: Record<CodexState, string> = {
@@ -35,6 +37,25 @@ function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength - 1)}…`;
 }
 
+function formatTranscriptState(
+  transcriptState: TranscriptViewportState | undefined,
+  compact: boolean,
+): string | null {
+  if (!transcriptState) {
+    return null;
+  }
+
+  if (compact) {
+    return transcriptState.liveBottom
+      ? "tx:live"
+      : `tx:+${transcriptState.newerLineCount}`;
+  }
+
+  return transcriptState.liveBottom
+    ? "transcript: live bottom"
+    : `transcript: ${transcriptState.newerLineCount} newer below`;
+}
+
 export function StatusBar({
   codexState = "disconnected",
   error,
@@ -44,15 +65,18 @@ export function StatusBar({
   fastMode = DEFAULT_TUI_FAST_MODE,
   focusRegion,
   columns,
+  transcriptState,
 }: StatusBarProps): React.ReactElement {
   const compact = (columns ?? 120) < 70;
+  const transcriptLabel = formatTranscriptState(transcriptState, compact);
   const compactLine = truncate(
     [
       `cx:${codexState === "disconnected" ? "down" : codexState === "thinking" ? "busy" : "up"}`,
       error ? `err:${error}` : null,
-      `r:${reasoningEffort}`,
-      fastMode ? "f:on" : "f:off",
       focusRegion ? `focus:${focusRegion}` : null,
+      fastMode ? "f:on" : "f:off",
+      `r:${reasoningEffort}`,
+      transcriptLabel,
       !error ? `m:${model}` : null,
       !error && threadId ? `t:${threadId.slice(0, 8)}` : null,
     ].filter((segment): segment is string => Boolean(segment)).join(" | "),
@@ -62,9 +86,10 @@ export function StatusBar({
     [
       STATE_LABELS[codexState],
       error ? `Error: ${error}` : null,
-      `reasoning: ${reasoningEffort}`,
-      fastMode ? "fast: ON (2×)" : "fast: OFF",
       focusRegion ? `focus: ${focusRegion}` : null,
+      fastMode ? "fast: ON (2×)" : "fast: OFF",
+      `reasoning: ${reasoningEffort}`,
+      transcriptLabel,
       !error && model ? `Model: ${model}` : null,
       !error && threadId ? `Thread: ${threadId}` : null,
     ].filter((segment): segment is string => Boolean(segment)).join(" | "),

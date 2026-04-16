@@ -18,6 +18,7 @@ import { useCompanyIssues } from "../hooks/useCompanyIssues.js";
 import { useChat } from "../hooks/useChat.js";
 import { useCodex } from "../hooks/useCodex.js";
 import { useTerminalSize } from "../hooks/useTerminalSize.js";
+import type { TranscriptViewportState } from "./MessageList.js";
 import type { spawn as spawnType } from "node:child_process";
 import type {
   DeltaParams,
@@ -187,6 +188,7 @@ function CompanySession({
 }: CompanySessionProps): React.ReactElement {
   const [focusTarget, setFocusTarget] = useState<"management" | "input">("input");
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
+  const [transcriptState, setTranscriptState] = useState<TranscriptViewportState | undefined>(undefined);
   const { columns } = useTerminalSize();
   const overlayVisible = helpVisible || settingsVisible || composerVisible || switcherVisible;
 
@@ -813,6 +815,7 @@ function CompanySession({
                 visibleHeight={computedChatHeight}
                 height={computedChatHeight}
                 availableWidth={computedChatWidth}
+                onViewportChange={setTranscriptState}
               />
             </Box>
           )}
@@ -840,6 +843,7 @@ function CompanySession({
                 : "management"
           }
           columns={columns}
+          transcriptState={transcriptState}
         />
       </Box>
     </ErrorBoundary>
