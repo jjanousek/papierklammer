@@ -462,7 +462,7 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     unmount();
   });
 
-  it("command execution blocks appear in chat during streaming", async () => {
+  it("command execution blocks appear before completion, grow live, and finalize with readable status", async () => {
     const mockProc = createMockProcess();
     const mockSpawn = vi.fn().mockReturnValue(mockProc);
     const mockFetch = createMockFetch();
@@ -511,6 +511,54 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     });
     await tick();
 
+    respond(mockProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_cmd",
+        turnId: "turn_1",
+        item: {
+          type: "commandExecution",
+          id: "cmd_1",
+          command: "curl http://localhost:3100/api/health",
+          aggregatedOutput: null,
+          cwd: "/tmp",
+          exitCode: null,
+          status: "running",
+        },
+      },
+    });
+    await tick();
+
+    let frame = lastFrame()!;
+    expect(frame).toContain("Checking health...");
+    expect(frame).toContain("api/health");
+    expect(frame).toContain("running");
+
+    respond(mockProc, {
+      method: "item/commandExecution/outputDelta",
+      params: {
+        threadId: "thr_cmd",
+        turnId: "turn_1",
+        itemId: "cmd_1",
+        delta: '{"status":"',
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/commandExecution/outputDelta",
+      params: {
+        threadId: "thr_cmd",
+        turnId: "turn_1",
+        itemId: "cmd_1",
+        delta: 'ok"}',
+      },
+    });
+    await tick();
+
+    frame = lastFrame()!;
+    expect(frame).toContain('{"status":"ok"}');
+
     // Command execution completed
     respond(mockProc, {
       method: "item/completed",
@@ -530,9 +578,102 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     });
     await tick();
 
-    const frame = lastFrame()!;
+    frame = lastFrame()!;
     expect(frame).toContain("api/health");
     expect(frame).toContain('{"status":"ok"}');
+    expect(frame).toContain("completed");
+
+    unmount();
+  });
+
+  it("tool-only turns finalize with a readable transcript entry", async () => {
+    const mockProc = createMockProcess();
+    const mockSpawn = vi.fn().mockReturnValue(mockProc);
+    const mockFetch = createMockFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick();
+
+    stdin.write("\t");
+    await tick();
+    stdin.write("\t");
+    await tick();
+    stdin.write("Run a health check");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_tool_only" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_tool_only", status: "inProgress", items: [], error: null } },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_tool_only",
+        turnId: "turn_tool_only",
+        item: {
+          type: "commandExecution",
+          id: "cmd_tool_only",
+          command: "curl http://localhost:3100/api/health",
+          aggregatedOutput: null,
+          cwd: "/tmp",
+          exitCode: null,
+          status: "running",
+        },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/completed",
+      params: {
+        threadId: "thr_tool_only",
+        turnId: "turn_tool_only",
+        item: {
+          type: "commandExecution",
+          id: "cmd_tool_only",
+          command: "curl http://localhost:3100/api/health",
+          aggregatedOutput: '{"status":"ok"}',
+          cwd: "/tmp",
+          exitCode: 0,
+          status: "completed",
+        },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_tool_only",
+        turn: { id: "turn_tool_only", status: "completed", items: [], error: null },
+      },
+    });
+    await tick();
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Tool activity");
+    expect(frame).toContain("api/health");
+    expect(frame).toContain('{"status":"ok"}');
+    expect(frame).toContain("completed");
 
     unmount();
   });

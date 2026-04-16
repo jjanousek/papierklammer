@@ -51,6 +51,22 @@ function cycleReasoningEffort(current: ReasoningEffort): ReasoningEffort {
   return REASONING_CYCLE[(idx + 1) % REASONING_CYCLE.length]!;
 }
 
+function normalizeCommandStatus(
+  status: string | null | undefined,
+): "running" | "completed" | "failed" | "interrupted" {
+  const normalized = status?.toLowerCase() ?? "";
+  if (normalized.includes("fail") || normalized.includes("error")) {
+    return "failed";
+  }
+  if (normalized.includes("interrupt") || normalized.includes("cancel")) {
+    return "interrupted";
+  }
+  if (normalized.includes("complete") || normalized.includes("success") || normalized.includes("done")) {
+    return "completed";
+  }
+  return "running";
+}
+
 export interface AppProps {
   url: string;
   apiKey: string;
@@ -212,13 +228,24 @@ function CompanySession({
       if (looksLikeReasoning && typeof item.id === "string") {
         reasoningItemIdsRef.current.add(item.id);
       }
+
+      if (params.item.type === "commandExecution") {
+        const cmdItem = params.item as {
+          id: string;
+          command: string;
+          aggregatedOutput: string | null;
+        };
+        chat.onCommandStarted(cmdItem.id, cmdItem.command, cmdItem.aggregatedOutput ?? "");
+      }
     },
-    [],
+    [chat],
   );
 
   const handleTurnCompleted = useCallback(
-    (_params: TurnCompletedParams) => {
-      chat.onTurnCompleted();
+    (params: TurnCompletedParams) => {
+      chat.onTurnCompleted(
+        params.turn.status === "interrupted" ? "interrupted" : "completed",
+      );
     },
     [chat.onTurnCompleted],
   );
@@ -228,21 +255,29 @@ function CompanySession({
       reasoningItemIdsRef.current.delete(params.item.id);
       if (params.item.type === "commandExecution") {
         const cmdItem = params.item as {
+          id: string;
           command: string;
           aggregatedOutput: string | null;
+          exitCode: number | null;
+          status: string | null;
         };
-        chat.onCommandExecution(cmdItem.command, cmdItem.aggregatedOutput ?? "");
+        chat.onCommandExecution(
+          cmdItem.id,
+          cmdItem.command,
+          cmdItem.aggregatedOutput ?? "",
+          normalizeCommandStatus(cmdItem.status),
+          cmdItem.exitCode ?? null,
+        );
       }
     },
     [chat.onCommandExecution],
   );
 
   const handleCommandOutput = useCallback(
-    (_params: CommandOutputDeltaParams) => {
-      // Command output deltas are accumulated by the client;
-      // we track finalized command output via onItemCompleted.
+    (params: CommandOutputDeltaParams) => {
+      chat.onCommandOutput(params.itemId, params.delta);
     },
-    [],
+    [chat.onCommandOutput],
   );
 
   const handleCodexError = useCallback(

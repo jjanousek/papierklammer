@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import { CommandBlock } from "./CommandBlock.js";
 import { AnimatedGlyph } from "./AnimatedGlyph.js";
-import type { ChatMessage, CommandItem } from "../hooks/useChat.js";
+import { summarizeToolOnlyTurn, type ChatMessage, type CommandItem } from "../hooks/useChat.js";
 
 /** A segment of parsed message text — either plain text or a code block. */
 interface TextSegment {
@@ -336,6 +336,10 @@ export function MessageList({
           )}
           {visibleMessages.map((msg, visIdx) => {
             const idx = windowStart + visIdx;
+            const assistantText =
+              msg.role === "assistant" && msg.text.trim().length === 0 && msg.items?.length
+                ? summarizeToolOnlyTurn(msg.items)
+                : msg.text;
             return (
               <Box key={idx} flexDirection="column">
                 {msg.role === "user" ? (
@@ -346,12 +350,12 @@ export function MessageList({
                     <Text>{msg.text}</Text>
                   </Text>
                 ) : (
-                  isInlineAssistantText(msg.text) && (!msg.items || msg.items.length === 0) ? (
+                  isInlineAssistantText(assistantText) && (!msg.items || msg.items.length === 0) ? (
                     <Text>
                       <Text color="cyan" bold>
                         Orchestrator:{" "}
                       </Text>
-                      <Text>{msg.text}</Text>
+                      <Text>{assistantText}</Text>
                     </Text>
                   ) : (
                     <Box flexDirection="column">
@@ -359,7 +363,7 @@ export function MessageList({
                         <Text color="cyan" bold>
                           Orchestrator:
                         </Text>
-                        <RenderedText text={msg.text} />
+                        <RenderedText text={assistantText} />
                       </Box>
                       {msg.items?.map((item, cmdIdx) => (
                         <CommandBlock key={cmdIdx} item={item} />

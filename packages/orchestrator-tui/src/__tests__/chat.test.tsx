@@ -181,11 +181,13 @@ describe("CommandBlock", () => {
     const item: CommandItem = {
       command: "curl http://localhost:3100/api/health",
       output: '{"status":"ok"}',
+      status: "completed",
     };
     const { lastFrame, unmount } = render(<CommandBlock item={item} />);
     const frame = lastFrame()!;
     expect(frame).toContain("$ curl http://localhost:3100/api/health");
     expect(frame).toContain('{"status":"ok"}');
+    expect(frame).toContain("completed");
     unmount();
   });
 
@@ -193,10 +195,12 @@ describe("CommandBlock", () => {
     const item: CommandItem = {
       command: "echo hello",
       output: "",
+      status: "running",
     };
     const { lastFrame, unmount } = render(<CommandBlock item={item} />);
     const frame = lastFrame()!;
     expect(frame).toContain("$ echo hello");
+    expect(frame).toContain("running");
     unmount();
   });
 
@@ -204,6 +208,8 @@ describe("CommandBlock", () => {
     const item: CommandItem = {
       command: "ls -la",
       output: "total 8\ndrwxr-xr-x",
+      status: "failed",
+      exitCode: 1,
     };
     const { lastFrame, unmount } = render(<CommandBlock item={item} />);
     const frame = lastFrame()!;
@@ -211,6 +217,8 @@ describe("CommandBlock", () => {
     expect(frame).toContain("╭");
     expect(frame).toContain("╰");
     expect(frame).toContain("$ ls -la");
+    expect(frame).toContain("failed");
+    expect(frame).toContain("exit 1");
     unmount();
   });
 });
@@ -275,6 +283,32 @@ describe("MessageList", () => {
     expect(frame).toContain("Running a command...");
     expect(frame).toContain("$ curl http://example.com");
     expect(frame).toContain("OK");
+    unmount();
+  });
+
+  it("renders a readable fallback for tool-only assistant turns", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "",
+        timestamp: new Date(),
+        items: [
+          { command: "npm test", output: "ok", status: "completed" },
+        ],
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <MessageList
+        messages={messages}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+      />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("Tool activity");
+    expect(frame).toContain("$ npm test");
+    expect(frame).toContain("completed");
     unmount();
   });
 
