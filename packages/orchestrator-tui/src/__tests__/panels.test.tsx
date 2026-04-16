@@ -451,7 +451,7 @@ describe("Keyboard navigation", () => {
     });
   }
 
-  it("Tab key cycles focus between sidebar and input bar", async () => {
+  it("Tab key cycles visible focus between the management region and input bar", async () => {
     const mockFetch = createMockFetch();
     const { stdin, lastFrame, unmount } = render(
       <App
@@ -466,28 +466,31 @@ describe("Keyboard navigation", () => {
     // Wait for initial render and API poll
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    // First Tab → first focusable component (sidebar)
+    // First Tab → management region
     stdin.write("\t");
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame1 = lastFrame()!;
-    // Sidebar should be focused — verify it renders agent rows
+    // Management region should be focused and visible in the status bar
     expect(frame1).toContain("CEO");
+    expect(frame1).toContain("focus: management");
 
-    // Second Tab → next focusable component (input bar)
+    // Second Tab → input bar
     stdin.write("\t");
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame2 = lastFrame()!;
     // Input bar should be focused — it renders the prompt text
     expect(frame2).toContain("Type a message...");
+    expect(frame2).toContain("focus: composer");
 
-    // Third Tab → wraps back to sidebar
+    // Third Tab → wraps back to management
     stdin.write("\t");
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const frame3 = lastFrame()!;
     expect(frame3).toContain("CEO");
+    expect(frame3).toContain("focus: management");
 
     unmount();
   });

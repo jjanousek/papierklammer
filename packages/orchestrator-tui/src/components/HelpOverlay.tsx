@@ -9,19 +9,20 @@ export interface HelpOverlayProps {
 }
 
 const SHORTCUTS: Array<{ key: string; description: string }> = [
-  { key: "Tab", description: "Switch panels (sidebar ↔ input)" },
+  { key: "Tab", description: "Switch regions (management ↔ composer)" },
   { key: "Enter", description: "Send message" },
-  { key: "v / w", description: "Invoke or wake selected agent (sidebar)" },
-  { key: "a / x", description: "Approve or reject selected approval (sidebar)" },
-  { key: "[ / ]", description: "Cycle pending approvals (sidebar)" },
-  { key: "j / k", description: "Move through the issue desk queue" },
-  { key: "n", description: "Draft a new issue from the TUI" },
-  { key: "u", description: "Recover the selected issue" },
-  { key: "r", description: "Cycle reasoning effort (low→med→high)" },
-  { key: "f", description: "Toggle fast mode (default ON)" },
-  { key: "s", description: "Open settings overlay" },
+  { key: "v / w", description: "Invoke or wake selected agent (management)" },
+  { key: "a / x", description: "Approve or reject selected approval (management)" },
+  { key: "[ / ]", description: "Cycle pending approvals (management)" },
+  { key: "j / k", description: "Move through the issue desk queue (management)" },
+  { key: "n", description: "Draft a new issue from the TUI (management)" },
+  { key: "u", description: "Recover the selected issue (management)" },
+  { key: "c", description: "Switch company (management, empty composer)" },
+  { key: "r", description: "Cycle reasoning effort (management/settings)" },
+  { key: "f", description: "Toggle fast mode (management/settings)" },
+  { key: "s", description: "Open settings overlay (management)" },
   { key: "Ctrl+C", description: "Exit" },
-  { key: "↑ / ↓", description: "Scroll agents (when sidebar focused)" },
+  { key: "↑ / ↓", description: "Scroll agents (management)" },
   { key: "?", description: "Toggle this help overlay" },
 ];
 

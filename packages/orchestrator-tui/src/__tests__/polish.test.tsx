@@ -381,7 +381,7 @@ describe("Help overlay (VAL-TUI-033)", () => {
       <HelpOverlay visible={true} onDismiss={() => {}} />,
     );
     const frame = lastFrame()!;
-    expect(frame).toContain("Switch panels");
+    expect(frame).toContain("Switch regions");
     expect(frame).toContain("Send message");
     expect(frame).toContain("Exit");
     expect(frame).toContain("Scroll agents");

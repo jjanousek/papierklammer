@@ -67,6 +67,17 @@ function createManagementFetch(options?: {
     requestedByAgentId?: string | null;
     createdAt?: string;
   }>;
+  issues?: Array<{
+    id: string;
+    identifier?: string | null;
+    title: string;
+    description?: string | null;
+    status?: string;
+    projectedStatus?: string | null;
+    priority?: string;
+    assigneeAgentId?: string | null;
+    updatedAt?: string;
+  }>;
   approvalsError?: string;
 }) {
   const calls: FetchCall[] = [];
@@ -75,6 +86,16 @@ function createManagementFetch(options?: {
     requestedByAgentId: null,
     createdAt: "2026-04-05T00:00:00.000Z",
     ...approval,
+  }));
+  const issues = (options?.issues ?? []).map((issue) => ({
+    identifier: null,
+    description: null,
+    status: "todo",
+    projectedStatus: null,
+    priority: "medium",
+    assigneeAgentId: null,
+    updatedAt: "2026-04-05T00:00:00.000Z",
+    ...issue,
   }));
 
   const fetchFn = vi.fn().mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
@@ -147,7 +168,7 @@ function createManagementFetch(options?: {
     if (url.endsWith("/api/companies/company-1/issues?status=backlog,todo,in_progress,in_review,blocked")) {
       return {
         ok: true,
-        json: async () => [],
+        json: async () => issues,
       };
     }
 
@@ -484,7 +505,7 @@ describe("management shortcuts", () => {
     unmount();
   });
 
-  it("opens the company switcher from an empty focused input bar", async () => {
+  it("opens the company switcher from an empty management region", async () => {
     const { fetchFn } = createManagementFetch();
 
     const { stdin, lastFrame, unmount } = render(
@@ -500,6 +521,8 @@ describe("management shortcuts", () => {
     );
 
     await tick(100);
+    stdin.write("\t");
+    await tick(50);
     stdin.write("c");
 
     const frame = await waitForFrame(
@@ -507,12 +530,12 @@ describe("management shortcuts", () => {
       (current) => current.includes("Switch Company") && current.includes("Other Co"),
     );
     expect(frame).toContain("Switch Company");
-    expect(frame).not.toContain("> c");
+    expect(frame).toContain("focus: overlay");
 
     unmount();
   });
 
-  it("keeps typing when company-switch shortcut is pressed with an existing input draft", async () => {
+  it("keeps typing when company-switch shortcut is pressed while the input bar is focused", async () => {
     const { fetchFn } = createManagementFetch();
 
     const { stdin, lastFrame, unmount } = render(
@@ -535,6 +558,103 @@ describe("management shortcuts", () => {
 
     expect(lastFrame()).toContain("> goc");
     expect(lastFrame()).not.toContain("Switch Company");
+
+    unmount();
+  });
+
+  it("does not open company switching from the management region when the visible draft is non-empty", async () => {
+    const { fetchFn } = createManagementFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-1"
+        companyName="Audit Co"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick(100);
+    stdin.write("draft");
+    await tick(50);
+    stdin.write("\t");
+    await tick(50);
+    stdin.write("s");
+    await waitForFrame(lastFrame, (frame) => frame.includes("Settings"));
+    stdin.write("\x1b");
+    await waitForFrame(lastFrame, (frame) => !frame.includes("Settings"));
+    stdin.write("c");
+    await tick(100);
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("> draft");
+    expect(frame).toContain("focus: management");
+    expect(frame).not.toContain("Switch Company");
+
+    unmount();
+  });
+
+  it("dismissing company switching preserves the current draft, transcript, focus, and issue selection", async () => {
+    const { fetchFn } = createManagementFetch({
+      issues: [
+        {
+          id: "issue-1",
+          identifier: "AUD-1",
+          title: "First queued issue",
+          description: "First issue description",
+          priority: "high",
+          updatedAt: "2026-04-05T00:00:00.000Z",
+        },
+        {
+          id: "issue-2",
+          identifier: "AUD-2",
+          title: "Second queued issue",
+          description: "Second issue description",
+          priority: "medium",
+          updatedAt: "2026-04-05T01:00:00.000Z",
+        },
+      ],
+    });
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="board-key"
+        companyId="company-1"
+        companyName="Audit Co"
+        fetchFn={fetchFn}
+        pollInterval={60000}
+        enableCodex={false}
+      />,
+    );
+
+    await tick(100);
+    stdin.write("draft");
+    await tick(50);
+    stdin.write("\t");
+    await tick(50);
+    stdin.write("j");
+    await tick(100);
+    stdin.write("v");
+    await tick(150);
+
+    stdin.write("c");
+    await tick(100);
+    stdin.write("\x1b");
+    await tick(100);
+
+    const restoredFrame = lastFrame()!;
+
+    expect(restoredFrame).toContain("Audit Co");
+    expect(restoredFrame).toContain("> draft");
+    expect(restoredFrame).toContain("Invoked heartbeat for CEO (run 12345678).");
+    expect(restoredFrame).toContain("AUD-2");
+    expect(restoredFrame).toContain("Second issue description");
+    expect(restoredFrame).toContain("focus: management");
+    expect(restoredFrame).not.toContain("Switch Company");
 
     unmount();
   });

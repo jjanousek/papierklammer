@@ -12,6 +12,7 @@ export interface StatusBarProps {
   model?: string;
   reasoningEffort?: ReasoningEffort;
   fastMode?: boolean;
+  focusRegion?: string;
   columns?: number;
 }
 
@@ -41,40 +42,40 @@ export function StatusBar({
   model = DEFAULT_TUI_MODEL,
   reasoningEffort = DEFAULT_TUI_REASONING_EFFORT,
   fastMode = DEFAULT_TUI_FAST_MODE,
+  focusRegion,
   columns,
 }: StatusBarProps): React.ReactElement {
   const compact = (columns ?? 120) < 70;
-  const stateLabel = compact
-    ? `cx:${codexState === "disconnected" ? "down" : codexState === "thinking" ? "busy" : "up"}`
-    : STATE_LABELS[codexState];
-  const compactSegments = [
-    stateLabel,
-    `r:${reasoningEffort}`,
-    fastMode ? "f:on" : "f:off",
-    `m:${model}`,
-    threadId ? `t:${threadId.slice(0, 8)}` : null,
-    error ? `err:${error}` : null,
-  ].filter((segment): segment is string => Boolean(segment));
-  const compactLine = truncate(compactSegments.join(" | "), columns ?? 80);
+  const compactLine = truncate(
+    [
+      `cx:${codexState === "disconnected" ? "down" : codexState === "thinking" ? "busy" : "up"}`,
+      error ? `err:${error}` : null,
+      `r:${reasoningEffort}`,
+      fastMode ? "f:on" : "f:off",
+      focusRegion ? `focus:${focusRegion}` : null,
+      !error ? `m:${model}` : null,
+      !error && threadId ? `t:${threadId.slice(0, 8)}` : null,
+    ].filter((segment): segment is string => Boolean(segment)).join(" | "),
+    columns ?? 80,
+  );
+  const fullLine = truncate(
+    [
+      STATE_LABELS[codexState],
+      error ? `Error: ${error}` : null,
+      `reasoning: ${reasoningEffort}`,
+      fastMode ? "fast: ON (2×)" : "fast: OFF",
+      focusRegion ? `focus: ${focusRegion}` : null,
+      !error && model ? `Model: ${model}` : null,
+      !error && threadId ? `Thread: ${threadId}` : null,
+    ].filter((segment): segment is string => Boolean(segment)).join(" | "),
+    columns ?? 120,
+  );
 
   return (
-    <Box paddingX={1} gap={1} flexShrink={0} height={1}>
-      {compact ? (
-        <Text color={STATE_COLORS[codexState]}>{compactLine}</Text>
-      ) : (
-        <>
-          <Text color={STATE_COLORS[codexState]}>{STATE_LABELS[codexState]}</Text>
-          {reasoningEffort ? <Text dimColor>| reasoning: {reasoningEffort}</Text> : null}
-          {fastMode ? (
-            <Text color="yellow" bold>| fast: ON (2×)</Text>
-          ) : (
-            <Text dimColor>| fast: OFF</Text>
-          )}
-          {model ? <Text dimColor>| Model: {model}</Text> : null}
-          {threadId ? <Text dimColor>| Thread: {threadId}</Text> : null}
-          {error ? <Text color="red">| Error: {error}</Text> : null}
-        </>
-      )}
+    <Box paddingX={1} flexShrink={0} height={1}>
+      <Text color={STATE_COLORS[codexState]}>
+        {compact ? compactLine : fullLine}
+      </Text>
     </Box>
   );
 }

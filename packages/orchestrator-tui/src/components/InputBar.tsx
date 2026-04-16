@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 import { Box, Text } from "ink";
 import TextInput from "ink-text-input";
 import { AnimatedGlyph } from "./AnimatedGlyph.js";
 
 export interface InputBarProps {
+  /** Current visible draft text. */
+  value?: string;
   /** Called when the user submits a message (presses Enter). */
   onSubmit?: (text: string) => void;
   /** Whether input is disabled (e.g. while Codex is thinking). */
@@ -23,21 +25,16 @@ export interface InputBarProps {
  * input is cleared after send. Shows a spinner indicator when disabled.
  */
 export function InputBar({
+  value = "",
   onSubmit,
   disabled = false,
   focused = false,
   onFocusChange,
   onValueChange,
 }: InputBarProps): React.ReactElement {
-  const [value, setValue] = useState("");
-
   useEffect(() => {
     onFocusChange?.(focused);
   }, [focused, onFocusChange]);
-
-  useEffect(() => {
-    onValueChange?.(value);
-  }, [onValueChange, value]);
 
   const borderColor = focused ? "green" : undefined;
 
@@ -45,7 +42,6 @@ export function InputBar({
     (text: string) => {
       if (disabled || !text.trim()) return;
       onSubmit?.(text.trim());
-      setValue("");
     },
     [disabled, onSubmit],
   );
@@ -53,10 +49,10 @@ export function InputBar({
   const handleChange = useCallback(
     (newValue: string) => {
       if (!disabled) {
-        setValue(newValue);
+        onValueChange?.(newValue);
       }
     },
-    [disabled],
+    [disabled, onValueChange],
   );
 
   return (

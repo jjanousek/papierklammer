@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { Box, useApp, useInput } from "ink";
 import { ErrorBoundary } from "./ErrorBoundary.js";
 import { HeaderBar } from "./HeaderBar.js";
@@ -84,15 +84,22 @@ interface CompanySessionProps {
   helpVisible: boolean;
   settingsVisible: boolean;
   composerVisible: boolean;
+  switcherVisible: boolean;
+  companies: CompanyOption[];
+  companiesLoading: boolean;
+  companiesError: string | null;
   reasoningEffort: ReasoningEffort;
   fastMode: boolean;
   contentHeight: number;
   onDismissHelp: () => void;
   onDismissSettings: () => void;
   onDismissComposer: () => void;
+  onDismissSwitcher: () => void;
   onOpenComposer: () => void;
+  onSelectCompany: (company: CompanyOption) => void;
   onInputFocusChange: (focused: boolean) => void;
   onInputDraftChange: (value: string) => void;
+  inputDraft: string;
 }
 
 function CompanySession({
@@ -110,27 +117,35 @@ function CompanySession({
   helpVisible,
   settingsVisible,
   composerVisible,
+  switcherVisible,
+  companies,
+  companiesLoading,
+  companiesError,
   reasoningEffort,
   fastMode,
   contentHeight,
   onDismissHelp,
   onDismissSettings,
   onDismissComposer,
+  onDismissSwitcher,
   onOpenComposer,
+  onSelectCompany,
   onInputFocusChange,
   onInputDraftChange,
+  inputDraft,
 }: CompanySessionProps): React.ReactElement {
-  const [focusTarget, setFocusTarget] = useState<"sidebar" | "input" | "overlay">("input");
+  const [focusTarget, setFocusTarget] = useState<"management" | "input">("input");
   const [selectedIssueIndex, setSelectedIssueIndex] = useState(0);
   const { columns } = useTerminalSize();
+  const overlayVisible = helpVisible || settingsVisible || composerVisible || switcherVisible;
+
+  useEffect(() => {
+    onInputFocusChange(focusTarget === "input" && !overlayVisible);
+  }, [focusTarget, onInputFocusChange, overlayVisible]);
 
   useInput((_input, key) => {
-    if (key.tab && !helpVisible && !settingsVisible && !composerVisible) {
-      setFocusTarget((current) => {
-        const next = current === "input" ? "sidebar" : "input";
-        onInputFocusChange(next === "input");
-        return next;
-      });
+    if (key.tab && !overlayVisible) {
+      setFocusTarget((current) => (current === "input" ? "management" : "input"));
     }
   });
 
@@ -289,6 +304,7 @@ function CompanySession({
   const handleSubmit = useCallback(
     (text: string) => {
       chat.sendMessage(text);
+      onInputDraftChange("");
       if (!enableCodex) {
         return;
       }
@@ -320,7 +336,7 @@ function CompanySession({
           );
         });
     },
-    [chat.sendMessage, chat.recoverFromPendingError, chat.setIsThinking, enableCodex, codex, companyId, companyName, effectiveModel, url],
+    [chat.sendMessage, chat.recoverFromPendingError, chat.setIsThinking, enableCodex, codex, companyId, companyName, effectiveModel, onInputDraftChange, url],
   );
 
   const runManagementAction = useCallback(
@@ -441,14 +457,12 @@ function CompanySession({
     ?? null;
 
   const handleOpenComposer = useCallback(() => {
-    setFocusTarget("overlay");
-    onInputFocusChange(false);
     onOpenComposer();
-  }, [onInputFocusChange, onOpenComposer]);
+  }, [onOpenComposer]);
 
   useInput(
     (input) => {
-      if (focusTarget === "input" || helpVisible || settingsVisible || composerVisible) {
+      if (focusTarget !== "management" || overlayVisible) {
         return;
       }
       if (input === "j" && sortedIssues.length > 0) {
@@ -464,7 +478,7 @@ function CompanySession({
         handleRecoverSelectedIssue();
       }
     },
-    { isActive: focusTarget !== "input" && !helpVisible && !settingsVisible && !composerVisible },
+    { isActive: focusTarget === "management" && !overlayVisible },
   );
 
   const handleCreateIssue = useCallback(
@@ -539,8 +553,8 @@ function CompanySession({
             width={sidebarWidth}
             height={sidebarHeight}
             maxVisible={Math.max(4, sidebarHeight - 7)}
-            focused={focusTarget === "sidebar"}
-            shortcutsEnabled={!helpVisible && !settingsVisible && !composerVisible}
+            focused={focusTarget === "management"}
+            shortcutsEnabled={!overlayVisible}
             connected={status.connected}
             error={status.error}
             pendingApprovalsError={approvals.error}
@@ -549,7 +563,23 @@ function CompanySession({
             onApproveSelectedApproval={handleApproveSelectedApproval}
             onRejectSelectedApproval={handleRejectSelectedApproval}
           />
-          {helpVisible ? (
+          {switcherVisible ? (
+            <Box flexGrow={1} height={mainPanelHeight} justifyContent="center" alignItems="center">
+              <Box width={Math.max(50, Math.min(96, columns - 8))}>
+                <CompanyPicker
+                  companies={companies}
+                  loading={companiesLoading}
+                  error={companiesError}
+                  title="Switch Company"
+                  subtitle="Use ↑/↓ and Enter to switch. Cancel keeps the current session."
+                  initialSelectedId={companyId}
+                  dismissHint="Press c or Escape to close."
+                  onDismiss={onDismissSwitcher}
+                  onSelect={onSelectCompany}
+                />
+              </Box>
+            </Box>
+          ) : helpVisible ? (
             <Box flexGrow={1} justifyContent="center" alignItems="center">
               <HelpOverlay visible={helpVisible} onDismiss={onDismissHelp} />
             </Box>
@@ -567,11 +597,7 @@ function CompanySession({
             <Box flexGrow={1} height={mainPanelHeight} justifyContent="center" alignItems="center">
               <IssueComposerOverlay
                 visible={composerVisible}
-                onDismiss={() => {
-                  setFocusTarget("sidebar");
-                  onInputFocusChange(false);
-                  onDismissComposer();
-                }}
+                onDismiss={onDismissComposer}
                 onSubmit={handleCreateIssue}
               />
             </Box>
@@ -585,7 +611,7 @@ function CompanySession({
                 selectedIndex={selectedIssueIndex}
                 compact={compactDesk}
                 height={issueDeskHeight}
-                focused={focusTarget !== "input"}
+                focused={focusTarget === "management"}
                 error={issues.error}
               />
               <ChatPanel
@@ -601,9 +627,10 @@ function CompanySession({
           )}
         </Box>
         <InputBar
+          value={inputDraft}
           onSubmit={handleSubmit}
           disabled={inputDisabled}
-          focused={focusTarget === "input"}
+          focused={focusTarget === "input" && !overlayVisible}
           onFocusChange={onInputFocusChange}
           onValueChange={onInputDraftChange}
         />
@@ -614,6 +641,13 @@ function CompanySession({
           model={effectiveModel}
           reasoningEffort={reasoningEffort}
           fastMode={fastMode}
+          focusRegion={
+            overlayVisible
+              ? "overlay"
+              : focusTarget === "input"
+                ? "composer"
+                : "management"
+          }
           columns={columns}
         />
       </Box>
@@ -695,14 +729,14 @@ export function App({
       && !settingsVisible
       && !composerVisible
       && !switcherVisible
-      && (!inputFocusedRef.current || inputDraft.trim().length === 0)
+      && !inputFocusedRef.current
+      && inputDraft.trim().length === 0
     ) {
-      setInputDraft("");
       setSwitcherVisible(true);
     }
   }, { isActive: !switcherVisible });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previous = previousLaunchContextRef.current;
     if (
       previous.companyId === companyId &&
@@ -716,6 +750,11 @@ export function App({
     setSelectedCompanyName(companyName);
     setCompaniesLoading(!companyId);
     setCompaniesError(null);
+    setInputDraft("");
+    setHelpVisible(false);
+    setSettingsVisible(false);
+    setComposerVisible(false);
+    setSwitcherVisible(false);
   }, [companyId, companyName]);
 
   useEffect(() => {
@@ -785,7 +824,6 @@ export function App({
   }, []);
 
   const handleDismissSwitcher = useCallback(() => {
-    setInputDraft("");
     setSwitcherVisible(false);
   }, []);
 
@@ -808,8 +846,13 @@ export function App({
   // StatusBar (1 row). Middle content area gets the remaining height.
   const fixedBarHeight = 5; // 2 + 2 + 1
   const contentHeight = Math.max(1, rows - fixedBarHeight);
+  const launchContextChanged =
+    previousLaunchContextRef.current.companyId !== companyId
+    || previousLaunchContextRef.current.companyName !== companyName;
+  const activeCompanyId = launchContextChanged ? companyId : selectedCompanyId;
+  const activeCompanyName = launchContextChanged ? companyName : selectedCompanyName;
 
-  if (!selectedCompanyId) {
+  if (!activeCompanyId) {
     return (
       <ErrorBoundary>
         <Box flexDirection="column" width="100%" height={rows}>
@@ -826,7 +869,7 @@ export function App({
               companies={companies}
               loading={companiesLoading}
               error={companiesError}
-              initialSelectedId={selectedCompanyId}
+              initialSelectedId={activeCompanyId}
               onSelect={handleCompanySelect}
             />
           </Box>
@@ -847,72 +890,42 @@ export function App({
   return (
     <ErrorBoundary>
       <Box flexDirection="column" width="100%" height="100%">
-        {switcherVisible ? (
-          <>
-            <HeaderBar
-              connected={false}
-              totalAgents={0}
-              totalActiveRuns={0}
-              companyLabel={selectedCompanyName || selectedCompanyId}
-              error={companiesError}
-              columns={columns}
-            />
-            <Box flexGrow={1} height={contentHeight} justifyContent="center" alignItems="center">
-              <Box width={Math.max(50, Math.min(96, columns - 8))}>
-                <CompanyPicker
-                  companies={companies}
-                  loading={companiesLoading}
-                  error={companiesError}
-                  title="Switch Company"
-                  subtitle="Use ↑/↓ and Enter to switch. Company change resets the active session."
-                  initialSelectedId={selectedCompanyId}
-                  dismissHint="Press c or Escape to close."
-                  onDismiss={handleDismissSwitcher}
-                  onSelect={handleCompanySelect}
-                />
-              </Box>
-            </Box>
-            <StatusBar
-              codexState={codexStateProp ?? "disconnected"}
-              error={null}
-              threadId={undefined}
-              model={effectiveModel}
-              reasoningEffort={reasoningEffort}
-              fastMode={fastMode}
-              columns={columns}
-            />
-          </>
-        ) : (
-          <CompanySession
-            key={selectedCompanyId}
-            url={url}
-            apiKey={apiKey}
-            companyId={selectedCompanyId}
-            companyName={selectedCompanyName}
-            codexState={codexStateProp}
-            threadId={threadIdProp}
-            model={effectiveModel}
-            fetchFn={fetchFn}
-            pollInterval={pollInterval}
-            spawnFn={spawnFn}
-            enableCodex={enableCodex}
-            helpVisible={helpVisible}
-            settingsVisible={settingsVisible}
-            composerVisible={composerVisible}
-            reasoningEffort={reasoningEffort}
-            fastMode={fastMode}
-            contentHeight={contentHeight}
-            onDismissHelp={handleDismissHelp}
-            onDismissSettings={handleDismissSettings}
-            onDismissComposer={handleDismissComposer}
-            onOpenComposer={() => {
-              setInputDraft("");
-              setComposerVisible(true);
-            }}
-            onInputFocusChange={handleInputFocusChange}
-            onInputDraftChange={setInputDraft}
-          />
-        )}
+        <CompanySession
+          key={activeCompanyId}
+          url={url}
+          apiKey={apiKey}
+          companyId={activeCompanyId}
+          companyName={activeCompanyName}
+          codexState={codexStateProp}
+          threadId={threadIdProp}
+          model={effectiveModel}
+          fetchFn={fetchFn}
+          pollInterval={pollInterval}
+          spawnFn={spawnFn}
+          enableCodex={enableCodex}
+          helpVisible={helpVisible}
+          settingsVisible={settingsVisible}
+          composerVisible={composerVisible}
+          switcherVisible={switcherVisible}
+          companies={companies}
+          companiesLoading={companiesLoading}
+          companiesError={companiesError}
+          reasoningEffort={reasoningEffort}
+          fastMode={fastMode}
+          contentHeight={contentHeight}
+          onDismissHelp={handleDismissHelp}
+          onDismissSettings={handleDismissSettings}
+          onDismissComposer={handleDismissComposer}
+          onDismissSwitcher={handleDismissSwitcher}
+          onOpenComposer={() => {
+            setInputDraft("");
+            setComposerVisible(true);
+          }}
+          onSelectCompany={handleCompanySelect}
+          onInputFocusChange={handleInputFocusChange}
+          onInputDraftChange={setInputDraft}
+          inputDraft={inputDraft}
+        />
       </Box>
     </ErrorBoundary>
   );
