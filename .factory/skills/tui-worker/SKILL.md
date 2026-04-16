@@ -18,7 +18,7 @@ Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
 
 ## Required Skills
 
-- `tuistory` — required when the feature affects shipped TUI runtime behavior, company selection, failure recovery, or output/result inspection. Use it for PTY-backed validation.
+- `tuistory` — required whenever the feature changes shipped TUI behavior, focus/shortcut routing, company switching, transcript rendering, or failure/recovery behavior.
 
 ## Work Procedure
 
@@ -31,24 +31,26 @@ Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
    - `packages/orchestrator-tui/src/codex/client.ts` — Codex JSON-RPC client
    - `packages/orchestrator-tui/src/codex/types.ts` — protocol types
 
-3. **Write tests FIRST (TDD).** Create or update test files in `packages/orchestrator-tui/src/__tests__/`. Tests should:
+3. **Write tests FIRST (TDD).** Create or update test files in `packages/orchestrator-tui/src/__tests__/` before implementation. Tests should:
    - Import from `ink-testing-library` for component testing
    - Mock Codex client for async behavior tests
    - Cover the specific scenarios from the validation contract assertions
-   - Run with: `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3`
+   - Start with the narrowest failing test for the feature, then broaden to the full TUI package suite
+   - Run with: `pnpm exec vitest run packages/orchestrator-tui/src/__tests__ --maxWorkers=2`
 
-4. **Implement the feature.** Make tests pass. Follow existing patterns:
+4. **Implement the feature.** Make the new failing tests pass. Follow existing patterns:
    - Use React hooks for state management
-   - Use `useStdout()` from Ink for terminal dimensions
-   - Use refs for values accessed in async callbacks (avoid stale closures)
-   - Use `ink-spinner` for animations (already installed)
+    - Treat company scope, focus ownership, and transcript chronology as explicit invariants
+   - Use refs for values accessed in async callbacks when stale closures would break live stream handling
+   - Keep runtime behavior aligned with what help text and inline hints advertise
 
 5. **Run verification:**
-   - `pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3` — all TUI tests pass
-   - `pnpm exec vitest run ui/src/ --max-workers=3` — UI tests still pass (no regressions)
-   - `pnpm -r typecheck` — no type errors
-   - If the feature affects shipped runtime behavior, also validate the actual TUI with `tuistory` against the isolated instance and capture terminal evidence.
-   - Keep process count low: do not leave extra `pnpm dev:tui`, `codex app-server`, or helper Node processes running after PTY validation completes.
+   - `pnpm exec vitest run packages/orchestrator-tui/src/__tests__ --maxWorkers=2` — full TUI package tests pass
+   - `pnpm --filter @papierklammer/orchestrator-tui typecheck` — package typecheck passes
+   - `pnpm --filter @papierklammer/orchestrator-tui build` — run when the feature changes exported package/runtime code paths
+   - If the feature affects shipped runtime behavior, validate the live TUI with `tuistory` against the local trusted app on port `3100`
+   - Seed a validation company before live TUI checks when `/api/companies` is empty
+   - Keep process count low: do not leave extra `pnpm dev:tui`, `codex app-server`, or helper Node processes running after PTY validation completes
 
 6. **Commit** with a descriptive message.
 
@@ -56,36 +58,47 @@ Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
 
 ```json
 {
-  "salientSummary": "Fixed TUI layout stability by using useStdout() for explicit terminal dimensions. HeaderBar/InputBar/StatusBar have flexShrink={0}. Middle content area uses calculated height. Added resize listener that recalculates dimensions. 6 new tests covering layout, resize, and multi-message flows.",
-  "whatWasImplemented": "Added useTerminalSize hook wrapping useStdout() with resize detection. App.tsx now sets explicit height on root Box based on terminal rows. Fixed bars have flexShrink={0} and fixed heights (1 row each). Middle content area height = rows - 3. MessageList implements scroll windowing. Added resize useEffect that resets scroll offset.",
+  "salientSummary": "Redesigned the TUI focus model so the active region is explicit, chat drafts stay in sync with shortcut gating, and company-switch dismissal no longer resets the live session. Added focused tests for input/sidebar/company-switch flows plus a PTY-backed check of draft-safe switching.",
+  "whatWasImplemented": "Updated App.tsx and InputBar.tsx so visible draft text is parent-controlled, focus ownership is explicit, and draft-sensitive shortcuts read the visible composer state. Company-switch open/dismiss now preserves the active session when no company is selected, while confirmed switches clear prior thread/transcript context before the new company loads. Help/discoverability surfaces were aligned with the new routing rules.",
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
       {
-        "command": "pnpm exec vitest run packages/orchestrator-tui/ --max-workers=3",
+        "command": "pnpm exec vitest run packages/orchestrator-tui/src/__tests__ --maxWorkers=2",
         "exitCode": 0,
-        "observation": "9 test files, 143 tests all passing including 6 new layout tests"
+        "observation": "All orchestrator TUI package tests passed, including the new focus/company-switch regression cases"
       },
       {
-        "command": "pnpm exec vitest run ui/src/ --max-workers=3",
+        "command": "pnpm --filter @papierklammer/orchestrator-tui typecheck",
         "exitCode": 0,
-        "observation": "30 test files, 132 tests all passing, no regressions"
+        "observation": "The orchestrator TUI package typechecked cleanly"
       },
       {
-        "command": "pnpm -r typecheck",
+        "command": "pnpm --filter @papierklammer/orchestrator-tui build",
         "exitCode": 0,
-        "observation": "All packages typecheck successfully"
+        "observation": "The package build completed successfully"
+      },
+      {
+        "command": "PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm dev:once",
+        "exitCode": 0,
+        "observation": "Local trusted app launched on 127.0.0.1:3100 for PTY validation"
+      }
+    ],
+    "interactiveChecks": [
+      {
+        "action": "Used tuistory to launch the TUI, typed a draft, opened and dismissed company switching, then confirmed the same draft and focus target were preserved",
+        "observed": "Visible draft text remained intact, no stale session reset occurred, and the switcher only changed context on explicit selection"
       }
     ]
   },
   "tests": {
     "added": [
       {
-        "file": "packages/orchestrator-tui/src/__tests__/layout.test.tsx",
+        "file": "packages/orchestrator-tui/src/__tests__/management-shortcuts.test.tsx",
         "cases": [
-          { "name": "root Box uses explicit height from terminal rows", "verifies": "VAL-TUI-STAB-001" },
-          { "name": "layout stable after sending message", "verifies": "VAL-TUI-STAB-002" },
-          { "name": "layout recalculates on terminal resize", "verifies": "VAL-TUI-STAB-003" }
+          { "name": "company-switch dismiss preserves the live session", "verifies": "VAL-FOCUS-007" },
+          { "name": "visible draft remains the source of truth for shortcut gating", "verifies": "VAL-FOCUS-008" },
+          { "name": "non-input management shortcuts only fire for the active region", "verifies": "VAL-SHORTCUT-002" }
         ]
       }
     ]
@@ -96,7 +109,7 @@ Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
 
 ## When to Return to Orchestrator
 
-- Ink's `useStdout()` doesn't work as expected for resize detection
-- CodexClient protocol changes needed that aren't documented
-- Test infrastructure issues (ink-testing-library limitations)
-- PTY-backed validation is unavailable for a feature that fulfills runtime TUI assertions
+- The feature depends on server/runtime fixture behavior outside the agreed TUI mission scope
+- A required assertion cannot be validated because seeded-company setup is unavailable
+- Codex event semantics need a contract decision (for example, reasoning/tool chronology cannot be inferred safely)
+- PTY-backed validation is unavailable for a feature that changes shipped TUI runtime behavior

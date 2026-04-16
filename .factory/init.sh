@@ -7,6 +7,8 @@ if [ ! -d "node_modules" ]; then
   pnpm install
 fi
 
+mkdir -p /tmp/papierklammer-tui-mission
+
 python3 <<'PY'
 import os
 import signal
@@ -19,6 +21,7 @@ patterns = [
     "server/scripts/dev-watch.ts",
     "packages/orchestrator-tui/src/index.tsx",
     "../scripts/dev-runner.ts watch",
+    "codex app-server",
 ]
 
 try:
@@ -50,8 +53,8 @@ pnpm dev:stop >/dev/null 2>&1 || true
 REPO_NODE_COUNT="$( (ps -Ao pid,args | grep '[n]ode' | grep '/Users/aischool/work/papierklammer_droid' | wc -l | tr -d ' ') || true )"
 echo "Observed repo-owned Node process count after cleanup: ${REPO_NODE_COUNT}"
 
-if [ "${REPO_NODE_COUNT}" -gt 4 ]; then
-  echo "WARNING: repo-owned Node process count is already above the mission budget; do not start more Node-heavy helpers until it is reduced"
+if [ "${REPO_NODE_COUNT}" -gt 6 ]; then
+  echo "WARNING: repo-owned Node process count is already high; avoid starting overlapping app/TUI/Codex helpers until it is reduced"
 fi
 
 echo "Init complete"

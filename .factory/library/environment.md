@@ -12,37 +12,36 @@ Environment variables, external dependencies, and setup notes.
 - Node.js 25.6.1 (repo requires `>=20`)
 - pnpm 9.15.4
 - macOS darwin arm64
-- Default local app/API surface is `http://127.0.0.1:3100`
-- Embedded Postgres is currently observed on `127.0.0.1:54329`
-- Docker is off-limits for this mission
+- `tuistory` is installed and should be used for PTY-backed TUI validation
+- Local trusted app surface for this mission is `http://127.0.0.1:3100`
+- Leave `DATABASE_URL` unset so the local trusted server uses embedded local storage/postgres behavior
 
 ## Resource and process posture
 
-- The user requires a strict low-memory mode: do not intentionally exceed 4 mission-started Node processes at once.
-- Stop repo-owned dev/watch/TUI processes you are not using before validation or implementation.
-- Do not run overlapping app instances on multiple ports; reuse `3100` when a local app is needed.
-- Run validators sequentially. The repo’s full `pnpm test:run -- --maxWorkers=1` is not an allowed baseline for this mission because it exceeds the process budget.
+- Machine profile observed during planning: 10 CPU cores, 16 GiB RAM
+- Baseline memory pressure is already elevated; keep validation conservative
+- Do not run overlapping app instances; reuse `3100`
+- Stop repo-owned dev/watch/TUI processes you are not actively using
+- Keep validators sequential or low-concurrency; recommended max concurrent TUI validators is `2`
+- Prefer package-scoped TUI checks over repo-wide validation unless a change spills outside the TUI package or launch helpers
 
-## Environment variables
+## Environment variables for this mission
 
-Important env vars for this mission:
+- `PORT=3100` — required when starting the local trusted app for validation
+- `PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission` — recommended isolated runtime home for workers/validators
+- `PAPIERKLAMMER_INSTANCE_ID=tui-mission` — recommended isolated local instance id
+- `PAPIERKLAMMER_TUI_URL=http://127.0.0.1:3100` — optional explicit TUI target
+- `PAPIERKLAMMER_TUI_COMPANY_ID` / `PAPIERKLAMMER_TUI_COMPANY_NAME` — use only when intentionally pinning the validation company
 
-- `PORT=3100` — use only when a worker must start the local app for validation
-- `DATABASE_URL` — leave unset to keep the embedded local database path
-- `PAPIERKLAMMER_API_URL` — may appear in CLI/operator flows and should remain aligned with renamed wording
-- Adapter/home overrides used during validation should point at temporary directories rather than real user homes whenever possible
+In local trusted mode, API keys are not required. Workers must never print or commit secrets if they encounter any.
 
-Workers must never print or commit secrets.
+## Seeded-company validation rule
 
-## Data and filesystem expectations
+- The no-company launcher failure is out of scope for this mission.
+- All live validation for shipped TUI behavior should assume a seeded company exists.
+- If `/api/companies` is empty, create a validation company before attempting the full launcher flow.
 
-- The user allowed a hard rename with no backward compatibility. Existing test companies/state can be reset if needed for validation.
-- Even so, prefer isolated temp directories for skill-install and onboarding checks instead of mutating real user homes.
-- Broad docs/history cleanup is out of scope; keep file scans and edits focused on active code, active skills, active scripts, and live generated outputs.
+## Filesystem expectations
 
-## Known local constraints
-
-- Primary validation surfaces are lightweight API, CLI, and web checks.
-- TUI checks are secondary and should remain low-process.
-- Active `.factory/skills/` files are in scope for the rename because agents in this repo rely on them.
-- Allowlisted compatibility/vendor filenames such as `.paperclip.yaml` should only remain when they are intentionally part of a published format; workers should not assume every `paperclip` token is automatically safe.
+- Use temporary directories under `/tmp` for local trusted validation state rather than mutating long-lived user state.
+- Keep mission edits focused on `packages/orchestrator-tui/**` and directly related launch/test helpers only.

@@ -1,17 +1,17 @@
 commands:
   install: pnpm install
-  typecheck: pnpm -r --workspace-concurrency=1 typecheck
-  build: pnpm -r --workspace-concurrency=1 build
-  test: pnpm exec vitest run --maxWorkers=1 server/src/__tests__/fork-rename-verification.test.ts server/src/__tests__/fork-path-cli-rename-verification.test.ts server/src/__tests__/fork-env-var-rename-verification.test.ts
+  typecheck: pnpm --filter @papierklammer/orchestrator-tui typecheck
+  build: pnpm --filter @papierklammer/orchestrator-tui build
+  test: pnpm exec vitest run packages/orchestrator-tui/src/__tests__ --maxWorkers=2
   lint: echo "no lint configured"
-  dev_start: PORT=3100 pnpm dev:once
+  dev_start: PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm dev:once
   dev_stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
   health: curl -sf http://127.0.0.1:3100/api/health
   companies: curl -sf http://127.0.0.1:3100/api/companies
 
 services:
   qa-app:
-    start: PORT=3100 pnpm dev:once
+    start: PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm dev:once
     stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
     healthcheck: curl -sf http://127.0.0.1:3100/api/health
     port: 3100
