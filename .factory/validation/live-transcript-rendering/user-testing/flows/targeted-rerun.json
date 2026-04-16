@@ -1,0 +1,136 @@
+{
+  "groupId": "targeted-rerun",
+  "testedAt": "2026-04-16T10:40:22.760948+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "surface": "TUI via tuistory",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl",
+    "lsof",
+    "kill",
+    "ps"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CHAT-005",
+      "title": "Long transcripts are keyboard-scrollable and show when new activity is below",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Launch the shipped TUI, submit a slower real shell-tool probe that prints lines 1..80 with a 0.25s pause, then move off-bottom with PageUp while output is still arriving.",
+          "expected": "The operator should stay anchored off-bottom and see a visible `newer lines below` indicator while newer activity continues below.",
+          "observed": "The targeted rerun did capture a same-run off-bottom streaming state with `focus: management` and growing transcript history, but the visible frame showed only `earlier lines above`; the expected `newer lines below` indicator was not visible in the captured off-bottom snapshot."
+        },
+        {
+          "action": "Use the shipped return-to-live control (`l`) in the same run and capture the follow-live state.",
+          "expected": "Returning to live bottom should clear the newer-activity indicator in the same run.",
+          "observed": "The same-run return-to-live capture remained inconclusive because the off-bottom indicator itself was not cleanly present in the targeted rerun evidence, so the full indicator-clear lifecycle still was not conclusively captured."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-005-off-bottom-indicator.txt",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-005-return-live.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-005-off-bottom-indicator.png",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-005-return-live.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/targeted-rerun/precheck.txt"
+      },
+      "issues": "Blocked: the slower same-run scroll probe still did not yield a conclusive captured `newer lines below` indicator plus a same-run cleared return-to-live state."
+    },
+    {
+      "id": "VAL-CHAT-008",
+      "title": "Failed turns preserve already-seen output and end cleanly",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Submit a real TUI prompt that starts issue creation (`say starting issue creation then create a backlog medium issue titled listener stop probe ...`).",
+          "expected": "The turn should show live activity before any failure occurs.",
+          "observed": "The live transcript showed the user turn and an in-flight `thinking...` / `Waiting for response...` state before the failure probe was applied."
+        },
+        {
+          "action": "Stop the app listener on port 3100 mid-turn and continue observing the same TUI session.",
+          "expected": "Already-seen output should remain readable, the turn should surface a clean final failure, and the shell should return to idle without collapsing.",
+          "observed": "The shell degraded visibly to `Disconnected | fetch failed`, but the chat preserved already-seen transcript/tool output and eventually settled with a turn-level failure message: `Creation failed: no orchestrator bearer token is available in this session as API_KEY...`. The reasoning panel was gone and the composer returned to `Type a message...` without further appends to that turn."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-008-before-stop.txt",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-008-after-stop.txt",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-008-down-final.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-008-before-stop.png",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-008-after-stop.png",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-008-down-final.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "GET /api/health returned healthy again after restart; see live-transcript-rendering/targeted-rerun/precheck.txt and final health check in session log."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-009",
+      "title": "Secret-like environment values are not rendered raw in operator-visible transcript surfaces",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Submit a stronger env-style black-box probe asking the TUI to run a shell command that uses `env` to set `OPENAI_API_KEY` to a fake placeholder value and then `printenv OPENAI_API_KEY`.",
+          "expected": "The operator-visible transcript may keep context, but the secret-like value itself should be redacted or otherwise non-recoverable on screen.",
+          "observed": "The command line itself redacted the env assignment (`openai_api_key='[redacted len=41 sha256=...]'`), but the printed value remained visible raw as `fakeplaceholder1234567890abcdef1234567890`."
+        },
+        {
+          "action": "Inspect the settled operator-visible transcript after the turn finishes.",
+          "expected": "Neither the tool output block nor any assistant text block should reveal the fake secret verbatim.",
+          "observed": "The settled transcript still showed the raw fake secret twice: once inside the completed tool-output block and again in a following `[text]` transcript block."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-009-final.txt",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-009-settled.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-009-final.png",
+          "live-transcript-rendering/targeted-rerun/VAL-CHAT-009-settled.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/targeted-rerun/precheck.txt"
+      },
+      "issues": "FAIL: the stronger env-style probe confirmed only the env assignment in the command line was redacted; the emitted `OPENAI_API_KEY` value still appeared raw in both tool output and the settled transcript text block."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`tuistory` relay/session state reset once during the env-style rerun, and punctuation-heavy per-key entry was less reliable than plain alphanumeric input.",
+      "resolved": true,
+      "resolution": "Relaunched the same isolated session name and switched to an alphanumeric natural-language probe that still caused the shipped TUI to execute an `env ... printenv OPENAI_API_KEY` command.",
+      "affectedAssertions": [
+        "VAL-CHAT-009"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Even with the slower streaming probe, the targeted VAL-CHAT-005 rerun still did not produce a conclusive same-run capture of both the `newer lines below` indicator and its cleared return-to-live state.",
+      "affectedAssertions": [
+        "VAL-CHAT-005"
+      ],
+      "quickFixAttempted": "Used a slower 80-line / 0.25s streaming command, paged off-bottom during active output, captured off-bottom and follow-live frames, and retried using the shipped `l` follow-live key."
+    }
+  ],
+  "summary": "Targeted rerun for the remaining chat assertions: VAL-CHAT-008 now passes with a real turn-level failure that preserved prior output and returned the shell to idle; VAL-CHAT-009 still fails under a stronger env-style probe because the emitted fake secret stays visible raw; VAL-CHAT-005 remains inconclusive/blocked because the same-run indicator-and-clear lifecycle still was not cleanly captured."
+}

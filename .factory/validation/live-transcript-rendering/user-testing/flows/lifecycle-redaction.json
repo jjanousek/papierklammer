@@ -1,0 +1,187 @@
+{
+  "groupId": "lifecycle-redaction",
+  "testedAt": "2026-04-16T09:49:58.833343+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "surface": "TUI via tuistory",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl",
+    "ps",
+    "kill"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CHAT-003",
+      "title": "Reasoning is transient and disappears when the turn is no longer active",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the TUI, open Settings, set `fast: OFF`, then submit a reasoning-heavy prompt.",
+          "expected": "No reasoning panel should be visible before reasoning starts.",
+          "observed": "The shell initially showed no reasoning panel, then entered `Waiting for response...` with only the in-flight turn visible."
+        },
+        {
+          "action": "Observe the same active turn as reasoning begins and continues.",
+          "expected": "A dedicated reasoning panel should appear during the active turn and update in place as more reasoning arrives.",
+          "observed": "The TUI first showed `Reasoning in progress\u2026`, then the same panel updated in place with detailed reasoning text (`Inspecting environment variables ...`)."
+        },
+        {
+          "action": "Wait for the turn to finish.",
+          "expected": "Reasoning should disappear immediately after the turn completes, leaving only finalized transcript content and an idle shell.",
+          "observed": "Once the turn completed, the reasoning panel was gone, the final transcript remained, and the composer returned to idle without lingering reasoning text."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-active-before-reasoning.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-mid.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-final.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-post-completion.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-active-before-reasoning.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-mid.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-final.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-003-post-completion.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/lifecycle-redaction/precheck.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-007",
+      "title": "Interrupted turns leave a sane transcript and retryable shell",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Submit `run command sleep 20 and echo hold` and wait for the live tool block to appear.",
+          "expected": "The turn should show reasoning/tool activity while the shell is still waiting.",
+          "observed": "The transcript showed a live tool entry for `/bin/zsh -lc 'sleep 20 && echo hold'` with `status: running` while `Waiting for response...` remained visible."
+        },
+        {
+          "action": "Identify the TUI-owned `codex app-server` descendant (`66305` / `66306`) from the session process tree and kill it during the in-flight turn.",
+          "expected": "The active turn should stop streaming, convert to an interrupted/terminated state, clear reasoning, and leave the shell retryable.",
+          "observed": "Immediately after the kill, the transcript stopped streaming, the reasoning panel disappeared, the tool block changed to `status: interrupted`, and the transcript showed `Error: Codex connection lost while waiting for a response.`"
+        },
+        {
+          "action": "Type a new draft after the interruption settles.",
+          "expected": "The composer should be idle and immediately retryable.",
+          "observed": "The shell was idle again and accepted a new draft (`retry`) without reviving the interrupted turn."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-live-before-kill-accurate.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-immediately-after-kill.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-post-kill-settled.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-retryable.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-ps-before-kill.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-live-before-kill-accurate.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-immediately-after-kill.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-post-kill-settled.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-007-retryable.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/lifecycle-redaction/precheck.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-008",
+      "title": "Failed turns preserve already-seen output and end cleanly",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Submit `say before then run command echo start and then false then say after` through the real TUI.",
+          "expected": "A failed turn should preserve already-seen output, stop appending new content after failure, clear reasoning, and surface a turn-level failure before returning idle.",
+          "observed": "The command block surfaced `status: failed (exit 1)` with `start` preserved, but the turn did not fail as a turn: the assistant still appended `after`, no turn-level error surfaced, and the shell simply returned to idle."
+        },
+        {
+          "action": "Inspect the settled transcript after the failed tool block.",
+          "expected": "The failed turn should end with a visible failure state rather than continuing with additional assistant content.",
+          "observed": "The final transcript preserved the tool output, but because `after` was appended after the failed command block, the observed behavior did not match a cleanly failed turn lifecycle."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-008b-partial-output.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-008b-final.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-008b-partial-output.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-008b-final.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (TUI flow)"
+      },
+      "issues": "FAIL: the failing command surfaced only as a failed tool block; the turn itself kept appending assistant content (`after`) instead of ending as a clean failed turn."
+    },
+    {
+      "id": "VAL-CHAT-009",
+      "title": "Secret-like environment values are not rendered raw in operator-visible transcript surfaces",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Submit a safe fake-secret probe asking the TUI to print a secret-style environment key/value (`openai_api_key` with a placeholder credential string) through the real shell/tool surface.",
+          "expected": "The operator-visible transcript/tool-output surface should preserve context but mask the secret value so it is not recoverable verbatim.",
+          "observed": "The final transcript/tool output rendered `openai_api_key equals fakeplaceholder1234567890123456` verbatim in both the command block output and the assistant text, leaving the secret-like value recoverable on screen."
+        },
+        {
+          "action": "Inspect the completed tool block and surrounding transcript.",
+          "expected": "Context such as the key name may remain visible, but the secret value itself should be redacted or replaced with a non-recoverable sentinel.",
+          "observed": "No redaction sentinel appeared for the placeholder credential; the raw fake secret string remained visible end-to-end in the operator-facing transcript surface."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-009-final-underscore.txt",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-009-final-semantic.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-009-final-underscore.png",
+          "live-transcript-rendering/lifecycle-redaction/VAL-CHAT-009-final-semantic.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (TUI flow)"
+      },
+      "issues": "FAIL: a fake but obvious secret-like env value remained visible as raw transcript/tool output (`openai_api_key equals fakeplaceholder1234567890123456`) instead of being masked."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`tuistory type` was unreliable in the Ink composer and could drop punctuation/characters, especially on longer prompts.",
+      "resolved": true,
+      "resolution": "Switched to explicit per-key `tuistory press` input for later assertions and only used semantic all-alphanumeric prompts when punctuation-heavy strings proved unstable.",
+      "affectedAssertions": [
+        "VAL-CHAT-003",
+        "VAL-CHAT-007",
+        "VAL-CHAT-008",
+        "VAL-CHAT-009"
+      ]
+    },
+    {
+      "description": "Some natural-language prompts were reinterpreted by the model as issue-creation tasks instead of direct shell execution.",
+      "resolved": true,
+      "resolution": "Used the concise working structure `say before then run command ... then say after` whenever direct tool execution was required.",
+      "affectedAssertions": [
+        "VAL-CHAT-007",
+        "VAL-CHAT-008",
+        "VAL-CHAT-009"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 assertions through the real TUI. Passed: VAL-CHAT-003 and VAL-CHAT-007. Failed: VAL-CHAT-008 because a failed command block still let the turn append `after` instead of surfacing a clean failed-turn state, and VAL-CHAT-009 because secret-like key/value output remained visible raw in the operator transcript surface."
+}

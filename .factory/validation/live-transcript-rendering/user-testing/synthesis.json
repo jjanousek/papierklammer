@@ -1,49 +1,37 @@
 {
   "milestone": "live-transcript-rendering",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "assertionsSummary": {
-    "total": 9,
+    "total": 6,
     "passed": 4,
     "failed": 1,
-    "blocked": 4
+    "blocked": 1
   },
   "passedAssertions": [
-    "VAL-CHAT-001",
-    "VAL-CHAT-002",
-    "VAL-CHAT-004",
-    "VAL-POLISH-001"
+    "VAL-CHAT-003",
+    "VAL-CHAT-006",
+    "VAL-CHAT-007",
+    "VAL-CHAT-008"
   ],
   "failedAssertions": [
     {
-      "id": "VAL-CHAT-007",
-      "reason": "Fail: killing the live Codex subprocess did not stop the turn; it kept streaming and completed normally instead of ending cleanly as interrupted."
+      "id": "VAL-CHAT-009",
+      "reason": "Fail: an env-style probe redacted the command assignment but still rendered the emitted OPENAI_API_KEY placeholder value raw in both completed tool output and a settled transcript text block."
     }
   ],
   "blockedAssertions": [
     {
-      "id": "VAL-CHAT-003",
-      "blockedBy": "Blocked: no visible reasoning panel surfaced in the real TUI even with reasoning high and fast OFF, so the transient reasoning lifecycle could not be exercised."
-    },
-    {
       "id": "VAL-CHAT-005",
-      "blockedBy": "Blocked: off-bottom keyboard scrolling and newer-activity indicators were observed, but a same-run return to live bottom with the indicator fully cleared was not conclusively captured before tuistory runtime limits."
-    },
-    {
-      "id": "VAL-CHAT-006",
-      "blockedBy": "Blocked: the real model would not yield a prose-free tool-only completion, so the tool-only transcript fallback path could not be directly exercised."
-    },
-    {
-      "id": "VAL-CHAT-008",
-      "blockedBy": "Blocked: the failure-path probe remained in thinking/waiting without surfacing a visible failed turn during the observed window."
+      "blockedBy": "Blocked: repeated same-run scroll probes, including a slower streaming command and the shipped follow-live key (`l`), still did not yield a conclusive capture of both the visible `newer lines below` indicator and its cleared return-to-live state."
     }
   ],
   "appliedUpdates": [
     {
       "target": "user-testing.md",
-      "description": "Added guidance to avoid explicit --company-id on the single-company local trusted TUI validator because it can leave chat turns stuck at Waiting for response; prefer auto-resolution for this surface.",
+      "description": "Added deterministic TUI validation probes for tool-only transcript fallback, failed-turn validation by stopping the local listener mid-turn, env-style secret-redaction checks, and the shipped `l` follow-live key during transcript scrolling.",
       "source": "flow-report"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/live-transcript-rendering/user-testing/synthesis.round1.json"
 }

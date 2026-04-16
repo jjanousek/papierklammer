@@ -1,0 +1,106 @@
+{
+  "groupId": "scroll-toolonly",
+  "testedAt": "2026-04-16T10:18:06.124721+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "surface": "TUI via tuistory",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CHAT-005",
+      "title": "Long transcripts are keyboard-scrollable and show when new activity is below",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Launch the real TUI and submit `say before then use a tool to print numbers one to four thousand then say after`.",
+          "expected": "A long live transcript should become scrollable while the turn is still active.",
+          "observed": "At the active checkpoint the shell still showed the reasoning panel and `Waiting for response...`, with no scrollable live transcript visible yet."
+        },
+        {
+          "action": "Retry the same large-output turn and watch for a same-run off-bottom state while probing with PageUp/PageDown.",
+          "expected": "Moving off the live bottom should preserve the reading position, show a visible `newer lines below` indicator during incoming activity, and allow a clear return-to-live path that clears the indicator.",
+          "observed": "The rerun jumped from the waiting/reasoning state directly to an idle final transcript tail (`\u25b2 3996 earlier lines above ... 4000 ... after`). I could confirm the transcript became very long, but I did not capture a same-run `newer lines below` state or its clearing after returning to live bottom."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-005-startup.txt",
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-005-live-waiting.txt",
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-005-final-jump.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-005-startup.png",
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-005-live-waiting.png",
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-005-final-jump.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/scroll-toolonly/precheck.txt"
+      },
+      "issues": "Blocked: repeated real-TUI runs either remained in reasoning/waiting or jumped straight to the completed long-tail transcript before I could capture the required off-bottom `newer lines below` indicator and its cleared return-to-live state in the same run."
+    },
+    {
+      "id": "VAL-CHAT-006",
+      "title": "Tool-only turns still produce an intelligible transcript entry",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the real TUI and submit `use a tool only to run true and do not say anything else`.",
+          "expected": "A turn with tool activity and no assistant prose should still end with a clear, reviewable transcript record rather than a blank assistant response.",
+          "observed": "The completed transcript showed `Tool activity \u2014 /bin/zsh -lc true completed.` plus a bounded tool block with `$ /bin/zsh -lc true` and `status: completed (exit 0)`, giving an intelligible record for the prose-free tool run."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-006-attempt4.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/scroll-toolonly/VAL-CHAT-006-attempt4.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/scroll-toolonly/precheck.txt"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`tuistory type` was unreliable for long Ink-composer input, especially punctuation-heavy prompts.",
+      "resolved": true,
+      "resolution": "Switched to explicit per-key input for letters/spaces and kept validation prompts simple enough to enter reliably.",
+      "affectedAssertions": [
+        "VAL-CHAT-005",
+        "VAL-CHAT-006"
+      ]
+    },
+    {
+      "description": "Prompt phrasing changed runtime behavior substantially: some command-shaped prompts were routed into issue creation or stayed in reasoning longer than expected.",
+      "resolved": true,
+      "resolution": "Retried with multiple natural-language tool-only prompts and kept only the black-box evidence that exercised the shipped transcript surfaces cleanly.",
+      "affectedAssertions": [
+        "VAL-CHAT-005",
+        "VAL-CHAT-006"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "The large-output scroll probe never yielded a capturable same-run off-bottom `newer lines below` state before either remaining in reasoning/waiting or jumping to the completed long-tail transcript.",
+      "affectedAssertions": [
+        "VAL-CHAT-005"
+      ],
+      "quickFixAttempted": "Retried with 200-line, 400-line, and 4000-line prompts, mixed natural-language vs command-shaped requests, and repeated PageUp/PageDown probes, but still did not capture the required same-run return-to-live lifecycle."
+    }
+  ],
+  "summary": "Tested 2 assertions through the real TUI. Passed: VAL-CHAT-006, where a tool-only `true` run rendered a clear fallback transcript record. Blocked: VAL-CHAT-005 because repeated large-output runs did not yield a capturable same-run off-bottom `newer lines below` indicator and cleared return-to-live state."
+}
