@@ -16,7 +16,10 @@ const mocks = vi.hoisted(() => ({
   } as { initialStep?: 1 | 2 | 3 | 4; companyId?: string },
   companies: [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }],
   companiesLoading: false,
+  dismissedRouteOnboardingPath: null as string | null,
   closeOnboarding: vi.fn(),
+  dismissRouteOnboarding: vi.fn(),
+  clearDismissedRouteOnboarding: vi.fn(),
   navigate: vi.fn(),
   invalidateQueries: vi.fn(),
   setQueryData: vi.fn(),
@@ -56,7 +59,10 @@ vi.mock("../context/DialogContext", () => ({
   useDialog: () => ({
     onboardingOpen: mocks.onboardingOpen,
     onboardingOptions: mocks.onboardingOptions,
+    dismissedRouteOnboardingPath: mocks.dismissedRouteOnboardingPath,
     closeOnboarding: mocks.closeOnboarding,
+    dismissRouteOnboarding: mocks.dismissRouteOnboarding,
+    clearDismissedRouteOnboarding: mocks.clearDismissedRouteOnboarding,
   }),
 }));
 
@@ -208,6 +214,8 @@ beforeEach(async () => {
 
   [
     mocks.closeOnboarding,
+    mocks.dismissRouteOnboarding,
+    mocks.clearDismissedRouteOnboarding,
     mocks.navigate,
     mocks.invalidateQueries,
     mocks.setQueryData,
@@ -227,6 +235,7 @@ beforeEach(async () => {
   mocks.params = {};
   mocks.onboardingOpen = true;
   mocks.onboardingOptions = { initialStep: 1, companyId: "company-1" };
+  mocks.dismissedRouteOnboardingPath = null;
   mocks.companies = [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }];
   mocks.companiesLoading = false;
 
@@ -342,9 +351,9 @@ describe("OnboardingWizard", () => {
     expect(mocks.navigate).toHaveBeenCalledWith("/ACME/issues/ACME-1");
   });
 
-  it("prefers the company-prefixed route over stale empty dialog options", async () => {
+  it("derives the company-prefixed route from the pathname even when route params are unavailable", async () => {
     mocks.location = { pathname: "/ACME/onboarding", search: "", hash: "" };
-    mocks.params = { companyPrefix: "ACME" };
+    mocks.params = {};
     mocks.onboardingOptions = {};
 
     await act(async () => {
@@ -367,5 +376,38 @@ describe("OnboardingWizard", () => {
     );
     expect(document.body.textContent).toContain("Give it something to do");
     expect(document.body.textContent).not.toContain("Describe your company");
+  });
+
+  it("keeps the global onboarding route global when route params are unavailable", async () => {
+    mocks.location = { pathname: "/onboarding", search: "", hash: "" };
+    mocks.params = {};
+    mocks.onboardingOpen = false;
+    mocks.onboardingOptions = {};
+    mocks.companies = [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }];
+
+    await act(async () => {
+      root.render(<OnboardingWizard />);
+    });
+    await flush();
+
+    expect(document.body.textContent).toContain("Choose your first agent");
+    expect(document.body.textContent).toContain("Company");
+    expect(document.body.textContent).not.toContain("Give it something to do");
+  });
+
+  it("suppresses onboarding for an invalid company prefix even if stale dialog state is open", async () => {
+    mocks.location = { pathname: "/NOPE/onboarding", search: "", hash: "" };
+    mocks.params = { companyPrefix: "NOPE" };
+    mocks.onboardingOpen = true;
+    mocks.onboardingOptions = { initialStep: 1, companyId: "company-1" };
+
+    await act(async () => {
+      root.render(<OnboardingWizard />);
+    });
+    await flush();
+
+    expect(document.body.textContent).not.toContain("Choose your first agent");
+    expect(mocks.closeOnboarding).toHaveBeenCalled();
+    expect(mocks.agentsCreate).not.toHaveBeenCalled();
   });
 });

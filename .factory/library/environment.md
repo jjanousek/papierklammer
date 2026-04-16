@@ -32,3 +32,4 @@ Environment variables, external dependencies, and setup notes for the onboarding
 
 - `init.sh` ensures `server/dist/index.js` and `server/ui-dist/index.html` exist before workers rely on `qa-app`.
 - If port `3100` is already healthy for this mission and the worker did not start it, reuse it and do not stop it.
+- In this checkout, the manifest `qa-app` command (`node server/dist/index.js`) still fails module resolution for workspace packages (`packages/db/src/client.js`). `env PAPIERKLAMMER_HOME=/tmp/papierklammer-onboarding-mission PAPIERKLAMMER_INSTANCE_ID=onboarding-mission PORT=3100 pnpm dev:once` successfully starts the mission-owned app until `.factory/services.yaml` is corrected.

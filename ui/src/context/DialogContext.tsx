@@ -36,8 +36,11 @@ interface DialogContextValue {
   closeNewAgent: () => void;
   onboardingOpen: boolean;
   onboardingOptions: OnboardingOptions;
+  dismissedRouteOnboardingPath: string | null;
   openOnboarding: (options?: OnboardingOptions) => void;
   closeOnboarding: () => void;
+  dismissRouteOnboarding: (pathname: string) => void;
+  clearDismissedRouteOnboarding: () => void;
 }
 
 const DialogContext = createContext<DialogContextValue | null>(null);
@@ -51,6 +54,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const [newAgentOpen, setNewAgentOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingOptions, setOnboardingOptions] = useState<OnboardingOptions>({});
+  const [dismissedRouteOnboardingPath, setDismissedRouteOnboardingPath] = useState<string | null>(null);
 
   const openNewIssue = useCallback((defaults: NewIssueDefaults = {}) => {
     setNewIssueDefaults(defaults);
@@ -89,6 +93,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openOnboarding = useCallback((options: OnboardingOptions = {}) => {
+    setDismissedRouteOnboardingPath(null);
     setOnboardingOptions(options);
     setOnboardingOpen(true);
   }, []);
@@ -96,6 +101,16 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const closeOnboarding = useCallback(() => {
     setOnboardingOpen(false);
     setOnboardingOptions({});
+  }, []);
+
+  const dismissRouteOnboarding = useCallback((pathname: string) => {
+    setDismissedRouteOnboardingPath(pathname);
+    setOnboardingOpen(false);
+    setOnboardingOptions({});
+  }, []);
+
+  const clearDismissedRouteOnboarding = useCallback(() => {
+    setDismissedRouteOnboardingPath(null);
   }, []);
 
   return (
@@ -117,8 +132,11 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         closeNewAgent,
         onboardingOpen,
         onboardingOptions,
+        dismissedRouteOnboardingPath,
         openOnboarding,
         closeOnboarding,
+        dismissRouteOnboarding,
+        clearDismissedRouteOnboarding,
       }}
     >
       {children}

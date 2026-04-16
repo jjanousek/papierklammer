@@ -48,7 +48,10 @@ import { queryKeys } from "./lib/queryKeys";
 import { useCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
-import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
+import {
+  resolveRouteOnboardingEntry,
+  shouldRedirectCompanylessRouteToOnboarding,
+} from "./lib/onboarding-route";
 import { findCompanyForIssuePathId, resolveUnprefixedBoardTargetCompany } from "./lib/unprefixed-board-route";
 
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
@@ -193,12 +196,42 @@ function LegacySettingsRedirect() {
 }
 
 function OnboardingRoutePage() {
-  const { companies } = useCompany();
-  const { openOnboarding } = useDialog();
+  const { companies, loading } = useCompany();
+  const {
+    dismissedRouteOnboardingPath,
+    clearDismissedRouteOnboarding,
+    openOnboarding,
+  } = useDialog();
+  const location = useLocation();
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
-  const matchedCompany = companyPrefix
-    ? companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null
-    : null;
+  const routeEntry =
+    companyPrefix && loading
+      ? null
+      : resolveRouteOnboardingEntry({
+          pathname: location.pathname,
+          companyPrefix,
+          companies,
+        });
+  const routeOnboardingIsActive =
+    routeEntry !== null &&
+    routeEntry.kind !== "invalid_company_prefix" &&
+    dismissedRouteOnboardingPath !== location.pathname;
+  const matchedCompany =
+    routeEntry?.kind === "company"
+      ? companies.find((company) => company.id === routeEntry.companyId) ?? null
+      : null;
+
+  if (loading) {
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  if (routeOnboardingIsActive) {
+    return null;
+  }
+
+  if (routeEntry?.kind === "invalid_company_prefix") {
+    return <NotFoundPage scope="invalid_company_prefix" requestedPrefix={routeEntry.companyPrefix} />;
+  }
 
   const title = matchedCompany
     ? `Add another agent to ${matchedCompany.name}`
@@ -218,11 +251,14 @@ function OnboardingRoutePage() {
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         <div className="mt-4">
           <Button
-            onClick={() =>
-              matchedCompany
-                ? openOnboarding({ companyId: matchedCompany.id })
-                : openOnboarding()
-            }
+            onClick={() => {
+              clearDismissedRouteOnboarding();
+              if (matchedCompany) {
+                openOnboarding({ companyId: matchedCompany.id });
+                return;
+              }
+              openOnboarding();
+            }}
           >
             {matchedCompany ? "Add Agent" : "Start Onboarding"}
           </Button>

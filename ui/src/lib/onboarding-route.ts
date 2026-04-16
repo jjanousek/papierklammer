@@ -3,6 +3,11 @@ type OnboardingRouteCompany = {
   issuePrefix: string;
 };
 
+export type RouteOnboardingEntry =
+  | { kind: "global"; initialStep: 1 }
+  | { kind: "company"; initialStep: 1; companyId: string }
+  | { kind: "invalid_company_prefix"; initialStep: 1; companyPrefix: string };
+
 export function isOnboardingPath(pathname: string): boolean {
   const segments = pathname.split("/").filter(Boolean);
 
@@ -22,12 +27,25 @@ export function resolveRouteOnboardingOptions(params: {
   companyPrefix?: string;
   companies: OnboardingRouteCompany[];
 }): { initialStep: 1; companyId?: string } | null {
+  const entry = resolveRouteOnboardingEntry(params);
+  if (!entry || entry.kind === "invalid_company_prefix") return null;
+  if (entry.kind === "company") {
+    return { initialStep: 1, companyId: entry.companyId };
+  }
+  return { initialStep: 1 };
+}
+
+export function resolveRouteOnboardingEntry(params: {
+  pathname: string;
+  companyPrefix?: string;
+  companies: OnboardingRouteCompany[];
+}): RouteOnboardingEntry | null {
   const { pathname, companyPrefix, companies } = params;
 
   if (!isOnboardingPath(pathname)) return null;
 
   if (!companyPrefix) {
-    return { initialStep: 1 };
+    return { kind: "global", initialStep: 1 };
   }
 
   const matchedCompany =
@@ -36,11 +54,19 @@ export function resolveRouteOnboardingOptions(params: {
         company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase(),
     ) ?? null;
 
-  if (!matchedCompany) {
-    return { initialStep: 1 };
+  if (matchedCompany) {
+    return { kind: "company", initialStep: 1, companyId: matchedCompany.id };
   }
 
-  return { initialStep: 1, companyId: matchedCompany.id };
+  if (companies.length === 0) {
+    return { kind: "global", initialStep: 1 };
+  }
+
+  return {
+    kind: "invalid_company_prefix",
+    initialStep: 1,
+    companyPrefix,
+  };
 }
 
 export function shouldRedirectCompanylessRouteToOnboarding(params: {

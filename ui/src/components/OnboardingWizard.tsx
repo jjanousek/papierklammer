@@ -37,7 +37,7 @@ import {
 } from "@papierklammer/adapter-codex-local";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@papierklammer/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@papierklammer/adapter-gemini-local";
-import { resolveRouteOnboardingOptions } from "../lib/onboarding-route";
+import { resolveRouteOnboardingEntry } from "../lib/onboarding-route";
 import { AsciiArtAnimation } from "./AsciiArtAnimation";
 import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
 import {
@@ -86,28 +86,57 @@ const CURATED_CODEX_MODEL_IDS = [
 ] as const;
 
 export function OnboardingWizard() {
-  const { onboardingOpen, onboardingOptions, closeOnboarding } = useDialog();
+  const {
+    onboardingOpen,
+    onboardingOptions,
+    dismissedRouteOnboardingPath,
+    dismissRouteOnboarding,
+    clearDismissedRouteOnboarding,
+    closeOnboarding,
+  } = useDialog();
   const { companies, setSelectedCompanyId, loading: companiesLoading } = useCompany();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
   const { pushToast } = useToast();
-  const [routeDismissed, setRouteDismissed] = useState(false);
+  const routeCompanyPrefix =
+    companyPrefix ??
+    (() => {
+      const segments = location.pathname.split("/").filter(Boolean);
+      if (segments.length !== 2) return undefined;
+      return segments[1]?.toLowerCase() === "onboarding"
+        ? segments[0]
+        : undefined;
+    })();
 
-  const routeOnboardingOptions =
-    companyPrefix && companiesLoading
+  const routeOnboardingEntry =
+    routeCompanyPrefix && companiesLoading
       ? null
-      : resolveRouteOnboardingOptions({
+      : resolveRouteOnboardingEntry({
           pathname: location.pathname,
-          companyPrefix,
+          companyPrefix: routeCompanyPrefix,
           companies,
         });
+  const routeOnboardingOptions =
+    routeOnboardingEntry?.kind === "company"
+      ? { initialStep: 1 as const, companyId: routeOnboardingEntry.companyId }
+      : routeOnboardingEntry?.kind === "global"
+        ? { initialStep: 1 as const }
+        : null;
+  const routeBlocksOnboarding =
+    routeOnboardingEntry?.kind === "invalid_company_prefix";
+  const routeOnboardingOpen =
+    routeOnboardingOptions !== null &&
+    dismissedRouteOnboardingPath !== location.pathname;
   const effectiveOnboardingOpen =
-    onboardingOpen || (routeOnboardingOptions !== null && !routeDismissed);
+    !routeBlocksOnboarding &&
+    (onboardingOpen || routeOnboardingOpen);
   const effectiveOnboardingOptions =
-    routeOnboardingOptions
-    ?? (onboardingOpen ? onboardingOptions : {});
+    routeBlocksOnboarding
+      ? {}
+      : routeOnboardingOptions
+        ?? (onboardingOpen ? onboardingOptions : {});
 
   const existingCompanyId = effectiveOnboardingOptions.companyId;
   const isNewCompanyFlow = !existingCompanyId;
@@ -188,8 +217,22 @@ export function OnboardingWizard() {
   }, [createdAgentId, createdCompanyId, isNewCompanyFlow, taskTitle]);
 
   useEffect(() => {
-    setRouteDismissed(false);
-  }, [location.pathname]);
+    if (
+      dismissedRouteOnboardingPath &&
+      location.pathname !== dismissedRouteOnboardingPath
+    ) {
+      clearDismissedRouteOnboarding();
+    }
+  }, [
+    clearDismissedRouteOnboarding,
+    dismissedRouteOnboardingPath,
+    location.pathname,
+  ]);
+
+  useEffect(() => {
+    if (!routeBlocksOnboarding || !onboardingOpen) return;
+    closeOnboarding();
+  }, [closeOnboarding, onboardingOpen, routeBlocksOnboarding]);
 
   // Sync step and company when onboarding opens with options.
   // Keep this independent from company-list refreshes so Step 1 completion
@@ -376,6 +419,10 @@ export function OnboardingWizard() {
 
   function handleClose() {
     reset();
+    if (routeOnboardingOpen) {
+      dismissRouteOnboarding(location.pathname);
+      return;
+    }
     closeOnboarding();
   }
 
@@ -828,7 +875,6 @@ export function OnboardingWizard() {
       open={effectiveOnboardingOpen}
       onOpenChange={(open) => {
         if (!open) {
-          setRouteDismissed(true);
           handleClose();
         }
       }}

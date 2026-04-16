@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isOnboardingPath,
+  resolveRouteOnboardingEntry,
   resolveRouteOnboardingOptions,
   shouldRedirectCompanylessRouteToOnboarding,
 } from "./onboarding-route";
@@ -16,6 +17,35 @@ describe("isOnboardingPath", () => {
 
   it("ignores non-onboarding routes", () => {
     expect(isOnboardingPath("/pap/dashboard")).toBe(false);
+  });
+});
+
+describe("resolveRouteOnboardingEntry", () => {
+  it("treats an unknown prefixed onboarding route as invalid when another company exists", () => {
+    expect(
+      resolveRouteOnboardingEntry({
+        pathname: "/nope/onboarding",
+        companyPrefix: "nope",
+        companies: [{ id: "company-1", issuePrefix: "PAP" }],
+      }),
+    ).toEqual({
+      kind: "invalid_company_prefix",
+      initialStep: 1,
+      companyPrefix: "nope",
+    });
+  });
+
+  it("falls back to global onboarding when no companies exist yet", () => {
+    expect(
+      resolveRouteOnboardingEntry({
+        pathname: "/nope/onboarding",
+        companyPrefix: "nope",
+        companies: [],
+      }),
+    ).toEqual({
+      kind: "global",
+      initialStep: 1,
+    });
   });
 });
 
@@ -47,6 +77,16 @@ describe("resolveRouteOnboardingOptions", () => {
         companies: [],
       }),
     ).toEqual({ initialStep: 1 });
+  });
+
+  it("does not open onboarding for an invalid prefixed route when another company exists", () => {
+    expect(
+      resolveRouteOnboardingOptions({
+        pathname: "/nope/onboarding",
+        companyPrefix: "nope",
+        companies: [{ id: "company-1", issuePrefix: "PAP" }],
+      }),
+    ).toBeNull();
   });
 });
 
