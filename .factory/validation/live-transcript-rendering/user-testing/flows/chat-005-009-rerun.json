@@ -1,0 +1,66 @@
+{
+  "groupId": "chat-005-009-rerun",
+  "testedAt": "2026-04-16T11:24:33.374361+00:00",
+  "milestone": "live-transcript-rendering",
+  "surface": "TUI",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "assertions": [
+    {
+      "id": "VAL-CHAT-005",
+      "status": "blocked",
+      "summary": "Real TUI evidence confirms keyboard scrolling away from the live bottom and a visible `newer lines below` indicator during active and finalized transcript growth, but neither the earlier same-day follow-live rerun nor the fresh rerun produced a conclusive same-session capture of that indicator clearing after returning to live bottom.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-scrolled-during-stream.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-scrolled-during-stream.png",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-finalized-off-bottom.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-finalized-off-bottom.png",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-return-live-page-down.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-return-live-page-down.png",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-off-bottom-indicator.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-off-bottom-indicator.png",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-return-live-l.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-005-return-live-l.png"
+      ],
+      "issues": [
+        "The fresh rerun launched the shipped TUI successfully, but new deterministic `seq` probes remained stuck in reasoning / `Waiting for response...` and did not yield better live-stream evidence within bounded waits.",
+        "The strongest captured evidence still stops short of a same-run cleared live-bottom state after using the shipped follow-live path, so the assertion remains blocked rather than passable."
+      ]
+    },
+    {
+      "id": "VAL-CHAT-009",
+      "status": "fail",
+      "summary": "The env-style secret probe redacted the command-line assignment itself, but the fake `OPENAI_API_KEY` value still appeared verbatim in both the completed tool-output block and a settled `[text]` transcript block.",
+      "evidence": [
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-009-final.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-009-final.png",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-009-settled.txt",
+        "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596/evidence/live-transcript-rendering/chat-005-009-rerun/VAL-CHAT-009-settled.png"
+      ],
+      "issues": [
+        "Visible raw value: `fakeplaceholder1234567890abcdef1234567890`.",
+        "The redaction only covered the inline env assignment (`openai_api_key=...`) and did not mask the emitted command output or the following text block."
+      ]
+    }
+  ],
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "frictions": [
+    "`tuistory type` dropped characters in the Ink composer during this rerun, so I switched to per-key entry.",
+    "Fresh deterministic `seq` rerun prompts stayed in reasoning / `Waiting for response...` instead of reaching tool execution quickly, so I relied on the latest conclusive same-day real-TUI artifacts already captured in this mission when classifying the assertions."
+  ],
+  "blockers": [
+    "VAL-CHAT-005 remains inconclusive because the available real-TUI evidence shows off-bottom indicator states but not a same-run cleared indicator after the operator returns to live bottom with the shipped follow-live behavior."
+  ],
+  "overallSummary": "Rechecked the remaining live-transcript-rendering chat assertions against the shipped local TUI: VAL-CHAT-005 is still blocked/inconclusive, and VAL-CHAT-009 still fails because a secret-like env value remains visible in operator-facing transcript surfaces."
+}

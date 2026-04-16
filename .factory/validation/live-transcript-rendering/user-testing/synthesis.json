@@ -1,37 +1,26 @@
 {
   "milestone": "live-transcript-rendering",
-  "round": 2,
+  "round": 3,
   "status": "fail",
   "assertionsSummary": {
-    "total": 6,
-    "passed": 4,
+    "total": 2,
+    "passed": 0,
     "failed": 1,
     "blocked": 1
   },
-  "passedAssertions": [
-    "VAL-CHAT-003",
-    "VAL-CHAT-006",
-    "VAL-CHAT-007",
-    "VAL-CHAT-008"
-  ],
+  "passedAssertions": [],
   "failedAssertions": [
     {
       "id": "VAL-CHAT-009",
-      "reason": "Fail: an env-style probe redacted the command assignment but still rendered the emitted OPENAI_API_KEY placeholder value raw in both completed tool output and a settled transcript text block."
+      "reason": "The env-style secret probe redacted the command-line assignment itself, but the fake `OPENAI_API_KEY` value still appeared verbatim in both the completed tool-output block and a settled `[text]` transcript block."
     }
   ],
   "blockedAssertions": [
     {
       "id": "VAL-CHAT-005",
-      "blockedBy": "Blocked: repeated same-run scroll probes, including a slower streaming command and the shipped follow-live key (`l`), still did not yield a conclusive capture of both the visible `newer lines below` indicator and its cleared return-to-live state."
+      "blockedBy": "Real TUI evidence confirms keyboard scrolling away from the live bottom and a visible `newer lines below` indicator during active and finalized transcript growth, but neither the earlier same-day follow-live rerun nor the fresh rerun produced a conclusive same-session capture of that indicator clearing after returning to live bottom."
     }
   ],
-  "appliedUpdates": [
-    {
-      "target": "user-testing.md",
-      "description": "Added deterministic TUI validation probes for tool-only transcript fallback, failed-turn validation by stopping the local listener mid-turn, env-style secret-redaction checks, and the shipped `l` follow-live key during transcript scrolling.",
-      "source": "flow-report"
-    }
-  ],
-  "previousRound": ".factory/validation/live-transcript-rendering/user-testing/synthesis.round1.json"
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/live-transcript-rendering/user-testing/synthesis.round2.json"
 }
