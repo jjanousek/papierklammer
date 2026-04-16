@@ -580,6 +580,11 @@ function CompanySession({
 
   const stackedLayout = columns < 76;
   const sidebarWidth = stackedLayout ? "100%" : Math.max(24, Math.min(34, Math.floor(columns * 0.28)));
+  const sidebarWidthValue = stackedLayout
+    ? columns
+    : typeof sidebarWidth === "number"
+      ? sidebarWidth
+      : columns;
   const sidebarHeight = stackedLayout
     ? Math.max(8, Math.min(12, Math.floor(contentHeight * 0.34)))
     : contentHeight;
@@ -591,6 +596,9 @@ function CompanySession({
     Math.min(stackedLayout ? 10 : 14, Math.floor(mainPanelHeight * (stackedLayout ? 0.42 : 0.45))),
   );
   const computedChatHeight = Math.max(4, mainPanelHeight - issueDeskHeight);
+  const computedChatWidth = stackedLayout
+    ? Math.max(24, columns - 6)
+    : Math.max(24, columns - sidebarWidthValue - 8);
   const compactDesk = columns < 120 || mainPanelHeight < 18;
 
   return (
@@ -681,8 +689,10 @@ function CompanySession({
                 isThinking={chatThinking}
                 reasoningText={chat.reasoningText}
                 pendingCommandItems={chat.pendingCommandItems}
+                isFocused={focusTarget === "management"}
                 visibleHeight={computedChatHeight}
                 height={computedChatHeight}
+                availableWidth={computedChatWidth}
               />
             </Box>
           )}

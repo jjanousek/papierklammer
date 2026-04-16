@@ -23,6 +23,8 @@ export interface ChatPanelProps {
   visibleHeight?: number;
   /** Explicit outer height for the panel. */
   height?: number;
+  /** Approximate transcript width for manual wrapping/windowing. */
+  availableWidth?: number;
 }
 
 /**
@@ -41,6 +43,7 @@ export function ChatPanel({
   isFocused = false,
   visibleHeight,
   height,
+  availableWidth,
 }: ChatPanelProps): React.ReactElement {
   // Account for the "Chat" header line and panel border (top + bottom = 2) + paddingY
   // The MessageList gets the remaining space inside the panel
@@ -70,6 +73,7 @@ export function ChatPanel({
         pendingCommandItems={pendingCommandItems}
         isFocused={isFocused}
         visibleHeight={messageListHeight}
+        availableWidth={availableWidth}
       />
     </Box>
   );

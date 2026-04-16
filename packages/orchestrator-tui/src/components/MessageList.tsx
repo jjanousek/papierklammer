@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
-import { CommandBlock } from "./CommandBlock.js";
 import { AnimatedGlyph } from "./AnimatedGlyph.js";
 import {
   summarizeToolOnlyTurn,
@@ -99,124 +98,6 @@ function parseInlineMarkdown(text: string): InlineToken[] {
   return tokens.length > 0 ? tokens : [{ type: "text", content: text }];
 }
 
-function RenderInlineMarkdown({ text }: { text: string }): React.ReactElement {
-  const tokens = parseInlineMarkdown(text);
-
-  return (
-    <Text>
-      {tokens.map((token, index) => {
-        if (token.type === "bold") {
-          return (
-            <Text key={index} bold>
-              {token.content}
-            </Text>
-          );
-        }
-        if (token.type === "code") {
-          return (
-            <Text key={index} color="yellow">
-              {token.content}
-            </Text>
-          );
-        }
-        if (token.type === "link") {
-          return (
-            <Text key={index}>
-              <Text underline>{token.label}</Text>
-              <Text dimColor>{` (${token.url})`}</Text>
-            </Text>
-          );
-        }
-        return <Text key={index}>{token.content}</Text>;
-      })}
-    </Text>
-  );
-}
-
-function renderMarkdownLine(line: string, key: string): React.ReactElement {
-  if (!line.trim()) {
-    return <Text key={key}> </Text>;
-  }
-
-  const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
-  if (headingMatch) {
-    return (
-      <Text key={key} bold underline>
-        {headingMatch[2] ?? line}
-      </Text>
-    );
-  }
-
-  const bulletMatch = line.match(/^([-*])\s+(.+)$/);
-  if (bulletMatch) {
-    return (
-      <Text key={key}>
-        <Text color="cyan">• </Text>
-        <RenderInlineMarkdown text={bulletMatch[2] ?? ""} />
-      </Text>
-    );
-  }
-
-  const numberedMatch = line.match(/^(\d+\.)\s+(.+)$/);
-  if (numberedMatch) {
-    return (
-      <Text key={key}>
-        <Text color="cyan">{`${numberedMatch[1]} `}</Text>
-        <RenderInlineMarkdown text={numberedMatch[2] ?? ""} />
-      </Text>
-    );
-  }
-
-  return <RenderInlineMarkdown key={key} text={line} />;
-}
-
-/**
- * Render parsed text segments with code blocks visually distinct.
- */
-function RenderedText({ text }: { text: string }): React.ReactElement {
-  const segments = parseMarkdown(text);
-
-  if (segments.length === 1 && segments[0]?.type === "text") {
-    const lines = segments[0].content.split("\n");
-    return (
-      <Box flexDirection="column">
-        {lines.map((line, index) => renderMarkdownLine(line, `line-${index}`))}
-      </Box>
-    );
-  }
-
-  return (
-    <Box flexDirection="column">
-      {segments.map((segment, idx) => {
-        if (segment.type === "code") {
-          return (
-            <Box
-              key={idx}
-              flexDirection="column"
-              borderStyle="single"
-              borderColor="gray"
-              paddingX={1}
-              marginY={0}
-            >
-              {segment.language ? (
-                <Text dimColor>[{segment.language}]</Text>
-              ) : null}
-              <Text>{segment.content}</Text>
-            </Box>
-          );
-        }
-        return (
-          <Box key={idx} flexDirection="column">
-            {segment.content.split("\n").map((line, lineIndex) =>
-              renderMarkdownLine(line, `segment-${idx}-line-${lineIndex}`),
-            )}
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
-
 export interface MessageListProps {
   /** Finalized messages. */
   messages: ChatMessage[];
@@ -232,10 +113,359 @@ export interface MessageListProps {
   isFocused?: boolean;
   /** Available height in rows for the message list (for windowing). */
   visibleHeight?: number;
+  /** Approximate transcript width for manual wrapping/windowing. */
+  availableWidth?: number;
 }
 
 /** Default visible window size when no explicit height is given. */
 const DEFAULT_VISIBLE_WINDOW = 20;
+const DEFAULT_WRAP_WIDTH = 76;
+const MIN_WRAP_WIDTH = 20;
+
+interface DisplayLine {
+  key: string;
+  text?: string;
+  element?: React.ReactElement;
+}
+
+function wrapText(
+  text: string,
+  width: number,
+  preserveWhitespace = false,
+): string[] {
+  const normalizedWidth = Math.max(1, Math.floor(width));
+  const normalizedText = text.replace(/\t/g, "  ");
+
+  if (normalizedText.length === 0) {
+    return [""];
+  }
+
+  if (normalizedText.length <= normalizedWidth) {
+    return [normalizedText];
+  }
+
+  const chunks: string[] = [];
+  let remaining = normalizedText;
+
+  while (remaining.length > normalizedWidth) {
+    if (preserveWhitespace) {
+      chunks.push(remaining.slice(0, normalizedWidth));
+      remaining = remaining.slice(normalizedWidth);
+      continue;
+    }
+
+    const candidate = remaining.slice(0, normalizedWidth);
+    const breakIndex = candidate.lastIndexOf(" ");
+    if (breakIndex > normalizedWidth * 0.4) {
+      chunks.push(candidate.slice(0, breakIndex).trimEnd());
+      remaining = remaining.slice(breakIndex + 1).trimStart();
+      continue;
+    }
+
+    chunks.push(candidate);
+    remaining = remaining.slice(normalizedWidth);
+  }
+
+  if (remaining.length > 0) {
+    chunks.push(remaining);
+  }
+
+  return chunks;
+}
+
+function wrapWithPrefix(
+  prefix: string,
+  text: string,
+  width: number,
+  options: {
+    continuationPrefix?: string;
+    preserveWhitespace?: boolean;
+  } = {},
+): string[] {
+  const continuationPrefix = options.continuationPrefix ?? " ".repeat(prefix.length);
+  const availableWidth = Math.max(1, width - prefix.length);
+  const chunks = wrapText(text, availableWidth, options.preserveWhitespace);
+
+  return chunks.map((chunk, index) =>
+    `${index === 0 ? prefix : continuationPrefix}${chunk}`,
+  );
+}
+
+function inlineMarkdownToText(text: string): string {
+  return parseInlineMarkdown(text)
+    .map((token) => {
+      if (token.type === "link") {
+        return `${token.label} (${token.url})`;
+      }
+      return token.content;
+    })
+    .join("");
+}
+
+function markdownLineToText(line: string): string {
+  if (!line.trim()) {
+    return "";
+  }
+
+  const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+  if (headingMatch) {
+    return inlineMarkdownToText(headingMatch[2] ?? line);
+  }
+
+  const bulletMatch = line.match(/^([-*])\s+(.+)$/);
+  if (bulletMatch) {
+    return `• ${inlineMarkdownToText(bulletMatch[2] ?? "")}`;
+  }
+
+  const numberedMatch = line.match(/^(\d+\.)\s+(.+)$/);
+  if (numberedMatch) {
+    return `${numberedMatch[1]} ${inlineMarkdownToText(numberedMatch[2] ?? "")}`;
+  }
+
+  return inlineMarkdownToText(line);
+}
+
+function getTextBlockLines(
+  text: string,
+  width: number,
+  keyPrefix: string,
+): DisplayLine[] {
+  const segments = parseMarkdown(text);
+  const lines: DisplayLine[] = [];
+
+  if (segments.length === 0) {
+    return lines;
+  }
+
+  segments.forEach((segment, segmentIndex) => {
+    if (segment.type === "code") {
+      lines.push({
+        key: `${keyPrefix}-code-top-${segmentIndex}`,
+        text: segment.language ? `┌─ [${segment.language}]` : "┌─",
+      });
+      for (const [lineIndex, rawLine] of segment.content.split("\n").entries()) {
+        const wrapped = wrapWithPrefix("│ ", rawLine || " ", width, {
+          continuationPrefix: "│ ",
+          preserveWhitespace: true,
+        });
+        wrapped.forEach((wrappedLine, wrappedIndex) => {
+          lines.push({
+            key: `${keyPrefix}-code-${segmentIndex}-${lineIndex}-${wrappedIndex}`,
+            text: wrappedLine,
+          });
+        });
+      }
+      lines.push({
+        key: `${keyPrefix}-code-bottom-${segmentIndex}`,
+        text: "└─",
+      });
+      return;
+    }
+
+    for (const [lineIndex, rawLine] of segment.content.split("\n").entries()) {
+      const displayText = markdownLineToText(rawLine);
+      const wrapped = wrapText(displayText || " ", width);
+      wrapped.forEach((wrappedLine, wrappedIndex) => {
+        lines.push({
+          key: `${keyPrefix}-text-${segmentIndex}-${lineIndex}-${wrappedIndex}`,
+          text: wrappedLine,
+        });
+      });
+    }
+  });
+
+  return lines;
+}
+
+function getCommandBlockLines(
+  item: CommandItem,
+  width: number,
+  keyPrefix: string,
+): DisplayLine[] {
+  const status = item.status ?? "completed";
+  const statusSummary =
+    item.exitCode != null && status !== "running"
+      ? `${status} (exit ${item.exitCode})`
+      : status;
+
+  const lines: DisplayLine[] = [
+    { key: `${keyPrefix}-top`, text: "╭─" },
+  ];
+
+  for (const [index, line] of wrapWithPrefix("│ ", `$ ${item.command}`, width, {
+    continuationPrefix: "│ ",
+  }).entries()) {
+    lines.push({
+      key: `${keyPrefix}-command-${index}`,
+      text: line,
+    });
+  }
+
+  for (const [index, line] of wrapWithPrefix("│ ", `status: ${statusSummary}`, width, {
+    continuationPrefix: "│ ",
+  }).entries()) {
+    lines.push({
+      key: `${keyPrefix}-status-${index}`,
+      text: line,
+    });
+  }
+
+  if (item.output) {
+    for (const [lineIndex, rawLine] of item.output.split("\n").entries()) {
+      const wrapped = wrapWithPrefix("│ ", rawLine || " ", width, {
+        continuationPrefix: "│ ",
+        preserveWhitespace: true,
+      });
+      wrapped.forEach((wrappedLine, wrappedIndex) => {
+        lines.push({
+          key: `${keyPrefix}-output-${lineIndex}-${wrappedIndex}`,
+          text: wrappedLine,
+        });
+      });
+    }
+  }
+
+  lines.push({ key: `${keyPrefix}-bottom`, text: "╰─" });
+  return lines;
+}
+
+function getAssistantDisplayLines(
+  blocks: TranscriptBlock[],
+  width: number,
+  keyPrefix: string,
+  options: {
+    streaming?: boolean;
+  } = {},
+): DisplayLine[] {
+  const textBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "text" }> => block.type === "text");
+  const commandBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "command" }> => block.type === "command");
+  const inlineOnly =
+    blocks.length === 1
+    && blocks[0]?.type === "text"
+    && isInlineAssistantText(blocks[0].text);
+
+  if (inlineOnly) {
+    const baseLines = wrapWithPrefix("Orchestrator: ", inlineMarkdownToText(textBlocks[0]?.text ?? ""), width);
+    const displayLines = baseLines.map((line, index) => ({
+      key: `${keyPrefix}-inline-${index}`,
+      text: line,
+    }));
+    if (options.streaming) {
+      displayLines.push({ key: `${keyPrefix}-cursor`, text: "▌" });
+    }
+    return displayLines;
+  }
+
+  const lines: DisplayLine[] = [
+    { key: `${keyPrefix}-label`, text: "Orchestrator:" },
+  ];
+
+  if (textBlocks.length === 0 && commandBlocks.length > 0) {
+    const fallback = summarizeToolOnlyTurn(commandBlocks.map((block) => block.item));
+    lines.push(...getTextBlockLines(fallback, width, `${keyPrefix}-fallback`));
+  }
+
+  blocks.forEach((block, index) => {
+    if (block.type === "text") {
+      lines.push(...getTextBlockLines(block.text, width, `${keyPrefix}-text-${index}`));
+      return;
+    }
+    lines.push(...getCommandBlockLines(block.item, width, `${keyPrefix}-command-${index}`));
+  });
+
+  if (options.streaming && textBlocks.length > 0) {
+    lines.push({ key: `${keyPrefix}-cursor`, text: "▌" });
+  }
+
+  return lines;
+}
+
+function getMessageDisplayLines(
+  messages: ChatMessage[],
+  width: number,
+): DisplayLine[] {
+  return messages.flatMap((message, messageIndex) => {
+    if (message.role === "user") {
+      return wrapWithPrefix("You: ", message.text, width).map((line, lineIndex) => ({
+        key: `message-${messageIndex}-user-${lineIndex}`,
+        text: line,
+      }));
+    }
+
+    const assistantBlocks = getAssistantBlocks(message);
+    return getAssistantDisplayLines(assistantBlocks, width, `message-${messageIndex}`);
+  });
+}
+
+function getPendingDisplayLines(
+  pendingBlocks: TranscriptBlock[],
+  streamingText: string,
+  pendingCommandItems: CommandItem[],
+  isThinking: boolean,
+  width: number,
+): DisplayLine[] {
+  const activePendingBlocks = getPendingBlocks(
+    pendingBlocks,
+    streamingText,
+    pendingCommandItems,
+  );
+
+  if (activePendingBlocks.length > 0) {
+    return getAssistantDisplayLines(activePendingBlocks, width, "pending", {
+      streaming: activePendingBlocks.some((block) => block.type === "text"),
+    });
+  }
+
+  if (!isThinking) {
+    return [];
+  }
+
+  return [
+    {
+      key: "thinking",
+      element: (
+        <Text>
+          <Text color="cyan" bold>
+            Orchestrator:{" "}
+          </Text>
+          <Text dimColor>
+            <AnimatedGlyph name="thinking" /> thinking...
+          </Text>
+        </Text>
+      ),
+    },
+  ];
+}
+
+function getViewportMetrics(
+  totalLines: number,
+  windowSize: number,
+  scrollOffset: number,
+  userScrolled: boolean,
+): {
+  hasMoreAbove: boolean;
+  hasMoreBelow: boolean;
+  contentWindowSize: number;
+  maxScrollOffset: number;
+} {
+  const liveBottomOffset =
+    totalLines > windowSize
+      ? Math.max(0, totalLines - Math.max(1, windowSize - 1))
+      : 0;
+  const hasMoreAbove = scrollOffset > 0;
+  const hasMoreBelow = userScrolled && scrollOffset < liveBottomOffset;
+  const contentWindowSize = Math.max(
+    1,
+    windowSize - (hasMoreAbove ? 1 : 0) - (hasMoreBelow ? 1 : 0),
+  );
+
+  return {
+    hasMoreAbove,
+    hasMoreBelow,
+    contentWindowSize,
+    maxScrollOffset: liveBottomOffset,
+  };
+}
 
 function getAssistantBlocks(message: ChatMessage): TranscriptBlock[] {
   if (message.blocks && message.blocks.length > 0) {
@@ -287,42 +517,6 @@ function getPendingBlocks(
   return blocks;
 }
 
-function AssistantBlocks({
-  blocks,
-}: {
-  blocks: TranscriptBlock[];
-}): React.ReactElement {
-  const textBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "text" }> => block.type === "text");
-  const commandBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "command" }> => block.type === "command");
-  const hasCommands = commandBlocks.length > 0;
-  const inlineOnly =
-    blocks.length === 1
-    && blocks[0]?.type === "text"
-    && isInlineAssistantText(blocks[0].text);
-
-  if (!hasCommands && inlineOnly) {
-    return <Text>{textBlocks[0]?.text ?? ""}</Text>;
-  }
-
-  const fallbackText =
-    textBlocks.length === 0 && commandBlocks.length > 0
-      ? summarizeToolOnlyTurn(commandBlocks.map((block) => block.item))
-      : null;
-
-  return (
-    <Box flexDirection="column">
-      {fallbackText ? <RenderedText text={fallbackText} /> : null}
-      {blocks.map((block, index) =>
-        block.type === "text" ? (
-          <RenderedText key={`text-${index}`} text={block.text} />
-        ) : (
-          <CommandBlock key={`command-${index}`} item={block.item} />
-        ),
-      )}
-    </Box>
-  );
-}
-
 /**
  * Scrollable list of chat messages with windowed rendering.
  *
@@ -339,159 +533,105 @@ export function MessageList({
   pendingCommandItems,
   isFocused = false,
   visibleHeight,
+  availableWidth,
 }: MessageListProps): React.ReactElement {
   const [scrollOffset, setScrollOffset] = useState(0);
   const [userScrolled, setUserScrolled] = useState(false);
 
-  // Window size: use explicit height or fallback
   const windowSize = visibleHeight ?? DEFAULT_VISIBLE_WINDOW;
-  const activePendingBlocks = getPendingBlocks(
+  const wrapWidth = Math.max(
+    MIN_WRAP_WIDTH,
+    Math.floor(availableWidth ?? DEFAULT_WRAP_WIDTH),
+  );
+  const transcriptLines = getMessageDisplayLines(messages, wrapWidth);
+  const pendingLines = getPendingDisplayLines(
     pendingBlocks,
     streamingText,
     pendingCommandItems,
+    isThinking,
+    wrapWidth,
   );
+  const emptyState: DisplayLine[] =
+    transcriptLines.length === 0 && pendingLines.length === 0
+      ? [
+          {
+            key: "empty",
+            text: "No messages yet. Type below to start a conversation.",
+          },
+        ]
+      : [];
+  const contentLines = emptyState.length > 0
+    ? emptyState
+    : [...transcriptLines, ...pendingLines];
+  const totalLines = contentLines.length;
+  const viewport = getViewportMetrics(totalLines, windowSize, scrollOffset, userScrolled);
 
-  // Total number of renderable items (messages + streaming/thinking indicator)
-  const hasStreamingItem = activePendingBlocks.length > 0 || isThinking;
-  const totalItems = messages.length + (hasStreamingItem ? 1 : 0);
-
-  // Auto-scroll to bottom when new content arrives, unless user scrolled up
   useEffect(() => {
-    if (!userScrolled) {
-      setScrollOffset(Math.max(0, totalItems - windowSize));
-    }
-  }, [totalItems, userScrolled, windowSize]);
-
-  // Reset userScrolled when a new message is finalized (turn completed)
-  useEffect(() => {
-    setUserScrolled(false);
-  }, [messages.length]);
-
-  // Reset scroll offset to show latest messages when terminal is resized (windowSize changes)
-  useEffect(() => {
-    setScrollOffset(Math.max(0, totalItems - windowSize));
-    setUserScrolled(false);
-    // Only trigger on windowSize change — totalItems is read but not a dependency,
-    // because we only want to reset on resize, not on every new message.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [windowSize]);
+    setScrollOffset((current) => {
+      if (!userScrolled) {
+        return viewport.maxScrollOffset;
+      }
+      return Math.min(current, viewport.maxScrollOffset);
+    });
+  }, [totalLines, userScrolled, viewport.maxScrollOffset, windowSize]);
 
   const handleScroll = useCallback(
-    (direction: "up" | "down") => {
-      if (direction === "up") {
-        setUserScrolled(true);
-        setScrollOffset((prev) => Math.max(0, prev - 1));
-      } else {
-        setScrollOffset((prev) => {
-          const maxOffset = Math.max(0, totalItems - windowSize);
-          const next = Math.min(maxOffset, prev + 1);
-          if (next >= maxOffset) {
-            setUserScrolled(false);
-          }
-          return next;
-        });
-      }
+    (delta: number) => {
+      setScrollOffset((prev) => {
+        const next = Math.max(0, Math.min(viewport.maxScrollOffset, prev + delta));
+        setUserScrolled(next < viewport.maxScrollOffset);
+        return next;
+      });
     },
-    [totalItems, windowSize],
+    [viewport.maxScrollOffset],
   );
 
-  // Handle keyboard input for scrolling (Shift+Up/Down and PageUp/PageDown)
   useInput(
     (_input, key) => {
       if (key.upArrow && key.shift) {
-        handleScroll("up");
+        handleScroll(-1);
       }
       if (key.downArrow && key.shift) {
-        handleScroll("down");
+        handleScroll(1);
       }
       if (key.pageUp) {
-        handleScroll("up");
+        handleScroll(-Math.max(1, viewport.contentWindowSize - 1));
       }
       if (key.pageDown) {
-        handleScroll("down");
+        handleScroll(Math.max(1, viewport.contentWindowSize - 1));
       }
     },
     { isActive: isFocused },
   );
 
-  // Calculate visible window of messages
-  const windowEnd = Math.min(messages.length, scrollOffset + windowSize);
-  const windowStart = Math.max(0, scrollOffset);
-  const visibleMessages = messages.slice(windowStart, windowEnd);
-
-  // Whether to show the streaming indicator (only if it fits in the window)
-  const showStreamingItem = hasStreamingItem && (scrollOffset + windowSize >= totalItems);
+  const visibleLines = contentLines.slice(
+    scrollOffset,
+    scrollOffset + viewport.contentWindowSize,
+  );
+  const newerLineCount = Math.max(
+    0,
+    totalLines - (scrollOffset + viewport.contentWindowSize),
+  );
 
   return (
     <Box flexDirection="column" flexGrow={1} overflow="hidden">
-      {messages.length === 0 && !streamingText && !isThinking && pendingCommandItems.length === 0 ? (
+      {viewport.hasMoreAbove ? (
         <Text dimColor>
-          No messages yet. Type below to start a conversation.
+          ▲ {scrollOffset} earlier line{scrollOffset === 1 ? "" : "s"} above
         </Text>
-      ) : (
-        <>
-          {scrollOffset > 0 && (
-            <Text dimColor>▲ {scrollOffset} more message{scrollOffset !== 1 ? "s" : ""} above</Text>
-          )}
-          {visibleMessages.map((msg, visIdx) => {
-            const idx = windowStart + visIdx;
-            const assistantBlocks = msg.role === "assistant" ? getAssistantBlocks(msg) : [];
-            return (
-              <Box key={idx} flexDirection="column">
-                {msg.role === "user" ? (
-                  <Text>
-                    <Text color="green" bold>
-                      You:{" "}
-                    </Text>
-                    <Text>{msg.text}</Text>
-                  </Text>
-                ) : (
-                  assistantBlocks.length === 1
-                  && assistantBlocks[0]?.type === "text"
-                  && isInlineAssistantText(assistantBlocks[0].text) ? (
-                    <Text>
-                      <Text color="cyan" bold>
-                        Orchestrator:{" "}
-                      </Text>
-                      <Text>{assistantBlocks[0].text}</Text>
-                    </Text>
-                  ) : (
-                    <Box flexDirection="column">
-                      <Text color="cyan" bold>
-                        Orchestrator:
-                      </Text>
-                      <AssistantBlocks blocks={assistantBlocks} />
-                    </Box>
-                  )
-                )}
-              </Box>
-            );
-          })}
-          {/* Streaming / thinking indicator (only when scrolled to bottom) */}
-          {showStreamingItem && (
-            <Box flexDirection="column">
-              {isThinking && activePendingBlocks.length === 0 ? (
-                <Text>
-                  <Text color="cyan" bold>
-                    Orchestrator:{" "}
-                  </Text>
-                  <Text dimColor><AnimatedGlyph name="thinking" /> thinking...</Text>
-                </Text>
-              ) : activePendingBlocks.length > 0 ? (
-                <Box flexDirection="column">
-                  <Text color="cyan" bold>
-                    Orchestrator:
-                  </Text>
-                  <AssistantBlocks blocks={activePendingBlocks} />
-                  {activePendingBlocks.some((block) => block.type === "text") ? (
-                    <Text color="yellow">▌</Text>
-                  ) : null}
-                </Box>
-              ) : null}
-            </Box>
-          )}
-        </>
+      ) : null}
+      {visibleLines.map((line) =>
+        line.element ? (
+          <React.Fragment key={line.key}>{line.element}</React.Fragment>
+        ) : (
+          <Text key={line.key}>{line.text}</Text>
+        ),
       )}
+      {viewport.hasMoreBelow ? (
+        <Text dimColor>
+          ▼ {newerLineCount} newer line{newerLineCount === 1 ? "" : "s"} below — PageDown or Shift+↓ to follow live
+        </Text>
+      ) : null}
     </Box>
   );
 }

@@ -353,7 +353,8 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     const frame = lastFrame()!;
     expect(frame).toContain("You:");
     expect(frame).toContain("Why did the send fail?");
-    expect(frame).toContain("Error: thread/start failed: thread/start failed in test");
+    expect(frame).toContain("Error: thread/start failed: thread/start failed");
+    expect(frame).toContain("in test");
     expect(frame).not.toContain("thinking...");
 
     unmount();

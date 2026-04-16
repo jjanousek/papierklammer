@@ -235,7 +235,7 @@ describe("VAL-TUI-STAB-004: Multiple messages don't break layout", () => {
     await waitForFrame(
       lastFrame,
       (current) =>
-        current.includes("You: Third") &&
+        current.includes("Reply 3") &&
         !current.includes("thinking..."),
     );
 

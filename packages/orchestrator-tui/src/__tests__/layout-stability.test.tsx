@@ -260,13 +260,13 @@ describe("VAL-TUI-STAB-007: Message scroll windowing works", () => {
     await tick();
 
     const frame = lastFrame()!;
-    // With visibleHeight=5, only 5 messages should be visible
-    // Auto-scrolled to bottom, so last 5 messages visible
+    // With visibleHeight=5, the top overflow indicator uses one row,
+    // so the latest 4 messages remain visible at the live bottom.
     expect(frame).toContain("Message 49");
     expect(frame).toContain("Message 48");
     expect(frame).toContain("Message 47");
     expect(frame).toContain("Message 46");
-    expect(frame).toContain("Message 45");
+    expect(frame).not.toContain("Message 45");
     // Earlier messages should NOT be visible
     expect(frame).not.toContain("Message 0");
     expect(frame).not.toContain("Message 10");
@@ -333,11 +333,13 @@ describe("VAL-TUI-STAB-007: Message scroll windowing works", () => {
     await tick();
 
     frame = lastFrame()!;
-    // After scrolling up 10 times from offset 15 (50-5=45... actually 20-5=15),
-    // offset should be around 5, showing Msg-5 through Msg-9
-    expect(frame).toContain("Msg-5");
+    // After scrolling up, the viewport stays anchored away from the live bottom
+    // and shows earlier transcript lines plus the new-activity indicator below.
+    expect(frame).toContain("Msg-6");
+    expect(frame).not.toContain("Msg-19");
     // Should show ▲ indicator
     expect(frame).toContain("▲");
+    expect(frame).toContain("▼");
     unmount();
   });
 
@@ -379,6 +381,103 @@ describe("VAL-TUI-STAB-007: Message scroll windowing works", () => {
     frame = lastFrame()!;
     // Should be back at the bottom
     expect(frame).toContain("Msg-19");
+    unmount();
+  });
+
+  it("keeps oversized command output windowed and scrollable by transcript keys", async () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: "",
+        timestamp: new Date(),
+        items: [
+          {
+            command: "tail -n 200 /tmp/build.log",
+            output: Array.from({ length: 18 }, (_, index) => `output line ${index + 1}`).join("\n"),
+            status: "completed",
+          },
+        ],
+      },
+    ];
+
+    const { stdin, lastFrame, unmount } = render(
+      <MessageList
+        messages={messages}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={8}
+      />,
+    );
+
+    await tick();
+
+    let frame = lastFrame()!;
+    expect(frame.split("\n").length).toBeLessThanOrEqual(8);
+    expect(frame).toContain("output line 18");
+    expect(frame).not.toMatch(/\boutput line 1\b/);
+
+    for (let i = 0; i < 12; i++) {
+      stdin.write("\u001B[1;2A"); // Shift+Up
+    }
+    await tick();
+
+    frame = lastFrame()!;
+    expect(frame).toContain("output line 1");
+    expect(frame).not.toContain("output line 18");
+    unmount();
+  });
+
+  it("keeps the reading position stable and shows newer activity below after appends", async () => {
+    const messages: ChatMessage[] = Array.from({ length: 20 }, (_, i) => ({
+      role: "user" as const,
+      text: `Msg-${i}`,
+      timestamp: new Date(),
+    }));
+
+    const { stdin, lastFrame, rerender, unmount } = render(
+      <MessageList
+        messages={messages}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={6}
+      />,
+    );
+
+    await tick();
+
+    for (let i = 0; i < 10; i++) {
+      stdin.write("\u001B[1;2A"); // Shift+Up
+    }
+    await tick();
+
+    const beforeAppendFrame = lastFrame()!;
+    expect(beforeAppendFrame).toContain("Msg-5");
+    expect(beforeAppendFrame).not.toContain("Msg-19");
+
+    rerender(
+      <MessageList
+        messages={[
+          ...messages,
+          { role: "assistant", text: "Newest activity", timestamp: new Date() },
+        ]}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={[]}
+        isFocused={true}
+        visibleHeight={6}
+      />,
+    );
+
+    await tick();
+
+    const afterAppendFrame = lastFrame()!;
+    expect(afterAppendFrame).toContain("Msg-5");
+    expect(afterAppendFrame).not.toContain("Newest activity");
+    expect(afterAppendFrame).toContain("▼");
     unmount();
   });
 });

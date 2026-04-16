@@ -21,6 +21,8 @@ const SHORTCUTS: Array<{ key: string; description: string }> = [
   { key: "r", description: "Cycle reasoning effort (management/settings)" },
   { key: "f", description: "Toggle fast mode (management/settings)" },
   { key: "s", description: "Open settings overlay (management)" },
+  { key: "PgUp / PgDn", description: "Scroll transcript history (management)" },
+  { key: "Shift+↑ / ↓", description: "Fine-scroll transcript history (management)" },
   { key: "Ctrl+C", description: "Exit" },
   { key: "↑ / ↓", description: "Scroll agents (management)" },
   { key: "?", description: "Toggle this help overlay" },
