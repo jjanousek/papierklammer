@@ -9,7 +9,7 @@ commands:
 
 services:
   qa-app:
-    start: env PAPIERKLAMMER_HOME=/tmp/papierklammer-onboarding-mission PAPIERKLAMMER_INSTANCE_ID=onboarding-mission PORT=3100 sh -c 'mkdir -p /tmp/papierklammer-onboarding-mission && echo $$ > /tmp/papierklammer-onboarding-mission/qa-app.pid && exec node /Users/aischool/work/papierklammer_droid/server/dist/index.js'
+    start: env PAPIERKLAMMER_HOME=/tmp/papierklammer-onboarding-mission PAPIERKLAMMER_INSTANCE_ID=onboarding-mission PORT=3100 sh -c 'mkdir -p /tmp/papierklammer-onboarding-mission && echo $$ > /tmp/papierklammer-onboarding-mission/qa-app.pid && exec pnpm dev:once'
     stop: sh -c 'if [ -f /tmp/papierklammer-onboarding-mission/qa-app.pid ]; then kill $(cat /tmp/papierklammer-onboarding-mission/qa-app.pid) 2>/dev/null || true; rm -f /tmp/papierklammer-onboarding-mission/qa-app.pid; fi'
     healthcheck: curl -sf http://127.0.0.1:3100/api/health
     port: 3100
