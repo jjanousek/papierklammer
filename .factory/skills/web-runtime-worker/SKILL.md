@@ -1,6 +1,6 @@
 ---
 name: web-runtime-worker
-description: Implements Web UI behavior fixes for onboarding, company scoping, issue detail, and run/result visibility
+description: Implements onboarding web behavior fixes, route recovery, and browser-verified UX correctness
 ---
 
 # Web Runtime Worker
@@ -9,85 +9,94 @@ NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the W
 
 ## When to Use This Skill
 
-Features involving `ui/src/` behavior such as:
-- Onboarding flow correctness and adapter gating
-- Onboarding AI drafting and launch convergence
-- Company lifecycle controls, company navigation, and archived/paused visibility
-- Company-context synchronization in routes and detail pages
-- Issue, run, and result visibility in the board UI
-- Web UI stale-recovery and post-recovery visibility
+Use for features that change onboarding behavior across the web runtime, including:
+- `/`, `/onboarding`, and company-prefixed route recovery
+- onboarding wizard state, progression, and exactly-once mutation behavior
+- bootstrap/auth gating on web entry routes
+- add-agent onboarding behavior for existing companies
+- invite/join landing and approval UI surfaces
+- import entry, preview, apply, and company-context recovery
 
 ## Required Skills
 
-- `agent-browser` — required for verifying the actual board UI flows this mission cares about
+- `agent-browser` — required for every feature that fulfills onboarding assertions, because the contract is browser-first and screenshot-backed.
 
 ## Work Procedure
 
-1. Read the feature description and the validation assertions it fulfills.
-2. Read the relevant existing code before editing:
-   - onboarding: `ui/src/components/OnboardingWizard.tsx`
-   - lifecycle UI: `ui/src/pages/CompanySettings.tsx`, `ui/src/pages/Companies.tsx`
-   - issue/run review: `ui/src/pages/IssueDetail.tsx`, `ui/src/components/LiveRunWidget.tsx`
-   - company context: `ui/src/context/CompanyContext.tsx`, company switcher/rail, detail pages, router helpers
-   - branding text surfaces: auth/dashboard/invite/export pages and agent skill-management surfaces
-3. Write tests first. Prefer the narrowest existing UI or route-level test file that can prove the behavior. Add focused component or page tests when possible.
-4. Implement the fix using existing query/state patterns. Preserve company-scoped routing and avoid introducing hidden global state.
-5. Verify with `agent-browser` against the isolated audit instance from `.factory/services.yaml`. Collect screenshots or network evidence for the exact assertions this feature fulfills.
-6. For onboarding launch changes, verify the created issue/run again after a short settle window instead of stopping at the initial success toast or wakeup request.
-7. For lifecycle UI changes, verify all delete affordances and selection fallback behavior; do not assume Company Settings is the only entrypoint.
-8. For public issue-key or company-context fixes, inspect every secondary request the page issues in the browser.
-9. Keep Node-process usage low during verification. Reuse one local app instance when possible, stop any temporary server or helper process once the browser checks that need it are complete, and never exceed 4 concurrent Node.js processes total.
-10. Run automated verification:
-   - focused UI tests first
-   - `pnpm -r typecheck`
-   - reserve `pnpm test:run -- --maxWorkers=1` for milestone validation or blocker triage
-   - run `pnpm build` only if the feature affects shipped runtime paths broadly or the feature explicitly requires it
-11. In the handoff, list the URLs visited, company slug/id used, any local processes started for verification, and the exact evidence that proved the web behavior changed.
+1. Read the assigned feature, its `fulfills` assertions, `mission.md`, mission `AGENTS.md`, and `.factory/library/architecture.md`.
+2. Read the exact code paths before editing. Typical files include:
+   - `ui/src/App.tsx`
+   - `ui/src/components/OnboardingWizard.tsx`
+   - `ui/src/lib/onboarding-route.ts`
+   - `ui/src/context/DialogContext.tsx`
+   - `ui/src/pages/InviteLanding.tsx`
+   - `ui/src/pages/CompanyImport.tsx`
+   - `ui/src/pages/CompanySettings.tsx`
+   - `ui/src/pages/Inbox.tsx`
+   - matching `ui/src/api/*`, `server/src/routes/*`, and `packages/shared/*` files when the UI depends on backend contracts
+3. Write tests first. Prefer the narrowest existing UI or route-level test file that can prove the behavior. For mutation-boundary bugs, add tests that prove both success and non-mutation failure paths.
+4. Implement the smallest fix that makes the assigned assertions pass. Preserve company scoping and keep agent-first ordering unless the feature explicitly authorizes a change.
+5. Verify with `agent-browser` against the local onboarding surface. Use one browser session, collect annotated screenshots, and cover the exact route/step/error states claimed by the feature.
+6. When the assertion depends on mutation or non-mutation, collect API evidence with `curl` or browser network captures before and after the action.
+7. Keep runtime usage low:
+   - never keep more than one app instance for this feature
+   - do not exceed 3 mission-started Node processes
+   - only stop PIDs you started yourself
+8. Run automated verification in this order:
+   - focused tests for changed files
+   - `pnpm -r --workspace-concurrency=1 typecheck`
+   - `pnpm test:run -- --maxWorkers=1`
+   - `pnpm -r --workspace-concurrency=1 build` when the feature changes shipped runtime behavior or shared UI/runtime contracts
+9. In the handoff, list every URL visited, every screenshot/evidence path, whether the feature changed the mutation boundary, and exactly which before/after API probes proved the assertions.
 
 ## Example Handoff
 
 ```json
 {
-  "salientSummary": "Fixed onboarding so failed codex_local validation blocks progression, and issue detail now synchronizes company context from deep links before related queries fire. Verified both flows in the browser against a fresh isolated instance.",
-  "whatWasImplemented": "Updated ui/src/components/OnboardingWizard.tsx to gate agent creation on a passing adapter environment result and updated issue-detail route handling so secondary company-scoped queries use the deep-linked company context before attachments, agents, or related issue queries run. Added targeted UI tests for the failed validation path and company-context synchronization behavior.",
+  "salientSummary": "Normalized first-run route recovery so `/`, `/dashboard`, and `/issues` now resolve to one onboarding shell, and fixed close/reopen on `/onboarding` so the route stays canonical without duplicate page+modal rendering.",
+  "whatWasImplemented": "Updated route recovery in ui/src/App.tsx and onboarding route helpers so companyless deep links consistently resolve to `/onboarding`, unknown company prefixes fail safely, and in-app onboarding reopen preserves the underlying board route. Added focused tests for route recovery, invalid prefixed onboarding, and close/reopen behavior.",
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
       {
-        "command": "pnpm exec vitest run ui/src/components/__tests__/OnboardingWizard.test.tsx ui/src/pages/__tests__/IssueDetail.test.tsx --maxWorkers=5",
+        "command": "pnpm exec vitest run ui/src/lib/onboarding-route.test.ts ui/src/components/OnboardingWizard.test.tsx --maxWorkers=1",
         "exitCode": 0,
-        "observation": "Focused onboarding and issue-detail tests passed"
+        "observation": "Focused onboarding route and wizard tests passed"
       },
       {
-        "command": "pnpm -r typecheck",
+        "command": "pnpm -r --workspace-concurrency=1 typecheck",
         "exitCode": 0,
-        "observation": "No type errors"
+        "observation": "Workspace typecheck passed"
       },
       {
-        "command": "pnpm test:run -- --maxWorkers=5",
+        "command": "pnpm test:run -- --maxWorkers=1",
         "exitCode": 0,
-        "observation": "Full Vitest suite passed"
+        "observation": "Full Vitest suite passed with low concurrency"
       }
     ],
     "interactiveChecks": [
       {
-        "action": "Ran onboarding with an invalid codex_local environment result",
-        "observed": "UI stayed on the adapter step and no CEO agent was created"
+        "action": "Visited `/dashboard` with zero companies and let recovery complete",
+        "observed": "Recovered into a single `/onboarding` shell with one primary onboarding action"
       },
       {
-        "action": "Opened a company-B issue deep link while company A had been selected previously",
-        "observed": "Issue detail synchronized to company B and follow-up requests used company B"
+        "action": "Opened onboarding from a board CTA, closed it, then reopened it",
+        "observed": "The underlying board URL was preserved, close returned to the same page, and reopening produced one onboarding shell"
       }
     ]
   },
   "tests": {
     "added": [
       {
-        "file": "ui/src/components/__tests__/OnboardingWizard.test.tsx",
+        "file": "ui/src/lib/onboarding-route.test.ts",
         "cases": [
           {
-            "name": "failed codex_local validation blocks next step",
-            "verifies": "VAL-DEMO-005"
+            "name": "companyless dashboard recovers to onboarding",
+            "verifies": "VAL-ENTRY-003"
+          },
+          {
+            "name": "invalid prefixed onboarding fails safely",
+            "verifies": "VAL-ENTRY-006"
           }
         ]
       }
@@ -99,7 +108,7 @@ Features involving `ui/src/` behavior such as:
 
 ## When to Return to Orchestrator
 
-- The required behavior depends on missing API fields or route support
-- The browser flow cannot be exercised because the isolated instance is not bootable
-- The feature requires broader shared-state changes than one worker session can safely make
-- Real Codex-backed onboarding behavior is required but local Codex readiness is unavailable
+- The feature needs a backend/shared contract change large enough that the assigned scope is no longer a web-runtime-only fix
+- The onboarding flow depends on missing data or routes that do not yet exist
+- The app cannot be started or reused within the mission’s Node/process limits
+- The actual product expectation conflicts with the assigned assertions or agent-first requirement

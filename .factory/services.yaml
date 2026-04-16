@@ -1,18 +1,16 @@
 commands:
   install: pnpm install
-  typecheck: pnpm --filter @papierklammer/orchestrator-tui typecheck
-  build: pnpm --filter @papierklammer/orchestrator-tui build
-  test: pnpm exec vitest run packages/orchestrator-tui/src/__tests__ --maxWorkers=2
+  typecheck: pnpm -r --workspace-concurrency=1 typecheck
+  build: pnpm -r --workspace-concurrency=1 build
+  test: pnpm test:run -- --maxWorkers=1
   lint: echo "no lint configured"
-  dev_start: PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm dev:once
-  dev_stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
   health: curl -sf http://127.0.0.1:3100/api/health
   companies: curl -sf http://127.0.0.1:3100/api/companies
 
 services:
   qa-app:
-    start: PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm dev:once
-    stop: lsof -tiTCP:3100 -sTCP:LISTEN | xargs kill 2>/dev/null || true
+    start: env PAPIERKLAMMER_HOME=/tmp/papierklammer-onboarding-mission PAPIERKLAMMER_INSTANCE_ID=onboarding-mission PORT=3100 sh -c 'mkdir -p /tmp/papierklammer-onboarding-mission && echo $$ > /tmp/papierklammer-onboarding-mission/qa-app.pid && exec node /Users/aischool/work/papierklammer_droid/server/dist/index.js'
+    stop: sh -c 'if [ -f /tmp/papierklammer-onboarding-mission/qa-app.pid ]; then kill $(cat /tmp/papierklammer-onboarding-mission/qa-app.pid) 2>/dev/null || true; rm -f /tmp/papierklammer-onboarding-mission/qa-app.pid; fi'
     healthcheck: curl -sf http://127.0.0.1:3100/api/health
     port: 3100
     depends_on: []

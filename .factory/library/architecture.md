@@ -2,97 +2,117 @@
 
 ## Mission focus
 
-This mission is a focused redesign and polish pass for the orchestrator TUI in `packages/orchestrator-tui/`.
+This mission hardens the **entire onboarding journey** for the Papierklammer web application:
 
-The work is centered on four operator-facing concerns:
-- message composer and focus behavior
-- live chat, tool-call, and reasoning visualization
-- shortcut clarity and discoverability
-- broad layout/panel polish under real terminal constraints
+- first-run entry and route recovery
+- bootstrap/auth gating
+- new-company onboarding
+- existing-company add-agent onboarding
+- invite/join onboarding
+- import as an onboarding-adjacent bootstrap path
 
-The zero-company launcher failure discovered during planning is explicitly out of scope. Validation uses a seeded local company instead.
+The mission may redesign UI and copy where it improves comprehension, but it should preserve the product decision that **Agent comes first** unless a feature explicitly proves a better sequence.
 
-## System surfaces
+## Primary user-facing surfaces
 
-### 1. Launch and company selection
-- `scripts/dev-tui-utils.mjs`, `scripts/dev-tui.mjs`, and `scripts/dev-with-tui.mjs` decide how the TUI resolves health, company selection, and child-process launch.
-- The TUI can start in one of two broad modes:
-  - directly inside a selected company session
-  - in company-selection mode when launch cannot pick a company automatically
-- Launch context must stay company-scoped. A selected company name/id must agree with the session the TUI actually renders.
+### 1. Entry and route recovery
+- `ui/src/App.tsx` decides whether the operator sees a bootstrap gate, auth gate, first-run entry page, or company-scoped board surface.
+- `ui/src/lib/onboarding-route.ts` determines whether the current route should open onboarding and whether it is global first-run onboarding or company-prefixed add-agent onboarding.
+- Empty-state entry matters as much as explicit `/onboarding`; users arrive through `/`, direct deep links, stale remembered routes, and company-prefixed URLs.
 
-### 2. Session shell and focus model
-- `App.tsx` owns the top-level shell: header, management region, chat region, composer, and status bar.
-- The session currently mixes multiple interaction concepts:
-  - input focus
-  - management-region focus
-  - modal overlays
-  - company switching, which temporarily swaps out the normal company session view
-- A key current risk is split draft ownership: `App.tsx` mirrors draft state for shortcut gating while `InputBar.tsx` owns the visible draft. Workers should treat eliminating or making that split explicit as a first-class design concern.
-- This mission should leave the keyboard ownership model explicit and predictable. Only one visible region should own interaction at a time.
+### 2. Onboarding shell and dialog state
+- The visible onboarding experience is split between route-level entry surfaces and the globally mounted `OnboardingWizard`.
+- The mission must treat “one perceivable onboarding shell at a time” as a product invariant, even if the implementation still uses route state plus dialog state internally.
+- Close/reopen, refresh, and browser history must keep route state, company context, and wizard state aligned.
 
-### 3. Live management state
-- The sidebar/issue desk are driven by polling hooks:
-  - `useOrchestratorStatus`
-  - `usePendingApprovals`
-  - `useCompanyIssues`
-- Those hooks provide the management truth for the currently selected company.
-- Polling updates are allowed to refresh counts and panels while a chat turn is active, but they must not corrupt transcript state or company scoping.
+### 3. New-company onboarding mutations
+- The intended new-company flow is `Agent -> Company -> Task -> Launch`.
+- Mutation boundary today is not fully deferred to Launch:
+  - the Company step creates the company, optional goal, and CEO agent
+  - Launch creates the onboarding project, starter issue, and wakeup/run side effect
+- Validation and implementation must therefore distinguish:
+  - pre-mutation steps
+  - post-company-mutation but pre-launch states
+  - post-launch states
+- Exactly-once behavior across retries, refreshes, and failures is a central correctness risk.
 
-### 4. Chat turn pipeline
-- The bottom composer gathers operator input.
-- `App.tsx` turns that input into company-scoped orchestrator instructions and sends it through Codex integration.
-- The Codex client emits a stream of events covering assistant text, reasoning, tool activity, command output, and turn completion/failure.
-- `useChat` holds the session transcript state and transient live-turn state.
-- The rendered chat surface is a composition of:
-  - transcript history
-  - optional live reasoning
-  - optional live tool activity
-  - live streaming assistant output
-- The concrete rendering files that matter most are:
-  - `MessageList.tsx` for transcript windowing/scroll behavior
-  - `ReasoningPanel.tsx` for live reasoning visibility
-  - `CommandBlock.tsx` for tool-call presentation
+### 4. Existing-company add-agent onboarding
+- `/:companyPrefix/onboarding` is not first-run bootstrap; it is a company-scoped augmentation flow.
+- The intended flow is `Agent -> Task -> Launch` with no Company step.
+- The critical invariants are:
+  - company scope comes from the route and never silently drifts
+  - the flow never regresses into first-company/bootstrap messaging
+  - approval-gated hiring is visible and truthful
 
-### 5. Modal workflows
-- Help, settings, issue composer, and company switching are modal interaction layers over the base session.
-- These overlays must:
-  - capture their own keys
-  - block conflicting background mutations
-  - restore the operator to a coherent prior context on dismiss
-- The issue composer is special because it is both modal and mutating: success must feed back into the work queue and transcript.
-- Company switching is also special because `CompanyPicker.tsx` plus `key={selectedCompanyId}` remounting in `App.tsx` effectively replaces the active company session tree when a switch is confirmed.
+### 5. Invite and join lifecycle
+- Company-side invite generation begins in settings surfaces.
+- Joiners land on `/invite/:token` and choose a human or agent path depending on invite configuration.
+- Operators finish the flow through Inbox approval/rejection.
+- Human joins end in company access; agent joins end in approval-gated API-key claim.
+- Invite generation, landing copy, pending approval, and claim are one user journey even though they span UI and API surfaces.
+- Mutation stages must stay distinct:
+  - invite generation creates a shareable artifact
+  - join submission creates a pending request, not access
+  - approval resolves that request
+  - only then can human access or agent claim succeed
+
+### 6. Import as onboarding-adjacent bootstrap
+- Import must either work as a true first-run alternative or be clearly presented as a separate onboarding-adjacent bootstrap path.
+- The import lifecycle is:
+  - pick source
+  - pick target
+  - preview
+  - resolve conflicts/select content
+  - apply
+  - switch to imported company context
+- Preview fidelity matters: apply must honor selected files, rename/skip choices, and adapter overrides exactly once.
+- Source selection, target selection, preview, and conflict-resolution are non-mutating. `Apply` is the mutation boundary.
 
 ## Cross-surface invariants
 
-### Company scope is the primary invariant
-- Header label, polled management data, issue creation, turn instructions, and any session reset behavior must all point to the same selected company.
-- Switching companies must clear stale transcript/thread context from the previous company.
+### Company context is canonical
+- Unprefixed routes, prefixed routes, remembered selection, and visible company cues must all point to the same intended company.
+- Invalid or stale company context must recover safely, not silently target another company.
 
-### Focus and shortcuts must agree
-- Visible focus state, live key routing, help text, and overlay hints must all describe the same interaction model.
-- If a shortcut only works in a specific region or overlay, the UI must make that discoverable.
+### One onboarding shell at a time
+- Users may enter through route pages or in-app CTAs, but they should only perceive one onboarding experience at once.
+- Background content must never compete visually with the active onboarding workflow.
 
-### Transcript truthfulness matters more than implementation simplicity
-- The operator should be able to understand what happened from the terminal transcript alone.
-- Reasoning, tool activity, streaming output, failures, and interruptions must appear in ways that do not mislead the operator about current state.
+### Bootstrap/auth gates take precedence
+- Bootstrap/auth gates outrank onboarding and board content.
+- Blocking states must stay singular and must not leak onboarding chrome or partial board surfaces behind them.
 
-### The shell must survive stress
-- Narrow widths, stacked layouts, long command output, long issue queues, temporary API failures, and Codex-process failures must not collapse the full-screen shell.
-- Header, management panels, transcript, composer, and status should remain interpretable even under degraded conditions.
+### Agent-first must be understandable
+- The UI may keep Agent first, but it must explain why the order exists.
+- Disabled controls must point to visible prerequisites rather than contradicting the current step order.
+
+### Mutation boundaries must be explicit and idempotent
+- New-company onboarding creates company-level entities before Launch.
+- Add-agent onboarding creates the new agent before Launch.
+- Retry/failure/close/reopen behaviors must therefore prove both:
+  - zero mutation when blocked before the mutation boundary
+  - no duplication after the mutation boundary
+
+### Operator-vs-joiner responsibility must stay legible
+- Invite flows must always make it obvious which steps belong to the operator, which belong to the joiner, and when approval is still pending.
 
 ## High-risk areas for this mission
 
-- split ownership of draft/focus state between top-level session logic and input components
-- chat chronology when narration, reasoning, and multiple tool calls interleave
-- hidden or conflicting shortcuts across sidebar, issue desk, chat, and overlays
-- company switching because it replaces the active company session tree
-- layout behavior when transcript/tool output grows taller than the visible viewport
-- keeping background polls truthful without disrupting an in-flight turn
+- route-level onboarding entry plus modal wizard overlap
+- stale dialog state versus route-derived company scope
+- documented seeded-flow loop after company creation
+- stale remembered company selection after onboarding changes context
+- duplicate mutations from retry/double-submit during company creation or launch
+- add-agent flows inheriting first-company/CEO bootstrap copy
+- approval-gated hiring or invite claim states presenting false success
+- import preview/apply mismatch after source/target changes
 
 ## Worker guidance
 
-- Treat `validation-contract.md` as the definition of done for all operator-visible behavior.
-- Prefer architectural fixes that make focus ownership, transcript ordering, and company scoping explicit instead of layering more special cases onto existing heuristics.
-- When a change affects runtime interaction, verify it both with package tests and with a PTY-backed `tuistory` run.
-- Keep launch/validation assumptions local-trusted and seeded-company only for this mission.
+- Prioritize broken flow recovery and correctness before UX polish or moderate redesign.
+- Prefer fixes that make route state, company scope, and onboarding shell ownership more explicit rather than layering more special cases onto stale state.
+- Preserve agent-first order unless the assigned feature explicitly authorizes a change and proves the new sequence is clearer.
+- Validate every user-visible change with `agent-browser` screenshots.
+- When a feature claims failure-path assertions, collect before/after API evidence proving zero mutation or exactly-once mutation.
+- Mission constraints still apply while implementing architecture fixes: no Docker, reuse the local `3100` surface, and never keep more than 3 mission-started Node processes alive at once.
+- Do not broaden the mission into unrelated board or TUI work.

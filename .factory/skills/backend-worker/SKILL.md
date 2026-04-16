@@ -1,6 +1,6 @@
 ---
 name: backend-worker
-description: Implements server-side services, DB schema, API routes, and their tests for the control plane
+description: Implements onboarding backend and shared-contract fixes with browser-backed verification
 ---
 
 # Backend Worker
@@ -9,104 +9,90 @@ NOTE: Startup and cleanup are handled by `worker-base`. This skill defines the W
 
 ## When to Use This Skill
 
-Features that involve:
-- New or modified Drizzle schema tables
-- New or modified server services (intent queue, scheduler, lease manager, dispatcher, event log, projections, reconciler)
-- New or modified Express API routes
-- Integration between control plane components
-- Company lifecycle gates, quiesce behavior, cleanup/reconciliation hardening
-- Issue identifier resolution or other shared backend contract fixes
+Use for onboarding features that primarily change server routes, services, data contracts, or shared validators/types, including:
+- invite generation, approval, and claim semantics
+- onboarding drafting or launch APIs when exactly-once semantics are broken
+- import preview/apply fidelity and supporting server behavior
+- approval-gated hiring behavior exposed through onboarding
 
 ## Required Skills
 
-None
+- `agent-browser` — required when the feature fulfills browser-visible onboarding assertions or needs UI confirmation of backend behavior.
 
 ## Work Procedure
 
-1. **Read the feature description and preconditions**. Check that preconditions are met (required tables exist, dependent services exist).
-
-2. **Read existing code** in the area you're modifying:
-   - For schema: read `packages/db/src/schema/` files and `packages/db/src/schema/index.ts`
-   - For services: read `server/src/services/` — especially `heartbeat.ts` for patterns
-   - For routes: read `server/src/routes/` for Express patterns
-   - For shared types: read `packages/shared/src/`
-
-3. **Write tests first** (red):
-   - Create test file in `server/src/__tests__/` following existing naming convention (e.g., `intent-queue.test.ts`).
-   - For DB-dependent tests, use embedded Postgres:
-     ```typescript
-     import { getEmbeddedPostgresTestSupport } from "./helpers/embedded-postgres.js";
-     const { supported, startDatabase } = await getEmbeddedPostgresTestSupport();
-     const describeDB = supported ? describe : describe.skip;
-     ```
-   - Write test cases covering: success paths, error paths, edge cases, concurrency where relevant.
-   - Run `pnpm test:run` — new tests should FAIL.
-
-4. **Implement the feature**:
-   - **Schema**: Create schema file in `packages/db/src/schema/NEW_TABLE.ts`. Use Drizzle's `pgTable()`. Export from `index.ts`. Follow existing patterns (see `heartbeat_runs.ts`, `issues.ts` for reference).
-   - **Service**: Create service file in `server/src/services/`. Follow the factory function pattern:
-     ```typescript
-     export function myService(db: ReturnType<typeof createDb>) {
-       return {
-         methodA: async (...) => { ... },
-         methodB: async (...) => { ... },
-       };
-     }
-     ```
-   - **Routes**: Create route file in `server/src/routes/`. Register in `server/src/app.ts`. Use Zod for request validation.
-   - **Shared types**: Add to `packages/shared/src/` if types are needed by multiple packages.
-   - For lifecycle or identifier work, prefer one shared helper over duplicating logic in multiple routes or services.
-   - Preserve company scoping and board/agent authorization expectations on every new or updated endpoint.
-
-5. **Generate migrations** (if schema changed):
-   ```sh
-   cd packages/db && pnpm build && npx drizzle-kit generate
-   ```
-   Review the generated SQL migration for correctness.
-
-6. **Run tests** (green):
-   - Use the low-concurrency commands from `.factory/services.yaml` or equivalent limits so total concurrent Node.js processes never exceed 4.
-   - Run focused feature tests first.
-   - `pnpm -r typecheck` — no type errors.
-   - Reserve `pnpm test:run` for milestone validation or when you need the broader suite to debug a blocker.
-   - Run `pnpm build` only when the feature affects shipped runtime behavior broadly or the feature description explicitly requires it.
-   - For baseline-stabilization or validation-only features, it is acceptable to verify already-landed behavior and report success without new edits, as long as you clearly state that no code changes were required and all required validators passed.
-
-7. **Verify manually**:
-   - For services: run individual test file to verify output: `cd server && npx vitest run src/__tests__/YOUR_TEST.test.ts`
-   - For schema: verify migration SQL is additive (no DROP statements unless intentional).
-   - For API behavior features: run focused `curl` checks for the exact success and failure cases claimed by the feature, including company-isolation or wrong-actor negatives when relevant.
-   - For lifecycle features: verify both blocked admission and converged shutdown (`active-run`, `live-runs`, orchestrator/stale surfaces) rather than only the route response.
-   - For lifecycle cleanup and company-deletion work, explicitly inspect scheduler-created artifacts such as `execution_envelopes` in addition to heartbeat runs, leases, intents, and activity logs.
-   - For issue identifier features: verify every secondary issue-detail endpoint that the page uses, not just the primary issue fetch.
-   - If you start a local Node service for manual API checks, stop it afterward unless the next verification step explicitly reuses it.
-   - Never exceed 4 concurrent Node.js processes; if a planned validation step would exceed that, reduce concurrency first.
+1. Read the assigned feature, its assertions, mission `AGENTS.md`, and `.factory/library/architecture.md`.
+2. Read the relevant files before editing:
+   - `server/src/routes/*`
+   - `server/src/services/*`
+   - `packages/shared/src/*`
+   - `packages/db/src/schema/*` if schema changes are required
+   - the UI/API files that consume the contract you are changing
+3. Write failing tests first. Prefer focused server tests in `server/src/__tests__/` and shared-validator tests where appropriate. For DB-backed behavior, use the existing embedded Postgres helpers.
+4. Implement the minimal backend/shared fix while preserving company scoping, approval semantics, and route contract consistency across server, shared, and UI layers.
+5. If schema changes are required, update schema exports and generate the necessary migration.
+6. Verify behavior in two layers:
+   - focused backend/shared tests
+   - browser/API proof for the user-visible onboarding contract (`agent-browser` for the UI state, `curl` or browser requests for API-only paths like claim)
+7. Keep runtime usage low: no extra app instances, no more than 3 mission-started Node processes, and only stop PIDs you started.
+8. Run automated verification:
+   - focused backend/shared tests
+   - `pnpm -r --workspace-concurrency=1 typecheck`
+   - `pnpm test:run -- --maxWorkers=1`
+   - `pnpm -r --workspace-concurrency=1 build` when shared runtime contracts or shipped server behavior changed
+9. In the handoff, list every changed contract surface, the exact API routes verified, and the browser/API evidence that proves approval, claim, or import semantics now match the assigned assertions.
 
 ## Example Handoff
 
 ```json
 {
-  "salientSummary": "Implemented intent queue service with 7 intent types, deduplication by dedupeKey, and full state machine (queued→admitted→consumed/rejected/superseded). Wrote 18 test cases covering creation, dedup, state transitions, and closed-issue invalidation. All pass with embedded Postgres.",
-  "whatWasImplemented": "New service server/src/services/intent-queue.ts with methods: createIntent, getIntent, admitIntent, rejectIntent, supersedeIntent, consumeIntent, invalidateForClosedIssue, findQueuedIntents. Full Drizzle schema for dispatch_intents table with migration. 18 Vitest test cases in server/src/__tests__/intent-queue.test.ts.",
+  "salientSummary": "Fixed invite approval and claim gating so Inbox approval now cleanly enables exactly one successful agent claim, while pre-approval and replayed claim attempts fail with the intended errors.",
+  "whatWasImplemented": "Updated invite/join route handling and shared validators so operator-generated invites preserve the intended join mode, Inbox approval resolves join-request state consistently, and claim endpoints enforce approval, wrong-secret, expired, and replayed behaviors without leaking credentials. Added focused server tests for approval and claim paths.",
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
-      { "command": "cd server && npx vitest run src/__tests__/intent-queue.test.ts", "exitCode": 0, "observation": "18 tests passed in 4.2s" },
-      { "command": "pnpm test:run", "exitCode": 0, "observation": "168 test files, 780 tests passed" },
-      { "command": "pnpm -r typecheck", "exitCode": 0, "observation": "No errors" },
-      { "command": "pnpm build", "exitCode": 0, "observation": "All packages built" }
+      {
+        "command": "pnpm exec vitest run server/src/__tests__/invite-join-manager.test.ts server/src/__tests__/invite-accept-replay.test.ts --maxWorkers=1",
+        "exitCode": 0,
+        "observation": "Focused invite/join tests passed"
+      },
+      {
+        "command": "pnpm -r --workspace-concurrency=1 typecheck",
+        "exitCode": 0,
+        "observation": "Workspace typecheck passed"
+      },
+      {
+        "command": "pnpm test:run -- --maxWorkers=1",
+        "exitCode": 0,
+        "observation": "Full Vitest suite passed with low concurrency"
+      }
     ],
-    "interactiveChecks": []
+    "interactiveChecks": [
+      {
+        "action": "Submitted an invite join request and approved it from Inbox",
+        "observed": "The operator saw the request resolve cleanly and the joiner-facing state changed from pending to approved"
+      },
+      {
+        "action": "Called the claim API before approval and after approval",
+        "observed": "Pre-approval claim failed, approved claim succeeded once, and replayed claim failed cleanly"
+      }
+    ]
   },
   "tests": {
     "added": [
-      { "file": "server/src/__tests__/intent-queue.test.ts", "cases": [
-        { "name": "creates intent with all required fields", "verifies": "intent creation" },
-        { "name": "rejects intent with missing issueId", "verifies": "validation" },
-        { "name": "deduplicates by dedupeKey", "verifies": "deduplication" },
-        { "name": "transitions queued to admitted", "verifies": "state machine" },
-        { "name": "rejects invalid transition rejected to admitted", "verifies": "state machine guards" }
-      ]}
+      {
+        "file": "server/src/__tests__/invite-claim-gating.test.ts",
+        "cases": [
+          {
+            "name": "pre-approval claim is rejected",
+            "verifies": "VAL-INVITE-010"
+          },
+          {
+            "name": "approved claim succeeds once",
+            "verifies": "VAL-INVITE-010"
+          }
+        ]
+      }
     ]
   },
   "discoveredIssues": []
@@ -115,8 +101,7 @@ None
 
 ## When to Return to Orchestrator
 
-- Feature depends on a service or table that doesn't exist yet
-- Existing lifecycle/admission paths are too entangled to update safely within one worker session
-- Migration conflicts with existing data
-- Test infrastructure (embedded Postgres) fails to start
-- Requirements are ambiguous about behavior in edge cases
+- The assigned feature actually requires a broad UI redesign or route-state change beyond backend/shared scope
+- Existing backend behavior conflicts with the assigned assertions in a way that needs a product decision
+- Embedded Postgres or the local app cannot be started within the mission’s runtime budget
+- A migration or shared-contract change would invalidate multiple earlier milestones and should be replanned

@@ -1,47 +1,34 @@
 # Environment
 
-Environment variables, external dependencies, and setup notes.
+Environment variables, external dependencies, and setup notes for the onboarding QA mission.
 
-**What belongs here:** Required env vars, external API keys/services, dependency quirks, platform-specific notes.
-**What does NOT belong here:** Service ports/commands (use `.factory/services.yaml`).
+**What belongs here:** required env vars, local instance paths, external-service constraints, setup quirks.
+**What does NOT belong here:** service commands or ports; use `.factory/services.yaml`.
 
 ---
 
-## Mission runtime
+## Runtime shape
 
-- Node.js 25.6.1 (repo requires `>=20`)
-- pnpm 9.15.4
-- macOS darwin arm64
-- `tuistory` is installed and should be used for PTY-backed TUI validation
-- Local trusted app surface for this mission is `http://127.0.0.1:3100`
-- Leave `DATABASE_URL` unset so the local trusted server uses embedded local storage/postgres behavior
+- Primary validation URL: `http://127.0.0.1:3100`
+- Mission instance home: `/tmp/papierklammer-onboarding-mission`
+- Mission instance id: `onboarding-mission`
+- Expected server entrypoint for started services: `node /Users/aischool/work/papierklammer_droid/server/dist/index.js`
+- Embedded Postgres is expected under the mission home when `DATABASE_URL` is unset.
 
-## Resource and process posture
+## Constraints
 
-- Machine profile observed during planning: 10 CPU cores, 16 GiB RAM
-- Baseline memory pressure is already elevated; keep validation conservative
-- Do not run overlapping app instances; reuse `3100`
-- Stop repo-owned dev/watch/TUI processes you are not actively using
-- Keep validators sequential or low-concurrency; recommended max concurrent TUI validators is `2`
-- Prefer package-scoped TUI checks over repo-wide validation unless a change spills outside the TUI package or launch helpers
+- Docker is unavailable in this environment; do not rely on Docker-based onboarding smoke flows.
+- Another Droid mission may run in parallel. Workers must only stop processes they started themselves.
+- The user requested that this mission never keep more than **3 mission-started Node processes** alive at once.
+- Prefer one app instance and one browser session for validation.
 
-## Environment variables for this mission
+## Credentials and external integrations
 
-- `PORT=3100` — required when starting the local trusted app for validation
-- `PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission` — recommended isolated runtime home for workers/validators
-- `PAPIERKLAMMER_INSTANCE_ID=tui-mission` — recommended isolated local instance id
-- `PAPIERKLAMMER_TUI_URL=http://127.0.0.1:3100` — optional explicit TUI target
-- `PAPIERKLAMMER_TUI_COMPANY_ID` / `PAPIERKLAMMER_TUI_COMPANY_NAME` — use only when intentionally pinning the validation company
+- Onboarding AI drafting may pass through either a preferred provider or the existing fallback drafting path. Validation should accept either as long as the returned draft is usable.
+- Invite/join validation should prefer locally generated invites and local API evidence over external gateways.
+- Do not require Docker, published images, or remote sandboxes for this mission.
 
-In local trusted mode, API keys are not required. Workers must never print or commit secrets if they encounter any.
+## Startup notes
 
-## Seeded-company validation rule
-
-- The no-company launcher failure is out of scope for this mission.
-- All live validation for shipped TUI behavior should assume a seeded company exists.
-- If `/api/companies` is empty, create a validation company before attempting the full launcher flow.
-
-## Filesystem expectations
-
-- Use temporary directories under `/tmp` for local trusted validation state rather than mutating long-lived user state.
-- Keep mission edits focused on `packages/orchestrator-tui/**` and directly related launch/test helpers only.
+- `init.sh` ensures `server/dist/index.js` and `server/ui-dist/index.html` exist before workers rely on `qa-app`.
+- If port `3100` is already healthy for this mission and the worker did not start it, reuse it and do not stop it.
