@@ -27,6 +27,7 @@ import type {
   ItemStartedParams,
   ReasoningDeltaParams,
   ReasoningEffort,
+  TurnInfo,
 } from "../codex/types.js";
 import {
   buildOrchestratorInstructions,
@@ -207,28 +208,67 @@ function CompanySession({
   }, [issues.issues.length]);
 
   const reasoningItemIdsRef = useRef<Set<string>>(new Set());
+  const activeTurnIdRef = useRef<string | null>(null);
+  const invalidatedTurnIdsRef = useRef<Set<string>>(new Set());
+
+  const markTurnStarted = useCallback((turn: TurnInfo) => {
+    activeTurnIdRef.current = turn.id;
+    invalidatedTurnIdsRef.current.delete(turn.id);
+  }, []);
+
+  const markTurnInactive = useCallback((turnId: string | null) => {
+    if (!turnId) {
+      return;
+    }
+    invalidatedTurnIdsRef.current.add(turnId);
+    if (activeTurnIdRef.current === turnId) {
+      activeTurnIdRef.current = null;
+    }
+  }, []);
+
+  const shouldHandleTurnEvent = useCallback((turnId: string) => {
+    if (invalidatedTurnIdsRef.current.has(turnId)) {
+      return false;
+    }
+
+    if (activeTurnIdRef.current === null) {
+      activeTurnIdRef.current = turnId;
+      return true;
+    }
+
+    return activeTurnIdRef.current === turnId;
+  }, []);
 
   const handleDelta = useCallback(
     (params: DeltaParams) => {
+      if (!shouldHandleTurnEvent(params.turnId)) {
+        return;
+      }
       if (reasoningItemIdsRef.current.has(params.itemId)) {
         chat.onReasoningDelta(params.delta);
         return;
       }
       chat.onDelta(params.itemId, params.delta);
     },
-    [chat.onDelta, chat.onReasoningDelta],
+    [chat.onDelta, chat.onReasoningDelta, shouldHandleTurnEvent],
   );
 
   const handleReasoningDelta = useCallback(
     (params: ReasoningDeltaParams) => {
+      if (!shouldHandleTurnEvent(params.turnId)) {
+        return;
+      }
       chat.onReasoningStarted();
       chat.onReasoningDelta(params.delta);
     },
-    [chat.onReasoningDelta, chat.onReasoningStarted],
+    [chat.onReasoningDelta, chat.onReasoningStarted, shouldHandleTurnEvent],
   );
 
   const handleItemStarted = useCallback(
     (params: ItemStartedParams) => {
+      if (!shouldHandleTurnEvent(params.turnId)) {
+        return;
+      }
       const item = params.item as { type?: string; id?: string; phase?: string | null };
       const phase = typeof item.phase === "string" ? item.phase.toLowerCase() : "";
       const looksLikeReasoning =
@@ -250,11 +290,15 @@ function CompanySession({
         chat.onCommandStarted(cmdItem.id, cmdItem.command, cmdItem.aggregatedOutput ?? "");
       }
     },
-    [chat],
+    [chat, shouldHandleTurnEvent],
   );
 
   const handleTurnCompleted = useCallback(
     (params: TurnCompletedParams) => {
+      if (!shouldHandleTurnEvent(params.turn.id)) {
+        return;
+      }
+      markTurnInactive(params.turn.id);
       if (params.turn.status === "failed") {
         chat.onTurnFailed(formatTurnErrorMessage(params));
         return;
@@ -264,11 +308,14 @@ function CompanySession({
         params.turn.status === "interrupted" ? "interrupted" : "completed",
       );
     },
-    [chat.onTurnCompleted, chat.onTurnFailed],
+    [chat.onTurnCompleted, chat.onTurnFailed, markTurnInactive, shouldHandleTurnEvent],
   );
 
   const handleItemCompleted = useCallback(
     (params: ItemCompletedParams) => {
+      if (!shouldHandleTurnEvent(params.turnId)) {
+        return;
+      }
       reasoningItemIdsRef.current.delete(params.item.id);
       if (params.item.type === "commandExecution") {
         const cmdItem = params.item as {
@@ -287,22 +334,26 @@ function CompanySession({
         );
       }
     },
-    [chat.onCommandExecution],
+    [chat.onCommandExecution, shouldHandleTurnEvent],
   );
 
   const handleCommandOutput = useCallback(
     (params: CommandOutputDeltaParams) => {
+      if (!shouldHandleTurnEvent(params.turnId)) {
+        return;
+      }
       chat.onCommandOutput(params.itemId, params.delta);
     },
-    [chat.onCommandOutput],
+    [chat.onCommandOutput, shouldHandleTurnEvent],
   );
 
   const handleCodexError = useCallback(
     (error: Error) => {
+      markTurnInactive(activeTurnIdRef.current);
       chat.setIsThinking(false);
       chat.onError(error.message);
     },
-    [chat.onError, chat.setIsThinking],
+    [chat.onError, chat.setIsThinking, markTurnInactive],
   );
 
   const codex = useCodex(
@@ -312,6 +363,7 @@ function CompanySession({
           autoReconnect: true,
           onDelta: handleDelta,
           onReasoningDelta: handleReasoningDelta,
+          onTurnStarted: markTurnStarted,
           onItemStarted: handleItemStarted,
           onTurnCompleted: handleTurnCompleted,
           onItemCompleted: handleItemCompleted,

@@ -640,4 +640,156 @@ describe("VAL-TUI-STAB-006: Error during send resets thinking state", () => {
 
     unmount();
   });
+
+  it("ignores stale replayed events after a disconnected turn has already been invalidated", async () => {
+    const firstProc = createMockProcess();
+    const secondProc = createMockProcess();
+    const mockSpawn = vi
+      .fn()
+      .mockReturnValueOnce(firstProc)
+      .mockReturnValueOnce(secondProc);
+    const mockFetch = createMockFetch();
+
+    const result = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    const { stdin, lastFrame, unmount } = result;
+    stabilizeTerminal(result.stdout as unknown as NodeJS.WriteStream | EventEmitter);
+    await tick();
+
+    respond(firstProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick();
+
+    stdin.write("\t");
+    await tick();
+    stdin.write("\t");
+    await tick();
+
+    stdin.write("Recover after restart");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(firstProc, { id: 1, result: { thread: { id: "thr_disconnect_replay" } } });
+    await tick();
+    respond(firstProc, {
+      id: 2,
+      result: {
+        turn: { id: "turn_disconnect_replay", status: "inProgress", items: [], error: null },
+      },
+    });
+    await tick();
+    respond(firstProc, {
+      method: "item/agentMessage/delta",
+      params: {
+        threadId: "thr_disconnect_replay",
+        turnId: "turn_disconnect_replay",
+        itemId: "msg_disconnect_replay",
+        delta: "Started running checks.",
+      },
+    });
+    await tick();
+    respond(firstProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_disconnect_replay",
+        turnId: "turn_disconnect_replay",
+        item: {
+          type: "commandExecution",
+          id: "cmd_disconnect_replay",
+          command: "npm run check",
+          cwd: "/tmp",
+          aggregatedOutput: "",
+          exitCode: null,
+          status: "running",
+        },
+      },
+    });
+    await tick();
+    respond(firstProc, {
+      method: "item/commandExecution/outputDelta",
+      params: {
+        threadId: "thr_disconnect_replay",
+        turnId: "turn_disconnect_replay",
+        itemId: "cmd_disconnect_replay",
+        delta: "checking...",
+      },
+    });
+    await tick();
+
+    await waitForFrame(
+      lastFrame,
+      (current) =>
+        current.includes("Started running checks.")
+        && current.includes("$ npm run check")
+        && current.includes("checking..."),
+    );
+
+    firstProc.emit("exit", 1, null);
+    await tick(150);
+
+    await waitForFrame(
+      lastFrame,
+      (current) =>
+        current.includes("Error: Codex connection lost while waiting for a response.")
+        && !current.includes("Waiting for response..."),
+    );
+
+    await tick(3200);
+    respond(secondProc, { id: 3, result: { userAgent: "codex/0.117.0" } });
+    await tick(100);
+
+    respond(secondProc, {
+      method: "item/agentMessage/delta",
+      params: {
+        threadId: "thr_disconnect_replay",
+        turnId: "turn_disconnect_replay",
+        itemId: "msg_disconnect_replay_late",
+        delta: "Ghost text after disconnect.",
+      },
+    });
+    await tick();
+    respond(secondProc, {
+      method: "item/commandExecution/outputDelta",
+      params: {
+        threadId: "thr_disconnect_replay",
+        turnId: "turn_disconnect_replay",
+        itemId: "cmd_disconnect_replay",
+        delta: "ghost output",
+      },
+    });
+    await tick();
+    respond(secondProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_disconnect_replay",
+        turn: { id: "turn_disconnect_replay", status: "completed", items: [], error: null },
+      },
+    });
+    await tick(150);
+
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("Started running checks.");
+    expect(frame).toContain("$ npm run check");
+    expect(frame).toContain("checking...");
+    expect(frame).not.toContain("Ghost text after disconnect.");
+    expect(frame).not.toContain("ghost output");
+    expect(
+      countOccurrences(
+        frame,
+        "Error: Codex connection lost while waiting for a response.",
+      ),
+    ).toBe(1);
+
+    unmount();
+  });
 });

@@ -9,6 +9,8 @@ export interface UseCodexOptions extends CodexClientOptions {
   onDelta?: (params: DeltaParams) => void;
   /** Called when a turn completes. */
   onTurnCompleted?: (params: TurnCompletedParams) => void;
+  /** Called when a turn successfully starts. */
+  onTurnStarted?: (turn: TurnInfo) => void;
   /** Called when an item starts. */
   onItemStarted?: (params: ItemStartedParams) => void;
   /** Called when an item completes. */
@@ -197,6 +199,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
       if (serviceTier) overrides.serviceTier = serviceTier;
       const result = await client.startTurn(tid, text, Object.keys(overrides).length > 0 ? overrides : undefined);
       turnIdRef.current = result.turn.id;
+      optsRef.current.onTurnStarted?.(result.turn);
     } catch (error) {
       turnIdRef.current = null;
       const normalizedError = normalizeError(error);

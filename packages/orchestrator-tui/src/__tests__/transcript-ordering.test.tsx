@@ -19,6 +19,10 @@ afterEach(() => {
 
 const tick = (ms = 50) => new Promise((r) => setTimeout(r, ms));
 
+function countOccurrences(frame: string, value: string): number {
+  return frame.split(value).length - 1;
+}
+
 async function waitForFrame(
   lastFrame: () => string | undefined,
   predicate: (frame: string) => boolean,
@@ -592,6 +596,130 @@ describe("live transcript ordering and terminal states", () => {
     );
 
     expect(frame).not.toContain("Waiting for response...");
+
+    unmount();
+  });
+
+  it("ignores stale replayed output after a failed turn has already been finalized", async () => {
+    const { stdin, lastFrame, unmount, mockProc } = await setupApp();
+
+    stdin.write("Create the issue");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_failed_replay" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: {
+        turn: { id: "turn_failed_replay", status: "inProgress", items: [], error: null },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/agentMessage/delta",
+      params: {
+        threadId: "thr_failed_replay",
+        turnId: "turn_failed_replay",
+        itemId: "msg_failed_replay",
+        delta: "Attempting issue creation.",
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_failed_replay",
+        turnId: "turn_failed_replay",
+        item: {
+          type: "commandExecution",
+          id: "cmd_failed_replay",
+          command: "curl -X POST /api/issues",
+          cwd: "/tmp",
+          aggregatedOutput: "",
+          exitCode: null,
+          status: "running",
+        },
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "item/commandExecution/outputDelta",
+      params: {
+        threadId: "thr_failed_replay",
+        turnId: "turn_failed_replay",
+        itemId: "cmd_failed_replay",
+        delta: "HTTP 500",
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_failed_replay",
+        turn: {
+          id: "turn_failed_replay",
+          status: "failed",
+          items: [],
+          error: {
+            message: "Issue creation failed",
+            additionalDetails: "POST /api/issues returned HTTP 500",
+          },
+        },
+      },
+    });
+    await tick(100);
+
+    await waitForFrame(
+      lastFrame,
+      (current) =>
+        current.includes("Attempting issue creation.")
+        && current.includes("HTTP 500")
+        && current.includes("Error: Issue creation failed"),
+    );
+
+    respond(mockProc, {
+      method: "item/agentMessage/delta",
+      params: {
+        threadId: "thr_failed_replay",
+        turnId: "turn_failed_replay",
+        itemId: "msg_failed_replay_late",
+        delta: "Ghost output after failure.",
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "item/commandExecution/outputDelta",
+      params: {
+        threadId: "thr_failed_replay",
+        turnId: "turn_failed_replay",
+        itemId: "cmd_failed_replay",
+        delta: "ghost tail",
+      },
+    });
+    await tick();
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_failed_replay",
+        turn: {
+          id: "turn_failed_replay",
+          status: "completed",
+          items: [],
+          error: null,
+        },
+      },
+    });
+    await tick(100);
+
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("Attempting issue creation.");
+    expect(frame).toContain("HTTP 500");
+    expect(frame).not.toContain("Ghost output after failure.");
+    expect(frame).not.toContain("ghost tail");
+    expect(countOccurrences(frame, "Error: Issue creation failed")).toBe(1);
 
     unmount();
   });

@@ -47,6 +47,7 @@ interface TestHarnessProps {
   onState?: (state: ConnectionState) => void;
   onDelta?: (params: DeltaParams) => void;
   onTurnCompleted?: (params: TurnCompletedParams) => void;
+  onTurnStarted?: (turnId: string) => void;
   onError?: (error: Error) => void;
   sendOnMount?: string;
   sendImmediately?: string;
@@ -63,6 +64,7 @@ function TestHarness({
   onState,
   onDelta,
   onTurnCompleted,
+  onTurnStarted,
   onError,
   sendOnMount,
   sendImmediately,
@@ -80,6 +82,7 @@ function TestHarness({
     reconnectDelayMs,
     onDelta,
     onTurnCompleted,
+    onTurnStarted: (turn) => onTurnStarted?.(turn.id),
     onError,
   });
 
@@ -167,6 +170,7 @@ describe("useCodex", () => {
   it("creates thread and sends message", async () => {
     const mockProc = createMockProcess();
     const deltas: string[] = [];
+    const startedTurns: string[] = [];
 
     const { lastFrame, unmount } = render(
       <TestHarness
@@ -174,6 +178,7 @@ describe("useCodex", () => {
         sendOnMount="Hello"
         baseInstructions="You are helpful."
         onDelta={(p) => deltas.push(p.delta)}
+        onTurnStarted={(turnId) => startedTurns.push(turnId)}
       />,
     );
 
@@ -196,6 +201,7 @@ describe("useCodex", () => {
     // Should now show thinking and threadId
     expect(lastFrame()).toContain("thinking:true");
     expect(lastFrame()).toContain("thread:thr_test123");
+    expect(startedTurns).toEqual(["turn_1"]);
 
     // Stream a delta
     respond(mockProc, {
