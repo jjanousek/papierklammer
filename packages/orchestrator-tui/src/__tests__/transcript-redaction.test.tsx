@@ -21,6 +21,7 @@ const RAW_ENV_SECRET = "sk-live-super-secret-1234567890";
 const RAW_BEARER_SECRET =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0dWktcmVkYWN0aW9uIiwic2NvcGUiOiJkZWJ1ZyJ9.signaturepart";
 const RAW_CONTEXTUAL_SECRET = "fakeplaceholder1234567890123456";
+const RAW_ENV_STYLE_PLACEHOLDER_SECRET = "fakeplaceholder1234567890abcdef1234567890";
 
 function createMockProcess() {
   const stdin = new PassThrough();
@@ -404,6 +405,40 @@ describe("transcript secret redaction", () => {
 
     expect(finalizedFrame).not.toContain(RAW_CONTEXTUAL_SECRET);
     expect(finalizedFrame).toMatch(/redacted len=/i);
+
+    unmount();
+  });
+
+  it("keeps env-style placeholder secrets redacted in settled tool output and derived text blocks", () => {
+    const messages: ChatMessage[] = [
+      {
+        role: "assistant",
+        text: RAW_ENV_STYLE_PLACEHOLDER_SECRET,
+        timestamp: new Date(),
+        blocks: [
+          {
+            type: "command",
+            item: {
+              command: `env OPENAI_API_KEY=${RAW_ENV_STYLE_PLACEHOLDER_SECRET} printenv OPENAI_API_KEY`,
+              output: RAW_ENV_STYLE_PLACEHOLDER_SECRET,
+              status: "completed",
+              exitCode: 0,
+            },
+          },
+          {
+            type: "text",
+            text: RAW_ENV_STYLE_PLACEHOLDER_SECRET,
+          },
+        ],
+      },
+    ];
+
+    const { lastFrame, unmount } = render(<ChatPanel messages={messages} />);
+
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("OPENAI_API_KEY=");
+    expect(frame).not.toContain(RAW_ENV_STYLE_PLACEHOLDER_SECRET);
+    expect(frame).toMatch(/redacted len=41 sha256=/i);
 
     unmount();
   });
