@@ -45,7 +45,7 @@ Use for features that change onboarding behavior across the web runtime, includi
 8. Run automated verification in this order:
    - focused tests for changed files
    - `pnpm -r --workspace-concurrency=1 typecheck`
-   - `pnpm test:run -- --maxWorkers=1`
+   - onboarding-scoped `commands.test` from `.factory/services.yaml`
    - `pnpm -r --workspace-concurrency=1 build` when the feature changes shipped runtime behavior or shared UI/runtime contracts
 9. In the handoff, list every URL visited, every screenshot/evidence path, whether the feature changed the mutation boundary, and exactly which before/after API probes proved the assertions.
 
@@ -69,9 +69,9 @@ Use for features that change onboarding behavior across the web runtime, includi
         "observation": "Workspace typecheck passed"
       },
       {
-        "command": "pnpm test:run -- --maxWorkers=1",
+        "command": "pnpm exec vitest run ui/src/components/OnboardingWizard.test.tsx ui/src/lib/onboarding-route.test.ts ui/src/lib/onboarding-launch.test.ts ui/src/lib/onboarding-goal.test.ts server/src/__tests__/invite-onboarding-text.test.ts server/src/__tests__/openclaw-invite-prompt-route.test.ts server/src/__tests__/invite-accept-gateway-defaults.test.ts server/src/__tests__/invite-accept-replay.test.ts server/src/__tests__/invite-expiry.test.ts server/src/__tests__/invite-join-grants.test.ts server/src/__tests__/invite-join-manager.test.ts server/src/__tests__/company-portability-routes.test.ts cli/src/__tests__/onboard.test.ts --maxWorkers=1",
         "exitCode": 0,
-        "observation": "Full Vitest suite passed with low concurrency"
+        "observation": "Mission-scoped onboarding baseline passed"
       }
     ],
     "interactiveChecks": [

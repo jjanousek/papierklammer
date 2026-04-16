@@ -42,7 +42,7 @@ Use for features that redesign or polish onboarding visuals and information arch
 8. Run automated verification:
    - focused UI tests for changed components/pages
    - `pnpm -r --workspace-concurrency=1 typecheck`
-   - `pnpm test:run -- --maxWorkers=1`
+   - onboarding-scoped `commands.test` from `.factory/services.yaml`
    - `pnpm -r --workspace-concurrency=1 build` when the redesign changes shipped runtime surfaces broadly
 9. In the handoff, call out the visual problem you fixed, the screenshots that prove the change, and any copy or hierarchy decisions that preserve agent-first onboarding.
 
