@@ -67,6 +67,16 @@ function normalizeCommandStatus(
   return "running";
 }
 
+function formatTurnErrorMessage(
+  params: TurnCompletedParams,
+): string {
+  const parts = [
+    params.turn.error?.message ?? "Turn failed",
+    params.turn.error?.additionalDetails ?? null,
+  ];
+  return parts.filter((part): part is string => Boolean(part)).join(" — ");
+}
+
 export interface AppProps {
   url: string;
   apiKey: string;
@@ -204,7 +214,7 @@ function CompanySession({
         chat.onReasoningDelta(params.delta);
         return;
       }
-      chat.onDelta(params.delta);
+      chat.onDelta(params.itemId, params.delta);
     },
     [chat.onDelta, chat.onReasoningDelta],
   );
@@ -243,11 +253,16 @@ function CompanySession({
 
   const handleTurnCompleted = useCallback(
     (params: TurnCompletedParams) => {
+      if (params.turn.status === "failed") {
+        chat.onTurnFailed(formatTurnErrorMessage(params));
+        return;
+      }
+
       chat.onTurnCompleted(
         params.turn.status === "interrupted" ? "interrupted" : "completed",
       );
     },
-    [chat.onTurnCompleted],
+    [chat.onTurnCompleted, chat.onTurnFailed],
   );
 
   const handleItemCompleted = useCallback(
@@ -661,6 +676,7 @@ function CompanySession({
               />
               <ChatPanel
                 messages={chat.messages}
+                pendingBlocks={chat.pendingBlocks}
                 streamingText={chat.streamingText}
                 isThinking={chatThinking}
                 reasoningText={chat.reasoningText}

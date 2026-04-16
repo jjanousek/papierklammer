@@ -106,12 +106,10 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
         turnIdRef.current = null;
         setConnectionState("connected");
         if (params.turn.status === "failed") {
-          const error = new Error(formatTurnError(params.turn));
-          setErrorMessage(error.message);
-          optsRef.current.onError?.(error);
-          return;
+          setErrorMessage(formatTurnError(params.turn));
+        } else {
+          setErrorMessage(null);
         }
-        setErrorMessage(null);
         optsRef.current.onTurnCompleted?.(params);
       },
       onCommandOutput: (params) => optsRef.current.onCommandOutput?.(params),

@@ -9,16 +9,33 @@ export interface CommandItem {
   exitCode?: number | null;
 }
 
+export interface TextBlock {
+  type: "text";
+  itemId?: string;
+  text: string;
+}
+
+export interface CommandBlockItem {
+  type: "command";
+  itemId?: string;
+  item: CommandItem;
+}
+
+export type TranscriptBlock = TextBlock | CommandBlockItem;
+
 export interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   timestamp: Date;
   items?: CommandItem[];
+  blocks?: TranscriptBlock[];
 }
 
 export interface UseChatResult {
   /** All finalized messages. */
   messages: ChatMessage[];
+  /** Ordered live transcript blocks for the current assistant response. */
+  pendingBlocks: TranscriptBlock[];
   /** Partial streaming text for the current assistant response. */
   streamingText: string;
   /** Partial or recent reasoning text for the active turn. */
@@ -30,11 +47,13 @@ export interface UseChatResult {
   /** Send a user message. */
   sendMessage: (text: string) => boolean;
   /** Append a text delta to the current streaming response. */
-  onDelta: (text: string) => void;
+  onDelta: (itemId: string, text: string) => void;
   /** Append a reasoning delta to the current reasoning view. */
   onReasoningDelta: (text: string) => void;
   /** Finalize the current streaming response as an assistant message. */
   onTurnCompleted: (status?: "completed" | "interrupted") => void;
+  /** Finalize a failed turn, preserving seen output before surfacing the error. */
+  onTurnFailed: (message: string) => void;
   /** Track the start of a command execution. */
   onCommandStarted: (itemId: string, command: string, output?: string) => void;
   /** Append live output to a running command execution. */
@@ -86,15 +105,36 @@ export function summarizeToolOnlyTurn(items: CommandItem[]): string {
   return `Tool activity — ${summarizeCommandItems(items)} ${noun}.`;
 }
 
+function extractCommandItems(blocks: TranscriptBlock[]): CommandItem[] {
+  return blocks.flatMap((block) => (block.type === "command" ? [block.item] : []));
+}
+
+function flattenTranscriptText(blocks: TranscriptBlock[]): string {
+  return blocks
+    .flatMap((block) => (block.type === "text" && block.text.trim().length > 0 ? [block.text] : []))
+    .join("\n\n");
+}
+
 function withPendingCommandItemsTerminalStatus(
-  items: CommandItem[],
-  fallbackStatus: "completed" | "interrupted",
-): CommandItem[] {
-  return items.map((item) => {
-    if (!item.status || item.status === "running") {
-      return { ...item, status: fallbackStatus };
+  blocks: TranscriptBlock[],
+  fallbackStatus: "completed" | "failed" | "interrupted",
+): TranscriptBlock[] {
+  return blocks.map((block) => {
+    if (block.type !== "command") {
+      return block;
     }
-    return item;
+
+    if (!block.item.status || block.item.status === "running") {
+      return {
+        ...block,
+        item: {
+          ...block.item,
+          status: fallbackStatus,
+        },
+      };
+    }
+
+    return block;
   });
 }
 
@@ -107,22 +147,20 @@ function withPendingCommandItemsTerminalStatus(
  */
 export function useChat(): UseChatResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [streamingText, setStreamingText] = useState("");
+  const [pendingBlocks, setPendingBlocks] = useState<TranscriptBlock[]>([]);
   const [reasoningText, setReasoningText] = useState("");
   const [isThinking, setIsThinking] = useState(false);
-  const streamingTextRef = useRef("");
   const pendingTurnRef = useRef(false);
-  const pendingCommandItemsRef = useRef<CommandItem[]>([]);
-  const [pendingCommandItems, setPendingCommandItems] = useState<CommandItem[]>([]);
+  const pendingBlocksRef = useRef<TranscriptBlock[]>([]);
 
-  const updatePendingCommandItems = useCallback(
+  const updatePendingBlocks = useCallback(
     (
-      updater: (items: CommandItem[]) => CommandItem[],
-    ): CommandItem[] => {
-      const nextItems = updater(pendingCommandItemsRef.current);
-      pendingCommandItemsRef.current = nextItems;
-      setPendingCommandItems(nextItems);
-      return nextItems;
+      updater: (blocks: TranscriptBlock[]) => TranscriptBlock[],
+    ): TranscriptBlock[] => {
+      const nextBlocks = updater(pendingBlocksRef.current);
+      pendingBlocksRef.current = nextBlocks;
+      setPendingBlocks(nextBlocks);
+      return nextBlocks;
     },
     [],
   );
@@ -134,11 +172,50 @@ export function useChat(): UseChatResult {
     }
 
     pendingTurnRef.current = false;
-    pendingCommandItemsRef.current = [];
-    setPendingCommandItems([]);
-    setStreamingText("");
+    pendingBlocksRef.current = [];
+    setPendingBlocks([]);
+    setReasoningText("");
     setIsThinking(false);
   }, [messages]);
+
+  const clearPendingTurn = useCallback(() => {
+    pendingTurnRef.current = false;
+    setIsThinking(false);
+    setReasoningText("");
+    updatePendingBlocks(() => []);
+  }, [updatePendingBlocks]);
+
+  const finalizePendingTurn = useCallback(
+    (status: "completed" | "interrupted" | "failed"): TranscriptBlock[] => {
+      const fallbackStatus =
+        status === "completed"
+          ? "completed"
+          : status === "failed"
+            ? "failed"
+            : "interrupted";
+      const finalizedBlocks = withPendingCommandItemsTerminalStatus(
+        pendingBlocksRef.current,
+        fallbackStatus,
+      );
+      const assistantText = flattenTranscriptText(finalizedBlocks);
+      const commandItems = extractCommandItems(finalizedBlocks);
+
+      if (assistantText || commandItems.length > 0) {
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          text: assistantText || summarizeToolOnlyTurn(commandItems),
+          timestamp: new Date(),
+          items: commandItems.length > 0 ? [...commandItems] : undefined,
+          blocks: finalizedBlocks.length > 0 ? finalizedBlocks : undefined,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+
+      clearPendingTurn();
+      return finalizedBlocks;
+    },
+    [clearPendingTurn],
+  );
 
   const sendMessage = useCallback((text: string): boolean => {
     const normalizedText = text.trim();
@@ -154,101 +231,133 @@ export function useChat(): UseChatResult {
     setMessages((prev) => [...prev, userMessage]);
     pendingTurnRef.current = true;
     setIsThinking(true);
-    streamingTextRef.current = "";
-    setStreamingText("");
     setReasoningText("");
-    updatePendingCommandItems(() => []);
+    updatePendingBlocks(() => []);
     return true;
-  }, [updatePendingCommandItems]);
+  }, [updatePendingBlocks]);
 
-  const onDelta = useCallback((text: string): void => {
-    streamingTextRef.current += text;
-    setStreamingText((prev) => prev + text);
+  const onDelta = useCallback((itemId: string, text: string): void => {
+    updatePendingBlocks((blocks) => {
+      const lastBlock = blocks[blocks.length - 1];
+      if (
+        lastBlock?.type === "text"
+        && lastBlock.itemId === itemId
+      ) {
+        return [
+          ...blocks.slice(0, -1),
+          {
+            ...lastBlock,
+            text: `${lastBlock.text}${text}`,
+          },
+        ];
+      }
+
+      return [
+        ...blocks,
+        {
+          type: "text",
+          itemId,
+          text,
+        },
+      ];
+    });
     // First delta means we're no longer just "thinking" — we're streaming
     setIsThinking(false);
-  }, []);
+  }, [updatePendingBlocks]);
 
   const onReasoningDelta = useCallback((text: string): void => {
     setReasoningText((prev) => prev + text);
   }, []);
 
   const onTurnCompleted = useCallback((status: "completed" | "interrupted" = "completed"): void => {
-    const finalizedStreamingText = streamingTextRef.current;
-    const finalizedCommandItems = withPendingCommandItemsTerminalStatus(
-      pendingCommandItemsRef.current,
-      status === "interrupted" ? "interrupted" : "completed",
-    );
-    if (finalizedStreamingText || finalizedCommandItems.length > 0) {
-      const assistantMessage: ChatMessage = {
+    finalizePendingTurn(status);
+  }, [finalizePendingTurn]);
+
+  const onTurnFailed = useCallback((message: string): void => {
+    finalizePendingTurn("failed");
+    setMessages((prev) => [
+      ...prev,
+      {
         role: "assistant",
-        text: finalizedStreamingText || summarizeToolOnlyTurn(finalizedCommandItems),
+        text: `Error: ${message}`,
         timestamp: new Date(),
-        items:
-          finalizedCommandItems.length > 0
-            ? [...finalizedCommandItems]
-            : undefined,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    }
-    streamingTextRef.current = "";
-    setStreamingText("");
-    pendingTurnRef.current = false;
-    setIsThinking(false);
-    updatePendingCommandItems(() => []);
-  }, [updatePendingCommandItems]);
+      },
+    ]);
+  }, [finalizePendingTurn]);
 
   const onCommandStarted = useCallback(
     (itemId: string, command: string, output = ""): void => {
-      updatePendingCommandItems((items) => {
-        const existingIndex = items.findIndex((item) => item.id === itemId);
-        if (existingIndex === -1) {
-          return [...items, { id: itemId, command, output, status: "running", exitCode: null }];
-        }
-
-        return items.map((item, index) =>
-          index === existingIndex
-            ? {
-                ...item,
-                command,
-                output: output || item.output,
-                status: item.status ?? "running",
-              }
-            : item,
+      updatePendingBlocks((blocks) => {
+        const existingIndex = blocks.findIndex(
+          (block) => block.type === "command" && block.item.id === itemId,
         );
-      });
-    },
-    [updatePendingCommandItems],
-  );
-
-  const onCommandOutput = useCallback(
-    (itemId: string, outputDelta: string): void => {
-      updatePendingCommandItems((items) => {
-        const existingIndex = items.findIndex((item) => item.id === itemId);
         if (existingIndex === -1) {
           return [
-            ...items,
+            ...blocks,
             {
-              id: itemId,
-              command: "Tool call",
-              output: outputDelta,
-              status: "running",
-              exitCode: null,
+              type: "command",
+              itemId,
+              item: { id: itemId, command, output, status: "running", exitCode: null },
             },
           ];
         }
 
-        return items.map((item, index) =>
-          index === existingIndex
+        return blocks.map((block, index) =>
+          index === existingIndex && block.type === "command"
             ? {
-                ...item,
-                output: `${item.output}${outputDelta}`,
-                status: item.status === "completed" ? "completed" : "running",
+                ...block,
+                item: {
+                  ...block.item,
+                  command,
+                  output: output || block.item.output,
+                  status: block.item.status ?? "running",
+                },
               }
-            : item,
+            : block,
         );
       });
     },
-    [updatePendingCommandItems],
+    [updatePendingBlocks],
+  );
+
+  const onCommandOutput = useCallback(
+    (itemId: string, outputDelta: string): void => {
+      updatePendingBlocks((blocks) => {
+        const existingIndex = blocks.findIndex(
+          (block) => block.type === "command" && block.item.id === itemId,
+        );
+        if (existingIndex === -1) {
+          return [
+            ...blocks,
+            {
+              type: "command",
+              itemId,
+              item: {
+                id: itemId,
+                command: "Tool call",
+                output: outputDelta,
+                status: "running",
+                exitCode: null,
+              },
+            },
+          ];
+        }
+
+        return blocks.map((block, index) =>
+          index === existingIndex && block.type === "command"
+            ? {
+                ...block,
+                item: {
+                  ...block.item,
+                  output: `${block.item.output}${outputDelta}`,
+                  status: block.item.status === "completed" ? "completed" : "running",
+                },
+              }
+            : block,
+        );
+      });
+    },
+    [updatePendingBlocks],
   );
 
   const onCommandExecution = useCallback(
@@ -259,49 +368,51 @@ export function useChat(): UseChatResult {
       status: "running" | "completed" | "failed" | "interrupted" = "completed",
       exitCode: number | null = null,
     ): void => {
-      updatePendingCommandItems((items) => {
-        const existingIndex = items.findIndex((item) => item.id === itemId);
+      updatePendingBlocks((blocks) => {
+        const existingIndex = blocks.findIndex(
+          (block) => block.type === "command" && block.item.id === itemId,
+        );
         if (existingIndex === -1) {
-          return [...items, { id: itemId, command, output, status, exitCode }];
+          return [
+            ...blocks,
+            {
+              type: "command",
+              itemId,
+              item: { id: itemId, command, output, status, exitCode },
+            },
+          ];
         }
 
-        return items.map((item, index) =>
-          index === existingIndex
+        return blocks.map((block, index) =>
+          index === existingIndex && block.type === "command"
             ? {
-                ...item,
-                command,
-                output: output || item.output,
-                status,
-                exitCode,
+                ...block,
+                item: {
+                  ...block.item,
+                  command,
+                  output: output || block.item.output,
+                  status,
+                  exitCode,
+                },
               }
-            : item,
+            : block,
         );
       });
     },
-    [updatePendingCommandItems],
+    [updatePendingBlocks],
   );
 
   const onError = useCallback((message: string): void => {
-    streamingTextRef.current = "";
-    setStreamingText("");
-    setIsThinking(false);
-    pendingTurnRef.current = false;
-    const finalizedCommandItems = withPendingCommandItemsTerminalStatus(
-      pendingCommandItemsRef.current,
-      "interrupted",
-    );
-    const assistantMessage: ChatMessage = {
-      role: "assistant",
-      text: `Error: ${message}`,
-      timestamp: new Date(),
-      items:
-        finalizedCommandItems.length > 0
-          ? [...finalizedCommandItems]
-          : undefined,
-    };
-    setMessages((prev) => [...prev, assistantMessage]);
-    updatePendingCommandItems(() => []);
-  }, [updatePendingCommandItems]);
+    finalizePendingTurn("interrupted");
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        text: `Error: ${message}`,
+        timestamp: new Date(),
+      },
+    ]);
+  }, [finalizePendingTurn]);
 
   const appendAssistantMessage = useCallback((message: string): void => {
     setMessages((prev) => [
@@ -319,30 +430,23 @@ export function useChat(): UseChatResult {
       return;
     }
 
-    streamingTextRef.current = "";
-    setStreamingText("");
-    setIsThinking(false);
-    pendingTurnRef.current = false;
-    const finalizedCommandItems = withPendingCommandItemsTerminalStatus(
-      pendingCommandItemsRef.current,
-      "interrupted",
-    );
+    finalizePendingTurn("interrupted");
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        text: `Error: ${message}`,
+        timestamp: new Date(),
+      },
+    ]);
+  }, [finalizePendingTurn]);
 
-    const assistantMessage: ChatMessage = {
-      role: "assistant",
-      text: `Error: ${message}`,
-      timestamp: new Date(),
-      items:
-        finalizedCommandItems.length > 0
-          ? [...finalizedCommandItems]
-          : undefined,
-    };
-    setMessages((prev) => [...prev, assistantMessage]);
-    updatePendingCommandItems(() => []);
-  }, [updatePendingCommandItems]);
+  const streamingText = flattenTranscriptText(pendingBlocks);
+  const pendingCommandItems = extractCommandItems(pendingBlocks);
 
   return {
     messages,
+    pendingBlocks,
     streamingText,
     reasoningText,
     isThinking,
@@ -351,6 +455,7 @@ export function useChat(): UseChatResult {
     onDelta,
     onReasoningDelta,
     onTurnCompleted,
+    onTurnFailed,
     onCommandStarted,
     onCommandOutput,
     onCommandExecution,

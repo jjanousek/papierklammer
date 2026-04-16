@@ -2,7 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput } from "ink";
 import { CommandBlock } from "./CommandBlock.js";
 import { AnimatedGlyph } from "./AnimatedGlyph.js";
-import { summarizeToolOnlyTurn, type ChatMessage, type CommandItem } from "../hooks/useChat.js";
+import {
+  summarizeToolOnlyTurn,
+  type ChatMessage,
+  type CommandItem,
+  type TranscriptBlock,
+} from "../hooks/useChat.js";
 
 /** A segment of parsed message text — either plain text or a code block. */
 interface TextSegment {
@@ -215,6 +220,8 @@ function RenderedText({ text }: { text: string }): React.ReactElement {
 export interface MessageListProps {
   /** Finalized messages. */
   messages: ChatMessage[];
+  /** Ordered live transcript blocks for the active turn. */
+  pendingBlocks?: TranscriptBlock[];
   /** Currently streaming partial text (not yet finalized). */
   streamingText: string;
   /** Whether the assistant is thinking (show spinner). */
@@ -230,6 +237,92 @@ export interface MessageListProps {
 /** Default visible window size when no explicit height is given. */
 const DEFAULT_VISIBLE_WINDOW = 20;
 
+function getAssistantBlocks(message: ChatMessage): TranscriptBlock[] {
+  if (message.blocks && message.blocks.length > 0) {
+    return message.blocks;
+  }
+
+  const blocks: TranscriptBlock[] = [];
+  if (message.text.trim().length > 0) {
+    blocks.push({
+      type: "text",
+      text: message.text,
+    });
+  }
+
+  for (const item of message.items ?? []) {
+    blocks.push({
+      type: "command",
+      item,
+    });
+  }
+
+  return blocks;
+}
+
+function getPendingBlocks(
+  pendingBlocks: TranscriptBlock[],
+  streamingText: string,
+  pendingCommandItems: CommandItem[],
+): TranscriptBlock[] {
+  if (pendingBlocks.length > 0) {
+    return pendingBlocks;
+  }
+
+  const blocks: TranscriptBlock[] = [];
+  if (streamingText) {
+    blocks.push({
+      type: "text",
+      text: streamingText,
+    });
+  }
+
+  for (const item of pendingCommandItems) {
+    blocks.push({
+      type: "command",
+      item,
+    });
+  }
+
+  return blocks;
+}
+
+function AssistantBlocks({
+  blocks,
+}: {
+  blocks: TranscriptBlock[];
+}): React.ReactElement {
+  const textBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "text" }> => block.type === "text");
+  const commandBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "command" }> => block.type === "command");
+  const hasCommands = commandBlocks.length > 0;
+  const inlineOnly =
+    blocks.length === 1
+    && blocks[0]?.type === "text"
+    && isInlineAssistantText(blocks[0].text);
+
+  if (!hasCommands && inlineOnly) {
+    return <Text>{textBlocks[0]?.text ?? ""}</Text>;
+  }
+
+  const fallbackText =
+    textBlocks.length === 0 && commandBlocks.length > 0
+      ? summarizeToolOnlyTurn(commandBlocks.map((block) => block.item))
+      : null;
+
+  return (
+    <Box flexDirection="column">
+      {fallbackText ? <RenderedText text={fallbackText} /> : null}
+      {blocks.map((block, index) =>
+        block.type === "text" ? (
+          <RenderedText key={`text-${index}`} text={block.text} />
+        ) : (
+          <CommandBlock key={`command-${index}`} item={block.item} />
+        ),
+      )}
+    </Box>
+  );
+}
+
 /**
  * Scrollable list of chat messages with windowed rendering.
  *
@@ -240,6 +333,7 @@ const DEFAULT_VISIBLE_WINDOW = 20;
  */
 export function MessageList({
   messages,
+  pendingBlocks = [],
   streamingText,
   isThinking,
   pendingCommandItems,
@@ -251,9 +345,14 @@ export function MessageList({
 
   // Window size: use explicit height or fallback
   const windowSize = visibleHeight ?? DEFAULT_VISIBLE_WINDOW;
+  const activePendingBlocks = getPendingBlocks(
+    pendingBlocks,
+    streamingText,
+    pendingCommandItems,
+  );
 
   // Total number of renderable items (messages + streaming/thinking indicator)
-  const hasStreamingItem = streamingText || isThinking || pendingCommandItems.length > 0;
+  const hasStreamingItem = activePendingBlocks.length > 0 || isThinking;
   const totalItems = messages.length + (hasStreamingItem ? 1 : 0);
 
   // Auto-scroll to bottom when new content arrives, unless user scrolled up
@@ -336,10 +435,7 @@ export function MessageList({
           )}
           {visibleMessages.map((msg, visIdx) => {
             const idx = windowStart + visIdx;
-            const assistantText =
-              msg.role === "assistant" && msg.text.trim().length === 0 && msg.items?.length
-                ? summarizeToolOnlyTurn(msg.items)
-                : msg.text;
+            const assistantBlocks = msg.role === "assistant" ? getAssistantBlocks(msg) : [];
             return (
               <Box key={idx} flexDirection="column">
                 {msg.role === "user" ? (
@@ -350,24 +446,21 @@ export function MessageList({
                     <Text>{msg.text}</Text>
                   </Text>
                 ) : (
-                  isInlineAssistantText(assistantText) && (!msg.items || msg.items.length === 0) ? (
+                  assistantBlocks.length === 1
+                  && assistantBlocks[0]?.type === "text"
+                  && isInlineAssistantText(assistantBlocks[0].text) ? (
                     <Text>
                       <Text color="cyan" bold>
                         Orchestrator:{" "}
                       </Text>
-                      <Text>{assistantText}</Text>
+                      <Text>{assistantBlocks[0].text}</Text>
                     </Text>
                   ) : (
                     <Box flexDirection="column">
-                      <Box flexDirection="column">
-                        <Text color="cyan" bold>
-                          Orchestrator:
-                        </Text>
-                        <RenderedText text={assistantText} />
-                      </Box>
-                      {msg.items?.map((item, cmdIdx) => (
-                        <CommandBlock key={cmdIdx} item={item} />
-                      ))}
+                      <Text color="cyan" bold>
+                        Orchestrator:
+                      </Text>
+                      <AssistantBlocks blocks={assistantBlocks} />
                     </Box>
                   )
                 )}
@@ -377,27 +470,24 @@ export function MessageList({
           {/* Streaming / thinking indicator (only when scrolled to bottom) */}
           {showStreamingItem && (
             <Box flexDirection="column">
-              {isThinking && !streamingText ? (
+              {isThinking && activePendingBlocks.length === 0 ? (
                 <Text>
                   <Text color="cyan" bold>
                     Orchestrator:{" "}
                   </Text>
                   <Text dimColor><AnimatedGlyph name="thinking" /> thinking...</Text>
                 </Text>
-              ) : streamingText ? (
+              ) : activePendingBlocks.length > 0 ? (
                 <Box flexDirection="column">
                   <Text color="cyan" bold>
                     Orchestrator:
                   </Text>
-                  <Box>
-                    <RenderedText text={streamingText} />
+                  <AssistantBlocks blocks={activePendingBlocks} />
+                  {activePendingBlocks.some((block) => block.type === "text") ? (
                     <Text color="yellow">▌</Text>
-                  </Box>
+                  ) : null}
                 </Box>
               ) : null}
-              {pendingCommandItems.map((item, cmdIdx) => (
-                <CommandBlock key={cmdIdx} item={item} />
-              ))}
             </Box>
           )}
         </>

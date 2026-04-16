@@ -2,13 +2,15 @@ import React from "react";
 import { Box, Text } from "ink";
 import { MessageList } from "./MessageList.js";
 import { ReasoningPanel } from "./ReasoningPanel.js";
-import type { ChatMessage, CommandItem } from "../hooks/useChat.js";
+import type { ChatMessage, CommandItem, TranscriptBlock } from "../hooks/useChat.js";
 
 export interface ChatPanelProps {
   /** Finalized messages. */
   messages?: ChatMessage[];
   /** Partial streaming text for the current assistant response. */
   streamingText?: string;
+  /** Ordered live transcript blocks for the current assistant response. */
+  pendingBlocks?: TranscriptBlock[];
   /** Whether the assistant is currently thinking. */
   isThinking?: boolean;
   /** Reasoning text streamed for the current turn. */
@@ -32,6 +34,7 @@ export interface ChatPanelProps {
 export function ChatPanel({
   messages = [],
   streamingText = "",
+  pendingBlocks = [],
   isThinking = false,
   reasoningText = "",
   pendingCommandItems = [],
@@ -61,6 +64,7 @@ export function ChatPanel({
       ) : null}
       <MessageList
         messages={messages}
+        pendingBlocks={pendingBlocks}
         streamingText={streamingText}
         isThinking={isThinking}
         pendingCommandItems={pendingCommandItems}
