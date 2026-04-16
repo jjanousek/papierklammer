@@ -1,0 +1,38 @@
+{
+  "milestone": "message-composer-foundation",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 11,
+    "passed": 10,
+    "failed": 1,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-FOCUS-001",
+    "VAL-FOCUS-002",
+    "VAL-FOCUS-004",
+    "VAL-FOCUS-005",
+    "VAL-FOCUS-006",
+    "VAL-FOCUS-007",
+    "VAL-FOCUS-008",
+    "VAL-SHORTCUT-002",
+    "VAL-SHORTCUT-003",
+    "VAL-CROSS-004"
+  ],
+  "failedAssertions": [
+    {
+      "id": "VAL-FOCUS-003",
+      "reason": "After `Waiting for response...` began, killing the TUI-owned `codex app-server` subprocess caused Codex to auto-reconnect, but the composer never surfaced a failure, never cleared the waiting state, and never returned to a retryable idle shell."
+    }
+  ],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Documented two deterministic TUI failure-path probes: stopping the local app listener before issue submission to verify overlay retry preservation, and killing the TUI-owned `codex app-server` during `Waiting for response...` to reproduce the stuck send-failure regression.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null
+}

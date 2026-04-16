@@ -50,6 +50,7 @@ Features involving the orchestrator TUI at `packages/orchestrator-tui/`:
    - `pnpm --filter @papierklammer/orchestrator-tui build` — run when the feature changes exported package/runtime code paths
    - If the feature affects shipped runtime behavior, validate the live TUI with `tuistory` against the local trusted app on port `3100`
    - Seed a validation company before live TUI checks when `/api/companies` is empty
+   - When validating failure-path behavior, deterministic live probes are allowed: stop the app listener on `3100` immediately before issue submission to test overlay retry preservation, or kill the TUI-owned `codex app-server` after `Waiting for response...` appears to test send-failure recovery
    - Keep process count low: do not leave extra `pnpm dev:tui`, `codex app-server`, or helper Node processes running after PTY validation completes
 
 6. **Commit** with a descriptive message.

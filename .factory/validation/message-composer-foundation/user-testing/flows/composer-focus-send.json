@@ -1,0 +1,374 @@
+{
+  "groupId": "composer-focus-send",
+  "testedAt": "2026-04-16T05:26:06.056319+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "appUrl": "http://127.0.0.1:3100",
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "port": 3100,
+    "surface": "tuistory",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100 --company-id 033c008c-adc3-46cb-8521-aa1359e42c12",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission"
+  },
+  "toolsUsed": [
+    "tuistory"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-FOCUS-001",
+      "title": "Launch focus and Tab loop stay predictable",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the seeded-company TUI session",
+          "expected": "Composer is initially focused",
+          "observed": "Startup frame showed `focus: composer` with the message input active."
+        },
+        {
+          "action": "Press `Tab` once",
+          "expected": "Primary focus moves to management",
+          "observed": "Status bar changed to `focus: management`."
+        },
+        {
+          "action": "Press `Tab` again",
+          "expected": "Primary focus returns to the composer",
+          "observed": "Status bar returned to `focus: composer`."
+        },
+        {
+          "action": "From management, open Settings and press `Tab` while the overlay is visible",
+          "expected": "Overlay captures focus and the background Tab loop is suspended",
+          "observed": "Both overlay snapshots stayed on `focus: overlay`; pressing `Tab` did not move focus underneath the overlay."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-startup.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-tab-management.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-tab-composer.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-settings-open.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-settings-tab-suspended.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-startup.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-tab-management.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-tab-composer.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-settings-open.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-settings-tab-suspended.png"
+        ],
+        "keypressTranscript": [
+          "launch",
+          "Tab",
+          "Tab",
+          "Tab",
+          "s",
+          "Tab"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-FOCUS-002",
+      "title": "Message submit trims content, ignores empty sends, and clears after success",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Press `Enter` with an empty composer",
+          "expected": "No send occurs and no new transcript entry appears",
+          "observed": "The chat remained `No messages yet` and no waiting state appeared."
+        },
+        {
+          "action": "Type whitespace only and press `Enter`",
+          "expected": "No send occurs and no new transcript entry appears",
+          "observed": "The chat still showed `No messages yet`; the composer kept only the visible spaces until manually cleared."
+        },
+        {
+          "action": "Type `  say ok only  ` and press `Enter`",
+          "expected": "One trimmed user turn is appended, the composer enters a waiting state, and the composer clears after the successful response",
+          "observed": "The transcript appended `You: say ok only`, the UI showed `Waiting for response...`, and after the `Orchestrator: ok` reply the composer returned to `Type a message...`."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-before-empty-enter.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-empty-enter.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-before-whitespace-enter.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-whitespace-enter.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-before-trimmed-send.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-submit-waiting.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-success-final.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-before-empty-enter.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-empty-enter.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-before-whitespace-enter.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-whitespace-enter.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-before-trimmed-send.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-submit-waiting.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-002-after-success-final.png"
+        ],
+        "keypressTranscript": [
+          "Enter",
+          "Space, Space, Enter",
+          "Backspace, Backspace",
+          "Space, Space, s, a, y, Space, o, k, Space, o, n, l, y, Space, Space, Enter"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-FOCUS-003",
+      "title": "Waiting and failure states return to a retryable composer",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Launch the seeded-company TUI and enter `run command sleep 15 and then echo ok` with explicit per-key input.",
+          "expected": "A live send can be started without duplicating prior user turns.",
+          "observed": "One user turn was appended and the composer stayed on the original session context."
+        },
+        {
+          "action": "Press `Enter` and capture the live waiting state.",
+          "expected": "The composer visibly enters the waiting state before the turn completes.",
+          "observed": "The transcript showed `You: run command sleep 15 and then echo ok` and the footer showed `Waiting for response...` with `Codex: thinking`."
+        },
+        {
+          "action": "Identify the TUI-owned Codex subprocess and terminate it after waiting began.",
+          "expected": "The live Codex-side failure clears the waiting state, surfaces an error, and returns the composer to an immediate retry path.",
+          "observed": "Using `ps -axo pid,ppid,command | grep -E 'scripts/dev-tui\\.mjs|packages/orchestrator-tui|codex app-server' | grep -v grep` identified TUI process `13484` with child `13493`; `kill 13493` terminated that subprocess and the TUI auto-spawned replacement PID `13827`, but the turn never surfaced an error or cleared the waiting state."
+        },
+        {
+          "action": "Press `r` after the Codex subprocess restart and observe the same session.",
+          "expected": "The operator can immediately type/retry from the same session without a duplicate user turn.",
+          "observed": "No visible retry draft appeared, no duplicate user turn was appended, and the shell remained stuck on `Waiting for response...` more than 15 seconds after the kill."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-startup.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-waiting.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-after-kill-still-waiting.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-after-retry-key.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-after-15s.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-startup.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-waiting.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-after-kill-still-waiting.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-after-retry-key.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-003-retest-after-15s.png"
+        ],
+        "keypressTranscript": [
+          "per-key input: run command sleep 15 and then echo ok",
+          "Enter",
+          "r"
+        ],
+        "processCommands": {
+          "inspect": [
+            "ps -axo pid,ppid,command | grep -E 'scripts/dev-tui\\.mjs|packages/orchestrator-tui|codex app-server' | grep -v grep"
+          ],
+          "kill": [
+            "kill 13493"
+          ]
+        },
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": "FAIL: after inducing a real live-send disruption by killing the TUI-owned `codex app-server` subprocess during the waiting state, the TUI auto-reconnected Codex but never cleared `Waiting for response...`, never showed a failure message, and did not become visibly retryable from the same session."
+    },
+    {
+      "id": "VAL-FOCUS-004",
+      "title": "Typing in the composer suppresses global shortcut side effects",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Focus the composer and press printable shortcut letters `s`, `c`, `n`",
+          "expected": "The keys are inserted into the draft instead of opening settings, company switching, or the issue composer",
+          "observed": "The draft became `scn`, no overlay appeared, and the status bar stayed on `focus: composer`."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-004-before-shortcut-letters.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-004-after-shortcut-letters.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-004-before-shortcut-letters.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-004-after-shortcut-letters.png"
+        ],
+        "keypressTranscript": [
+          "Tab",
+          "s",
+          "c",
+          "n"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-FOCUS-007",
+      "title": "Opening and dismissing company switching without selecting a new company is a no-op",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "With the existing transcript visible and an empty composer, open the company switcher from management",
+          "expected": "The switcher opens over the existing company session",
+          "observed": "`Switch Company` opened with `focus: overlay` while the existing `You: say ok only` transcript remained the session context behind it."
+        },
+        {
+          "action": "Dismiss the switcher with `Escape` without selecting a company",
+          "expected": "Active company, transcript, draft state, focus target, and selection context are preserved",
+          "observed": "After dismissal the session was still on `Seeded Focus Co`, the transcript still showed the earlier exchange, the composer remained empty (`Type a message...`), and focus returned to `management`."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-007-before-switcher-empty-draft.txt",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-open-active.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-007-after-switcher-dismiss-empty-draft.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-007-before-switcher-empty-draft.png",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-open-active.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-007-after-switcher-dismiss-empty-draft.png"
+        ],
+        "keypressTranscript": [
+          "Tab",
+          "Backspace",
+          "Backspace",
+          "Tab",
+          "c",
+          "Escape"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-FOCUS-008",
+      "title": "Visible draft state stays synchronized with shortcut gating across overlay lifecycles",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create a visible draft (`scn`), move to management, open and dismiss Settings, then press `c`",
+          "expected": "The visible draft remains the gating source of truth, so draft-sensitive shortcuts stay blocked after the overlay closes",
+          "observed": "The draft stayed visible as `> scn` before and after the Settings overlay, and pressing `c` afterward did not open company switching."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-008-before-overlay.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-008-after-dismiss.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-008-after-draft-gated-shortcut.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-008-before-overlay.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-008-after-dismiss.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-008-after-draft-gated-shortcut.png"
+        ],
+        "keypressTranscript": [
+          "Tab",
+          "s",
+          "Escape",
+          "c"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SHORTCUT-002",
+      "title": "Exactly one interactive region is visibly active at a time",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Observe startup, Tab to management, and open the company switcher overlay",
+          "expected": "Composer, management, and overlay each advertise themselves as the sole active region when focused",
+          "observed": "The status bar showed `focus: composer` at launch, `focus: management` after `Tab`, and `focus: overlay` when `Switch Company` opened."
+        },
+        {
+          "action": "With the overlay open, press `j`",
+          "expected": "Only the overlay remains active; adjacent regions stay inert",
+          "observed": "The overlay stayed open and the background session context did not mutate underneath it."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-startup.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-tab-management.txt",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-open-active.txt",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-j-ignored.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-startup.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-001-tab-management.png",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-open-active.png",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-j-ignored.png"
+        ],
+        "keypressTranscript": [
+          "launch",
+          "Tab",
+          "c",
+          "j"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-SHORTCUT-003",
+      "title": "Modal overlays capture input and restore prior context on dismiss",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open the company switcher from management",
+          "expected": "The modal overlay captures input and becomes the active surface",
+          "observed": "The `Switch Company` overlay opened and the status bar changed to `focus: overlay`."
+        },
+        {
+          "action": "Press `j` while the switcher is open",
+          "expected": "Background management shortcuts do not fire under the overlay",
+          "observed": "The switcher remained unchanged and no background issue navigation or transcript mutation occurred."
+        },
+        {
+          "action": "Dismiss the overlay with `Escape`",
+          "expected": "The prior management context is restored",
+          "observed": "Dismissal returned to the same `Seeded Focus Co` management session with the earlier transcript intact and focus back on management."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-open-active.txt",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-j-ignored.txt",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-007-after-switcher-dismiss-empty-draft.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-open-active.png",
+          "message-composer-foundation/composer-focus-send/VAL-SHORTCUT-003-switcher-j-ignored.png",
+          "message-composer-foundation/composer-focus-send/VAL-FOCUS-007-after-switcher-dismiss-empty-draft.png"
+        ],
+        "keypressTranscript": [
+          "c",
+          "j",
+          "Escape"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 8 assertions: 7 passed and 1 failed. VAL-FOCUS-003 was re-run with a deterministic live Codex subprocess kill after the waiting state began; the TUI auto-reconnected Codex but left the composer stuck in `Waiting for response...` without a visible error or retry path."
+}

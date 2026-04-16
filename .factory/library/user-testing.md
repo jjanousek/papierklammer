@@ -44,6 +44,8 @@ curl -sf -X POST http://127.0.0.1:3100/api/companies \
 - Use `tuistory launch`, `wait-idle`, snapshots, and keystroke playback to validate shipped TUI behavior.
 - Prefer validating through `pnpm dev:tui` once a seeded company exists; use the direct TUI entrypoint only when isolating launcher-vs-runtime behavior matters.
 - For Ink `TextInput` fields, prefer explicit per-key `tuistory press ...` sequences over bulk `tuistory type ...`; the bulk text command can intermittently drop characters in alternate-screen Ink sessions.
+- For issue-composer failure-path validation, a real local fetch failure can be induced by stopping the live app listener on port `3100` immediately before submitting the filled overlay. The current TUI keeps the overlay open, preserves entered values, and shows `fetch failed`; restart with `env PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm --dir "/Users/aischool/work/papierklammer_droid" dev:once` and wait for `/api/health`.
+- For message-send failure-path validation, killing the TUI-owned `codex app-server` subprocess after `Waiting for response...` appears is a deterministic negative probe. Current shipped behavior auto-reconnects Codex but leaves the composer stuck in `Waiting for response...` without a visible failure or retryable idle state; use this as regression evidence for `VAL-FOCUS-003`.
 - Capture:
   - startup frame
   - the key interaction sequence

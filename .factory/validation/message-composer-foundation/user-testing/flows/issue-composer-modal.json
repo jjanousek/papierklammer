@@ -1,0 +1,209 @@
+{
+  "groupId": "issue-composer-modal",
+  "testedAt": "2026-04-16T05:19:45.617296+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "repoRoot": "/Users/aischool/work/papierklammer_droid",
+    "appUrl": "http://127.0.0.1:3100",
+    "companyId": "033c008c-adc3-46cb-8521-aa1359e42c12",
+    "companyName": "Seeded Focus Co",
+    "port": 3100,
+    "surface": "tuistory",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100 --company-id 033c008c-adc3-46cb-8521-aa1359e42c12",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-FOCUS-005",
+      "title": "Issue composer takes modal focus and supports keyboard-only entry",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "From management focus, press `n` to open the issue composer",
+          "expected": "The overlay captures input and starts on the title field",
+          "observed": "`New Issue` opened with `focus: overlay` and `\u203a Title` highlighted."
+        },
+        {
+          "action": "Press `j` while the title field is active",
+          "expected": "Keyboard input stays inside the overlay instead of mutating background issue selection",
+          "observed": "The title field contained `j`, and after dismissing the overlay the selected issue was still `SEE-3`, so background management did not move."
+        },
+        {
+          "action": "Press `Enter` to advance to description, then press `k`",
+          "expected": "Keyboard-only field movement works and normal text entry stays in the active field",
+          "observed": "Focus moved to `\u203a Description`, and `k` appeared in the description field without changing background state."
+        },
+        {
+          "action": "Press `Enter` to reach priority, then `Right`",
+          "expected": "Priority changes from the priority control without disturbing the typed values",
+          "observed": "The overlay showed `\u203a Priority: medium` while the entered title `j` and description `k` remained visible."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-before-open.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-overlay-open.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-title-j.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-description-focus.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-description-k.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-priority-medium.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-after-dismiss.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-before-open.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-overlay-open.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-title-j.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-description-focus.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-description-k.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-priority-medium.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-005-after-dismiss.png"
+        ],
+        "keypressTranscript": [
+          "Tab",
+          "n",
+          "j",
+          "Enter",
+          "k",
+          "Enter",
+          "Right",
+          "Escape"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-FOCUS-006",
+      "title": "Issue composer success and failure are visible and non-destructive",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Create a valid issue from the overlay using keyboard-only entry",
+          "expected": "The overlay closes, the live company view refreshes, and a visible confirmation is appended",
+          "observed": "Submitting `keyboard only audit` closed the overlay, increased the queue from 3 to 4, showed `SEE-4` in the issue desk, and appended `Orchestrator: Created issue SEE-4: keyboard only audit`."
+        },
+        {
+          "action": "Open the issue composer again and enter `port stop retry` / `submit after stop` before submitting",
+          "expected": "The filled issue composer remains ready to submit with the entered values visible",
+          "observed": "The overlay stayed focused on `Priority: high` with the title `port stop retry` and description `submit after stop` visible immediately before submission."
+        },
+        {
+          "action": "Run `lsof -nP -iTCP:3100 -sTCP:LISTEN -t | head -n 1 | xargs kill` immediately before submitting from the priority field",
+          "expected": "The app listener on port 3100 stops so the create request fails deterministically",
+          "observed": "The local listener on 127.0.0.1:3100 stopped before the submit keypress, and the next create attempt hit a disconnected `fetch failed` state."
+        },
+        {
+          "action": "Press `Enter` to submit while the app listener is down",
+          "expected": "The overlay stays open or otherwise preserves a retry path, entered values remain visible, and a visible error is surfaced",
+          "observed": "The TUI stayed on the `New Issue` overlay with `focus: overlay`; both entered values remained visible, `fetch failed` appeared in the overlay, and the shell header showed `Disconnected | fetch failed`."
+        },
+        {
+          "action": "Restart the QA app with `env PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm --dir \"/Users/aischool/work/papierklammer_droid\" dev:once` and wait for `GET /api/health` to recover",
+          "expected": "The isolated app recovers on port 3100 without discarding the operator's retry path",
+          "observed": "After the restart, `/api/health` returned OK and the same TUI session reconnected while still showing the overlay, preserved values, and visible `fetch failed` error for retry."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-success-title-entered.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-before-submit.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-after-success.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-006-failure-before-submit.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-006-failure-after-error.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-006-after-restart.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-success-title-entered.png",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-before-submit.png",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-after-success.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-006-failure-before-submit.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-006-failure-after-error.png",
+          "message-composer-foundation/issue-composer-modal/VAL-FOCUS-006-after-restart.png"
+        ],
+        "keypressTranscript": [
+          "Tab",
+          "n",
+          "k e y b o a r d space o n l y space a u d i t",
+          "Tab",
+          "n e e d s space q u e u e space f e e d b a c k",
+          "Tab",
+          "Enter",
+          "Tab",
+          "n",
+          "p o r t space s t o p space r e t r y",
+          "Tab",
+          "s u b m i t space a f t e r space s t o p",
+          "Tab",
+          "Enter"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "GET /api/health -> connection refused while port 3100 was stopped; GET /api/health -> 200 after the isolated restart.",
+        "commandsUsed": {
+          "stop": "lsof -nP -iTCP:3100 -sTCP:LISTEN -t | head -n 1 | xargs kill",
+          "restart": "env PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission PORT=3100 pnpm --dir \"/Users/aischool/work/papierklammer_droid\" dev:once"
+        }
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-004",
+      "title": "Creating an issue from the TUI feeds back into both transcript and work queue",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Open the issue composer and enter `keyboard only audit` with description `needs queue feedback`",
+          "expected": "Keyboard-only issue creation is possible from the live company session",
+          "observed": "Both fields were filled entirely from the keyboard and the overlay remained the active surface until submit."
+        },
+        {
+          "action": "Submit from the priority control",
+          "expected": "The company work queue refreshes and the transcript confirms the durable work item",
+          "observed": "After submit the queue increased to 4, the issue desk showed `SEE-4 [backlog/high] keyboard only audit`, and the chat appended `Orchestrator: Created issue SEE-4: keyboard only audit`."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-success-title-entered.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-before-submit.txt",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-after-success.txt"
+        ],
+        "screenshots": [
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-success-title-entered.png",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-before-submit.png",
+          "message-composer-foundation/issue-composer-modal/VAL-CROSS-004-after-success.png"
+        ],
+        "keypressTranscript": [
+          "Tab",
+          "n",
+          "k e y b o a r d space o n l y space a u d i t",
+          "Tab",
+          "n e e d s space q u e u e space f e e d b a c k",
+          "Tab",
+          "Enter"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (tuistory terminal validation only)"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "A tuistory relay reset interrupted one success-path typing attempt when I used an unsupported per-key token for a hyphen while entering the title.",
+      "resolved": true,
+      "resolution": "Relaunched the same tuistory session and repeated the flow using letters/spaces only (`keyboard only audit`), which completed normally.",
+      "affectedAssertions": [
+        "VAL-FOCUS-006",
+        "VAL-CROSS-004"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assertions: 3 passed. VAL-FOCUS-005 still passes for modal focus and keyboard-only entry, VAL-CROSS-004 still passes for queue/transcript feedback, and VAL-FOCUS-006 now passes after validating both the success path and a deterministic create-failure path that preserved retryable input."
+}
