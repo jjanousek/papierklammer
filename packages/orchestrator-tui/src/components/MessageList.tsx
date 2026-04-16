@@ -230,8 +230,9 @@ function getTextBlockLines(
   text: string,
   width: number,
   keyPrefix: string,
+  relatedTexts: string[] = [],
 ): DisplayLine[] {
-  const segments = parseMarkdown(redactSecretLikeText(text));
+  const segments = parseMarkdown(redactSecretLikeText(text, { relatedTexts }));
   const lines: DisplayLine[] = [];
 
   if (segments.length === 0) {
@@ -282,9 +283,10 @@ function getCommandBlockLines(
   item: CommandItem,
   width: number,
   keyPrefix: string,
+  relatedTexts: string[] = [],
 ): DisplayLine[] {
-  const command = redactSecretLikeText(item.command);
-  const output = redactSecretLikeText(item.output);
+  const command = redactSecretLikeText(item.command, { relatedTexts });
+  const output = redactSecretLikeText(item.output, { relatedTexts });
   const status = item.status ?? "completed";
   const statusSummary =
     item.exitCode != null && status !== "running"
@@ -342,6 +344,11 @@ function getAssistantDisplayLines(
 ): DisplayLine[] {
   const textBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "text" }> => block.type === "text");
   const commandBlocks = blocks.filter((block): block is Extract<TranscriptBlock, { type: "command" }> => block.type === "command");
+  const relatedTexts = blocks.flatMap((block) =>
+    block.type === "text"
+      ? [block.text]
+      : [block.item.command, block.item.output],
+  );
   const toolOnlyFallback =
     textBlocks.length === 0 && commandBlocks.length > 0
       ? summarizeToolOnlyTurn(commandBlocks.map((block) => block.item))
@@ -354,7 +361,7 @@ function getAssistantDisplayLines(
   if (inlineOnly) {
     const baseLines = wrapWithPrefix(
       "Orchestrator: ",
-      inlineMarkdownToText(redactSecretLikeText(textBlocks[0]?.text ?? "")),
+      inlineMarkdownToText(redactSecretLikeText(textBlocks[0]?.text ?? "", { relatedTexts })),
       width,
     );
     const displayLines = baseLines.map((line, index) => ({
@@ -372,19 +379,19 @@ function getAssistantDisplayLines(
   ];
 
   if (toolOnlyFallback) {
-    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-top`));
+    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-top`, relatedTexts));
   }
 
   blocks.forEach((block, index) => {
     if (block.type === "text") {
-      lines.push(...getTextBlockLines(block.text, width, `${keyPrefix}-text-${index}`));
+      lines.push(...getTextBlockLines(block.text, width, `${keyPrefix}-text-${index}`, relatedTexts));
       return;
     }
-    lines.push(...getCommandBlockLines(block.item, width, `${keyPrefix}-command-${index}`));
+    lines.push(...getCommandBlockLines(block.item, width, `${keyPrefix}-command-${index}`, relatedTexts));
   });
 
   if (toolOnlyFallback) {
-    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-bottom`));
+    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-bottom`, relatedTexts));
   }
 
   if (options.streaming && textBlocks.length > 0) {

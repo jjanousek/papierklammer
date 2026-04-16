@@ -7,6 +7,8 @@ const ENV_ASSIGNMENT_RE =
   /\b(export\s+)?([A-Za-z_][A-Za-z0-9_-]*)\s*=\s*("[^"\r\n]*"|'[^'\r\n]*'|`[^`\r\n]*`|[^\s\r\n]+)/g;
 const KEY_VALUE_RE =
   /(["']?)([A-Za-z_][A-Za-z0-9_-]*)(\1)(\s*:\s*)("[^"\r\n]*"|'[^'\r\n]*'|`[^`\r\n]*`|[^\s,\r\n}]+)/g;
+const SECRET_CONTEXT_VALUE_RE =
+  /\b(?:[A-Za-z][A-Za-z0-9_-]*[\s._-]*){0,4}(?:api[\s._-]?key|access[\s._-]?token|auth(?:entication)?[\s._-]?token|authorization|bearer|secret|passwd|password|credential|jwt|private[\s._-]?key|cookie|connectionstring)\b(?:\s+value)?\s*(?:=|:|=>|\bis\b|\bequals\b)\s*("[^"\r\n]*"|'[^'\r\n]*'|`[^`\r\n]*`|[^\s,\r\n)]+)/gi;
 const AUTHORIZATION_BEARER_RE = /\b(Authorization\s*:\s*Bearer\s+)([A-Za-z0-9._~+/=-]{12,})/gi;
 const BEARER_RE = /\b(Bearer\s+)([A-Za-z0-9._~+/=-]{12,})/gi;
 const KNOWN_SECRET_VALUE_RE =
@@ -29,6 +31,10 @@ function isQuoted(value: string): value is `"${string}"` | `'${string}'` | `\`${
 
 function isAlreadyRedacted(value: string): boolean {
   return value === "***REDACTED***" || REDACTION_SENTINEL_RE.test(value);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function redactSecretValue(value: string, label = "redacted"): string {
@@ -70,10 +76,121 @@ function maybeRedactAssignmentValue(key: string, value: string): string {
   return redactPreservingQuotes(value);
 }
 
-export function redactSecretLikeText(text: string): string {
+function unwrapSecretCandidate(value: string): string {
+  let candidate = isQuoted(value) ? value.slice(1, -1) : value;
+  candidate = candidate.trim().replace(/^[({<]+|[)}>,.;:]+$/g, "");
+
+  if (/^Bearer\s+/i.test(candidate)) {
+    candidate = candidate.replace(/^Bearer\s+/i, "").trim();
+  }
+
+  return candidate;
+}
+
+function looksLikeOpaqueSecret(value: string): boolean {
+  if (
+    !value
+    || value.length < 16
+    || /\s/.test(value)
+    || isAlreadyRedacted(value)
+  ) {
+    return false;
+  }
+
+  const hasLetter = /[A-Za-z]/.test(value);
+  const hasDigit = /\d/.test(value);
+  const hasSecretPunctuation = /[-_=./+]/.test(value);
+
+  return hasLetter && (hasDigit || hasSecretPunctuation || value.length >= 24);
+}
+
+function collectContextualSecretCandidates(texts: string[]): string[] {
+  const candidates = new Set<string>();
+
+  const addCandidate = (rawValue: string) => {
+    const candidate = unwrapSecretCandidate(rawValue);
+    if (looksLikeOpaqueSecret(candidate)) {
+      candidates.add(candidate);
+    }
+  };
+
+  for (const text of texts) {
+    if (!text) {
+      continue;
+    }
+
+    for (const match of text.matchAll(new RegExp(ENV_ASSIGNMENT_RE.source, ENV_ASSIGNMENT_RE.flags))) {
+      const key = match[2];
+      const value = match[3];
+      if (key && value && SECRET_KEY_RE.test(key)) {
+        addCandidate(value);
+      }
+    }
+
+    for (const match of text.matchAll(new RegExp(KEY_VALUE_RE.source, KEY_VALUE_RE.flags))) {
+      const key = match[2];
+      const value = match[5];
+      if (key && value && SECRET_KEY_RE.test(key)) {
+        addCandidate(value);
+      }
+    }
+
+    for (const match of text.matchAll(new RegExp(SECRET_CONTEXT_VALUE_RE.source, SECRET_CONTEXT_VALUE_RE.flags))) {
+      const value = match[1];
+      if (value) {
+        addCandidate(value);
+      }
+    }
+
+    for (const match of text.matchAll(new RegExp(AUTHORIZATION_BEARER_RE.source, AUTHORIZATION_BEARER_RE.flags))) {
+      const token = match[2];
+      if (token) {
+        addCandidate(token);
+      }
+    }
+
+    for (const match of text.matchAll(new RegExp(BEARER_RE.source, BEARER_RE.flags))) {
+      const token = match[2];
+      if (token) {
+        addCandidate(token);
+      }
+    }
+  }
+
+  return [...candidates].sort((left, right) => right.length - left.length);
+}
+
+function redactContextualCandidates(text: string, candidates: string[]): string {
+  let redacted = text;
+
+  for (const candidate of candidates) {
+    if (!candidate || isAlreadyRedacted(candidate)) {
+      continue;
+    }
+
+    redacted = redacted.replace(
+      new RegExp(escapeRegExp(candidate), "g"),
+      redactSecretValue(candidate),
+    );
+  }
+
+  return redacted;
+}
+
+export function redactSecretLikeText(
+  text: string,
+  options: {
+    relatedTexts?: string[];
+  } = {},
+): string {
   if (!text) {
     return text;
   }
+
+  const contextualCandidates = collectContextualSecretCandidates([
+    text,
+    ...(options.relatedTexts ?? []),
+  ]);
 
   let redacted = text.replace(
     ENV_ASSIGNMENT_RE,
@@ -109,6 +226,7 @@ export function redactSecretLikeText(text: string): string {
 
   redacted = redacted.replace(KNOWN_SECRET_VALUE_RE, (value) => redactSecretValue(value, "redacted credential"));
   redacted = redacted.replace(JWT_VALUE_RE, (value) => redactSecretValue(value, "redacted credential"));
+  redacted = redactContextualCandidates(redacted, contextualCandidates);
 
   return redacted;
 }

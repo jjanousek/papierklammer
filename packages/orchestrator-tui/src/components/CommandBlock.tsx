@@ -14,8 +14,9 @@ export interface CommandBlockProps {
  * - Output text (in dim/gray)
  */
 export function CommandBlock({ item }: CommandBlockProps): React.ReactElement {
-  const command = redactSecretLikeText(item.command);
-  const output = redactSecretLikeText(item.output);
+  const relatedTexts = [item.command, item.output];
+  const command = redactSecretLikeText(item.command, { relatedTexts });
+  const output = redactSecretLikeText(item.output, { relatedTexts });
   const status = item.status ?? "completed";
   const statusColor =
     status === "running"
