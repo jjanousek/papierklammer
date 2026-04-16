@@ -1,0 +1,171 @@
+{
+  "groupId": "scroll-stability",
+  "testedAt": "2026-04-16T07:37:42.039046+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "surface": "TUI via tuistory",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "7fd94c6d-4917-46cb-9c18-996dddc27999",
+    "companyName": "TUI Validation Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "toolsUsed": [
+    "tuistory"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CHAT-004",
+      "title": "Long tool output remains inspectable without collapsing the shell",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the real TUI and observe the shell before transcript overflow.",
+          "expected": "Header, panels, transcript, composer, and status should all be visible before interacting with long output.",
+          "observed": "The initial shell rendered with all primary landmarks intact in the standard 120x36 viewport."
+        },
+        {
+          "action": "Drive the transcript into a large live-output state and capture it while the shell is still waiting on the turn.",
+          "expected": "Large command output should stay inside the chat viewport without collapsing adjacent shell chrome.",
+          "observed": "The chat panel showed multi-line command output from long-running tool activity while the header, issue desk, composer, and status bar all remained visible."
+        },
+        {
+          "action": "Scroll upward with PageUp and Shift+Up to inspect earlier output in the same session.",
+          "expected": "Earlier output should remain inspectable and the shell chrome should stay intact.",
+          "observed": "Scrolling exposed earlier tool-output lines and a completed command block while the surrounding shell chrome stayed intact and readable."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-initial.txt",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-004-tool-overflow-live.txt",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-004-tool-inspection-scrolled.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-initial.png",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-004-tool-overflow-live.png",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-004-tool-inspection-scrolled.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (TUI flow)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-005",
+      "title": "Long transcripts are keyboard-scrollable and show when new activity is below",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Move off the live bottom with PageUp and Shift+Up while a real turn is still active.",
+          "expected": "The transcript should keep the reading position stable and show a visible newer-activity indicator below.",
+          "observed": "The TUI showed `\u25b2 1507 earlier lines above` and `\u25bc 149 newer lines below \u2014 PageDown or Shift+\u2193 to follow live` while preserving the scrolled reading position."
+        },
+        {
+          "action": "Stay off the live bottom while the turn finalizes into history.",
+          "expected": "The operator should remain anchored on the same lines and the newer-activity indicator should continue reflecting activity below.",
+          "observed": "After the turn finalized, the same scrolled view remained stable and the indicator updated to `\u25bc 176 newer lines below`, confirming that newer activity accumulated below without snapping the viewport."
+        },
+        {
+          "action": "Return to the live bottom with PageDown.",
+          "expected": "The operator should be able to reach live bottom and clear the newer-activity indicator.",
+          "observed": "Repeated PageDown presses moved toward the live bottom, but within the very large transcript and tuistory runtime limits I did not capture a same-run bottom state with the indicator fully cleared."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-005-scrolled-during-stream.txt",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-005-finalized-off-bottom.txt",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-005-return-live.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-005-scrolled-during-stream.png",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-005-finalized-off-bottom.png",
+          "live-transcript-rendering/scroll-stability/VAL-CHAT-005-return-live.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (TUI flow)"
+      },
+      "issues": "Blocked: the real TUI clearly supported off-bottom keyboard scrolling and a live newer-activity indicator, but I could not conclusively capture the same long run returning all the way to live bottom before tuistory timeouts."
+    },
+    {
+      "id": "VAL-POLISH-001",
+      "title": "Layout stays within the viewport through send, stream, and resize",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Capture the initial 120x36 render.",
+          "expected": "Header, management panels, transcript, composer, and status should all fit in the viewport.",
+          "observed": "The initial shell rendered all primary landmarks cleanly inside the viewport."
+        },
+        {
+          "action": "Observe the shell while a real turn is active and the transcript is carrying large output.",
+          "expected": "Active streaming should remain within the viewport without dropping shell chrome.",
+          "observed": "During the live waiting/streaming state, the transcript carried large output while the header, panels, composer, and status bar all remained visible."
+        },
+        {
+          "action": "Observe the same shell after the turn completes.",
+          "expected": "The completed state should remain inside the viewport and preserve the same shell landmarks.",
+          "observed": "After completion the shell returned to an idle composer without losing the header, side panels, chat frame, or status bar."
+        },
+        {
+          "action": "Resize into narrower stacked layouts at 74x24 and 68x20.",
+          "expected": "The UI should reflow compactly while preserving brand/header, panels, transcript/composer, and status landmarks.",
+          "observed": "Both narrow sizes reflowed into compact layouts; the branding/header, management areas, chat/composer, and compact status line remained visible within the terminal viewport."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-initial.txt",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-active-tool-stream.txt",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-completed.txt",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-resize-74x24.txt",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-resize-68x20.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-initial.png",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-active-tool-stream.png",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-completed.png",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-resize-74x24.png",
+          "live-transcript-rendering/scroll-stability/VAL-POLISH-001-resize-68x20.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "n/a (TUI flow)"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`tuistory type` was unreliable in this Ink composer and long typing attempts could destabilize the session.",
+      "resolved": true,
+      "resolution": "Switched to explicit per-key `tuistory press` input with send fallbacks (`Enter`, `Return`, then `Ctrl+M`).",
+      "affectedAssertions": [
+        "VAL-CHAT-004",
+        "VAL-CHAT-005",
+        "VAL-POLISH-001"
+      ]
+    },
+    {
+      "description": "Some longer natural-language prompts were interpreted as issue-creation requests rather than direct shell-tool runs.",
+      "resolved": true,
+      "resolution": "Used the simpler working prompt form `say before then run command ... then say after` and relied on the real session's existing long tool-output transcript where needed.",
+      "affectedAssertions": [
+        "VAL-CHAT-004",
+        "VAL-CHAT-005"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "The very large live transcript plus tuistory runtime limits prevented a conclusive same-run capture of the indicator-cleared live-bottom state after repeated PageDown attempts.",
+      "affectedAssertions": [
+        "VAL-CHAT-005"
+      ],
+      "quickFixAttempted": "Repeated PageDown navigation across the long transcript and additional relaunches to isolate the return-to-bottom check, but the captured same-run evidence still stopped short of a fully cleared indicator state."
+    }
+  ],
+  "summary": "Tested 3 assertions through the real TUI. Passed: VAL-CHAT-004 and VAL-POLISH-001. Blocked: VAL-CHAT-005 because off-bottom scrolling and newer-activity indication were observed, but a same-run return-to-live-bottom capture remained inconclusive before tuistory limits were hit."
+}

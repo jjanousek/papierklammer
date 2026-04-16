@@ -1,0 +1,229 @@
+{
+  "groupId": "live-lifecycle",
+  "testedAt": "2026-04-16T07:07:11.355643+00:00",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "surface": "TUI via tuistory",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "7fd94c6d-4917-46cb-9c18-996dddc27999",
+    "companyName": "TUI Validation Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "pnpm dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl",
+    "ps",
+    "kill"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CHAT-001",
+      "title": "Live tool calls are visible before turn completion",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the TUI against the single seeded local company and submit `say before then run command sleep 2 and then echo hold then say after`.",
+          "expected": "A tool-call entry should appear before the assistant turn completes.",
+          "observed": "The transcript showed `before`, then a bordered command block for `/bin/zsh -lc 'sleep 2 && echo hold'` with `status: running` while the input bar still showed `Waiting for response...`."
+        },
+        {
+          "action": "Observe the same turn as the command finishes.",
+          "expected": "The visible tool-call entry should update from running to a terminal state with output preserved.",
+          "observed": "The same block updated in place to `status: completed (exit 0)` with `hold` preserved, and later the turn finalized back to an idle composer."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-start.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-mid.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-late-final.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-start.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-mid.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-late-final.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/live-lifecycle/precheck.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-002",
+      "title": "Transcript order matches the order the operator observed live",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Use the same mixed narration + tool turn from VAL-CHAT-001.",
+          "expected": "The final transcript should preserve the same chronology seen while streaming.",
+          "observed": "The live order was `before` \u2192 running/completed tool block \u2192 `after`, and the final transcript preserved that exact order once the shell returned to idle."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-start.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-mid.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-late-final.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-start.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-tool-mid.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-001-late-final.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/live-lifecycle/precheck.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-003",
+      "title": "Reasoning is transient and disappears when the turn is no longer active",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "With `reasoning: high` and `fast: OFF`, submit `think carefully about two plus two then answer short`.",
+          "expected": "A transient `Reasoning` panel should appear during the active turn and disappear after completion.",
+          "observed": "The real TUI never rendered any `Reasoning` panel or reasoning text; the turn completed directly as `Orchestrator: 4`, so the transient reasoning lifecycle could not be exercised."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-003-observation.txt"
+        ],
+        "screenshots": [],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/live-lifecycle/precheck.txt"
+      },
+      "issues": "Blocked: repeated real TUI turns did not surface any reasoning panel to validate its transient disappearance behavior."
+    },
+    {
+      "id": "VAL-CHAT-006",
+      "title": "Tool-only turns still produce an intelligible transcript entry",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Submit `only use a tool run command sleep 1 and then echo onlytool no prose`.",
+          "expected": "The turn should finish as a tool-only transcript record if the assistant emits no prose.",
+          "observed": "The TUI rendered a clear tool block, but the model still appended assistant prose `onlytool` after the block, so a true tool-only turn never occurred through the real surface."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-006-final.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-006-late.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-006-final.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-006-late.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/live-lifecycle/precheck.txt"
+      },
+      "issues": "Blocked: the real model would not yield a prose-free tool-only completion, so the TUI's tool-only fallback path could not be directly exercised."
+    },
+    {
+      "id": "VAL-CHAT-007",
+      "title": "Interrupted turns leave a sane transcript and retryable shell",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Attempt a live interruption probe, then kill the TUI-owned `codex app-server` subprocess during an in-flight turn.",
+          "expected": "The in-flight turn should stop streaming, preserve already-seen content, and return to a retryable idle shell as an interrupted turn.",
+          "observed": "After killing the Codex subprocess during the live `retry now` turn, the transcript did not end as interrupted; instead it continued and completed as a normal issue-capture response, creating `TUI-1` and appending additional assistant content before returning to idle."
+        },
+        {
+          "action": "Verify retryability after the kill.",
+          "expected": "The shell should be editable again without further streaming from the interrupted turn.",
+          "observed": "The composer became editable again (`> fresh retry`), but only after the supposedly interrupted turn had continued streaming to a completed result."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-007-after-kill-retry-now.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-007-fresh-retry-draft.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-007-after-kill-retry-now.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-007-fresh-retry-draft.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/live-lifecycle/precheck.txt"
+      },
+      "issues": "FAIL: killing the live Codex subprocess did not yield a stable interrupted-turn transcript; the turn kept streaming and completed with a new issue capture instead of ending cleanly as interrupted."
+    },
+    {
+      "id": "VAL-CHAT-008",
+      "title": "Failed turns preserve already-seen output and end cleanly",
+      "status": "blocked",
+      "steps": [
+        {
+          "action": "Submit `say failing then run command cat definitely missing path then stop`.",
+          "expected": "A failed turn should preserve already-seen content, surface a visible failure, and return the shell cleanly to idle.",
+          "observed": "Over the observed window the real TUI remained in `thinking...` / `Waiting for response...` with no visible tool block, no partial output, and no surfaced failure, so a true failed-turn lifecycle could not be confirmed."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-008-live.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-008-final.txt",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-008-observation.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-008-live.png",
+          "live-transcript-rendering/live-lifecycle/VAL-CHAT-008-final.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "See live-transcript-rendering/live-lifecycle/precheck.txt"
+      },
+      "issues": "Blocked: the failure-path probe never surfaced a visible failed turn in the real TUI before the session had to be closed."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Launching the TUI with explicit `--company-id 7fd94c6d-4917-46cb-9c18-996dddc27999` kept chat turns stuck indefinitely at `Waiting for response...` with a blank thread, even for `say ok only`.",
+      "resolved": true,
+      "resolution": "Retried within the same single-company boundary using `pnpm dev:tui -- --url http://127.0.0.1:3100` so the TUI auto-resolved the only seeded company; turns then executed normally.",
+      "affectedAssertions": [
+        "VAL-CHAT-001",
+        "VAL-CHAT-002",
+        "VAL-CHAT-003",
+        "VAL-CHAT-006",
+        "VAL-CHAT-007",
+        "VAL-CHAT-008"
+      ]
+    },
+    {
+      "description": "`tuistory type` and delete/backspace handling were unreliable in this Ink input and occasionally restarted the relay/session.",
+      "resolved": true,
+      "resolution": "Switched to explicit per-key `tuistory press` input and avoided in-place draft correction by relaunching clean sessions when necessary.",
+      "affectedAssertions": [
+        "VAL-CHAT-001",
+        "VAL-CHAT-002",
+        "VAL-CHAT-003",
+        "VAL-CHAT-006",
+        "VAL-CHAT-007",
+        "VAL-CHAT-008"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "The real TUI never surfaced a reasoning panel even with `reasoning: high` and `fast: OFF`, so the transient reasoning lifecycle could not be directly exercised.",
+      "affectedAssertions": [
+        "VAL-CHAT-003"
+      ],
+      "quickFixAttempted": "Retried with a reasoning-focused prompt after explicitly toggling fast mode OFF; the turn still completed directly without any visible reasoning panel."
+    },
+    {
+      "description": "The failure-path prompt stayed in `thinking...` / `Waiting for response...` without surfacing a failed turn during the observed window.",
+      "affectedAssertions": [
+        "VAL-CHAT-008"
+      ],
+      "quickFixAttempted": "Used a deliberately failing shell-style prompt (`cat definitely missing path`) after the working auto-resolved launcher recovered normal turn execution, but no visible failed-turn transcript emerged before teardown."
+    }
+  ],
+  "summary": "Tested 6 assertions for live transcript lifecycle through the real TUI. Passed: VAL-CHAT-001, VAL-CHAT-002. Failed: VAL-CHAT-007 because killing the live Codex subprocess did not stop the turn and it completed normally. Blocked: VAL-CHAT-003 (no reasoning panel surfaced), VAL-CHAT-006 (could not elicit a true tool-only turn), VAL-CHAT-008 (could not elicit a visible failed turn)."
+}
