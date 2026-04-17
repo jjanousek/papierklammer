@@ -306,7 +306,7 @@ describe("OnboardingWizard", () => {
     });
     await flush();
 
-    expect(document.body.textContent).toContain("Choose your first agent");
+    expect(document.body.textContent).toContain("Choose the agent to add");
     expect(document.body.textContent).not.toContain("Give it something to do");
     expect(document.body.textContent).not.toContain("Ready to launch");
     expect(mocks.agentsCreate).not.toHaveBeenCalled();
@@ -375,7 +375,9 @@ describe("OnboardingWizard", () => {
       }),
     );
     expect(document.body.textContent).toContain("Give it something to do");
-    expect(document.body.textContent).not.toContain("Describe your company");
+    expect(document.body.textContent).toContain("Add-agent onboarding");
+    expect(document.body.textContent).toContain("Acme Audit (ACME)");
+    expect(document.body.textContent).not.toContain("Name your company");
   });
 
   it("keeps the global onboarding route global when route params are unavailable", async () => {
@@ -390,7 +392,9 @@ describe("OnboardingWizard", () => {
     });
     await flush();
 
-    expect(document.body.textContent).toContain("Choose your first agent");
+    expect(document.body.textContent).toContain("New company onboarding");
+    expect(document.body.textContent).toContain("Choose the first agent");
+    expect(document.body.textContent).toContain("Agent → Company → Task → Launch");
     expect(document.body.textContent).toContain("Company");
     expect(document.body.textContent).not.toContain("Give it something to do");
   });
@@ -406,7 +410,7 @@ describe("OnboardingWizard", () => {
     });
     await flush();
 
-    expect(document.body.textContent).not.toContain("Choose your first agent");
+    expect(document.body.textContent).not.toContain("Choose the first agent");
     expect(mocks.closeOnboarding).toHaveBeenCalled();
     expect(mocks.agentsCreate).not.toHaveBeenCalled();
   });

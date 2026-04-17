@@ -857,17 +857,67 @@ export function OnboardingWizard() {
   }
 
   if (!effectiveOnboardingOpen) return null;
+  const companyContextLabel = existingCompany?.issuePrefix
+    ? `${existingCompany.name} (${existingCompany.issuePrefix})`
+    : existingCompany?.name ?? "this company";
+  const shellEyebrow = isNewCompanyFlow
+    ? "New company onboarding"
+    : "Add-agent onboarding";
+  const shellSequence = isNewCompanyFlow
+    ? "Agent → Company → Task → Launch"
+    : "Agent → Task → Launch";
+  const shellTitle = isNewCompanyFlow
+    ? "Choose the agent first"
+    : `Add an agent to ${existingCompany?.name ?? "this company"}`;
+  const shellDescription = isNewCompanyFlow
+    ? "Agent comes first so the company setup and the starter task attach to the right CEO. After this, you will name the company, define the first task, and launch the issue."
+    : `This flow stays inside ${companyContextLabel}. You are adding a teammate to an existing company, not creating a new one. After the agent step, you will define the starter task and launch it in the same company.`;
   const visibleSteps = isNewCompanyFlow
     ? [
-        { step: 1 as Step, label: "Agent", icon: Bot },
-        { step: 2 as Step, label: "Company", icon: Building2 },
-        { step: 3 as Step, label: "Task", icon: ListTodo },
-        { step: 4 as Step, label: "Launch", icon: Rocket }
+        {
+          step: 1 as Step,
+          label: "Agent",
+          icon: Bot,
+          detail: "Choose the CEO adapter and model first."
+        },
+        {
+          step: 2 as Step,
+          label: "Company",
+          icon: Building2,
+          detail: "Name the company and optional mission."
+        },
+        {
+          step: 3 as Step,
+          label: "Task",
+          icon: ListTodo,
+          detail: "Define the first task for the CEO."
+        },
+        {
+          step: 4 as Step,
+          label: "Launch",
+          icon: Rocket,
+          detail: "Create the issue and wake the agent."
+        }
       ]
     : [
-        { step: 1 as Step, label: "Agent", icon: Bot },
-        { step: 2 as Step, label: "Task", icon: ListTodo },
-        { step: 3 as Step, label: "Launch", icon: Rocket }
+        {
+          step: 1 as Step,
+          label: "Agent",
+          icon: Bot,
+          detail: `Choose the teammate to add to ${companyContextLabel}.`
+        },
+        {
+          step: 2 as Step,
+          label: "Task",
+          icon: ListTodo,
+          detail: "Describe the starter task for the new agent."
+        },
+        {
+          step: 3 as Step,
+          label: "Launch",
+          icon: Rocket,
+          detail: `Open the starter issue in ${companyContextLabel}.`
+        }
       ];
 
   return (
@@ -888,10 +938,10 @@ export function OnboardingWizard() {
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground"
+            className="absolute right-4 top-4 z-10 inline-flex items-center gap-2 border border-border/80 bg-background/95 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
+            <span>{isNewCompanyFlow ? "Cancel" : "Close"}</span>
           </button>
 
           {/* Left half — form */}
@@ -902,6 +952,30 @@ export function OnboardingWizard() {
             )}
           >
             <div className="w-full max-w-md mx-auto my-auto px-8 py-12 shrink-0">
+              <div className="mb-6 space-y-3 border border-border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-foreground px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-background">
+                    {shellEyebrow}
+                  </span>
+                  {!isNewCompanyFlow && existingCompany?.issuePrefix ? (
+                    <span className="border border-border px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      {existingCompany.issuePrefix}
+                    </span>
+                  ) : null}
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    {shellSequence}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold tracking-tight">
+                    {shellTitle}
+                  </h2>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {shellDescription}
+                  </p>
+                </div>
+              </div>
+
               {/* Progress tabs */}
               <div className="flex items-center gap-0 mb-8 border-b border-border">
                 {visibleSteps.map(({ step: s, label, icon: Icon }) => (
@@ -937,9 +1011,15 @@ export function OnboardingWizard() {
                       <Bot className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Choose your first agent</h3>
+                      <h3 className="font-medium">
+                        {isNewCompanyFlow
+                          ? "Choose the first agent"
+                          : "Choose the agent to add"}
+                      </h3>
                       <p className="text-xs text-muted-foreground">
-                        Pick the adapter and model for the CEO before we seed the company.
+                        {isNewCompanyFlow
+                          ? "Agent comes first. We will use this choice when we create the company, unlock the task, and open the first issue."
+                          : `This creates a new teammate inside ${companyContextLabel}. No new company will be created, and the task step unlocks next.`}
                       </p>
                     </div>
                   </div>
@@ -1377,7 +1457,7 @@ export function OnboardingWizard() {
                     <div>
                       <h3 className="font-medium">Name your company</h3>
                       <p className="text-xs text-muted-foreground">
-                        Set the company identity and the mission your CEO should work from.
+                        This unlocks the task step. Your agent choice above becomes the CEO for this new company.
                       </p>
                     </div>
                   </div>
@@ -1440,8 +1520,9 @@ export function OnboardingWizard() {
                     <div>
                       <h3 className="font-medium">Give it something to do</h3>
                       <p className="text-xs text-muted-foreground">
-                        Give your agent a small task to start with — a bug fix,
-                        a research question, writing a script.
+                        {isNewCompanyFlow
+                          ? "Now that the CEO and company are set, define one focused starter task for the first issue."
+                          : `The new agent will be added to ${companyContextLabel}. Give them one clear starter task before launch.`}
                       </p>
                     </div>
                   </div>
@@ -1491,8 +1572,9 @@ export function OnboardingWizard() {
                     <div>
                       <h3 className="font-medium">Ready to launch</h3>
                       <p className="text-xs text-muted-foreground">
-                        Everything is set up. Launching now will create the
-                        starter task, wake the agent, and open the issue.
+                        {isNewCompanyFlow
+                          ? "Everything is aligned. Launching now will create the starter issue, wake the CEO, and open the issue."
+                          : `Everything stays scoped to ${companyContextLabel}. Launching now will create the starter issue, wake the new agent, and open the issue.`}
                       </p>
                     </div>
                   </div>
@@ -1621,11 +1703,58 @@ export function OnboardingWizard() {
           {/* Right half — ASCII art (hidden on mobile) */}
           <div
             className={cn(
-              "hidden md:block overflow-hidden bg-[#1d1d1d] transition-[width,opacity] duration-500 ease-in-out",
+              "hidden md:block overflow-hidden bg-[#1d1d1d] text-white transition-[width,opacity] duration-500 ease-in-out",
               step === 1 ? "w-1/2 opacity-100" : "w-0 opacity-0"
             )}
           >
-            <AsciiArtAnimation />
+            <div className="flex h-full flex-col justify-between px-8 py-12">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/70">
+                    {shellEyebrow}
+                  </p>
+                  <h2 className="text-3xl font-semibold leading-tight">
+                    {shellTitle}
+                  </h2>
+                  <p className="max-w-md text-sm leading-6 text-white/70">
+                    {shellDescription}
+                  </p>
+                </div>
+
+                <div className="border border-white/15 bg-white/5">
+                  {visibleSteps.map(({ step: s, label, detail }) => (
+                    <div
+                      key={s}
+                      className={cn(
+                        "flex items-start gap-3 border-b border-white/10 px-4 py-3 last:border-b-0",
+                        s === step ? "bg-white/10" : ""
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center border text-[11px] font-semibold",
+                          s <= maxAccessibleStep
+                            ? "border-white/40 text-white"
+                            : "border-white/20 text-white/45"
+                        )}
+                      >
+                        {s}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white">{label}</p>
+                        <p className="text-xs leading-5 text-white/65">
+                          {detail}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="min-h-0 overflow-hidden border border-white/10 bg-black/25">
+                <AsciiArtAnimation />
+              </div>
+            </div>
           </div>
         </div>
       </DialogPortal>

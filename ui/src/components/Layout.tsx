@@ -35,6 +35,7 @@ import {
 import { buildQuickDispatchDraft } from "../lib/quick-dispatch";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
+import { resolveRouteOnboardingEntry } from "../lib/onboarding-route";
 import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -74,7 +75,11 @@ function readRememberedInstanceSettingsPath(): string {
 export function Layout() {
   const queryClient = useQueryClient();
   const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile } = useSidebar();
-  const { openNewIssue, openOnboarding } = useDialog();
+  const {
+    dismissedRouteOnboardingPath,
+    openNewIssue,
+    openOnboarding,
+  } = useDialog();
   const { pushToast } = useToast();
   const { togglePanelVisible } = usePanel();
   const {
@@ -99,6 +104,17 @@ export function Layout() {
     const requestedPrefix = companyPrefix.toUpperCase();
     return companies.find((company) => company.issuePrefix.toUpperCase() === requestedPrefix) ?? null;
   }, [companies, companyPrefix]);
+  const routeOnboardingEntry =
+    companyPrefix && companiesLoading
+      ? null
+      : resolveRouteOnboardingEntry({
+          pathname: location.pathname,
+          companyPrefix,
+          companies,
+        });
+  const routeOwnedOnboardingIsActive =
+    routeOnboardingEntry?.kind === "company" &&
+    dismissedRouteOnboardingPath !== location.pathname;
   const hasUnknownCompanyPrefix =
     Boolean(companyPrefix) && !companiesLoading && companies.length > 0 && !matchedCompany;
   const { data: health } = useQuery({
@@ -358,8 +374,10 @@ export function Layout() {
     <div
       className={cn(
         "bg-background text-foreground pt-[env(safe-area-inset-top)]",
+        routeOwnedOnboardingIsActive && "pointer-events-none invisible",
         isMobile ? "min-h-dvh" : "flex h-dvh flex-col overflow-hidden",
       )}
+      aria-hidden={routeOwnedOnboardingIsActive || undefined}
     >
       <a
         href="#main-content"
