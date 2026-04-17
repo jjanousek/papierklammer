@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import type { RequestHandler } from "express";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { activityLog, companies, createDb } from "@papierklammer/db";
+import { activityLog, companies, createDb, goals, projects } from "@papierklammer/db";
 import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
@@ -395,6 +395,46 @@ describeDB("company lifecycle routes", () => {
     });
     expect(listRes.status).toBe(200);
     expect(listRes.body).toEqual([]);
+  });
+
+  it("deletes an archived company when a project still references a goal", async () => {
+    const company = await seedCompany({
+      name: "Goal Linked Delete Me",
+      status: "archived",
+    });
+    const goalId = randomUUID();
+    await db.insert(goals).values({
+      id: goalId,
+      companyId: company.id,
+      title: "Land first pilots",
+      level: "company",
+      status: "active",
+    });
+    await db.insert(projects).values({
+      id: randomUUID(),
+      companyId: company.id,
+      goalId,
+      name: "Onboarding",
+      status: "in_progress",
+    });
+
+    const deleteRes = await callRoute({
+      method: "post",
+      path: "/:companyId/delete",
+      params: { companyId: company.id },
+      body: {},
+      originalUrl: `/api/companies/${company.id}/delete`,
+    });
+
+    expect(deleteRes.status).toBe(200);
+
+    const getRes = await callRoute({
+      method: "get",
+      path: "/:companyId",
+      params: { companyId: company.id },
+      originalUrl: `/api/companies/${company.id}`,
+    });
+    expect(getRes.status).toBe(404);
   });
 
   it("applies the same delete safeguards to the legacy DELETE route", async () => {

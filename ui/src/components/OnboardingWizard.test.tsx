@@ -207,6 +207,22 @@ async function click(label: string) {
   });
 }
 
+async function setControlValue(selector: string, value: string) {
+  const element = document.querySelector(selector);
+  if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+    throw new Error(`Control not found: ${selector}`);
+  }
+  await act(async () => {
+    const prototype = element instanceof HTMLInputElement
+      ? HTMLInputElement.prototype
+      : HTMLTextAreaElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+    setter?.call(element, value);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 beforeEach(async () => {
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -397,6 +413,82 @@ describe("OnboardingWizard", () => {
     expect(document.body.textContent).toContain("Agent → Company → Task → Launch");
     expect(document.body.textContent).toContain("Company");
     expect(document.body.textContent).not.toContain("Give it something to do");
+  });
+
+  it("advances from the company step on the first click and seeds a mission-based first issue", async () => {
+    mocks.location = { pathname: "/onboarding", search: "", hash: "" };
+    mocks.params = {};
+    mocks.onboardingOpen = false;
+    mocks.onboardingOptions = {};
+    mocks.companies = [{ id: "company-1", name: "Acme Audit", issuePrefix: "ACME" }];
+    mocks.companiesCreate.mockResolvedValue({
+      id: "company-2",
+      name: "Mission Test Robotics",
+      issuePrefix: "MIS",
+    });
+    mocks.goalsCreate.mockResolvedValue({ id: "goal-1" });
+    mocks.agentsCreate.mockResolvedValue({ id: "agent-2" });
+    mocks.agentsTestEnvironment.mockResolvedValue(makeEnvResult("pass"));
+
+    await act(async () => {
+      root.unmount();
+    });
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<OnboardingWizard />);
+    });
+    await flush();
+
+    await click("Codex");
+    await flush();
+    await click("Next");
+    await flush();
+    await setControlValue('input[placeholder="Acme Corp"]', "Mission Test Robotics");
+    await setControlValue(
+      'textarea[placeholder="What is this company trying to achieve?"]',
+      "Build an AI robotics consultancy that lands its first paying warehouse automation customer.",
+    );
+
+    await click("Next");
+    await flush();
+
+    expect(mocks.companiesCreate).toHaveBeenCalledWith({
+      name: "Mission Test Robotics",
+    });
+    expect(mocks.goalsCreate).toHaveBeenCalledWith(
+      "company-2",
+      expect.objectContaining({
+        title: "Build an AI robotics consultancy that lands its first paying warehouse automation customer.",
+      }),
+    );
+    expect(mocks.agentsTestEnvironment).toHaveBeenCalledWith(
+      "company-2",
+      "codex_local",
+      expect.objectContaining({
+        adapterConfig: expect.any(Object),
+      }),
+    );
+    expect(mocks.agentsCreate).toHaveBeenCalledWith(
+      "company-2",
+      expect.objectContaining({
+        adapterType: "codex_local",
+      }),
+    );
+    expect(document.body.textContent).toContain("Give it something to do");
+
+    const taskTitleInput = document.querySelector('input[placeholder="e.g. Research competitor pricing"]');
+    const taskDescriptionInput = document.querySelector(
+      'textarea[placeholder="Add more detail about what the agent should do..."]',
+    );
+    expect(taskTitleInput).toBeInstanceOf(HTMLInputElement);
+    expect(taskDescriptionInput).toBeInstanceOf(HTMLTextAreaElement);
+    expect((taskTitleInput as HTMLInputElement).value).toContain("Mission Test Robotics");
+    expect((taskDescriptionInput as HTMLTextAreaElement).value).toContain(
+      "Build an AI robotics consultancy that lands its first paying warehouse automation customer.",
+    );
+    expect((taskDescriptionInput as HTMLTextAreaElement).value).toContain(
+      "first CEO-owned operating plan",
+    );
   });
 
   it("suppresses onboarding for an invalid company prefix even if stale dialog state is open", async () => {

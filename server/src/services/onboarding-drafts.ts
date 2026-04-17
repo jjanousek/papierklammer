@@ -63,6 +63,33 @@ function adapterLabel(adapterType: string | null | undefined) {
   }
 }
 
+function missionAnchoredTaskDraft(input: OnboardingDraftInput) {
+  const name = asTrimmedString(input.companyName) ?? "the company";
+  const goal = asTrimmedString(input.companyGoal) ?? `Define an initial operating plan for ${name}.`;
+  const agentName = asTrimmedString(input.agentName) ?? "CEO";
+
+  return {
+    taskTitle:
+      asTrimmedString(input.taskTitle)
+      ?? `Turn ${name}'s mission into the first operating plan`,
+    taskDescription:
+      asTrimmedString(input.taskDescription)
+      ?? [
+        `You are ${agentName}. Translate the mission into the company's first CEO-owned operating plan and first delegated work.`,
+        "",
+        "Mission / goal:",
+        goal,
+        "",
+        "In this issue:",
+        "- restate the mission in one crisp sentence and define the near-term objective",
+        "- propose the first 3-5 milestones for the next 30 days",
+        "- identify the first hires or collaborators needed",
+        "- create or recommend the first concrete child issues with owners and rationale",
+        "- call out assumptions, risks, and what needs board review next",
+      ].join("\n"),
+  };
+}
+
 function fallbackCompanyDraft(input: OnboardingDraftInput): OnboardingDraftResult {
   const rawGoal = asTrimmedString(input.companyGoal);
   const normalizedGoal = rawGoal
@@ -91,30 +118,14 @@ function fallbackCompanyDraft(input: OnboardingDraftInput): OnboardingDraftResul
 }
 
 function fallbackTaskDraft(input: OnboardingDraftInput): OnboardingDraftResult {
-  const name = asTrimmedString(input.companyName) ?? "the company";
-  const goal = asTrimmedString(input.companyGoal) ?? `Define an initial operating plan for ${name}.`;
-  const agentName = asTrimmedString(input.agentName) ?? "CEO";
-  const taskTitle =
-    asTrimmedString(input.taskTitle)
-    ?? `Turn ${name}'s mission into a 7-day execution plan`;
-  const taskDescription =
-    asTrimmedString(input.taskDescription)
-    ?? [
-      `You are ${agentName}. Use ${goal} as the company mission.`,
-      "",
-      "Please:",
-      "- write a short strategy memo with the immediate objective",
-      "- identify the first hires or collaborators needed",
-      "- break the work into concrete tasks and create the highest-priority next task",
-      "- call out blockers, assumptions, and what the board should review next",
-    ].join("\n");
+  const draft = missionAnchoredTaskDraft(input);
 
   return {
     source: "fallback",
     companyName: null,
     companyGoal: null,
-    taskTitle,
-    taskDescription,
+    taskTitle: draft.taskTitle,
+    taskDescription: draft.taskDescription,
   };
 }
 
@@ -127,9 +138,22 @@ async function fetchOpenAiDraft(input: OnboardingDraftInput): Promise<Omit<Onboa
   if (!apiKey) return null;
 
   const systemPrompt = input.kind === "company"
-    ? "You draft onboarding copy for an AI company control plane. Return JSON with companyName and companyGoal. Keep it concise, operator-friendly, and specific."
-    : "You draft a first starter task for a newly configured AI CEO. Return JSON with taskTitle and taskDescription. Keep it concrete, actionable, and aligned to the mission.";
+    ? [
+        "You help a founder clarify onboarding copy for an AI company control plane.",
+        "Return JSON with companyName and companyGoal only.",
+        "If the user already provided a company name or mission, treat it as source material to refine, not replace.",
+        "Preserve the domain, customer, and success criteria. Tighten wording, remove vagueness, and avoid generic startup filler.",
+        "The mission should read like a concrete operating goal, not marketing copy.",
+      ].join(" ")
+    : [
+        "You draft the first CEO-owned onboarding issue for a newly configured AI company.",
+        "Return JSON with taskTitle and taskDescription only.",
+        "Use the mission as the source of truth and translate it into one concrete first issue for the CEO.",
+        "If taskTitle or taskDescription already exist, refine them without changing the core intent.",
+        "Avoid generic boilerplate. The output should clearly connect to the mission, near-term objective, first milestones, likely hires, and the first delegated work.",
+      ].join(" ");
   const userPrompt = JSON.stringify({
+    intent: input.kind === "company" ? "refine_company_goal" : "translate_mission_into_first_ceo_issue",
     companyName: asTrimmedString(input.companyName),
     companyGoal: asTrimmedString(input.companyGoal),
     agentName: asTrimmedString(input.agentName),
@@ -175,9 +199,16 @@ async function fetchOpenAiDraft(input: OnboardingDraftInput): Promise<Omit<Onboa
 export async function generateOnboardingDraft(input: OnboardingDraftInput): Promise<OnboardingDraftResult> {
   const openAiDraft = await fetchOpenAiDraft(input);
   if (openAiDraft) {
+    const completedDraft = fallbackDraft({
+      ...input,
+      ...openAiDraft,
+    });
     return {
       source: "openai",
-      ...openAiDraft,
+      companyName: openAiDraft.companyName ?? completedDraft.companyName,
+      companyGoal: openAiDraft.companyGoal ?? completedDraft.companyGoal,
+      taskTitle: openAiDraft.taskTitle ?? completedDraft.taskTitle,
+      taskDescription: openAiDraft.taskDescription ?? completedDraft.taskDescription,
     };
   }
   return fallbackDraft(input);

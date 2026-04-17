@@ -71,6 +71,8 @@ type AdapterType =
   | "http"
   | "openclaw_gateway";
 
+const DEFAULT_TASK_TITLE = "Hire your first engineer and create a hiring plan";
+
 const DEFAULT_TASK_DESCRIPTION = `You are the CEO. You set the direction for the company.
 
 - hire a founding engineer
@@ -84,6 +86,45 @@ const CURATED_CODEX_MODEL_IDS = [
   "gpt-5-mini",
   "codex-mini-latest"
 ] as const;
+
+function asTrimmedText(value: string | null | undefined) {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function buildMissionAnchoredStarterTask(input: {
+  companyName?: string | null;
+  companyGoal?: string | null;
+  agentName?: string | null;
+}) {
+  const companyName = asTrimmedText(input.companyName) ?? "the company";
+  const companyGoal = asTrimmedText(input.companyGoal);
+  const agentName = asTrimmedText(input.agentName) ?? "CEO";
+
+  if (!companyGoal) {
+    return {
+      title: DEFAULT_TASK_TITLE,
+      description: DEFAULT_TASK_DESCRIPTION,
+    };
+  }
+
+  return {
+    title: `Turn ${companyName}'s mission into the first operating plan`,
+    description: [
+      `You are ${agentName}. Translate the mission into the company's first CEO-owned operating plan and first delegated work.`,
+      "",
+      "Mission / goal:",
+      companyGoal,
+      "",
+      "In this issue:",
+      "- restate the mission in one crisp sentence and define the near-term objective",
+      "- propose the first 3-5 milestones for the next 30 days",
+      "- identify the first hires or collaborators needed",
+      "- create or recommend the first concrete child issues with owners and rationale",
+      "- call out assumptions, risks, and what needs board review next",
+    ].join("\n"),
+  };
+}
 
 export function OnboardingWizard() {
   const {
@@ -176,7 +217,7 @@ export function OnboardingWizard() {
 
   // Task step
   const [taskTitle, setTaskTitle] = useState(
-    "Hire your first engineer and create a hiring plan"
+    DEFAULT_TASK_TITLE
   );
   const [taskDescription, setTaskDescription] = useState(
     DEFAULT_TASK_DESCRIPTION
@@ -463,9 +504,11 @@ export function OnboardingWizard() {
   }
 
   async function runAdapterEnvironmentTest(
-    adapterConfigOverride?: Record<string, unknown>
+    adapterConfigOverride?: Record<string, unknown>,
+    companyIdOverride?: string
   ): Promise<AdapterEnvironmentTestResult | null> {
-    if (!createdCompanyId) {
+    const targetCompanyId = companyIdOverride ?? createdCompanyId;
+    if (!targetCompanyId) {
       setAdapterEnvError(
         "Create or select a company before testing adapter environment."
       );
@@ -475,7 +518,7 @@ export function OnboardingWizard() {
     setAdapterEnvError(null);
     try {
       const result = await agentsApi.testEnvironment(
-        createdCompanyId,
+        targetCompanyId,
         adapterType,
         {
           adapterConfig: adapterConfigOverride ?? buildAdapterConfig()
@@ -528,7 +571,9 @@ export function OnboardingWizard() {
     }
 
     if (isLocalAdapter) {
-      const result = adapterEnvResult ?? (await runAdapterEnvironmentTest());
+      const result =
+        adapterEnvResult
+        ?? (await runAdapterEnvironmentTest(undefined, companyId));
       if (!result) return null;
       if (result.status === "fail") {
         setError("Adapter environment check failed. Fix the errors and retry.");
@@ -624,6 +669,13 @@ export function OnboardingWizard() {
       const agent = createdAgentId ? { id: createdAgentId } : await createAgentForCompany(companyId);
       if (!agent) return;
 
+      const suggestedTask = buildMissionAnchoredStarterTask({
+        companyName: companyName.trim() || companyId,
+        companyGoal,
+        agentName,
+      });
+      setTaskTitle(suggestedTask.title);
+      setTaskDescription(suggestedTask.description);
       setCreatedCompanyPrefix(companyPrefix ?? null);
       setStep(3);
     } catch (err) {
@@ -919,6 +971,11 @@ export function OnboardingWizard() {
           detail: `Open the starter issue in ${companyContextLabel}.`
         }
       ];
+
+  const companyDraftButtonLabel =
+    companyName.trim() || companyGoal.trim() ? "Refine with AI" : "Draft with AI";
+  const taskDraftButtonLabel =
+    taskTitle.trim() || taskDescription.trim() ? "Refine with AI" : "Draft with AI";
 
   return (
     <Dialog
@@ -1468,7 +1525,7 @@ export function OnboardingWizard() {
                       disabled={draftingCompany || loading}
                       onClick={() => void handleDraftCompany()}
                     >
-                      {draftingCompany ? "Drafting..." : "Draft with AI"}
+                      {draftingCompany ? "Drafting..." : companyDraftButtonLabel}
                     </Button>
                   </div>
                   <div className="mt-3 group">
@@ -1501,6 +1558,9 @@ export function OnboardingWizard() {
                     >
                       Mission / goal (optional)
                     </label>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Rough notes are fine. AI should help tighten the mission without changing the intent.
+                    </p>
                     <textarea
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-[120px]"
                       placeholder="What is this company trying to achieve?"
@@ -1533,7 +1593,7 @@ export function OnboardingWizard() {
                       disabled={draftingTask || loading}
                       onClick={() => void handleDraftTask()}
                     >
-                      {draftingTask ? "Drafting..." : "Draft with AI"}
+                      {draftingTask ? "Drafting..." : taskDraftButtonLabel}
                     </Button>
                   </div>
                   <div>
