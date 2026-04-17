@@ -1,0 +1,258 @@
+{
+  "groupId": "browser-entry-bundle",
+  "testedAt": "2026-04-17T01:10:08.124659+00:00",
+  "isolation": {
+    "surface": "Browser UI only",
+    "appUrl": "http://127.0.0.1:3100",
+    "missionDir": "/Users/aischool/.factory/missions/7b57a1ef-225c-4a49-92fa-0ed3e493ed41",
+    "sharedAppReused": true,
+    "browserSession": "browser-entry-bundle",
+    "maxConcurrency": 1
+  },
+  "assertionsTested": [
+    "VAL-ENTRY-001",
+    "VAL-ENTRY-002",
+    "VAL-ENTRY-003",
+    "VAL-ENTRY-004",
+    "VAL-ENTRY-005",
+    "VAL-ENTRY-006",
+    "VAL-ENTRY-007",
+    "VAL-ENTRY-008",
+    "VAL-ENTRY-009",
+    "VAL-ENTRY-010",
+    "VAL-BOOT-001",
+    "VAL-BOOT-002",
+    "VAL-BOOT-003",
+    "VAL-BOOT-004",
+    "VAL-BOOT-005",
+    "VAL-ONBOARD-CROSS-001",
+    "VAL-ONBOARD-CROSS-002"
+  ],
+  "statusByAssertion": [
+    {
+      "id": "VAL-ENTRY-001",
+      "status": "blocked",
+      "reason": "The shared app already had a seeded company, and in-browser zero-company mock injection could render `/onboarding` directly but did not hold through `/` route recovery; the app snapped back to the real `BOA` dashboard.",
+      "evidence": [
+        "Attempted browser-local `companies=[]` override plus route navigation from `/`; direct `/onboarding` mock succeeded, root recovery did not remain isolated.",
+        "Screenshot support for the direct first-run shell: onboarding-entry/browser-entry-bundle/VAL-ENTRY-002-direct-onboarding-shell.png"
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-002",
+      "status": "pass",
+      "reason": "A browser-local zero-company first-run shell at `/onboarding` rendered one full-screen onboarding surface with no competing page card or duplicate modal.",
+      "evidence": [
+        "URL: http://127.0.0.1:3100/onboarding",
+        "Screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-002-direct-onboarding-shell.png",
+        "Visible copy: `New company onboarding`, `Choose the agent first`, `Agent \u2192 Company \u2192 Task \u2192 Launch`"
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-003",
+      "status": "blocked",
+      "reason": "The same seeded-company limitation prevented auditable companyless recovery checks for `/dashboard`, `/issues`, and `/companies`; deep-link attempts reverted to real `BOA` routes before a stable zero-company redirect could be captured.",
+      "evidence": [
+        "Attempted browser-local zero-company override plus unprefixed-route navigation; shared app reverted to seeded company routes."
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-004",
+      "status": "pass",
+      "reason": "`/BOA/onboarding` clearly framed the flow as add-agent onboarding inside Board Route Co and omitted first-run/new-company framing.",
+      "evidence": [
+        "URL: http://127.0.0.1:3100/BOA/onboarding",
+        "Screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-004-BOA-onboarding-initial.png",
+        "Visible copy: `Add-agent onboarding`, `Add an agent to Board Route Co`, `Agent \u2192 Task \u2192 Launch`, `No new company will be created`"
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-005",
+      "status": "pass",
+      "reason": "Closing route-driven onboarding on `/BOA/onboarding` left a stable add-agent card in the same route context, and the visible `Add Agent` CTA reopened the same onboarding shell without duplicate overlays or company drift.",
+      "evidence": [
+        "Screenshot before close: onboarding-entry/browser-entry-bundle/VAL-ENTRY-004-BOA-onboarding-initial.png",
+        "Screenshot after close: onboarding-entry/browser-entry-bundle/VAL-ENTRY-005-BOA-onboarding-closed.png",
+        "Screenshot after reopen: onboarding-entry/browser-entry-bundle/VAL-ENTRY-005-BOA-onboarding-reopened.png",
+        "Post-close URL remained http://127.0.0.1:3100/BOA/onboarding"
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-006",
+      "status": "pass",
+      "reason": "`/ZZZ/onboarding` failed safely with an explicit company-not-found page and did not show another company\u2019s onboarding context.",
+      "evidence": [
+        "URL: http://127.0.0.1:3100/ZZZ/onboarding",
+        "Screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-006-invalid-prefix.png",
+        "Visible copy: `Company not found`, `No company matches prefix \"ZZZ\".`"
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-007",
+      "status": "pass",
+      "reason": "The first visible first-run shell explicitly stated that the operator chooses the agent first and showed later steps in a locked sequence.",
+      "evidence": [
+        "Screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-002-direct-onboarding-shell.png",
+        "Visible copy: `Agent comes first so the company setup and the starter task attach to the right CEO.`",
+        "Disabled/locked future steps shown as `Task` and `Launch` before they unlock."
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-008",
+      "status": "pass",
+      "reason": "The first-run shell showed one dominant forward action (`Next`), one clear cancel affordance (`Cancel`), and the future-step controls were disabled rather than competing primaries.",
+      "evidence": [
+        "Screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-002-direct-onboarding-shell.png",
+        "Primary CTA observed: `Next`",
+        "Close affordance observed: `Cancel`"
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-009",
+      "status": "blocked",
+      "reason": "Prefixed onboarding could be reopened coherently, but I could not keep the zero-company global onboarding mock stable through refresh/back/forward without the session reverting to the seeded shared app state, so the full canonical-history matrix was not auditable.",
+      "evidence": [
+        "Prefixed route evidence exists in onboarding-entry/browser-entry-bundle/VAL-ENTRY-004-BOA-onboarding-initial.png and VAL-ENTRY-005-BOA-onboarding-reopened.png",
+        "Global route history attempts reverted to real seeded-company state."
+      ]
+    },
+    {
+      "id": "VAL-ENTRY-010",
+      "status": "pass",
+      "reason": "Opening onboarding from the `New Company` CTA on `/BOA/companies` preserved the underlying board route and returned to the same page on close with no stale overlay.",
+      "evidence": [
+        "Before-open screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-010-companies-before-open.png",
+        "Modal-open screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-010-companies-modal-open.png",
+        "After-close screenshot: onboarding-entry/browser-entry-bundle/VAL-ENTRY-010-companies-after-close.png",
+        "URL stayed http://127.0.0.1:3100/BOA/companies before open, during modal, and after close"
+      ]
+    },
+    {
+      "id": "VAL-BOOT-001",
+      "status": "blocked",
+      "reason": "The shared app was running in `local_trusted` mode, and auditable bootstrap-pending route blocking could not be produced because agent-browser request interception did not intercept local `/api/health` calls in this session.",
+      "evidence": [
+        "Health probe on the shared app returned `deploymentMode: local_trusted, bootstrapStatus: ready`.",
+        "Attempted browser-local gate mocking did not yield a stable blocking screen on the real browser surface."
+      ]
+    },
+    {
+      "id": "VAL-BOOT-002",
+      "status": "blocked",
+      "reason": "I could not produce a stable authenticated signed-out redirect flow because local `/api/auth/get-session` and `/api/health` interception failed in the agent-browser session.",
+      "evidence": [
+        "Attempted browser-local auth/session mocking and route interception; shared app remained on its real local-trusted onboarding surface."
+      ]
+    },
+    {
+      "id": "VAL-BOOT-003",
+      "status": "blocked",
+      "reason": "Bootstrap/auth blocking states could not be held stably enough to capture singular gate screens without falling back to the real local-trusted app state.",
+      "evidence": [
+        "No console errors were reported during the session, but the required gate UI could not be stably rendered for screenshot capture."
+      ]
+    },
+    {
+      "id": "VAL-BOOT-004",
+      "status": "blocked",
+      "reason": "Because bootstrap/auth mock states were not stable on the shared app, I could not audibly verify retry/recovery transitions without losing the intended mocked route state.",
+      "evidence": [
+        "Attempted browser-side mocking via interception and runtime overrides; redirect/retry path could not be exercised end-to-end on the real browser surface."
+      ]
+    },
+    {
+      "id": "VAL-BOOT-005",
+      "status": "blocked",
+      "reason": "The shared app did not enter bootstrap-pending mode during the session, and request interception/runtime overrides were insufficient to prove gate precedence over unresolved/signed-out auth on the real surface.",
+      "evidence": [
+        "Health probe: `bootstrapStatus: ready` on the shared app."
+      ]
+    },
+    {
+      "id": "VAL-ONBOARD-CROSS-001",
+      "status": "blocked",
+      "reason": "I could render the direct zero-company `/onboarding` shell, but I could not keep the shared seeded app in a stable zero-company state across `/`, `/dashboard`, and authenticated post-sign-in entry variants.",
+      "evidence": [
+        "Direct first-run shell evidence: onboarding-entry/browser-entry-bundle/VAL-ENTRY-002-direct-onboarding-shell.png",
+        "Root/deep-link/auth-entry variants reverted to seeded `BOA` state."
+      ]
+    },
+    {
+      "id": "VAL-ONBOARD-CROSS-002",
+      "status": "pass",
+      "reason": "Closing and reopening `/BOA/onboarding` before any submission preserved add-agent context and created no stray company, agent, project, or issue artifacts.",
+      "evidence": [
+        "UI evidence: onboarding-entry/browser-entry-bundle/VAL-ENTRY-004-BOA-onboarding-initial.png, onboarding-entry/browser-entry-bundle/VAL-ENTRY-005-BOA-onboarding-closed.png, onboarding-entry/browser-entry-bundle/VAL-ENTRY-005-BOA-onboarding-reopened.png",
+        "API counts before close/reopen: companies=1, agents=0, projects=0, issues=5",
+        "API counts after close/reopen: companies=1, agents=0, projects=0, issues=5"
+      ]
+    }
+  ],
+  "overallStatus": "mixed",
+  "toolsUsed": [
+    "agent-browser",
+    "curl",
+    "python3"
+  ],
+  "frictions": [
+    {
+      "description": "The shared app already contained one seeded company (`Board Route Co`), so first-run assertions required browser-local zero-company mock injection rather than the untouched shared state.",
+      "resolved": true,
+      "resolution": "Used browser-local React context/hook overrides to capture a direct `/onboarding` first-run shell.",
+      "affectedAssertions": [
+        "VAL-ENTRY-002",
+        "VAL-ENTRY-007",
+        "VAL-ENTRY-008"
+      ]
+    },
+    {
+      "description": "Closing the browser-local mocked global `/onboarding` shell caused the view to rehydrate back toward the seeded-company state, so I used the real prefixed add-agent route for close/reopen validation.",
+      "resolved": true,
+      "resolution": "Validated route-driven close/reopen on real `/BOA/onboarding` instead of the unstable mocked global route.",
+      "affectedAssertions": [
+        "VAL-ENTRY-005",
+        "VAL-ONBOARD-CROSS-002"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "agent-browser request interception did not intercept local `/api/companies`, `/api/health`, or `/api/auth/*` requests in this session, and runtime overrides were not stable enough to keep root/deep-link/bootstrap/auth redirects in the desired mocked state on the shared app.",
+      "affectedAssertions": [
+        "VAL-ENTRY-001",
+        "VAL-ENTRY-003",
+        "VAL-ENTRY-009",
+        "VAL-BOOT-001",
+        "VAL-BOOT-002",
+        "VAL-BOOT-003",
+        "VAL-BOOT-004",
+        "VAL-BOOT-005",
+        "VAL-ONBOARD-CROSS-001"
+      ],
+      "quickFixAttempted": "Tried agent-browser `network route` with glob and exact patterns, browser-local React Query/cache injection, and React fiber/context overrides; only direct `/onboarding` rendering was stable."
+    }
+  ],
+  "observedUrls": [
+    "http://127.0.0.1:3100/onboarding",
+    "http://127.0.0.1:3100/BOA/onboarding",
+    "http://127.0.0.1:3100/BOA/companies",
+    "http://127.0.0.1:3100/ZZZ/onboarding"
+  ],
+  "screenshots": [
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-002-direct-onboarding-shell.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-004-BOA-onboarding-initial.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-005-BOA-onboarding-closed.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-005-BOA-onboarding-reopened.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-006-invalid-prefix.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-010-companies-before-open.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-010-companies-modal-open.png",
+    "onboarding-entry/browser-entry-bundle/VAL-ENTRY-010-companies-after-close.png"
+  ],
+  "notes": [
+    "Console errors observed via `agent-browser errors`: none.",
+    "Mock setup used only browser-local runtime overrides inside the assigned browser session; no product code or shared app processes were modified.",
+    "Shared app health at start: `{status: ok, deploymentMode: local_trusted, bootstrapStatus: ready}`.",
+    "Entity counts for VAL-ONBOARD-CROSS-002 were read via the shared local API only to prove zero mutation: before and after counts matched exactly."
+  ],
+  "summary": "Validated 17 assigned assertions for onboarding-entry: 8 passed and 9 were blocked by shared-state mock limitations. Actual browser evidence confirmed add-agent entry, close/reopen coherence, invalid-prefix safety, modal-preserved board routing, and zero-mutation close/reopen behavior; bootstrap/auth and root/deep-link zero-company redirects could not be held stably enough on the shared seeded app."
+}

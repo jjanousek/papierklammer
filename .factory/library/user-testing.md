@@ -50,6 +50,7 @@
 - Do not use Docker-based release smoke flows in this mission.
 - Use the mission home at `/tmp/papierklammer-onboarding-mission` for any mission-started service.
 - For bootstrap/auth gate assertions, if port `3100` is already occupied by a healthy non-worker-owned app and the mission cannot start a separate authenticated instance on the required port, browser-side mock injection of health/session responses against the reused app is an acceptable fallback. Capture the mocked routes, final URL, and screenshots so the evidence is auditable.
+- On the current onboarding mission app, a seeded company can prevent auditable zero-company route recovery; if browser-side interception of local `/api/*` traffic is unstable, treat first-run root/deep-link and bootstrap/auth assertions as blocked and schedule a fresh first-run round instead of mutating the shared seeded state.
 
 ## Assertion-specific guidance
 
@@ -67,6 +68,14 @@
 - Do not create extra repo-owned dev/TUI/Codex helpers beyond what your assigned flow needs.
 - Prefer a single launched TUI session per assertion bundle; relaunch only when the PTY relay or Ink input becomes unreliable.
 - Save terminal captures and screenshots under the mission evidence directory for the assigned flow group so synthesis can trace them back to exact `VAL-*` assertions.
+
+## Flow Validator Guidance: Browser UI
+
+- Reuse the already-healthy app at `http://127.0.0.1:3100`; do not start another app stack unless health fails during the assigned run.
+- Stay within one non-default `agent-browser` session for a milestone bundle and do not open concurrent browser sessions against the shared app.
+- Keep onboarding-entry validation focused on route recovery, shell clarity, bootstrap/auth gating, close/reopen, and history behavior.
+- Avoid unnecessary entity-creating flows for onboarding-entry; prefer route and shell checks unless the assigned assertion explicitly requires mutation proof.
+- Save durable screenshots and JSON output under `.factory/validation/onboarding-entry/user-testing/` so synthesis can trace each `VAL-*` assertion to evidence.
 
 ## Evidence Convention
 

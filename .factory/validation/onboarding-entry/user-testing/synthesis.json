@@ -1,0 +1,88 @@
+{
+  "milestone": "onboarding-entry",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 17,
+    "passed": 8,
+    "failed": 0,
+    "blocked": 9
+  },
+  "passedAssertions": [
+    "VAL-ENTRY-002",
+    "VAL-ENTRY-004",
+    "VAL-ENTRY-005",
+    "VAL-ENTRY-006",
+    "VAL-ENTRY-007",
+    "VAL-ENTRY-008",
+    "VAL-ENTRY-010",
+    "VAL-ONBOARD-CROSS-002"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [
+    {
+      "id": "VAL-ENTRY-001",
+      "blockedBy": "The shared app already had a seeded company, and in-browser zero-company mock injection could render `/onboarding` directly but did not hold through `/` route recovery; the app snapped back to the real `BOA` dashboard."
+    },
+    {
+      "id": "VAL-ENTRY-003",
+      "blockedBy": "The same seeded-company limitation prevented auditable companyless recovery checks for `/dashboard`, `/issues`, and `/companies`; deep-link attempts reverted to real `BOA` routes before a stable zero-company redirect could be captured."
+    },
+    {
+      "id": "VAL-ENTRY-009",
+      "blockedBy": "Prefixed onboarding could be reopened coherently, but I could not keep the zero-company global onboarding mock stable through refresh/back/forward without the session reverting to the seeded shared app state, so the full canonical-history matrix was not auditable."
+    },
+    {
+      "id": "VAL-BOOT-001",
+      "blockedBy": "The shared app was running in `local_trusted` mode, and auditable bootstrap-pending route blocking could not be produced because agent-browser request interception did not intercept local `/api/health` calls in this session."
+    },
+    {
+      "id": "VAL-BOOT-002",
+      "blockedBy": "I could not produce a stable authenticated signed-out redirect flow because local `/api/auth/get-session` and `/api/health` interception failed in the agent-browser session."
+    },
+    {
+      "id": "VAL-BOOT-003",
+      "blockedBy": "Bootstrap/auth blocking states could not be held stably enough to capture singular gate screens without falling back to the real local-trusted app state."
+    },
+    {
+      "id": "VAL-BOOT-004",
+      "blockedBy": "Because bootstrap/auth mock states were not stable on the shared app, I could not audibly verify retry/recovery transitions without losing the intended mocked route state."
+    },
+    {
+      "id": "VAL-BOOT-005",
+      "blockedBy": "The shared app did not enter bootstrap-pending mode during the session, and request interception/runtime overrides were insufficient to prove gate precedence over unresolved/signed-out auth on the real surface."
+    },
+    {
+      "id": "VAL-ONBOARD-CROSS-001",
+      "blockedBy": "I could render the direct zero-company `/onboarding` shell, but I could not keep the shared seeded app in a stable zero-company state across `/`, `/dashboard`, and authenticated post-sign-in entry variants."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added Browser UI flow-validator guidance for onboarding-entry bundles on the shared app.",
+      "source": "setup"
+    },
+    {
+      "target": "user-testing.md",
+      "description": "Documented that the current shared onboarding mission app is seeded and local /api interception instability should block first-run root/deep-link and bootstrap/auth assertions rather than mutating shared state.",
+      "source": "flow-report"
+    }
+  ],
+  "previousRound": null,
+  "flowReports": [
+    "/Users/aischool/work/papierklammer_droid/.factory/validation/onboarding-entry/user-testing/flows/browser-entry-bundle.json"
+  ],
+  "observedUrls": [
+    "http://127.0.0.1:3100/onboarding",
+    "http://127.0.0.1:3100/BOA/onboarding",
+    "http://127.0.0.1:3100/BOA/companies",
+    "http://127.0.0.1:3100/ZZZ/onboarding"
+  ],
+  "notes": [
+    "Console errors observed via `agent-browser errors`: none.",
+    "Mock setup used only browser-local runtime overrides inside the assigned browser session; no product code or shared app processes were modified.",
+    "Shared app health at start: `{status: ok, deploymentMode: local_trusted, bootstrapStatus: ready}`.",
+    "Entity counts for VAL-ONBOARD-CROSS-002 were read via the shared local API only to prove zero mutation: before and after counts matched exactly."
+  ]
+}
