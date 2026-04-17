@@ -37,6 +37,7 @@ export interface OrchestratorStatusResult {
   totalActiveRuns: number;
   totalAgents: number;
   connected: boolean;
+  booting: boolean;
   error: string | null;
   activeRuns: RunReviewEntry[];
   recentRuns: RunReviewEntry[];
@@ -60,6 +61,7 @@ export function useOrchestratorStatus(
   const [agents, setAgents] = useState<AgentOverview[]>([]);
   const [totalActiveRuns, setTotalActiveRuns] = useState(0);
   const [connected, setConnected] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeRuns, setActiveRuns] = useState<RunReviewEntry[]>([]);
   const [recentRuns, setRecentRuns] = useState<RunReviewEntry[]>([]);
@@ -70,6 +72,7 @@ export function useOrchestratorStatus(
       setAgents([]);
       setTotalActiveRuns(0);
       setConnected(false);
+      setBooting(false);
       setError(null);
       setActiveRuns([]);
       setRecentRuns([]);
@@ -107,6 +110,7 @@ export function useOrchestratorStatus(
       setActiveRuns(Array.isArray(data.activeRuns) ? data.activeRuns : []);
       setRecentRuns(Array.isArray(data.recentRuns) ? data.recentRuns : []);
       setConnected(true);
+      setBooting(false);
       setError(null);
     } catch (err) {
       setAgents([]);
@@ -114,6 +118,7 @@ export function useOrchestratorStatus(
       setActiveRuns([]);
       setRecentRuns([]);
       setConnected(false);
+      setBooting(false);
       setError(err instanceof Error ? err.message : "Unknown error");
     }
   }, [url, apiKey, companyId, fetchFn]);
@@ -139,6 +144,7 @@ export function useOrchestratorStatus(
     totalActiveRuns,
     totalAgents: agents.length,
     connected,
+    booting,
     error,
     activeRuns,
     recentRuns,

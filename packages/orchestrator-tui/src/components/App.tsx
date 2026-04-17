@@ -48,6 +48,28 @@ import { DEFAULT_TUI_FAST_MODE, DEFAULT_TUI_MODEL, DEFAULT_TUI_REASONING_EFFORT 
 
 const REASONING_CYCLE: ReasoningEffort[] = ["low", "medium", "high"];
 const LOCAL_TOOL_HEALTH_COMMANDS = new Set(["/tool-health", "/toolhealth", "/th", "/t"]);
+type ToolLikeItem = {
+  type?: string;
+  id?: string;
+  status?: string | null;
+  server?: string;
+  tool?: string;
+  query?: string;
+  path?: string;
+  result?: unknown;
+  error?: unknown;
+  arguments?: unknown;
+  changes?: Array<{ path?: string }>;
+};
+type ToolProgressEvent = {
+  threadId?: string;
+  turnId?: string;
+  itemId?: string;
+  delta?: string;
+  progress?: unknown;
+  update?: unknown;
+  message?: string;
+};
 
 function cycleReasoningEffort(current: ReasoningEffort): ReasoningEffort {
   const idx = REASONING_CYCLE.indexOf(current);
@@ -101,6 +123,98 @@ function formatLocalProbeOutput(
 
 function isLocalToolHealthCommand(text: string): boolean {
   return LOCAL_TOOL_HEALTH_COMMANDS.has(text);
+}
+
+function compactJson(value: unknown): string {
+  if (value == null) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function isToolLikeItem(item: { type?: string } | null | undefined): item is ToolLikeItem {
+  switch (item?.type) {
+    case "mcpToolCall":
+    case "dynamicToolCall":
+    case "fileChange":
+    case "webSearch":
+    case "imageView":
+    case "imageGeneration":
+    case "collabAgentToolCall":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function formatToolLabel(item: ToolLikeItem): string {
+  switch (item.type) {
+    case "mcpToolCall":
+      return [item.server, item.tool].filter(Boolean).join(".");
+    case "dynamicToolCall":
+      return item.tool || "dynamic tool";
+    case "fileChange":
+      return "apply patch";
+    case "webSearch":
+      return "web.search";
+    case "imageView":
+      return "image.view";
+    case "imageGeneration":
+      return "image.generate";
+    case "collabAgentToolCall":
+      return item.tool || "collab tool";
+    default:
+      return item.type || "tool";
+  }
+}
+
+function formatToolOutput(item: ToolLikeItem): string {
+  switch (item.type) {
+    case "fileChange": {
+      const paths = (item.changes ?? [])
+        .map((change) => change.path?.trim())
+        .filter((path): path is string => Boolean(path));
+      return paths.length > 0 ? paths.join("\n") : "";
+    }
+    case "webSearch":
+      return item.query?.trim() ?? "";
+    case "imageView":
+      return item.path?.trim() ?? "";
+    case "imageGeneration":
+      return compactJson(item.result);
+    default:
+      return compactJson(item.result) || compactJson(item.error);
+  }
+}
+
+function extractToolProgressText(params: ToolProgressEvent): string {
+  if (typeof params.delta === "string" && params.delta.trim()) {
+    return params.delta;
+  }
+  if (typeof params.message === "string" && params.message.trim()) {
+    return params.message;
+  }
+  if (params.progress != null) {
+    const text = compactJson(params.progress).trim();
+    if (text) {
+      return text;
+    }
+  }
+  if (params.update != null) {
+    const text = compactJson(params.update).trim();
+    if (text) {
+      return text;
+    }
+  }
+  return "";
 }
 
 export interface AppProps {
@@ -313,7 +427,18 @@ function CompanySession({
           command: string;
           aggregatedOutput: string | null;
         };
-        chat.onCommandStarted(cmdItem.id, cmdItem.command, cmdItem.aggregatedOutput ?? "");
+        chat.onCommandStarted(cmdItem.id, cmdItem.command, cmdItem.aggregatedOutput ?? "", "command");
+        return;
+      }
+
+      if (isToolLikeItem(params.item)) {
+        const toolItem = params.item;
+        chat.onCommandStarted(
+          toolItem.id ?? `tool-${Date.now()}`,
+          formatToolLabel(toolItem),
+          formatToolOutput(toolItem),
+          "tool",
+        );
       }
     },
     [chat, shouldHandleTurnEvent],
@@ -357,6 +482,20 @@ function CompanySession({
           cmdItem.aggregatedOutput ?? "",
           normalizeCommandStatus(cmdItem.status),
           cmdItem.exitCode ?? null,
+          "command",
+        );
+        return;
+      }
+
+      if (isToolLikeItem(params.item)) {
+        const toolItem = params.item as ToolLikeItem;
+        chat.onCommandExecution(
+          toolItem.id ?? `tool-${Date.now()}`,
+          formatToolLabel(toolItem),
+          formatToolOutput(toolItem),
+          normalizeCommandStatus(toolItem.status),
+          null,
+          "tool",
         );
       }
     },
@@ -369,6 +508,24 @@ function CompanySession({
         return;
       }
       chat.onCommandOutput(params.itemId, params.delta);
+    },
+    [chat.onCommandOutput, shouldHandleTurnEvent],
+  );
+
+  const handleToolProgress = useCallback(
+    (params: ToolProgressEvent) => {
+      const turnId = typeof params.turnId === "string" ? params.turnId : null;
+      const itemId = typeof params.itemId === "string" ? params.itemId : null;
+      if (!turnId || !itemId || !shouldHandleTurnEvent(turnId)) {
+        return;
+      }
+
+      const text = extractToolProgressText(params);
+      if (!text) {
+        return;
+      }
+
+      chat.onCommandOutput(itemId, text);
     },
     [chat.onCommandOutput, shouldHandleTurnEvent],
   );
@@ -394,6 +551,7 @@ function CompanySession({
           onTurnCompleted: handleTurnCompleted,
           onItemCompleted: handleItemCompleted,
           onCommandOutput: handleCommandOutput,
+          onToolProgress: handleToolProgress,
           onError: handleCodexError,
         }
       : { spawnFn: undefined, autoReconnect: false },
@@ -727,6 +885,7 @@ function CompanySession({
       <Box flexDirection="column" width="100%" height="100%">
         <HeaderBar
           connected={status.connected}
+          booting={status.booting}
           totalAgents={status.totalAgents}
           totalActiveRuns={status.totalActiveRuns}
           companyLabel={companyName || companyId}
@@ -745,6 +904,7 @@ function CompanySession({
             focused={focusTarget === "management"}
             shortcutsEnabled={!overlayVisible}
             connected={status.connected}
+            booting={status.booting}
             error={status.error}
             pendingApprovalsError={approvals.error}
             onInvokeSelectedAgent={handleInvokeSelectedAgent}

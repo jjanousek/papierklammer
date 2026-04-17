@@ -130,6 +130,7 @@ export interface TranscriptViewportState {
 const DEFAULT_VISIBLE_WINDOW = 20;
 const DEFAULT_WRAP_WIDTH = 76;
 const MIN_WRAP_WIDTH = 20;
+const MAX_ACTIVITY_OUTPUT_LINES = 4;
 
 interface DisplayLine {
   key: string;
@@ -295,38 +296,38 @@ function getCommandBlockLines(
 ): DisplayLine[] {
   const command = redactSecretLikeText(item.command, { relatedTexts });
   const output = redactSecretLikeText(item.output, { relatedTexts });
+  const outputLines = output ? output.split("\n") : [];
+  const visibleOutputLines =
+    item.kind === "tool"
+      ? outputLines.slice(0, MAX_ACTIVITY_OUTPUT_LINES)
+      : outputLines;
+  const hiddenOutputLineCount = Math.max(0, outputLines.length - visibleOutputLines.length);
   const status = item.status ?? "completed";
   const statusSummary =
     item.exitCode != null && status !== "running"
       ? `${status} (exit ${item.exitCode})`
       : status;
+  const commandLabel = item.kind === "tool" ? `tool: ${command}` : `$ ${command}`;
+  const lines: DisplayLine[] = [];
 
-  const lines: DisplayLine[] = [
-    { key: `${keyPrefix}-top`, text: "╭─" },
-  ];
-
-  for (const [index, line] of wrapWithPrefix("│ ", `$ ${command}`, width, {
-    continuationPrefix: "│ ",
-  }).entries()) {
+  for (const [index, line] of wrapWithPrefix(
+    "",
+    `${commandLabel} [${statusSummary}]`,
+    width,
+    {
+      continuationPrefix: "  ",
+    },
+  ).entries()) {
     lines.push({
       key: `${keyPrefix}-command-${index}`,
       text: line,
     });
   }
 
-  for (const [index, line] of wrapWithPrefix("│ ", `status: ${statusSummary}`, width, {
-    continuationPrefix: "│ ",
-  }).entries()) {
-    lines.push({
-      key: `${keyPrefix}-status-${index}`,
-      text: line,
-    });
-  }
-
-  if (output) {
-    for (const [lineIndex, rawLine] of output.split("\n").entries()) {
-      const wrapped = wrapWithPrefix("│ ", rawLine || " ", width, {
-        continuationPrefix: "│ ",
+  if (visibleOutputLines.length > 0) {
+    for (const [lineIndex, rawLine] of visibleOutputLines.entries()) {
+      const wrapped = wrapWithPrefix("  ", rawLine || " ", width, {
+        continuationPrefix: "  ",
         preserveWhitespace: true,
       });
       wrapped.forEach((wrappedLine, wrappedIndex) => {
@@ -336,9 +337,21 @@ function getCommandBlockLines(
         });
       });
     }
-  }
 
-  lines.push({ key: `${keyPrefix}-bottom`, text: "╰─" });
+    if (hiddenOutputLineCount > 0) {
+      for (const [index, line] of wrapWithPrefix(
+        "  ",
+        `… ${hiddenOutputLineCount} more line${hiddenOutputLineCount === 1 ? "" : "s"}`,
+        width,
+        { continuationPrefix: "  " },
+      ).entries()) {
+        lines.push({
+          key: `${keyPrefix}-hidden-${index}`,
+          text: line,
+        });
+      }
+    }
+  }
   return lines;
 }
 
@@ -357,10 +370,6 @@ function getAssistantDisplayLines(
       ? [block.text]
       : [block.item.command, block.item.output],
   );
-  const toolOnlyFallback =
-    textBlocks.length === 0 && commandBlocks.length > 0
-      ? summarizeToolOnlyTurn(commandBlocks.map((block) => block.item))
-      : null;
   const inlineOnly =
     blocks.length === 1
     && blocks[0]?.type === "text"
@@ -382,24 +391,35 @@ function getAssistantDisplayLines(
     return displayLines;
   }
 
-  const lines: DisplayLine[] = [
-    { key: `${keyPrefix}-label`, text: "Orchestrator:" },
-  ];
-
-  if (toolOnlyFallback) {
-    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-top`, relatedTexts));
-  }
+  const lines: DisplayLine[] = [];
+  let prefixedAssistantLead = false;
 
   blocks.forEach((block, index) => {
+    const blockLines =
+      block.type === "text"
+        ? getTextBlockLines(block.text, width, `${keyPrefix}-text-${index}`, relatedTexts)
+        : getCommandBlockLines(block.item, width, `${keyPrefix}-command-${index}`, relatedTexts);
+
+    if (!prefixedAssistantLead && blockLines.length > 0) {
+      const firstLine = blockLines[0];
+      if (firstLine?.text) {
+        blockLines[0] = {
+          ...firstLine,
+          text: `Orchestrator: ${firstLine.text}`,
+        };
+        prefixedAssistantLead = true;
+      }
+    }
+
     if (block.type === "text") {
-      lines.push(...getTextBlockLines(block.text, width, `${keyPrefix}-text-${index}`, relatedTexts));
+      lines.push(...blockLines);
       return;
     }
-    lines.push(...getCommandBlockLines(block.item, width, `${keyPrefix}-command-${index}`, relatedTexts));
+    lines.push(...blockLines);
   });
 
-  if (toolOnlyFallback) {
-    lines.push(...getTextBlockLines(toolOnlyFallback, width, `${keyPrefix}-fallback-bottom`, relatedTexts));
+  if (!prefixedAssistantLead) {
+    lines.push({ key: `${keyPrefix}-label`, text: "Orchestrator:" });
   }
 
   if (options.streaming && textBlocks.length > 0) {
@@ -502,7 +522,11 @@ function getAssistantBlocks(message: ChatMessage): TranscriptBlock[] {
   }
 
   const blocks: TranscriptBlock[] = [];
-  if (message.text.trim().length > 0) {
+  const isRedundantToolOnlySummary =
+    (message.items?.length ?? 0) > 0
+    && message.text.trim() === summarizeToolOnlyTurn(message.items ?? []);
+
+  if (message.text.trim().length > 0 && !isRedundantToolOnlySummary) {
     blocks.push({
       type: "text",
       text: message.text,

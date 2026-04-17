@@ -108,6 +108,7 @@ export function IssueDesk({
       ? activeRuns.find((run) => run.issueId === selectedIssue.id)
       : null;
   const visibleIssueCount = compact ? 4 : 7;
+  const showEmptyState = activeIssues.length === 0 && selectedIssue == null;
 
   return (
     <Box
@@ -132,13 +133,21 @@ export function IssueDesk({
         {pendingApprovals.length} pending approval{pendingApprovals.length === 1 ? "" : "s"} · {activeRuns.length} live run{activeRuns.length === 1 ? "" : "s"}
       </Text>
       {error ? <Text color="red">{error}</Text> : null}
-      <Box marginTop={1} flexDirection="row" gap={2}>
-        <Box flexDirection="column" width="58%">
-          <Text bold>Top issues</Text>
-          {activeIssues.length === 0 ? (
-            <Text dimColor>No active issues. Press n to draft one.</Text>
-          ) : (
-            activeIssues.slice(0, visibleIssueCount).map((issue, index) => {
+      {showEmptyState ? (
+        <Box marginTop={1} flexDirection="column">
+          <Text bold>Queue</Text>
+          <Text dimColor>No active issues yet.</Text>
+          <Text dimColor>Press n to draft a new issue for this company.</Text>
+          <Box marginTop={1} flexDirection="column">
+            <Text bold>Inspector</Text>
+            <Text dimColor>Select an issue once work is queued to inspect the current workstream.</Text>
+          </Box>
+        </Box>
+      ) : (
+        <Box marginTop={1} flexDirection="row" gap={2}>
+          <Box flexDirection="column" width="58%">
+            <Text bold>Top issues</Text>
+            {activeIssues.slice(0, visibleIssueCount).map((issue, index) => {
               const effectiveStatus = issue.projectedStatus ?? issue.status;
               const isSelected = index === selectedIndex;
               return (
@@ -146,36 +155,36 @@ export function IssueDesk({
                   {issue.priority === "critical" ? "!" : "•"} {issueLabel(issue)} [{effectiveStatus}/{issue.priority}] {issue.title}
                 </Text>
               );
-            })
-          )}
-        </Box>
-        <Box flexDirection="column" flexGrow={1}>
-          <Text bold>Selected</Text>
-          {selectedIssue ? (
-            <>
-              <Text>
-                {issueLabel(selectedIssue)} · {(selectedIssue.projectedStatus ?? selectedIssue.status)} · {selectedIssue.priority}
-              </Text>
-              <Text dimColor>
-                assignee {resolveAssigneeLabel(selectedIssue, agents)} · updated {new Date(selectedIssue.updatedAt).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </Text>
-              {selectedIssueRun ? (
-                <Text dimColor>
-                  live run {selectedIssueRun.runId.slice(0, 8)} · {selectedIssueRun.agentName}
+            })}
+          </Box>
+          <Box flexDirection="column" flexGrow={1}>
+            <Text bold>Selected</Text>
+            {selectedIssue ? (
+              <>
+                <Text>
+                  {issueLabel(selectedIssue)} · {(selectedIssue.projectedStatus ?? selectedIssue.status)} · {selectedIssue.priority}
                 </Text>
-              ) : null}
-              <Text>{summarizeText(selectedIssue.description, compact ? 120 : 220)}</Text>
-            </>
-          ) : (
-            <Text dimColor>Select an issue to inspect the current workstream.</Text>
-          )}
+                <Text dimColor>
+                  assignee {resolveAssigneeLabel(selectedIssue, agents)} · updated {new Date(selectedIssue.updatedAt).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </Text>
+                {selectedIssueRun ? (
+                  <Text dimColor>
+                    live run {selectedIssueRun.runId.slice(0, 8)} · {selectedIssueRun.agentName}
+                  </Text>
+                ) : null}
+                <Text>{summarizeText(selectedIssue.description, compact ? 120 : 220)}</Text>
+              </>
+            ) : (
+              <Text dimColor>Select an issue to inspect the current workstream.</Text>
+            )}
+          </Box>
         </Box>
-      </Box>
+      )}
     </Box>
   );
 }

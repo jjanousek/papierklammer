@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CodexClient, type CodexClientOptions } from "../codex/client.js";
-import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ReasoningDeltaParams, ReasoningEffort, ReasoningSummary, TurnInfo } from "../codex/types.js";
+import type { DeltaParams, TurnCompletedParams, ItemStartedParams, ItemCompletedParams, CommandOutputDeltaParams, ToolProgressParams, ReasoningDeltaParams, ReasoningEffort, ReasoningSummary, TurnInfo } from "../codex/types.js";
 
 export type ConnectionState = "disconnected" | "connected" | "thinking";
 
@@ -17,6 +17,8 @@ export interface UseCodexOptions extends CodexClientOptions {
   onItemCompleted?: (params: ItemCompletedParams) => void;
   /** Called when command output arrives. */
   onCommandOutput?: (params: CommandOutputDeltaParams) => void;
+  /** Called when non-shell tool progress arrives. */
+  onToolProgress?: (params: ToolProgressParams) => void;
   /** Called when reasoning summary text arrives. */
   onReasoningDelta?: (params: ReasoningDeltaParams) => void;
   /** Called when a request or connection action fails. */
@@ -116,6 +118,7 @@ export function useCodex(opts: UseCodexOptions = {}): UseCodexResult {
         optsRef.current.onTurnCompleted?.(params);
       },
       onCommandOutput: (params) => optsRef.current.onCommandOutput?.(params),
+      onToolProgress: (params) => optsRef.current.onToolProgress?.(params),
       onReasoningDelta: (params) => optsRef.current.onReasoningDelta?.(params),
       onConnected: () => {
         setConnectionState("connected");

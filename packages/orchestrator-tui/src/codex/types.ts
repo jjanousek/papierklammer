@@ -203,6 +203,16 @@ export interface CommandOutputDeltaParams {
   delta: string;
 }
 
+export interface ToolProgressParams {
+  threadId?: string;
+  turnId?: string;
+  itemId?: string;
+  delta?: string;
+  progress?: unknown;
+  update?: unknown;
+  message?: string;
+}
+
 export interface ReasoningDeltaParams {
   threadId: string;
   turnId: string;

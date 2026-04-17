@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 
 export interface HeaderBarProps {
   connected: boolean;
+  booting?: boolean;
   totalAgents: number;
   totalActiveRuns: number;
   companyLabel?: string | null;
@@ -19,6 +20,7 @@ function truncate(text: string, maxLength: number): string {
 
 export function HeaderBar({
   connected,
+  booting = false,
   totalAgents,
   totalActiveRuns,
   companyLabel = null,
@@ -29,7 +31,11 @@ export function HeaderBar({
   const leftLabel = compact
     ? truncate(companyLabel ? `PK · ${companyLabel}` : "PK", Math.max(12, Math.floor((columns ?? 80) * 0.45)))
     : truncate(companyLabel ? `Papierklammer · ${companyLabel}` : "Papierklammer", Math.max(18, Math.floor((columns ?? 120) * 0.5)));
-  const rightLabel = connected
+  const rightLabel = booting && !error
+    ? compact
+      ? "syncing…"
+      : "Connecting…"
+    : connected
     ? compact
       ? `${connected ? "up" : "down"} · a:${totalAgents} · r:${totalActiveRuns}`
       : `${connected ? "Connected" : "Disconnected"} | ${totalAgents} agent${totalAgents !== 1 ? "s" : ""} | ${totalActiveRuns} active run${totalActiveRuns !== 1 ? "s" : ""}`
@@ -56,7 +62,7 @@ export function HeaderBar({
         </Text>
       </Box>
       <Box>
-        <Text color={connected ? "green" : "red"}>{rightLabel}</Text>
+        <Text color={booting && !error ? "yellow" : connected ? "green" : "red"}>{rightLabel}</Text>
       </Box>
     </Box>
   );

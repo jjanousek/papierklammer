@@ -11,6 +11,7 @@ import type {
   ItemCompletedParams,
   TurnCompletedParams,
   CommandOutputDeltaParams,
+  ToolProgressParams,
 } from "../codex/types.js";
 
 // ── Test helpers ─────────────────────────────────────────────────────
@@ -619,6 +620,33 @@ describe("CodexClient", () => {
     expect(output).not.toBeNull();
     expect(output!.delta).toBe("npm test output...\n");
     expect(output!.itemId).toBe("cmd_1");
+  });
+
+  it("fires onToolProgress callback for MCP tool updates", async () => {
+    client = new CodexClient({ spawnFn, autoReconnect: false });
+
+    let progress: ToolProgressParams | null = null;
+    client.callbacks.onToolProgress = (params) => { progress = params; };
+
+    const initP = client.initialize();
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await initP;
+
+    respond(mockProc, {
+      method: "item/mcpToolCall/progress",
+      params: {
+        threadId: "thr_abc",
+        turnId: "turn_1",
+        itemId: "tool_1",
+        delta: "Searching issues...",
+      },
+    });
+    await tick();
+
+    expect(progress).not.toBeNull();
+    expect(progress!.delta).toBe("Searching issues...");
+    expect(progress!.itemId).toBe("tool_1");
   });
 
   // ── Destroy ──────────────────────────────────────────────────────

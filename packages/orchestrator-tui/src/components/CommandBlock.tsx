@@ -18,6 +18,7 @@ export function CommandBlock({ item }: CommandBlockProps): React.ReactElement {
   const command = redactSecretLikeText(item.command, { relatedTexts });
   const output = redactSecretLikeText(item.output, { relatedTexts });
   const status = item.status ?? "completed";
+  const commandLabel = item.kind === "tool" ? `tool: ${command}` : `$ ${command}`;
   const statusColor =
     status === "running"
       ? "blue"
@@ -38,8 +39,9 @@ export function CommandBlock({ item }: CommandBlockProps): React.ReactElement {
       paddingX={1}
       marginY={0}
     >
-      <Text color="yellow">$ {command}</Text>
-      <Text color={statusColor}>status: {statusSummary}</Text>
+      <Text color="yellow">
+        {commandLabel} <Text color={statusColor}>[{statusSummary}]</Text>
+      </Text>
       {output ? <Text dimColor>{output}</Text> : null}
     </Box>
   );

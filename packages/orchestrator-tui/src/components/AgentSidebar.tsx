@@ -52,6 +52,8 @@ export interface AgentSidebarProps {
   shortcutsEnabled?: boolean;
   /** Whether the sidebar is connected to the orchestrator API */
   connected?: boolean;
+  /** Whether the first status poll is still in flight */
+  booting?: boolean;
   /** Error message from the last failed poll */
   error?: string | null;
   /** Error message from pending approvals polling */
@@ -73,6 +75,7 @@ export function AgentSidebar({
   focused = false,
   shortcutsEnabled = true,
   connected = true,
+  booting = false,
   error = null,
   pendingApprovalsError = null,
   onInvokeSelectedAgent,
@@ -187,13 +190,27 @@ export function AgentSidebar({
       <Text bold underline>
         Agents
       </Text>
-      {!connected ? (
+      {booting && !disconnectedError ? (
+        <>
+          <Text color="yellow">Connecting…</Text>
+          <Text dimColor>Waiting for orchestrator status.</Text>
+        </>
+      ) : !connected ? (
         <>
           <Text color="red">Disconnected</Text>
           {disconnectedError ? <Text dimColor>{disconnectedError}</Text> : null}
         </>
       ) : agents.length === 0 ? (
-        <Text dimColor>No agents connected</Text>
+        <>
+          <Text dimColor>0 roster · 0 running · 0 blocked</Text>
+          <Text>No agents connected</Text>
+          <Box marginTop={1} flexDirection="column">
+            <Text bold underline>
+              Next Step
+            </Text>
+            <Text dimColor>Open the board UI to create or connect your first agent.</Text>
+          </Box>
+        </>
       ) : (
         <>
           <Text dimColor>

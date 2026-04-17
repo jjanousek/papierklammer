@@ -306,9 +306,9 @@ describe("MessageList", () => {
       />,
     );
     const frame = lastFrame()!;
-    expect(frame).toContain("Tool activity");
     expect(frame).toContain("$ npm test");
     expect(frame).toContain("completed");
+    expect(frame).not.toContain("Tool activity");
     unmount();
   });
 
@@ -351,6 +351,33 @@ describe("MessageList", () => {
     const frame = lastFrame()!;
     expect(frame).toContain("$ npm test");
     expect(frame).toContain("All tests passed");
+    unmount();
+  });
+
+  it("renders non-command tool calls with a compact label and truncated output", () => {
+    const pending: CommandItem[] = [
+      {
+        command: "github.search_issues",
+        output: Array.from({ length: 9 }, (_, index) => `result line ${index + 1}`).join("\n"),
+        kind: "tool",
+        status: "completed",
+      },
+    ];
+    const { lastFrame, unmount } = render(
+      <MessageList
+        messages={[]}
+        streamingText=""
+        isThinking={false}
+        pendingCommandItems={pending}
+      />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("tool: github.search_issues");
+    expect(frame).toContain("result line 1");
+    expect(frame).toContain("result line 4");
+    expect(frame).toContain("5 more lines");
+    expect(frame).not.toContain("result line 5");
+    expect(frame).not.toContain("result line 9");
     unmount();
   });
 

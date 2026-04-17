@@ -56,6 +56,25 @@ function respond(proc: ReturnType<typeof createMockProcess>, msg: unknown): void
 // ── VAL-TUI-031: API connection error displayed gracefully ──────────
 
 describe("API connection error handling (VAL-TUI-031)", () => {
+  it("shows Connecting instead of Disconnected before the first successful poll resolves", () => {
+    const pendingFetch: typeof globalThis.fetch = vi.fn(() => new Promise<Response>(() => {})) as typeof globalThis.fetch;
+
+    const { lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey=""
+        companyId="test-company"
+        fetchFn={pendingFetch}
+        pollInterval={60000}
+      />,
+    );
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("Connecting");
+    expect(frame).not.toContain("Disconnected");
+    unmount();
+  });
+
   it("shows Disconnected in header when API fails", async () => {
     const mockFetch = createFailingFetch("Connection refused");
 

@@ -671,7 +671,6 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     await tick();
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Tool activity");
     expect(frame).toContain("api/health");
     expect(frame).toContain('{"status":"ok"}');
     expect(frame).toContain("completed");
@@ -738,10 +737,117 @@ describe("End-to-end chat flow (VAL-TUI-CROSS-001)", () => {
     await tick(100);
 
     const frame = lastFrame()!;
-    expect(frame).toContain("Tool activity");
     expect(frame).toContain("GET http://localhost:3100/api/health");
     expect(frame).toContain('"status": "ok"');
     expect(frame).toContain("completed");
+
+    unmount();
+  });
+
+  it("renders MCP tool calls as compact tool activity instead of shell commands", async () => {
+    const mockProc = createMockProcess();
+    const mockSpawn = vi.fn().mockReturnValue(mockProc);
+    const mockFetch = createMockFetch();
+
+    const { stdin, lastFrame, unmount } = render(
+      <App
+        url="http://localhost:3100"
+        apiKey="test-key"
+        companyId="test-company"
+        fetchFn={mockFetch}
+        pollInterval={60000}
+        spawnFn={mockSpawn}
+        enableCodex={true}
+      />,
+    );
+
+    await tick();
+    respond(mockProc, { id: 0, result: { userAgent: "codex/0.117.0" } });
+    await tick();
+
+    stdin.write("\t");
+    await tick();
+    stdin.write("\t");
+    await tick();
+    stdin.write("Search GitHub");
+    await tick();
+    stdin.write("\r");
+    await tick(100);
+
+    respond(mockProc, { id: 1, result: { thread: { id: "thr_mcp_tool" } } });
+    await tick();
+    respond(mockProc, {
+      id: 2,
+      result: { turn: { id: "turn_mcp_tool", status: "inProgress", items: [], error: null } },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/started",
+      params: {
+        threadId: "thr_mcp_tool",
+        turnId: "turn_mcp_tool",
+        item: {
+          type: "mcpToolCall",
+          id: "mcp_tool_1",
+          server: "github",
+          tool: "search_issues",
+          arguments: { query: "status bar bug" },
+          status: "running",
+          result: null,
+          error: null,
+        },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/mcpToolCall/progress",
+      params: {
+        threadId: "thr_mcp_tool",
+        turnId: "turn_mcp_tool",
+        itemId: "mcp_tool_1",
+        delta: "Searching matching issues...",
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "item/completed",
+      params: {
+        threadId: "thr_mcp_tool",
+        turnId: "turn_mcp_tool",
+        item: {
+          type: "mcpToolCall",
+          id: "mcp_tool_1",
+          server: "github",
+          tool: "search_issues",
+          arguments: { query: "status bar bug" },
+          status: "completed",
+          result: {
+            count: 2,
+            items: ["#101", "#102"],
+          },
+          error: null,
+        },
+      },
+    });
+    await tick();
+
+    respond(mockProc, {
+      method: "turn/completed",
+      params: {
+        threadId: "thr_mcp_tool",
+        turn: { id: "turn_mcp_tool", status: "completed", items: [], error: null },
+      },
+    });
+    await tick();
+
+    const frame = lastFrame()!;
+    expect(frame).toContain("tool: github.search_issues");
+    expect(frame).toContain("Searching matching issues...");
+    expect(frame).toContain('"count": 2');
+    expect(frame).not.toContain("$ github.search_issues");
 
     unmount();
   });

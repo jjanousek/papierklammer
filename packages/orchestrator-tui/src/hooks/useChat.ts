@@ -3,6 +3,7 @@ import { useEffect } from "react";
 
 export interface CommandItem {
   id?: string;
+  kind?: "command" | "tool";
   command: string;
   output: string;
   status?: "running" | "completed" | "failed" | "interrupted";
@@ -59,7 +60,12 @@ export interface UseChatResult {
   /** Finalize a failed turn, preserving seen output before surfacing the error. */
   onTurnFailed: (message: string) => void;
   /** Track the start of a command execution. */
-  onCommandStarted: (itemId: string, command: string, output?: string) => void;
+  onCommandStarted: (
+    itemId: string,
+    command: string,
+    output?: string,
+    kind?: CommandItem["kind"],
+  ) => void;
   /** Append live output to a running command execution. */
   onCommandOutput: (itemId: string, outputDelta: string) => void;
   /** Track a finalized command execution. */
@@ -69,6 +75,7 @@ export interface UseChatResult {
     output: string,
     status?: "running" | "completed" | "failed" | "interrupted",
     exitCode?: number | null,
+    kind?: CommandItem["kind"],
   ) => void;
   /** Surface an assistant-visible error without crashing the TUI. */
   onError: (message: string) => void;
@@ -305,7 +312,12 @@ export function useChat(): UseChatResult {
   }, [finalizePendingTurn]);
 
   const onCommandStarted = useCallback(
-    (itemId: string, command: string, output = ""): void => {
+    (
+      itemId: string,
+      command: string,
+      output = "",
+      kind: CommandItem["kind"] = "command",
+    ): void => {
       updatePendingBlocks((blocks) => {
         const existingIndex = blocks.findIndex(
           (block) => block.type === "command" && block.item.id === itemId,
@@ -316,7 +328,7 @@ export function useChat(): UseChatResult {
             {
               type: "command",
               itemId,
-              item: { id: itemId, command, output, status: "running", exitCode: null },
+              item: { id: itemId, kind, command, output, status: "running", exitCode: null },
             },
           ];
         }
@@ -327,6 +339,7 @@ export function useChat(): UseChatResult {
                 ...block,
                 item: {
                   ...block.item,
+                  kind,
                   command,
                   output: output || block.item.output,
                   status: block.item.status ?? "running",
@@ -353,6 +366,7 @@ export function useChat(): UseChatResult {
               itemId,
               item: {
                 id: itemId,
+                kind: "tool",
                 command: "Tool call",
                 output: outputDelta,
                 status: "running",
@@ -386,6 +400,7 @@ export function useChat(): UseChatResult {
       output: string,
       status: "running" | "completed" | "failed" | "interrupted" = "completed",
       exitCode: number | null = null,
+      kind: CommandItem["kind"] = "command",
     ): void => {
       updatePendingBlocks((blocks) => {
         const existingIndex = blocks.findIndex(
@@ -397,7 +412,7 @@ export function useChat(): UseChatResult {
             {
               type: "command",
               itemId,
-              item: { id: itemId, command, output, status, exitCode },
+              item: { id: itemId, kind, command, output, status, exitCode },
             },
           ];
         }
@@ -408,8 +423,15 @@ export function useChat(): UseChatResult {
                 ...block,
                 item: {
                   ...block.item,
+                  kind,
                   command,
-                  output: output || block.item.output,
+                  output:
+                    kind === "tool"
+                      ? [block.item.output, output]
+                          .filter((value) => Boolean(value && value.trim()))
+                          .filter((value, valueIndex, values) => values.indexOf(value) === valueIndex)
+                          .join("\n")
+                      : (output || block.item.output),
                   status,
                   exitCode,
                 },

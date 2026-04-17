@@ -54,7 +54,7 @@ export function ChatPanel({
   // Account for the "Chat" header line and panel border (top + bottom = 2) + paddingY
   // The MessageList gets the remaining space inside the panel
   const hasReasoning = reasoningActive || reasoningText.trim().length > 0;
-  const reasoningHeight = hasReasoning ? Math.min(8, Math.max(4, Math.floor((visibleHeight ?? 12) * 0.3))) : 0;
+  const reasoningHeight = hasReasoning ? Math.min(6, Math.max(4, Math.floor((visibleHeight ?? 12) * 0.25))) : 0;
   const messageListHeight = visibleHeight != null ? Math.max(1, visibleHeight - 3 - reasoningHeight) : undefined;
 
   return (

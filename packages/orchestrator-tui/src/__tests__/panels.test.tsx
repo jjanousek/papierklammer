@@ -2,6 +2,7 @@ import React from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render } from "ink-testing-library";
 import { AgentSidebar } from "../components/AgentSidebar.js";
+import { IssueDesk } from "../components/IssueDesk.js";
 import { InputBar } from "../components/InputBar.js";
 import { HeaderBar } from "../components/HeaderBar.js";
 import { StatusBar } from "../components/StatusBar.js";
@@ -99,6 +100,16 @@ describe("AgentSidebar", () => {
   it("shows 'No agents connected' when list is empty", () => {
     const { lastFrame, unmount } = render(<AgentSidebar agents={[]} />);
     expect(lastFrame()).toContain("No agents connected");
+    expect(lastFrame()).toContain("Next Step");
+    unmount();
+  });
+
+  it("shows a connecting state before the first successful poll resolves", () => {
+    const { lastFrame, unmount } = render(<AgentSidebar agents={[]} booting />);
+    const frame = lastFrame()!;
+    expect(frame).toContain("Connecting");
+    expect(frame).toContain("Waiting for");
+    expect(frame).toContain("orchestrator status.");
     unmount();
   });
 
@@ -296,6 +307,14 @@ describe("HeaderBar", () => {
     unmount();
   });
 
+  it("shows Connecting status while the first poll is in flight", () => {
+    const { lastFrame, unmount } = render(
+      <HeaderBar connected={false} booting totalAgents={0} totalActiveRuns={0} />,
+    );
+    expect(lastFrame()).toContain("Connecting");
+    unmount();
+  });
+
   it("shows agent count", () => {
     const { lastFrame, unmount } = render(
       <HeaderBar connected={true} totalAgents={5} totalActiveRuns={0} />,
@@ -437,6 +456,26 @@ describe("StatusBar", () => {
       <StatusBar codexState="connected" />,
     );
     expect(lastFrame()).not.toContain("Thread:");
+    unmount();
+  });
+});
+
+describe("IssueDesk", () => {
+  it("uses a single-column empty state when no issues are queued", () => {
+    const { lastFrame, unmount } = render(
+      <IssueDesk
+        issues={[]}
+        agents={[]}
+        activeRuns={[]}
+        pendingApprovals={[]}
+        selectedIndex={0}
+      />,
+    );
+    const frame = lastFrame()!;
+    expect(frame).toContain("No active issues yet.");
+    expect(frame).toContain("Press n to draft a new issue");
+    expect(frame).toContain("Inspector");
+    expect(frame).not.toContain("Select an issue to inspect the");
     unmount();
   });
 });

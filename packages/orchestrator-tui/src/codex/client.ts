@@ -16,6 +16,7 @@ import type {
   ItemCompletedParams,
   TurnCompletedParams,
   CommandOutputDeltaParams,
+  ToolProgressParams,
   ReasoningDeltaParams,
   WireMessage,
   ReasoningEffort,
@@ -40,6 +41,7 @@ export interface CodexCallbacks {
   onItemCompleted?: (params: ItemCompletedParams) => void;
   onTurnCompleted?: (params: TurnCompletedParams) => void;
   onCommandOutput?: (params: CommandOutputDeltaParams) => void;
+  onToolProgress?: (params: ToolProgressParams) => void;
   onReasoningDelta?: (params: ReasoningDeltaParams) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -253,6 +255,10 @@ export class CodexClient {
         break;
       case "item/commandExecution/outputDelta":
         this.callbacks.onCommandOutput?.(msg.params as CommandOutputDeltaParams);
+        break;
+      case "item/mcpToolCall/progress":
+      case "item/fileChange/outputDelta":
+        this.callbacks.onToolProgress?.(msg.params as ToolProgressParams);
         break;
       case "item/reasoning/textDelta":
       case "item/reasoning/summaryTextDelta":
