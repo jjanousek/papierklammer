@@ -38,6 +38,7 @@
 - If the worker starts `qa-app`, stop it via the mission pid file after validation is complete.
 - Do not use Docker-based release smoke flows in this mission.
 - Use the mission home at `/tmp/papierklammer-onboarding-mission` for any mission-started service.
+- For bootstrap/auth gate assertions, if port `3100` is already occupied by a healthy non-worker-owned app and the mission cannot start a separate authenticated instance on the required port, browser-side mock injection of health/session responses against the reused app is an acceptable fallback. Capture the mocked routes, final URL, and screenshots so the evidence is auditable.
 
 ## Assertion-specific guidance
 
