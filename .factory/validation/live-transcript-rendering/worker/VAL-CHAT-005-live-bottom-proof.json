@@ -1,0 +1,34 @@
+{
+  "featureId": "tui-explicit-live-bottom-clear-state",
+  "assertionId": "VAL-CHAT-005",
+  "result": "same-session proof captured; no product code change required",
+  "validatedAt": "2026-04-17",
+  "session": "livebottom-4b506959",
+  "serverUrl": "http://127.0.0.1:3100",
+  "company": {
+    "id": "8578b6b1-7746-4b0d-8c59-c89c82ede58d",
+    "name": "Board Route Co"
+  },
+  "steps": [
+    {
+      "snapshot": "VAL-CHAT-005-live-bottom-before.txt",
+      "observed": "The shipped status bar explicitly reported `transcript: live bottom` before leaving the bottom."
+    },
+    {
+      "snapshot": "VAL-CHAT-005-off-bottom-before-append.txt",
+      "observed": "After `PageUp`, the transcript stayed off-bottom and showed both the inline indicator (`▼ 11 newer lines below — l to jump live...`) and status-bar state `transcript: 11 newer below`."
+    },
+    {
+      "snapshot": "VAL-CHAT-005-off-bottom-after-append.txt",
+      "observed": "While still off-bottom, sending another prompt appended newer activity in the same session; the transcript remained anchored away from bottom and the status bar showed `transcript: 66 newer below`."
+    },
+    {
+      "snapshot": "VAL-CHAT-005-returned-live.txt",
+      "observed": "Using the shipped `l` follow-live control immediately removed the `▼ ... newer lines below` indicator and returned the status bar to `transcript: live bottom` in the same session."
+    },
+    {
+      "snapshot": "VAL-CHAT-005-returned-live-stable.txt",
+      "observed": "After the in-flight turn settled, the shell remained at `transcript: live bottom` with no newer-activity indicator, confirming the cleared state is stable."
+    }
+  ]
+}
