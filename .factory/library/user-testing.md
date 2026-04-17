@@ -46,11 +46,13 @@
 
 - Prefer the `qa-app` service from `.factory/services.yaml` when a healthy mission-owned app is needed.
 - If `http://127.0.0.1:3100/api/health` is already healthy and the worker did not start that process, reuse it and do not stop it.
-- If the worker starts `qa-app`, stop it via the mission pid file after validation is complete.
+- If the worker starts `qa-app` or `qa-app-first-run`, stop it via the mission pid file after validation is complete.
 - Do not use Docker-based release smoke flows in this mission.
 - Use the mission home at `/tmp/papierklammer-onboarding-mission` for any mission-started service.
+- For onboarding-entry zero-company route recovery, use the real first-run fixture instead of a seeded shared app: run `first-run-fixture-reset`, start `qa-app-first-run`, wait for `/api/health`, and verify `GET /api/companies` returns `[]` before opening the browser.
+- Use that reset fixture for `/`, `/dashboard`, `/issues`, `/companies`, and `/onboarding` recovery checks without browser-side API mocking, then stop `qa-app-first-run` when the zero-company bundle is done.
 - For bootstrap/auth gate assertions, if port `3100` is already occupied by a healthy non-worker-owned app and the mission cannot start a separate authenticated instance on the required port, browser-side mock injection of health/session responses against the reused app is an acceptable fallback. Capture the mocked routes, final URL, and screenshots so the evidence is auditable.
-- On the current onboarding mission app, a seeded company can prevent auditable zero-company route recovery; if browser-side interception of local `/api/*` traffic is unstable, treat first-run root/deep-link and bootstrap/auth assertions as blocked and schedule a fresh first-run round instead of mutating the shared seeded state.
+- If port `3100` is already occupied by a healthy app that you did not start, do not stop it just to force the first-run fixture; treat the zero-company bundle as blocked until the mission-owned fixture can own port `3100`.
 
 ## Assertion-specific guidance
 
@@ -74,6 +76,7 @@
 - Reuse the already-healthy app at `http://127.0.0.1:3100`; do not start another app stack unless health fails during the assigned run.
 - Stay within one non-default `agent-browser` session for a milestone bundle and do not open concurrent browser sessions against the shared app.
 - Keep onboarding-entry validation focused on route recovery, shell clarity, bootstrap/auth gating, close/reopen, and history behavior.
+- For zero-company onboarding-entry assertions, prefer `qa-app-first-run` immediately after `first-run-fixture-reset` so the browser sees real first-run state and `GET /api/companies` actually returns `[]`.
 - Avoid unnecessary entity-creating flows for onboarding-entry; prefer route and shell checks unless the assigned assertion explicitly requires mutation proof.
 - Save durable screenshots and JSON output under `.factory/validation/onboarding-entry/user-testing/` so synthesis can trace each `VAL-*` assertion to evidence.
 
