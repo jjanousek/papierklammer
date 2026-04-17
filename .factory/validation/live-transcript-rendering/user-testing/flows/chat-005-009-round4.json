@@ -1,0 +1,108 @@
+{
+  "groupId": "chat-005-009-round4",
+  "testedAt": "2026-04-17T00:48:58.093359+00:00",
+  "milestone": "live-transcript-rendering",
+  "surface": "TUI",
+  "isolation": {
+    "missionDir": "/Users/aischool/.factory/missions/abee5199-3317-4690-954c-4ab00897b596",
+    "appUrl": "http://127.0.0.1:3100",
+    "port": 3100,
+    "companyId": "8578b6b1-7746-4b0d-8c59-c89c82ede58d",
+    "companyName": "Board Route Co",
+    "temporaryHome": "/tmp/papierklammer-tui-mission",
+    "instanceId": "tui-mission",
+    "launchCommand": "env PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission pnpm --dir /Users/aischool/work/papierklammer_droid dev:tui -- --url http://127.0.0.1:3100"
+  },
+  "toolsUsed": [
+    "tuistory",
+    "curl"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CHAT-005",
+      "title": "Long transcripts are keyboard-scrollable and show when new activity is below",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Launch the shipped TUI, submit an exact slow shell probe (`for i in $(seq 1 150); do printf '%s\\n' \"$i\"; sleep 0.2; done`), and let live output begin.",
+          "expected": "A long-running turn should stream enough transcript lines to test off-bottom scrolling in the same session.",
+          "observed": "The real PTY session streamed numbered output live in the chat panel while remaining connected to the shared app on port 3100."
+        },
+        {
+          "action": "Press `Tab` to move focus to management, then press `PageUp` while the turn is still streaming.",
+          "expected": "The reading position should stay stable off-bottom and the UI should show that newer activity exists below.",
+          "observed": "The captured off-bottom frame showed `\u25bc 48 newer lines below \u2014 l to jump live, or PageDown / Shift+\u2193 to follow` with status bar `focus: management` and `transcript: 48 newer below`."
+        },
+        {
+          "action": "Press `l` in the same session, then let the turn settle.",
+          "expected": "The transcript should jump back to the live bottom and clear the newer-activity indicator.",
+          "observed": "The return-live frame immediately switched to `transcript: live bottom` with no newer-below indicator, and the settled frame stayed at live bottom after the turn finished."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-005-off-bottom.txt",
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-005-return-live.txt",
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-005-settled-live-bottom.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-005-off-bottom.png",
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-005-return-live.png",
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-005-settled-live-bottom.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "GET /api/health -> 200 and GET /api/companies -> seeded Board Route Co; see live-transcript-rendering/chat-005-009-round4/precheck.txt"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CHAT-009",
+      "title": "Secret-like environment values are not rendered raw in operator-visible transcript surfaces",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Submit a deterministic env-style probe whose prompt builds the fake value from visible fragments instead of pasting the full raw value: `env OPENAI_API_KEY=$(printf '%s%s%s%s' fakeplaceholder 1234567890 abcdef 1234567890) printenv OPENAI_API_KEY`.",
+          "expected": "The operator-visible transcript may preserve context, but the reconstructed fake secret should remain redacted or otherwise non-recoverable across visible surfaces.",
+          "observed": "The user turn showed only the split fragments, and the finalized tool block partially redacted the env assignment in the command line."
+        },
+        {
+          "action": "Inspect the finalized tool-output block after the turn settles.",
+          "expected": "The printed secret-like value should still be masked in the visible tool output and settled transcript.",
+          "observed": "The settled tool-output block rendered `fakeplaceholder1234567890abcdef1234567890` verbatim on screen, making the raw value recoverable from an operator-visible transcript surface."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-009-fragment-built-settled.txt"
+        ],
+        "screenshots": [
+          "live-transcript-rendering/chat-005-009-round4/VAL-CHAT-009-fragment-built-settled.png"
+        ],
+        "consoleErrors": "n/a (TUI flow)",
+        "network": "GET /api/health -> 200 and GET /api/companies -> seeded Board Route Co; see live-transcript-rendering/chat-005-009-round4/precheck.txt"
+      },
+      "issues": "FAIL: even when the operator prompt supplied only fragments, the finalized tool-output block still exposed the reconstructed fake OPENAI_API_KEY-like value verbatim (`fakeplaceholder1234567890abcdef1234567890`)."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`tuistory type` dropped characters in the Ink composer for longer prompts.",
+      "resolved": true,
+      "resolution": "Switched to a one-character-at-a-time helper that primarily used `tuistory press` and only fell back to single-character `tuistory type` for punctuation.",
+      "affectedAssertions": [
+        "VAL-CHAT-005",
+        "VAL-CHAT-009"
+      ]
+    },
+    {
+      "description": "Transcript scroll shortcuts did not take effect while focus remained on the composer.",
+      "resolved": true,
+      "resolution": "Pressed `Tab` to move focus to management before using `PageUp`/`l`, which produced the expected off-bottom and return-live lifecycle.",
+      "affectedAssertions": [
+        "VAL-CHAT-005"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 2 assertions in the real PTY TUI on port 3100: VAL-CHAT-005 now passes with a captured same-session off-bottom \u2192 indicator visible \u2192 jump-live \u2192 indicator cleared lifecycle, while VAL-CHAT-009 still fails because the reconstructed fake secret remains visible verbatim in finalized tool output."
+}

@@ -2,6 +2,13 @@
 
 ## Validation Surface
 
+### Terminal UI (TUI)
+- For orchestrator TUI milestones, use the real PTY surface via `tuistory`.
+- Reuse the healthy local trusted app on `http://127.0.0.1:3100` when available; do not start parallel app instances or switch ports.
+- Launch the shipped TUI with isolated local state: `env PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission PAPIERKLAMMER_INSTANCE_ID=tui-mission pnpm --dir "/Users/aischool/work/papierklammer_droid" dev:tui -- --url http://127.0.0.1:3100`
+- If `/api/companies` already returns at least one company, reuse that seeded company instead of reseeding.
+- Prefer per-key `tuistory press` input over `tuistory type` when Ink text entry becomes unreliable.
+
 ### Browser UI
 - This is the primary validation surface for the mission.
 - Use `agent-browser` for all operator-visible onboarding assertions.
@@ -18,6 +25,10 @@
 - API evidence complements browser assertions; it does not replace them.
 
 ## Validation Concurrency
+
+### Terminal UI (TUI)
+- **Max concurrent validators: 1**
+- Rationale: one TUI/PTTY session on the shared local app is the safe ceiling for this repo and avoids transcript/company-state interference.
 
 ### Browser UI
 - **Max concurrent validators: 1**
@@ -48,6 +59,14 @@
 - Invite human-join assertions should show the joiner-facing state and the operator-facing Inbox state.
 - Agent-claim assertions should pair browser evidence for approval states with explicit claim API responses.
 - Import assertions should capture source mode, target mode, preview, and final landing so stale preview bugs cannot hide.
+
+## Flow Validator Guidance: TUI
+
+- Stay on port `3100` only and reuse the existing healthy app whenever possible.
+- Keep validation inside the shared isolation boundary: `PAPIERKLAMMER_HOME=/tmp/papierklammer-tui-mission`, `PAPIERKLAMMER_INSTANCE_ID=tui-mission`.
+- Do not create extra repo-owned dev/TUI/Codex helpers beyond what your assigned flow needs.
+- Prefer a single launched TUI session per assertion bundle; relaunch only when the PTY relay or Ink input becomes unreliable.
+- Save terminal captures and screenshots under the mission evidence directory for the assigned flow group so synthesis can trace them back to exact `VAL-*` assertions.
 
 ## Evidence Convention
 

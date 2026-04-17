@@ -1,0 +1,26 @@
+{
+  "milestone": "live-transcript-rendering",
+  "round": 3,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 2,
+    "passed": 0,
+    "failed": 1,
+    "blocked": 1
+  },
+  "passedAssertions": [],
+  "failedAssertions": [
+    {
+      "id": "VAL-CHAT-009",
+      "reason": "The env-style secret probe redacted the command-line assignment itself, but the fake `OPENAI_API_KEY` value still appeared verbatim in both the completed tool-output block and a settled `[text]` transcript block."
+    }
+  ],
+  "blockedAssertions": [
+    {
+      "id": "VAL-CHAT-005",
+      "blockedBy": "Real TUI evidence confirms keyboard scrolling away from the live bottom and a visible `newer lines below` indicator during active and finalized transcript growth, but neither the earlier same-day follow-live rerun nor the fresh rerun produced a conclusive same-session capture of that indicator clearing after returning to live bottom."
+    }
+  ],
+  "appliedUpdates": [],
+  "previousRound": ".factory/validation/live-transcript-rendering/user-testing/synthesis.round2.json"
+}
