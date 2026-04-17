@@ -90,14 +90,17 @@ function CloudAccessGate() {
   });
 
   const isAuthenticatedMode = healthQuery.data?.deploymentMode === "authenticated";
+  const shouldCheckSession =
+    isAuthenticatedMode &&
+    healthQuery.data?.bootstrapStatus !== "bootstrap_pending";
   const sessionQuery = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
-    enabled: isAuthenticatedMode,
+    enabled: shouldCheckSession,
     retry: false,
   });
 
-  if (healthQuery.isLoading || (isAuthenticatedMode && sessionQuery.isLoading)) {
+  if (healthQuery.isLoading || (shouldCheckSession && sessionQuery.isLoading)) {
     return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
   }
 
@@ -118,7 +121,12 @@ function CloudAccessGate() {
     return <Navigate to={`/auth?next=${next}`} replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <OnboardingWizard />
+    </>
+  );
 }
 
 function boardRoutes() {
@@ -358,56 +366,53 @@ function NoCompaniesStartPage() {
 
 export function App() {
   return (
-    <>
-      <Routes>
-        <Route path="auth" element={<AuthPage />} />
-        <Route path="board-claim/:token" element={<BoardClaimPage />} />
-        <Route path="cli-auth/:id" element={<CliAuthPage />} />
-        <Route path="invite/:token" element={<InviteLandingPage />} />
+    <Routes>
+      <Route path="auth" element={<AuthPage />} />
+      <Route path="board-claim/:token" element={<BoardClaimPage />} />
+      <Route path="cli-auth/:id" element={<CliAuthPage />} />
+      <Route path="invite/:token" element={<InviteLandingPage />} />
 
-        <Route element={<CloudAccessGate />}>
-          <Route index element={<CompanyRootRedirect />} />
-          <Route path="onboarding" element={<OnboardingRoutePage />} />
-          <Route path="dashboard" element={<UnprefixedBoardRedirect />} />
-          <Route path="instance" element={<Navigate to="/instance/settings/general" replace />} />
-          <Route path="instance/settings" element={<Layout />}>
-            <Route index element={<Navigate to="general" replace />} />
-            <Route path="general" element={<InstanceGeneralSettings />} />
-            <Route path="heartbeats" element={<InstanceSettings />} />
-            <Route path="experimental" element={<InstanceExperimentalSettings />} />
-            <Route path="plugins" element={<PluginManager />} />
-            <Route path="plugins/:pluginId" element={<PluginSettings />} />
-          </Route>
-          <Route path="companies" element={<UnprefixedBoardRedirect />} />
-          <Route path="issues" element={<UnprefixedBoardRedirect />} />
-          <Route path="issues/:issueId" element={<UnprefixedBoardRedirect />} />
-          <Route path="routines" element={<UnprefixedBoardRedirect />} />
-          <Route path="routines/:routineId" element={<UnprefixedBoardRedirect />} />
-          <Route path="skills/*" element={<UnprefixedBoardRedirect />} />
-          <Route path="settings" element={<LegacySettingsRedirect />} />
-          <Route path="settings/*" element={<LegacySettingsRedirect />} />
-          <Route path="agents" element={<UnprefixedBoardRedirect />} />
-          <Route path="agents/new" element={<UnprefixedBoardRedirect />} />
-          <Route path="agents/:agentId" element={<UnprefixedBoardRedirect />} />
-          <Route path="agents/:agentId/:tab" element={<UnprefixedBoardRedirect />} />
-          <Route path="agents/:agentId/runs/:runId" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId/overview" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId/issues" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId/issues/:filter" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId/workspaces" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId/workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
-          <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
-          <Route path="execution-workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
-          <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
-          <Route path=":companyPrefix" element={<Layout />}>
-            {boardRoutes()}
-          </Route>
-          <Route path="*" element={<NotFoundPage scope="global" />} />
+      <Route element={<CloudAccessGate />}>
+        <Route index element={<CompanyRootRedirect />} />
+        <Route path="onboarding" element={<OnboardingRoutePage />} />
+        <Route path="dashboard" element={<UnprefixedBoardRedirect />} />
+        <Route path="instance" element={<Navigate to="/instance/settings/general" replace />} />
+        <Route path="instance/settings" element={<Layout />}>
+          <Route index element={<Navigate to="general" replace />} />
+          <Route path="general" element={<InstanceGeneralSettings />} />
+          <Route path="heartbeats" element={<InstanceSettings />} />
+          <Route path="experimental" element={<InstanceExperimentalSettings />} />
+          <Route path="plugins" element={<PluginManager />} />
+          <Route path="plugins/:pluginId" element={<PluginSettings />} />
         </Route>
-      </Routes>
-      <OnboardingWizard />
-    </>
+        <Route path="companies" element={<UnprefixedBoardRedirect />} />
+        <Route path="issues" element={<UnprefixedBoardRedirect />} />
+        <Route path="issues/:issueId" element={<UnprefixedBoardRedirect />} />
+        <Route path="routines" element={<UnprefixedBoardRedirect />} />
+        <Route path="routines/:routineId" element={<UnprefixedBoardRedirect />} />
+        <Route path="skills/*" element={<UnprefixedBoardRedirect />} />
+        <Route path="settings" element={<LegacySettingsRedirect />} />
+        <Route path="settings/*" element={<LegacySettingsRedirect />} />
+        <Route path="agents" element={<UnprefixedBoardRedirect />} />
+        <Route path="agents/new" element={<UnprefixedBoardRedirect />} />
+        <Route path="agents/:agentId" element={<UnprefixedBoardRedirect />} />
+        <Route path="agents/:agentId/:tab" element={<UnprefixedBoardRedirect />} />
+        <Route path="agents/:agentId/runs/:runId" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId/overview" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId/issues" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId/issues/:filter" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId/workspaces" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId/workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
+        <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
+        <Route path="execution-workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
+        <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
+        <Route path=":companyPrefix" element={<Layout />}>
+          {boardRoutes()}
+        </Route>
+        <Route path="*" element={<NotFoundPage scope="global" />} />
+      </Route>
+    </Routes>
   );
 }
